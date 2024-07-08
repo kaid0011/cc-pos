@@ -2,7 +2,7 @@
   <!-- <div v-if="session" :session="session"> -->
   <q-layout view="hHh lpR fFf">
     <!-- <TheNavigation /> -->
-    <MenuLayout></MenuLayout>
+    <!-- <MenuLayout></MenuLayout> -->
     <q-page-container class="app-page">
       <q-page>
         <router-view />

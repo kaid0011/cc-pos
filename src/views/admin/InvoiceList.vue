@@ -1,7 +1,24 @@
 <template>
   <div class="invoice-management">
-    <h1>INVOICE MANAGEMENT</h1>
     <div class="q-pa-md">
+      <h4>Pending Transactions</h4>
+      <q-table
+        class="table"
+        :rows="pendingInvoices"
+        :columns="columns"
+        row-key="invoice_no"
+      >
+        <template v-slot:body-cell-actions="props">
+          <q-td :props="props" class="q-gutter-x-md">
+            <q-btn
+              label="View / Update"
+              color="primary"
+              @click="viewInvoice1(props.row)"
+            />
+          </q-td>
+        </template>
+      </q-table>
+
       <h4>Ongoing Invoices</h4>
       <q-table
         class="table"
@@ -59,9 +76,9 @@
       </q-table>
     </div>
     <q-dialog v-model="isUpdateDialogOpen" persistent>
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Update Invoice Status</div>
+      <q-card class="dialogs">
+        <q-card-section class="bg-primary">
+          <div class="text-h6 text-white">Update Invoice Status</div>
         </q-card-section>
 
         <q-card-section>
@@ -74,12 +91,119 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" v-close-popup />
+          <q-btn push label="Cancel" color="negative" v-close-popup />
           <q-btn
-            flat
+            push
             label="Update"
             color="primary"
             @click="updateInvoiceStatus"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="isInvoiceDialogOpen" persistent>
+      <q-card class="dialogs" style="min-width: 70vw">
+        <q-card-section class="bg-primary">
+          <div class="text-h6 text-white">Invoice Details</div>
+        </q-card-section>
+        <q-card-section class="q-pa-none">
+          <q-form>
+            <div class="bg-grey-4 rounded-borders row justify-center q-pa-md">
+              <div class="column q-gutter-y-sm">
+                <div class="row items-center justify-between q-gutter-x-md">
+                  <div class="text-p">Invoice No.:</div>
+                  <q-input
+                    class="pending-input"
+                    outlined
+                    v-model="selectedInvoice.invoice_no"
+                    readonly
+                    dense
+                  />
+                </div>
+                <div class="row items-center justify-between q-gutter-x-md">
+                  <div class="text-p">Date / Time:</div>
+                  <q-input
+                    class="pending-input"
+                    outlined
+                    v-model="formattedInvoiceDateTime"
+                    readonly
+                    dense
+                  />
+                </div>
+                <div class="row items-center justify-between q-gutter-x-md">
+                  <div class="text-p">Ready By:</div>
+                  <q-input
+                    class="pending-input"
+                    outlined
+                    type="date"
+                    v-model="selectedInvoice.ready_by"
+                    dense
+                  />
+                </div>
+                <div class="row items-center justify-between q-gutter-x-md">
+                  <div class="text-p">Status:</div>
+                  <q-select
+                    class="pending-input"
+                    outlined
+                    v-model="selectedInvoice.status"
+                    :options="statusOptions"
+                    emit-value
+                    dense
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="q-pa-xl">
+              <div class="row q-pb-sm">
+                <div class="col-1">
+                  <div class="text-caption text-bold text-primary">S.No.</div>
+                </div>
+                <div class="col-8">
+                  <div class="text-caption text-bold text-primary">Item</div>
+                </div>
+                <div class="col-1">
+                  <div class="text-caption text-bold text-primary">Tag No.</div>
+                </div>
+                <div class="col-2">
+                  <div class="text-caption text-bold text-primary">Price</div>
+                </div>
+              </div>
+              <div
+                v-for="(transaction, index) in selectedTransactions"
+                :key="index"
+                class="q-pb-sm"
+              >
+                <div class="row">
+                  <div class="col-1">
+                    <q-input v-model="transaction.serial_no" dense readonly />
+                  </div>
+                  <div class="col-8">
+                    <q-input v-model="transaction.item_name" dense readonly />
+                  </div>
+                  <div class="col-1">
+                    <q-input v-model="transaction.tag_no" dense readonly />
+                  </div>
+                  <div class="col-2">
+                    <q-input outlined v-model="transaction.price" dense />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </q-form>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            push
+            label="Close"
+            color="negative"
+            @click="isInvoiceDialogOpen = false"
+          />
+          <q-btn
+            push
+            label="Update"
+            color="primary"
+            @click="updateInvoiceAndTransactions"
           />
         </q-card-actions>
       </q-card>
@@ -95,6 +219,7 @@ import {
   fetchInvoiceDetails,
   fetchTransactionsByInvoiceNo,
   updateStatus,
+  updateInvoiceAndTransactionsInDatabase,
 } from "@/../supabase/api/invoices.js";
 
 const formatDateTime = (dateString) => {
@@ -103,6 +228,20 @@ const formatDateTime = (dateString) => {
     year: "2-digit",
     month: "2-digit",
     day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toISOString().split("T")[0]; // Format for type="date" input
+};
+
+const formatTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -135,12 +274,19 @@ const columns = [
 ];
 
 const rows = ref([]);
+const pendingInvoices = ref([]);
 const ongoingInvoices = ref([]);
 const returnedInvoices = ref([]);
 const selectedRow = ref(null);
+const selectedInvoice = ref({});
+const selectedTransactions = ref([]);
+const formattedInvoiceDateTime = ref("");
+const formattedReadyByDate = ref("");
 const selectedStatus = ref("");
 const isUpdateDialogOpen = ref(false);
+const isInvoiceDialogOpen = ref(false);
 const statusOptions = [
+  { label: "Pending", value: "Pending" },
   { label: "Ongoing", value: "Ongoing" },
   { label: "Returned", value: "Returned" },
   // Add other status options as needed
@@ -151,6 +297,9 @@ async function fetchData() {
     const invoices = await fetchAllInvoices();
     rows.value = invoices;
 
+    pendingInvoices.value = rows.value.filter(
+      (invoice) => invoice.status === "Pending"
+    );
     ongoingInvoices.value = rows.value.filter(
       (invoice) => invoice.status === "Ongoing"
     );
@@ -166,10 +315,30 @@ const router = useRouter();
 
 function viewInvoice(row) {
   const url = router.resolve({
-    name: "Invoice",
+    name: "View Invoice",
     params: { invoice_no: row.invoice_no },
   }).href;
   window.open(url, "_blank");
+}
+
+async function viewInvoice1(row) {
+  try {
+    const invoiceDetails = await fetchInvoiceDetails(row.invoice_no);
+    const transactions = await fetchTransactionsByInvoiceNo(row.invoice_no);
+
+    selectedInvoice.value = invoiceDetails;
+    selectedTransactions.value = transactions.map((transaction, index) => ({
+      ...transaction,
+      serial_no: index + 1,
+    }));
+
+    formattedInvoiceDateTime.value = formatDateTime(invoiceDetails.date_time);
+    formattedReadyByDate.value = formatDate(invoiceDetails.ready_by);
+
+    isInvoiceDialogOpen.value = true;
+  } catch (error) {
+    console.error("Error fetching invoice details:", error);
+  }
 }
 
 async function printInvoice(row) {
@@ -181,6 +350,19 @@ async function printInvoice(row) {
     handlePrint(pdfContent);
   } catch (error) {
     console.error("Error fetching invoice details:", error);
+  }
+}
+
+async function updateInvoiceAndTransactions() {
+  try {
+    await updateInvoiceAndTransactionsInDatabase(
+      selectedInvoice.value,
+      selectedTransactions.value
+    );
+    isInvoiceDialogOpen.value = false;
+    fetchData(); // Refresh the data
+  } catch (error) {
+    console.error("Error updating invoice and transactions:", error);
   }
 }
 
@@ -196,9 +378,9 @@ function generatePdfContent(invoiceDetails, transactions) {
     })
     .join("");
 
-  const formattedDate = formatDate(new Date(invoiceDetails.date_time));
-  const formattedTime = formatTime(new Date(invoiceDetails.date_time));
-  const formattedReadyBy = formatDate(new Date(invoiceDetails.ready_by));
+  const formattedDate = formatDate(invoiceDetails.date_time);
+  const formattedTime = formatTime(invoiceDetails.date_time);
+  const formattedReadyBy = formatDate(invoiceDetails.ready_by);
 
   return `
     <!DOCTYPE html>
@@ -390,22 +572,6 @@ function handlePrint(content) {
   };
 }
 
-function formatDate(date) {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
-}
-
 function openUpdateDialog(row) {
   selectedRow.value = row;
   selectedStatus.value = row.status;
@@ -431,5 +597,19 @@ onMounted(fetchData);
 <style scoped>
 .invoice-management {
   padding: 20px;
+}
+
+.q-card-section {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.pending-input {
+  width: 200px !important;
+  font-weight: 900 !important;
+}
+
+.dialogs {
+  background-color: #e9e9e9;
 }
 </style>

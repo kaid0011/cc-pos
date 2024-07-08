@@ -130,3 +130,51 @@ export const getMaxTagNo = async () => {
       throw error;
     }
   }
+
+  // Function to update invoice and transactions in the database
+export const updateInvoiceAndTransactionsInDatabase = async (invoice, transactions) => {
+  const { id, invoice_no, date_time, ready_by } = invoice;
+
+  const invoiceUpdate = {
+    date_time,
+    ready_by,
+  };
+
+  try {
+    // Update the invoice
+    const { data: invoiceData, error: invoiceError } = await supabase
+      .from('invoices')
+      .update(invoiceUpdate)
+      .eq('invoice_no', invoice_no);
+
+    if (invoiceError) {
+      console.error('Error updating invoice:', invoiceError);
+      throw invoiceError;
+    }
+
+    // Update the transactions
+    for (const transaction of transactions) {
+      const { id: transactionId, price } = transaction;
+
+      const transactionUpdate = {
+        price,
+      };
+
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('transactions')
+        .update(transactionUpdate)
+        .eq('id', transactionId);
+
+      if (transactionError) {
+        console.error('Error updating transaction:', transactionError);
+        throw transactionError;
+      }
+    }
+
+    return { invoiceData, transactions };
+
+  } catch (error) {
+    console.error('Error updating invoice and transactions:', error);
+    throw error;
+  }
+};

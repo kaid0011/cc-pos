@@ -1,6 +1,5 @@
 <template>
   <div class="items-management">
-    <h1>ITEMS MANAGEMENT</h1>
 
     <!-- Add Item Button -->
     <q-btn

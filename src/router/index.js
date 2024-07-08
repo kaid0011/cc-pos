@@ -13,6 +13,7 @@ const routes = [
     {path: '/production', name: 'Production', component: () => import('@/views/production/Dashboard.vue')},
     {path: '/admin/items', name: 'Item Management', component: () => import('@/views/admin/ItemManagement.vue')},
     {path: '/admin/invoices', name: 'Invoice Management', component: () => import('@/views/admin/InvoiceList.vue')},
+    {path: '/admin/invoices/:invoice_no', name: 'View Invoice', component: () => import('@/views/admin/InvoiceView.vue')},
 ]
 
 const router = createRouter({

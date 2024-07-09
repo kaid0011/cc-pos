@@ -15,7 +15,8 @@ export default defineConfig({
       template: { transformAssetUrls }
     }),
     quasar({
-      sassVariables: './src/quasar-variables.sass'
+      sassVariables: './src/quasar-variables.sass',
+      boot: ['./src/boot/capacitor'] // Correct path to the boot file
     })
   ]
 });

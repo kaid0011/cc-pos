@@ -1,10 +1,10 @@
 import { supabase } from '../config.js';
 
 // Function to insert a new invoice
-export const insertInvoice = async (invoice_no, date_time, ready_by, status) => {
+export const insertInvoice = async (invoice_no, date_time, ready_by, status, customer_info) => {
   const { data, error } = await supabase
     .from('invoices')
-    .insert([{ invoice_no, date_time, ready_by, status }])
+    .insert([{ invoice_no, date_time, ready_by, status, customer_info }])
     .select();
 
   if (error) {
@@ -177,4 +177,23 @@ export const updateInvoiceAndTransactionsInDatabase = async (invoice, transactio
     console.error('Error updating invoice and transactions:', error);
     throw error;
   }
+};
+
+// Upload the photo to Supabase storage
+export const uploadPhoto = async (file) => {
+  const { data, error } = await supabase
+    .storage
+    .from('customer_info')
+    .upload(`${file.name}`, file);
+  if (error) throw error;
+  return `https://efvrcniptqvxskubaebr.supabase.co/storage/v1/object/public/customer_info/${file.name}`;
+};
+
+// Update the invoice with the customer photo URL
+export const updateInvoiceWithPhoto = async (invoiceId, photoUrl) => {
+  const { error } = await supabase
+    .from('invoices')
+    .update({ customer_info: photoUrl })
+    .eq('id', invoiceId);
+  if (error) throw error;
 };

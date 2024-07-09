@@ -154,23 +154,45 @@
           </div>
         </div>
         <div class="customer-area q-pa-md">
-          <div class="">
-            <q-file
-              filled
-              bottom-slots
-              v-model="model"
-              label="Upload Customer Information"
-              dense
-              class="q-pa-none"
-            >
-              <template v-slot:before>
-                <q-icon name="folder_open" />
-              </template>
-
-              <template v-slot:append>
-                <q-btn round dense flat icon="add" @click.stop.prevent />
-              </template>
-            </q-file>
+          <div class="flex items-center q-col-gutter-sm">
+            <div class="col auto-width">
+              <q-file
+                filled
+                bottom-slots
+                v-model="currentImage"
+                label="Upload Customer Information"
+                dense
+                clearable
+                class="q-pa-none"
+              >
+                <template v-slot:before>
+                  <q-icon name="folder_open" />
+                </template>
+                <template v-slot:append>
+                  <q-btn round dense flat icon="add" />
+                </template>
+              </q-file>
+            </div>
+            <div class="col-1">
+              <q-btn
+                dense
+                flat
+                class="bg-orange-10 text-white rounded-borders"
+                icon="visibility"
+                @click="viewImage"
+              ></q-btn>
+              <!-- <div v-if="photoUri">Photo URI: {{ photoUri }}</div> -->
+            </div>
+            <div class="col-1">
+              <q-btn
+                dense
+                flat
+                class="bg-pink-10 text-white rounded-borders"
+                icon="photo_camera"
+                @click="openCamera"
+              ></q-btn>
+              <!-- <div v-if="photoUri">Photo URI: {{ photoUri }}</div> -->
+            </div>
           </div>
         </div>
         <div class="action-area q-pa-md">
@@ -203,6 +225,23 @@
         </div>
       </div>
     </div>
+
+    <q-dialog v-model="cam_dialog" persistent>
+      <q-card>
+        <q-bar>
+          <q-space></q-space>
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+          </q-btn>
+        </q-bar>
+        <q-card-section>
+          <div v-if="photoUri">
+            <img :src="photoUri" alt="Captured Photo" style="max-width: 100%" />
+          </div>
+          <div v-else>No photo to display</div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
     <q-dialog v-model="dialog" backdrop-filter="brightness(50%)">
       <q-card class="dialog-cards">
@@ -349,13 +388,91 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
+import { Device } from "@capacitor/device";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { fetchAllItems } from "@/../supabase/api/item_list.js";
 import {
   insertInvoice,
   insertTransactions,
   getMaxTagNo,
+  uploadPhoto,
+  updateInvoiceWithPhoto
 } from "@/../supabase/api/invoices.js"; // Adjust the path based on your project's structure
+
+const model = ref("Please wait...");
+const manufacturer = ref("Please wait...");
+const photoUri = ref(null);
+const cinfo_imageA = ref(null);
+const cinfo_imageB = ref(null);
+const cam_dialog = ref(false);
+
+const currentImage = computed({
+  get() {
+    return currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+  },
+  set(value) {
+    if (currentTransaction.value === "A") {
+      cinfo_imageA.value = value;
+    } else {
+      cinfo_imageB.value = value;
+    }
+  },
+});
+
+onMounted(() => {
+  Device.getInfo().then((info) => {
+    model.value = info.model;
+    manufacturer.value = info.manufacturer;
+  });
+});
+
+const openCamera = async () => {
+  try {
+    const capturedPhoto = await Camera.getPhoto({
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Camera,
+      quality: 90,
+    });
+    photoUri.value = capturedPhoto.webPath;
+
+    // Convert the photo URI to a file object
+    const response = await fetch(photoUri.value);
+    const blob = await response.blob();
+    const timestamp = new Date().getTime();
+    const fileObject = new File([blob], `photo_${timestamp}.jpg`, { type: blob.type });
+    
+    // Set the file object in the q-file component
+    if (currentTransaction.value === "A") {
+      cinfo_imageA.value = fileObject;
+    } else {
+      cinfo_imageB.value = fileObject;
+    }
+  } catch (error) {
+    console.error('Error opening camera:', error);
+  }
+};
+
+const viewImage = () => {
+  const currentImage = currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+  if (currentImage) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      photoUri.value = reader.result;
+      cam_dialog.value = true;
+    };
+    reader.readAsDataURL(currentImage);
+  } else {
+    cam_dialog.value = true;
+  }
+};
+
+// Watch for changes in the file input
+watch([cinfo_imageA, cinfo_imageB], (newFile) => {
+  if (!newFile) {
+    photoUri.value = null;
+  }
+});
 
 const tab = ref("clothings");
 const dialog = ref(false);
@@ -567,15 +684,21 @@ const switchTransaction = () => {
 
 const submitTransaction = async () => {
   try {
+    // Upload the photo to Supabase storage and get the URL
+    let photoUrl = null;
+    const currentImage = currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+    if (currentImage) {
+      photoUrl = await uploadPhoto(currentImage);
+    }
+
+    // Insert a new invoice row with the customer photo URL
     const invoiceNo = `INV-${Date.now()}`;
     const dateTime = new Date().toISOString();
     const readyBy = new Date(
       new Date().setDate(new Date().getDate() + 7)
     ).toISOString(); // Set ready by date to one week later
     const status = "Pending";
-
-    // Insert a new invoice row
-    const invoice = await insertInvoice(invoiceNo, dateTime, readyBy, status);
+    const invoice = await insertInvoice(invoiceNo, dateTime, readyBy, status, photoUrl);
     const invoiceId = invoice.id;
 
     // Get the max tag_no
@@ -620,14 +743,17 @@ const submitTransaction = async () => {
     alert("Transaction submitted successfully!");
     if (currentTransaction.value === "A") {
       transactionA.value = [];
+      cinfo_imageA.value = null;
     } else {
       transactionB.value = [];
+      cinfo_imageB.value = null;
     }
   } catch (error) {
     console.error("Error submitting transaction:", error);
     alert("Failed to submit transaction.");
   }
 };
+
 </script>
 
 <style scoped>

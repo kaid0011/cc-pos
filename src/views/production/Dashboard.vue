@@ -2,25 +2,60 @@
   <div>
     <div class="container row">
       <div class="left-container col-8">
-        <q-tabs v-model="tab" class="text-black" align="justify" narrow-indicator>
-          <q-tab v-for="category in categories" :key="category.name" :name="category.name" :icon="category.icon" :label="category.label" />
+        <q-tabs
+          v-model="tab"
+          class="text-black"
+          align="justify"
+          narrow-indicator
+        >
+          <q-tab
+            v-for="category in categories"
+            :key="category.name"
+            :name="category.name"
+            :icon="category.icon"
+            :label="category.label"
+          />
         </q-tabs>
 
-        <q-tab-panels v-model="tab" animated transition-prev="jump-up" transition-next="jump-down" class="bg-primary">
-          <q-tab-panel v-for="category in categories" :key="category.name" :name="category.name" class="q-pa-md">
+        <q-tab-panels
+          v-model="tab"
+          animated
+          transition-prev="jump-up"
+          transition-next="jump-down"
+          class="bg-primary"
+        >
+          <q-tab-panel
+            v-for="category in categories"
+            :key="category.name"
+            :name="category.name"
+            class="q-pa-md"
+          >
             <div class="row q-pa-sm q-col-gutter-md item-card-container">
-              <div v-for="item in category.items" :key="item.id" class="item-card q-pa-xs col-2">
-                <q-btn push @click="openDialog(item)" class="list-buttons q-pa-none">
+              <div
+                v-for="item in category.items"
+                :key="item.id"
+                class="item-card q-pa-xs col-2"
+              >
+                <q-btn
+                  push
+                  @click="openDialog(item)"
+                  class="list-buttons q-pa-none"
+                >
                   <q-card flat class="list-cards">
                     <q-card-section class="q-pa-none">
                       <q-item>
                         <q-item-section>
-                          <q-item-label class="text-bold">{{ item.name }}</q-item-label>
+                          <q-item-label class="text-bold">{{
+                            item.name
+                          }}</q-item-label>
                         </q-item-section>
                       </q-item>
                     </q-card-section>
                     <q-card-section class="item-image q-pa-none">
-                      <q-img :src="item.imageUrl" style="height: 100px; width: 100px; object-fit: cover" />
+                      <q-img
+                        :src="item.imageUrl"
+                        style="height: 100px; width: 100px; object-fit: cover"
+                      />
                     </q-card-section>
                   </q-card>
                 </q-btn>
@@ -32,42 +67,137 @@
       <div class="right-container col-4 q-pl-md">
         <div class="list-area">
           <div class="list-header q-py-md">
-            <p class="q-ma-none text-bold">Transaction <span class="text-primary text-h6">'{{ currentTransaction }}'</span> Items</p>
+            <p class="q-ma-none text-bold">
+              Transaction
+              <span class="text-primary text-h6"
+                >'{{ currentTransaction }}'</span
+              >
+              Items
+            </p>
           </div>
           <div class="scrollable-list">
-            <div v-for="item in transactionItems" :key="item.name">
-              <div class="row items-center q-py-sm q-px-sm q-col-gutter-md">
-                <div class="col-1">
-                  <q-btn round size="12px" color="negative" icon="delete" @click="confirmRemove(item)"></q-btn>
-                </div>
-                <div class="col-5 text-center">
-                  <p class="q-ma-none">{{ item.name }}</p>
-                </div>
-                <div class="col-2 text-center">
-                  <p class="q-ma-none">${{ item.price }}</p>
-                </div>
-                <div class="col-4 text-center">
+            <q-table
+              :rows="transactionItems"
+              :columns="columns"
+              row-key="name"
+              flat
+              separator="cell"
+              no-data-label="No items in transaction"
+              virtual-scroll
+              v-model:pagination="pagination"
+              :rows-per-page-options="[0]"
+              hide-bottom
+              dense
+              class="scrollable-table"
+            >
+              <template v-slot:body-cell-name="props">
+                <q-td :props="props" class="name-column">
+                  <p class="q-ma-none text-left wrap-text">
+                    {{ props.row.name }}
+                  </p>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-price="props">
+                <q-td :props="props" class="price-column">
+                  <p class="q-ma-none text-center wrap-text">
+                    ${{ props.row.price }}
+                  </p>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-quantity="props">
+                <q-td :props="props" class="quantity-column">
                   <div class="row items-center justify-center">
-                    <q-btn push class="list-counter-buttons" icon="remove" @click="confirmDecrease(item)" />
-                    <p class="list-counter-input q-px-md q-ma-none">{{ item.quantity }}</p>
-                    <q-btn push class="list-counter-buttons" icon="add" @click="increaseItemQuantity(item)" />
+                    <q-btn
+                      flat
+                      class="list-counter-buttons"
+                      icon="remove"
+                      @click="confirmDecrease(props.row)"
+                    />
+                    <div class="list-quantity q-border rounded-borders q-mx-xs">
+                      <p class="list-counter-input q-px-sm q-ma-none wrap-text">
+                        {{ props.row.quantity }}
+                      </p>
+                    </div>
+                    <q-btn
+                      flat
+                      class="list-counter-buttons"
+                      icon="add"
+                      @click="increaseItemQuantity(props.row)"
+                    />
                   </div>
-                </div>
-              </div>
-              <q-separator color="grey" />
-            </div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-actions="props">
+                <q-td :props="props" class="actions-column auto-width">
+                  <q-btn
+                    round
+                    size="7px"
+                    color="negative"
+                    icon="delete"
+                    @click="confirmRemove(props.row)"
+                  />
+                </q-td>
+              </template>
+              <template v-slot:footer="props">
+                <q-tr :props="props">
+                  <q-td class="text-left"><strong>Total</strong></q-td>
+                  <q-td class="text-center"
+                    ><strong>${{ totalPrices.toFixed(2) }}</strong></q-td
+                  >
+                  <q-td class="text-center"
+                    ><strong>{{ totalQuantities }}</strong></q-td
+                  >
+                  <q-td></q-td>
+                </q-tr>
+              </template>
+            </q-table>
+          </div>
+        </div>
+        <div class="customer-area q-pa-md">
+          <div class="">
+            <q-file
+              filled
+              bottom-slots
+              v-model="model"
+              label="Upload Customer Information"
+              dense
+              class="q-pa-none"
+            >
+              <template v-slot:before>
+                <q-icon name="folder_open" />
+              </template>
+
+              <template v-slot:append>
+                <q-btn round dense flat icon="add" @click.stop.prevent />
+              </template>
+            </q-file>
           </div>
         </div>
         <div class="action-area q-pa-md">
           <div class="row q-col-gutter-sm">
             <div class="col-4">
-              <q-btn label="RESET" push class="action-buttons bg-negative text-white full-width q-py-sm" @click="confirmCancel"></q-btn>
+              <q-btn
+                label="RESET"
+                push
+                class="action-buttons bg-negative text-white full-width q-py-sm"
+                @click="confirmCancel"
+              ></q-btn>
             </div>
             <div class="col-4">
-              <q-btn label="SWITCH" push class="action-buttons bg-warning full-width q-py-sm" @click="switchTransaction"></q-btn>
+              <q-btn
+                label="SWITCH"
+                push
+                class="action-buttons bg-warning full-width q-py-sm"
+                @click="switchTransaction"
+              ></q-btn>
             </div>
             <div class="col-4">
-              <q-btn label="SUBMIT" push class="action-buttons bg-positive text-white full-width q-py-sm" @click="submitTransaction"></q-btn>
+              <q-btn
+                label="SUBMIT"
+                push
+                class="action-buttons bg-positive text-white full-width q-py-sm"
+                @click="submitTransaction"
+              ></q-btn>
             </div>
           </div>
         </div>
@@ -83,39 +213,123 @@
           </q-btn>
         </q-bar>
         <q-card-section class="column items-center q-gutter-y-sm">
-          <q-img :src="selectedItem?.imageUrl" style="height: 150px; width: 150px; object-fit: cover" />
+          <q-img
+            :src="selectedItem?.imageUrl"
+            style="height: 150px; width: 150px; object-fit: cover"
+          />
           <div class="text-h6 text-center">{{ selectedItem?.name }}</div>
-          
-          <div v-if="selectedItem?.laundry_price !== null" class="row items-center q-pa-sm">
-            <div class="col-12 text-center q-pb-md">Laundry - ${{ selectedItem?.laundry_price.toFixed(2) }}</div>
-            <q-btn push class="counter-buttons" icon="remove" @click="decreaseQuantity('Laundry')" />
-            <q-input outlined v-model="quantities.Laundry" class="counter-input q-pa-none q-mx-md" />
-            <q-btn push class="counter-buttons" icon="add" @click="increaseQuantity('Laundry')" />
+
+          <div
+            v-if="selectedItem?.laundry_price !== null"
+            class="row items-center q-pa-sm"
+          >
+            <div class="col-12 text-center q-pb-md">
+              Laundry - ${{ selectedItem?.laundry_price.toFixed(2) }}
+            </div>
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="remove"
+              @click="decreaseQuantity('Laundry')"
+            />
+            <q-input
+              outlined
+              v-model="quantities.Laundry"
+              class="counter-input q-pa-none q-mx-md"
+            />
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="add"
+              @click="increaseQuantity('Laundry')"
+            />
           </div>
-          
-          <div v-if="selectedItem?.dryclean_price !== null" class="row items-center q-pa-sm">
-            <div class="col-12 text-center q-pb-md">Dry Clean - ${{ selectedItem?.dryclean_price.toFixed(2) }}</div>
-            <q-btn push class="counter-buttons" icon="remove" @click="decreaseQuantity('DryClean')" />
-            <q-input outlined v-model="quantities.DryClean" class="counter-input q-pa-none q-mx-md" />
-            <q-btn push class="counter-buttons" icon="add" @click="increaseQuantity('DryClean')" />
+
+          <div
+            v-if="selectedItem?.dryclean_price !== null"
+            class="row items-center q-pa-sm"
+          >
+            <div class="col-12 text-center q-pb-md">
+              Dry Clean - ${{ selectedItem?.dryclean_price.toFixed(2) }}
+            </div>
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="remove"
+              @click="decreaseQuantity('DryClean')"
+            />
+            <q-input
+              outlined
+              v-model="quantities.DryClean"
+              class="counter-input q-pa-none q-mx-md"
+            />
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="add"
+              @click="increaseQuantity('DryClean')"
+            />
           </div>
-          
-          <div v-if="selectedItem?.pressing_price !== null" class="row items-center q-pa-sm">
-            <div class="col-12 text-center q-pb-md">Pressing Only - ${{ selectedItem?.pressing_price.toFixed(2) }}</div>
-            <q-btn push class="counter-buttons" icon="remove" @click="decreaseQuantity('PressingOnly')" />
-            <q-input outlined v-model="quantities.PressingOnly" class="counter-input q-pa-none q-mx-md" />
-            <q-btn push class="counter-buttons" icon="add" @click="increaseQuantity('PressingOnly')" />
+
+          <div
+            v-if="selectedItem?.pressing_price !== null"
+            class="row items-center q-pa-sm"
+          >
+            <div class="col-12 text-center q-pb-md">
+              Pressing Only - ${{ selectedItem?.pressing_price.toFixed(2) }}
+            </div>
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="remove"
+              @click="decreaseQuantity('PressingOnly')"
+            />
+            <q-input
+              outlined
+              v-model="quantities.PressingOnly"
+              class="counter-input q-pa-none q-mx-md"
+            />
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="add"
+              @click="increaseQuantity('PressingOnly')"
+            />
           </div>
-          
-          <div v-if="selectedItem?.others_price !== null" class="row items-center q-pa-sm">
-            <div class="col-12 text-center q-pb-md">Others - ${{ selectedItem?.others_price.toFixed(2) }}</div>
-            <q-btn push class="counter-buttons" icon="remove" @click="decreaseQuantity('Others')" />
-            <q-input outlined v-model="quantities.Others" class="counter-input q-pa-none q-mx-md" />
-            <q-btn push class="counter-buttons" icon="add" @click="increaseQuantity('Others')" />
+
+          <div
+            v-if="selectedItem?.others_price !== null"
+            class="row items-center q-pa-sm"
+          >
+            <div class="col-12 text-center q-pb-md">
+              Others - ${{ selectedItem?.others_price.toFixed(2) }}
+            </div>
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="remove"
+              @click="decreaseQuantity('Others')"
+            />
+            <q-input
+              outlined
+              v-model="quantities.Others"
+              class="counter-input q-pa-none q-mx-md"
+            />
+            <q-btn
+              push
+              class="counter-buttons"
+              icon="add"
+              @click="increaseQuantity('Others')"
+            />
           </div>
         </q-card-section>
         <q-card-actions>
-          <q-btn class="full-width dialog-buttons" label="Add Item" color="primary" @click="addToTransaction" />
+          <q-btn
+            class="full-width dialog-buttons"
+            label="Add Item"
+            color="primary"
+            @click="addToTransaction"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -137,7 +351,11 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { fetchAllItems } from "@/../supabase/api/item_list.js";
-import { insertInvoice, insertTransactions, getMaxTagNo } from "@/../supabase/api/invoices.js"; // Adjust the path based on your project's structure
+import {
+  insertInvoice,
+  insertTransactions,
+  getMaxTagNo,
+} from "@/../supabase/api/invoices.js"; // Adjust the path based on your project's structure
 
 const tab = ref("clothings");
 const dialog = ref(false);
@@ -148,19 +366,64 @@ const quantities = ref({
   Laundry: 0,
   DryClean: 0,
   PressingOnly: 0,
-  Others: 0
+  Others: 0,
 });
 const transactionA = ref([]);
 const transactionB = ref([]);
-const currentTransaction = ref('A');
+const currentTransaction = ref("A");
 let confirmAction = null;
+
+const columns = [
+  {
+    name: "name",
+    required: true,
+    label: "Item",
+    align: "left",
+    field: (row) => row.name,
+    format: (val) => `${val}`,
+    sortable: true,
+  },
+  {
+    name: "price",
+    required: true,
+    label: "Price",
+    align: "center",
+    field: "price",
+    format: (val) => `$${val}`,
+    sortable: true,
+  },
+  {
+    name: "quantity",
+    required: true,
+    label: "Quantity",
+    align: "center",
+    field: "quantity",
+    sortable: true,
+  },
+  { name: "actions", required: true, align: "center" },
+];
 
 const categories = ref([
   { name: "clothings", icon: "fas fa-tshirt", label: "Clothings", items: [] },
   { name: "beddings", icon: "fas fa-bed", label: "Beddings", items: [] },
-  { name: "upholsteries", icon: "fas fa-couch", label: "Upholsteries", items: [] },
-  { name: "onsite-cleaning", icon: "fas fa-broom", label: "Onsite Cleaning", items: [] },
-  { name: "miscellaneous", icon: "fas fa-th-large", label: "Miscellaneous", items: [] },
+  {
+    name: "upholsteries",
+    icon: "fas fa-couch",
+    label: "Upholsteries",
+    items: [],
+  },
+  {
+    name: "onsite-cleaning",
+    icon: "fas fa-broom",
+    label: "Onsite Cleaning",
+    items: [],
+  },
+  {
+    name: "miscellaneous",
+    icon: "fas fa-th-large",
+    label: "Miscellaneous",
+    items: [],
+  },
   { name: "others", icon: "fas fa-ellipsis-h", label: "Others", items: [] },
 ]);
 
@@ -169,13 +432,29 @@ onMounted(async () => {
 
   categories.value.forEach((category) => {
     category.items = allItems
-      .filter(item => item.category === category.label)
+      .filter((item) => item.category === category.label)
       .sort((a, b) => a.name.localeCompare(b.name)); // Sort items alphabetically
   });
 });
 
+const totalPrices = computed(() => {
+  return transactionItems.value.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+});
+
+const totalQuantities = computed(() => {
+  return transactionItems.value.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+});
+
 const transactionItems = computed(() => {
-  return currentTransaction.value === 'A' ? transactionA.value : transactionB.value;
+  return currentTransaction.value === "A"
+    ? transactionA.value
+    : transactionB.value;
 });
 
 const openDialog = (item) => {
@@ -184,7 +463,7 @@ const openDialog = (item) => {
     Laundry: 0,
     DryClean: 0,
     PressingOnly: 0,
-    Others: 0
+    Others: 0,
   };
   dialog.value = true;
 };
@@ -201,10 +480,10 @@ const decreaseQuantity = (type) => {
 
 const addToTransaction = () => {
   const services = {
-    'Laundry': '(L)',
-    'DryClean': '(DC)',
-    'PressingOnly': '(PO)',
-    'Others': '(O)'
+    Laundry: "(L)",
+    DryClean: "(DC)",
+    PressingOnly: "(PO)",
+    Others: "(O)",
   };
 
   for (const [key, suffix] of Object.entries(services)) {
@@ -213,16 +492,16 @@ const addToTransaction = () => {
       const existingItem = transactionItems.value.find((i) => i.name === name);
       let price = 0;
       switch (suffix) {
-        case '(L)':
+        case "(L)":
           price = selectedItem.value.laundry_price.toFixed(2);
           break;
-        case '(DC)':
+        case "(DC)":
           price = selectedItem.value.dryclean_price.toFixed(2);
           break;
-        case '(PO)':
+        case "(PO)":
           price = selectedItem.value.pressing_price.toFixed(2);
           break;
-        case '(O)':
+        case "(O)":
           price = selectedItem.value.others_price.toFixed(2);
           break;
       }
@@ -233,7 +512,7 @@ const addToTransaction = () => {
         transactionItems.value.push({
           name: name,
           quantity: quantities.value[key],
-          price: price
+          price: price,
         });
       }
     }
@@ -255,8 +534,10 @@ const confirmDecrease = (item) => {
 
 const confirmRemove = (item) => {
   confirmAction = () => {
-    const updatedItems = transactionItems.value.filter((i) => i.name !== item.name);
-    if (currentTransaction.value === 'A') {
+    const updatedItems = transactionItems.value.filter(
+      (i) => i.name !== item.name
+    );
+    if (currentTransaction.value === "A") {
       transactionA.value = updatedItems;
     } else {
       transactionB.value = updatedItems;
@@ -269,7 +550,7 @@ const confirmRemove = (item) => {
 
 const confirmCancel = () => {
   confirmAction = () => {
-    if (currentTransaction.value === 'A') {
+    if (currentTransaction.value === "A") {
       transactionA.value = [];
     } else {
       transactionB.value = [];
@@ -281,71 +562,72 @@ const confirmCancel = () => {
 };
 
 const switchTransaction = () => {
-  currentTransaction.value = currentTransaction.value === 'A' ? 'B' : 'A';
+  currentTransaction.value = currentTransaction.value === "A" ? "B" : "A";
 };
 
 const submitTransaction = async () => {
   try {
     const invoiceNo = `INV-${Date.now()}`;
     const dateTime = new Date().toISOString();
-    const readyBy = new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(); // Set ready by date to one week later
-    const status = 'Pending';
+    const readyBy = new Date(
+      new Date().setDate(new Date().getDate() + 7)
+    ).toISOString(); // Set ready by date to one week later
+    const status = "Pending";
 
     // Insert a new invoice row
     const invoice = await insertInvoice(invoiceNo, dateTime, readyBy, status);
     const invoiceId = invoice.id;
 
     // Get the max tag_no
-    const maxTagNo = await getMaxTagNo() || 0;
+    const maxTagNo = (await getMaxTagNo()) || 0;
 
     // Prepare transactions data
     let serialNo = 1;
     let tagNo = maxTagNo + 1;
-    const transactionsData = transactionItems.value.flatMap(item => {
+    const transactionsData = transactionItems.value.flatMap((item) => {
       const typeSuffix = item.name.match(/\((L|DC|PO|O)\)$/);
-      let type = '';
+      let type = "";
       if (typeSuffix) {
         switch (typeSuffix[1]) {
-          case 'L':
-            type = 'Laundry';
+          case "L":
+            type = "Laundry";
             break;
-          case 'DC':
-            type = 'Dry Clean';
+          case "DC":
+            type = "Dry Clean";
             break;
-          case 'PO':
-            type = 'Pressing Only';
+          case "PO":
+            type = "Pressing Only";
             break;
-          case 'O':
-            type = 'Others';
+          case "O":
+            type = "Others";
             break;
         }
       }
-      const itemName = item.name.replace(/\s*\((L|DC|PO|O)\)$/, '');
+      const itemName = item.name.replace(/\s*\((L|DC|PO|O)\)$/, "");
       return Array.from({ length: item.quantity }, () => ({
         item_name: itemName,
         type: type,
         price: item.price,
         invoice_id: invoiceId,
         serial_no: serialNo++,
-        tag_no: tagNo++
+        tag_no: tagNo++,
       }));
     });
 
     // Insert multiple rows into transactions table
     await insertTransactions(transactionsData);
 
-    alert('Transaction submitted successfully!');
-    if (currentTransaction.value === 'A') {
+    alert("Transaction submitted successfully!");
+    if (currentTransaction.value === "A") {
       transactionA.value = [];
     } else {
       transactionB.value = [];
     }
   } catch (error) {
-    console.error('Error submitting transaction:', error);
-    alert('Failed to submit transaction.');
+    console.error("Error submitting transaction:", error);
+    alert("Failed to submit transaction.");
   }
 };
-
 </script>
 
 <style scoped>
@@ -355,9 +637,21 @@ const submitTransaction = async () => {
 }
 
 .list-area {
-  height: 80vh; /* Fixed height to enable scrolling */
+  height: 65vh; /* Fixed height to enable scrolling */
   background-color: #e9e9e9;
   overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.customer-area {
+  margin-top: 2vh;
+  min-height: 12vh;
+  background-color: #e9e9e9;
+}
+
+.action-area {
+  margin-top: 2vh;
+  min-height: 14vh;
+  background-color: #aaadb2;
 }
 
 .list-header {
@@ -367,12 +661,6 @@ const submitTransaction = async () => {
 .scrollable-list {
   height: 100%; /* Ensure it takes full height of list-area */
   overflow-y: auto; /* Enable vertical scrolling */
-}
-
-.action-area {
-  margin-top: 2vh;
-  min-height: 14vh;
-  background-color: #aaadb2;
 }
 
 .item-image {
@@ -403,7 +691,7 @@ const submitTransaction = async () => {
 .list-buttons {
   width: 100%;
   height: 200px;
-  background-color: #d1d3ce;
+  background-color: #f2f2f2;
 }
 
 .list-cards {
@@ -428,18 +716,53 @@ const submitTransaction = async () => {
 
 .list-counter-buttons {
   padding: 5px;
-  font-size: 8px;
+  font-size: 6px;
   background-color: #b29852;
 }
 
 .list-counter-input {
-  font-size: 15px;
+  font-size: 13px;
   text-align: center;
 }
 
 .action-buttons {
   height: 9vh;
   margin: 0;
+}
+
+.list-quantity {
+  border-width: 1.5px;
+  border-color: #8a8a8a;
+  border-style: solid;
+}
+
+.scrollable-table .q-td {
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+.fixed-width {
+  width: 150px; /* You can adjust this width as needed */
+}
+
+.name-column {
+  width: auto; /* Specific width for the name column */
+}
+
+.price-column {
+  width: 70px; /* Specific width for the price column */
+}
+
+.quantity-column {
+  width: 100px; /* Specific width for the quantity column */
+}
+
+.actions-column {
+  width: 10px;
+}
+
+.wrap-text {
+  overflow-wrap: break-word;
 }
 
 /* Chrome, Safari, Edge, Opera */
@@ -450,7 +773,7 @@ input::-webkit-inner-spin-button {
 }
 
 /* Firefox */
-input[type=number] {
+input[type="number"] {
   -moz-appearance: textfield;
 }
 </style>

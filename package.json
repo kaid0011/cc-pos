@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/camera": "^6.0.1",
     "@quasar/extras": "^1.16.11",
     "@supabase/supabase-js": "^2.43.5",
     "quasar": "^2.16.4",

@@ -133,11 +133,12 @@ export const getMaxTagNo = async () => {
 
   // Function to update invoice and transactions in the database
 export const updateInvoiceAndTransactionsInDatabase = async (invoice, transactions) => {
-  const { id, invoice_no, date_time, ready_by } = invoice;
+  const { id, invoice_no, date_time, ready_by, status } = invoice;
 
   const invoiceUpdate = {
     date_time,
     ready_by,
+    status
   };
 
   try {

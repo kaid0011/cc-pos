@@ -9,9 +9,9 @@
         aria-label="Menu"
         icon="menu"
       />
-      <q-btn flat no-caps no-wrap class="q-ml-xs" v-if="$q.screen.gt.xs">
+      <q-btn flat no-caps no-wrap v-if="$q.screen.gt.xs">
         <img
-          src="@/assets/images/logo.png"
+          src="@/assets/images/orange_logo.png"
           alt="Logo"
           style="height: 40px; width: auto"
         />
@@ -19,7 +19,7 @@
           Cotton Care Management System
         </q-toolbar-title>
       </q-btn>
-
+<!-- 
       <q-space />
 
       <q-space />
@@ -30,7 +30,7 @@
           </q-avatar>
           <q-tooltip>Account</q-tooltip>
         </q-btn>
-      </div>
+      </div> -->
     </q-toolbar>
   </q-header>
   <q-drawer
@@ -44,6 +44,23 @@
       <q-list padding>
         <q-item
           v-for="link in links1"
+          :key="link.text"
+          v-ripple
+          clickable
+          @click="navigate(link.path)"
+        >
+          <q-item-section avatar>
+            <q-icon color="grey" :name="link.icon" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-left">{{ link.text }}</q-item-label>
+          </q-item-section>
+        </q-item>
+        <q-separator class="q-my-md" />
+      </q-list>
+      <q-list padding>
+        <q-item
+          v-for="link in links2"
           :key="link.text"
           v-ripple
           clickable
@@ -85,4 +102,7 @@ const links1 = [
   { icon: "subscriptions", text: "Invoice Management", path: "/admin/invoices" },
 ];
 
+const links2 = [
+  { icon: "logout", text: "Log Out", path: "/" }
+];
 </script>

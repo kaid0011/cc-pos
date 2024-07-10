@@ -10,7 +10,7 @@
     />
 
     <!-- Items Table -->
-    <q-table :rows="items" :columns="columns" row-key="id">
+    <q-table :rows="items" :columns="columns" row-key="id" separator="cell">
       <template v-slot:body-cell-actions="props">
         <q-td :props="props" class="q-gutter-x-md">
           <q-btn

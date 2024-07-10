@@ -7,6 +7,7 @@
         :rows="pendingInvoices"
         :columns="columns"
         row-key="invoice_no"
+        separator="cell"
       >
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-md">
@@ -25,6 +26,7 @@
         :rows="ongoingInvoices"
         :columns="columns"
         row-key="invoice_no"
+        separator="cell"
       >
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-md">
@@ -53,6 +55,7 @@
         :rows="returnedInvoices"
         :columns="columns"
         row-key="invoice_no"
+        separator="cell"
       >
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="q-gutter-x-md">

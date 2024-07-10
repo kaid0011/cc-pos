@@ -163,6 +163,7 @@
                 label="Upload Customer Information"
                 dense
                 clearable
+                required
                 class="q-pa-none"
               >
                 <template v-slot:before>
@@ -385,6 +386,11 @@
       </q-card>
     </q-dialog>
   </div>
+  <q-btn 
+      icon="logout" 
+      @click="goToHome" 
+      class="q-btn--flat q-btn--dense absolute-top-right bg-negative text-black q-ma-xs" 
+    />
 </template>
 
 <script setup>
@@ -398,7 +404,14 @@ import {
   getMaxTagNo,
   uploadPhoto,
   updateInvoiceWithPhoto
-} from "@/../supabase/api/invoices.js"; // Adjust the path based on your project's structure
+} from "@/../supabase/api/invoices.js";
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const goToHome = () => {
+  router.push({ name: 'Home' });
+};
 
 const model = ref("Please wait...");
 const manufacturer = ref("Please wait...");
@@ -684,9 +697,19 @@ const switchTransaction = () => {
 
 const submitTransaction = async () => {
   try {
+    // Check if there is an image
+    const currentImage = currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+    if (!currentImage) {
+      throw new Error("Please upload customer information.");
+    }
+
+    // Check if there is at least one row in the table
+    if (transactionItems.value.length === 0) {
+      throw new Error("Please add at least one item to the transaction.");
+    }
+
     // Upload the photo to Supabase storage and get the URL
     let photoUrl = null;
-    const currentImage = currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
     if (currentImage) {
       photoUrl = await uploadPhoto(currentImage);
     }
@@ -750,9 +773,10 @@ const submitTransaction = async () => {
     }
   } catch (error) {
     console.error("Error submitting transaction:", error);
-    alert("Failed to submit transaction.");
+    alert(`Failed to submit transaction: ${error.message}`);
   }
 };
+
 
 </script>
 

@@ -1,44 +1,45 @@
 <template>
-  <!-- <div v-if="session" :session="session"> -->
   <q-layout view="hHh lpR fFf">
-    <!-- <TheNavigation /> -->
-    <!-- <MenuLayout></MenuLayout> -->
+    <div v-if="!isProductionRoute">
+      <MenuLayout />
+    </div>
     <q-page-container class="app-page">
       <q-page>
         <router-view />
       </q-page>
     </q-page-container>
   </q-layout>
-  <!-- </div> -->
-  <!-- <AuthenticationPage v-else /> -->
 </template>
 
 <script setup>
-// import TheNavigation from "@/components/TheNavigation.vue";
-// import AuthenticationPage from "@/views/authentication/AuthenticationPage.vue";
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import MenuLayout from "@/components/MenuLayout.vue";
-import { onMounted, ref } from "vue";
-import { supabase } from "@/../supabase/config.js";
+// import { supabase } from "@/../supabase/config.js";
+
+const route = useRoute();
+const isProductionRoute = computed(() => route.name === 'Production' || route.name === 'Production Login' || route.name === 'Admin Login' || route.name === 'Home');
 
 const session = ref();
 
+// Uncomment if you need session-based logic
 // onMounted(() => {
 //   supabase.auth.getSession().then(({ data }) => {
-//     session.value = data.session
-//   })
+//     session.value = data.session;
+//   });
 
 //   supabase.auth.onAuthStateChange((_, _session) => {
-//     session.value = _session
-//   })
-// })
+//     session.value = _session;
+//   });
+// });
 </script>
+
 <style scoped>
 .app-page {
   margin: 0;
   padding: 0;
   position: relative;
   overflow: auto;
-  /* background-color: rgba(0, 0, 0, 0.5); */
   width: 100vw;
   height: 100vh;
 }
@@ -50,7 +51,6 @@ const session = ref();
   left: 0;
   width: 100%;
   height: 100%;
-  /* background: url("@/assets/images/auth_bg.jpg") no-repeat center center; */
   background-size: cover;
   z-index: -1; /* Place the pseudo-element behind the content */
 }

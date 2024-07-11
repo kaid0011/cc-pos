@@ -19,7 +19,7 @@
   const router = useRouter()
   
   const goToProduction = () => {
-    router.push({ name: 'Production' })
+    router.push({ name: 'Dashboard' })
   }
   </script>
   

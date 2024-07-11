@@ -1,8 +1,5 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <div v-if="!isProductionRoute">
-      <MenuLayout />
-    </div>
     <q-page-container class="app-page">
       <q-page>
         <router-view />
@@ -12,15 +9,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
-import MenuLayout from "@/components/MenuLayout.vue";
+// import { ref } from 'vue';
 // import { supabase } from "@/../supabase/config.js";
 
-const route = useRoute();
-const isProductionRoute = computed(() => route.name === 'Production' || route.name === 'Production Login' || route.name === 'Admin Login' || route.name === 'Home');
-
-const session = ref();
+// const session = ref();
 
 // Uncomment if you need session-based logic
 // onMounted(() => {

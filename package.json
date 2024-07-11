@@ -17,6 +17,7 @@
     "@ionic/pwa-elements": "^3.3.0",
     "@quasar/extras": "^1.16.11",
     "@supabase/supabase-js": "^2.43.5",
+    "expo-doctor": "^1.6.1",
     "quasar": "^2.16.4",
     "vue": "^3.4.21",
     "vue-lazyload": "^3.0.0",

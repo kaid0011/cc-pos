@@ -13,7 +13,7 @@
             :key="category.name"
             :name="category.name"
             :icon="category.icon"
-            :label="category.label"
+            :label="$t(category.name)"
           />
         </q-tabs>
 
@@ -26,7 +26,7 @@
         >
           <q-tab-panel
             v-for="category in categories"
-            :key="category.name"
+            :key="category.id"
             :name="category.name"
             class="q-pa-md"
           >
@@ -46,7 +46,7 @@
                       <q-item>
                         <q-item-section>
                           <q-item-label class="text-bold">{{
-                            item.name
+                            $t(`itemsList.${item.name}`)
                           }}</q-item-label>
                         </q-item-section>
                       </q-item>
@@ -68,11 +68,11 @@
         <div class="list-area">
           <div class="list-header q-py-md">
             <p class="q-ma-none text-bold">
-              Transaction
+              {{ $t("transaction") }}
               <span class="text-primary text-h6"
                 >'{{ currentTransaction }}'</span
               >
-              Items
+              {{ $t("items") }}
             </p>
           </div>
           <div class="scrollable-list">
@@ -82,7 +82,7 @@
               row-key="name"
               flat
               separator="cell"
-              no-data-label="No items in transaction"
+              :no-data-label="$t('no_items_in_transaction')"
               virtual-scroll
               v-model:pagination="pagination"
               :rows-per-page-options="[0]"
@@ -93,7 +93,7 @@
               <template v-slot:body-cell-name="props">
                 <q-td :props="props" class="name-column">
                   <p class="q-ma-none text-left wrap-text">
-                    {{ props.row.name }}
+                    {{ $t(`itemsList.${props.row.name}`) }} <span> {{ props.row.suffix }} </span>
                   </p>
                 </q-td>
               </template>
@@ -140,7 +140,9 @@
               </template>
               <template v-slot:footer="props">
                 <q-tr :props="props">
-                  <q-td class="text-left"><strong>Total</strong></q-td>
+                  <q-td class="text-left"
+                    ><strong>{{ $t("total") }}</strong></q-td
+                  >
                   <q-td class="text-center"
                     ><strong>${{ totalPrices.toFixed(2) }}</strong></q-td
                   >
@@ -156,11 +158,12 @@
         <div class="customer-area q-pa-md">
           <div class="flex items-center q-col-gutter-sm">
             <div class="col auto-width">
+              <div class="text-caption text-uppercase">{{ t('click_upload') }}</div>
               <q-file
                 filled
                 bottom-slots
                 v-model="currentImage"
-                label="Upload Customer Information"
+                :label="$t('upload_customer_info')"
                 dense
                 clearable
                 required
@@ -182,7 +185,7 @@
                 icon="visibility"
                 @click="viewImage"
               ></q-btn>
-              <!-- <div v-if="photoUri">Photo URI: {{ photoUri }}</div> -->
+              <div class="text-caption text-uppercase">{{ t('view') }}</div>
             </div>
             <div class="col-1">
               <q-btn
@@ -192,7 +195,7 @@
                 icon="photo_camera"
                 @click="openCamera"
               ></q-btn>
-              <!-- <div v-if="photoUri">Photo URI: {{ photoUri }}</div> -->
+              <div class="text-caption text-uppercase">{{ t('camera') }}</div>
             </div>
           </div>
         </div>
@@ -200,7 +203,7 @@
           <div class="row q-col-gutter-sm">
             <div class="col-4">
               <q-btn
-                label="RESET"
+                :label="$t('reset')"
                 push
                 class="action-buttons bg-negative text-white full-width q-py-sm"
                 @click="confirmCancel"
@@ -208,7 +211,7 @@
             </div>
             <div class="col-4">
               <q-btn
-                label="SWITCH"
+                :label="$t('switch')"
                 push
                 class="action-buttons bg-warning full-width q-py-sm"
                 @click="switchTransaction"
@@ -216,7 +219,7 @@
             </div>
             <div class="col-4">
               <q-btn
-                label="SUBMIT"
+                :label="$t('submit')"
                 push
                 class="action-buttons bg-positive text-white full-width q-py-sm"
                 @click="submitTransaction"
@@ -232,7 +235,9 @@
         <q-bar>
           <q-space></q-space>
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">{{
+              $t("close")
+            }}</q-tooltip>
           </q-btn>
         </q-bar>
         <q-card-section>
@@ -249,7 +254,9 @@
         <q-bar>
           <q-space></q-space>
           <q-btn dense flat icon="close" v-close-popup>
-            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">{{
+              $t("close")
+            }}</q-tooltip>
           </q-btn>
         </q-bar>
         <q-card-section class="column items-center q-gutter-y-sm">
@@ -257,14 +264,16 @@
             :src="selectedItem?.imageUrl"
             style="height: 150px; width: 150px; object-fit: cover"
           />
-          <div class="text-h6 text-center">{{ selectedItem?.name }}</div>
+          <div class="text-h6 text-center">{{ $t(`itemsList.${selectedItem?.name}`) }}</div>
 
           <div
             v-if="selectedItem?.laundry_price !== null"
             class="row items-center q-pa-sm"
           >
             <div class="col-12 text-center q-pb-md">
-              Laundry - ${{ selectedItem?.laundry_price.toFixed(2) }}
+              {{ $t("laundry") }} - ${{
+                selectedItem?.laundry_price.toFixed(2)
+              }}
             </div>
             <q-btn
               push
@@ -290,7 +299,9 @@
             class="row items-center q-pa-sm"
           >
             <div class="col-12 text-center q-pb-md">
-              Dry Clean - ${{ selectedItem?.dryclean_price.toFixed(2) }}
+              {{ $t("dry_clean") }} - ${{
+                selectedItem?.dryclean_price.toFixed(2)
+              }}
             </div>
             <q-btn
               push
@@ -316,7 +327,9 @@
             class="row items-center q-pa-sm"
           >
             <div class="col-12 text-center q-pb-md">
-              Pressing Only - ${{ selectedItem?.pressing_price.toFixed(2) }}
+              {{ $t("pressing_only") }} - ${{
+                selectedItem?.pressing_price.toFixed(2)
+              }}
             </div>
             <q-btn
               push
@@ -342,7 +355,9 @@
             class="row items-center q-pa-sm"
           >
             <div class="col-12 text-center q-pb-md">
-              Others - ${{ selectedItem?.others_price.toFixed(2) }}
+              {{ $t("others_service") }} - ${{
+                selectedItem?.others_price.toFixed(2)
+              }}
             </div>
             <q-btn
               push
@@ -366,7 +381,7 @@
         <q-card-actions>
           <q-btn
             class="full-width dialog-buttons"
-            label="Add Item"
+            :label="$t('add_item')"
             color="primary"
             @click="addToTransaction"
           />
@@ -380,17 +395,25 @@
           <span>{{ confirmationMessage }}</span>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn push label="Cancel" color="primary" v-close-popup />
-          <q-btn push label="Confirm" color="negative" @click="confirmAction" />
+          <q-btn push :label="$t('cancel')" color="primary" v-close-popup />
+          <q-btn
+            push
+            :label="$t('confirm')"
+            color="negative"
+            @click="confirmAction"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
   </div>
-  <q-btn 
-      icon="logout" 
-      @click="goToHome" 
-      class="q-btn--flat q-btn--dense absolute-top-right bg-negative text-black q-ma-xs" 
+  <div class="absolute-top-right q-gutter-xs q-ma-xs">
+    <q-btn @click="toggleLanguage" class="q-btn--flat q-btn--dense bg-purple text-black" icon="translate" />
+    <q-btn
+      icon="logout"
+      @click="goToHome"
+      class="q-btn--flat q-btn--dense bg-negative text-black"
     />
+  </div>
 </template>
 
 <script setup>
@@ -403,15 +426,29 @@ import {
   insertTransactions,
   getMaxTagNo,
   uploadPhoto,
-  updateInvoiceWithPhoto
+  updateInvoiceWithPhoto,
 } from "@/../supabase/api/invoices.js";
-import { useRouter } from 'vue-router';
+import { useRouter } from "vue-router";
 
 const router = useRouter();
 
 const goToHome = () => {
-  router.push({ name: 'Home' });
+  router.push({ name: "Home" });
 };
+
+import { useI18n } from 'vue-i18n';
+  
+
+const { locale } = useI18n();
+const currentLanguage = ref(locale.value === 'en' ? '中文' : 'English');
+
+const toggleLanguage = () => {
+  locale.value = locale.value === 'en' ? 'zh' : 'en';
+};
+
+watch(locale, (newLocale) => {
+  currentLanguage.value = newLocale === 'en' ? '中文' : 'English';
+});
 
 const model = ref("Please wait...");
 const manufacturer = ref("Please wait...");
@@ -422,7 +459,9 @@ const cam_dialog = ref(false);
 
 const currentImage = computed({
   get() {
-    return currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+    return currentTransaction.value === "A"
+      ? cinfo_imageA.value
+      : cinfo_imageB.value;
   },
   set(value) {
     if (currentTransaction.value === "A") {
@@ -453,8 +492,10 @@ const openCamera = async () => {
     const response = await fetch(photoUri.value);
     const blob = await response.blob();
     const timestamp = new Date().getTime();
-    const fileObject = new File([blob], `photo_${timestamp}.jpg`, { type: blob.type });
-    
+    const fileObject = new File([blob], `photo_${timestamp}.jpg`, {
+      type: blob.type,
+    });
+
     // Set the file object in the q-file component
     if (currentTransaction.value === "A") {
       cinfo_imageA.value = fileObject;
@@ -462,12 +503,13 @@ const openCamera = async () => {
       cinfo_imageB.value = fileObject;
     }
   } catch (error) {
-    console.error('Error opening camera:', error);
+    console.error("Error opening camera:", error);
   }
 };
 
 const viewImage = () => {
-  const currentImage = currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+  const currentImage =
+    currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
   if (currentImage) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -503,11 +545,13 @@ const transactionB = ref([]);
 const currentTransaction = ref("A");
 let confirmAction = null;
 
-const columns = [
+const { t } = useI18n();
+
+const columns = computed(() => [
   {
     name: "name",
     required: true,
-    label: "Item",
+    label: t('item'),
     align: "left",
     field: (row) => row.name,
     format: (val) => `${val}`,
@@ -516,7 +560,7 @@ const columns = [
   {
     name: "price",
     required: true,
-    label: "Price",
+    label: t('price'),
     align: "center",
     field: "price",
     format: (val) => `$${val}`,
@@ -525,13 +569,17 @@ const columns = [
   {
     name: "quantity",
     required: true,
-    label: "Quantity",
+    label: t('quantity'),
     align: "center",
     field: "quantity",
     sortable: true,
   },
-  { name: "actions", required: true, align: "center" },
-];
+  {
+    name: "actions",
+    required: true,
+    align: "center"
+  },
+]);
 
 const categories = ref([
   { name: "clothings", icon: "fas fa-tshirt", label: "Clothings", items: [] },
@@ -543,7 +591,7 @@ const categories = ref([
     items: [],
   },
   {
-    name: "onsite-cleaning",
+    name: "onsite_cleaning",
     icon: "fas fa-broom",
     label: "Onsite Cleaning",
     items: [],
@@ -618,8 +666,10 @@ const addToTransaction = () => {
 
   for (const [key, suffix] of Object.entries(services)) {
     if (quantities.value[key] > 0) {
-      const name = `${selectedItem.value.name} ${suffix}`;
-      const existingItem = transactionItems.value.find((i) => i.name === name);
+      const name = selectedItem.value.name;
+      const existingItem = transactionItems.value.find(
+        (i) => i.name === name && i.suffix === suffix
+      );
       let price = 0;
       switch (suffix) {
         case "(L)":
@@ -640,7 +690,9 @@ const addToTransaction = () => {
         existingItem.price = price; // Update the price
       } else {
         transactionItems.value.push({
+          id: selectedItem.value.id,
           name: name,
+          suffix: suffix,
           quantity: quantities.value[key],
           price: price,
         });
@@ -649,6 +701,7 @@ const addToTransaction = () => {
   }
   dialog.value = false;
 };
+
 
 const increaseItemQuantity = (item) => {
   item.quantity++;
@@ -674,7 +727,7 @@ const confirmRemove = (item) => {
     }
     confirmationDialog.value = false;
   };
-  confirmationMessage.value = `Are you sure you want to remove ${item.name} from the transaction?`;
+  confirmationMessage.value = t('are_you_sure_remove', { item: item.name });
   confirmationDialog.value = true;
 };
 
@@ -687,7 +740,7 @@ const confirmCancel = () => {
     }
     confirmationDialog.value = false;
   };
-  confirmationMessage.value = `Are you sure you want to reset the entire transaction?`;
+  confirmationMessage.value = t('are_you_sure_reset');
   confirmationDialog.value = true;
 };
 
@@ -698,14 +751,17 @@ const switchTransaction = () => {
 const submitTransaction = async () => {
   try {
     // Check if there is an image
-    const currentImage = currentTransaction.value === "A" ? cinfo_imageA.value : cinfo_imageB.value;
+    const currentImage =
+      currentTransaction.value === "A"
+        ? cinfo_imageA.value
+        : cinfo_imageB.value;
     if (!currentImage) {
-      throw new Error("Please upload customer information.");
+      throw new Error(t('upload_customer_info'));
     }
 
     // Check if there is at least one row in the table
     if (transactionItems.value.length === 0) {
-      throw new Error("Please add at least one item to the transaction.");
+      throw new Error(t('add_item'));
     }
 
     // Upload the photo to Supabase storage and get the URL
@@ -721,7 +777,13 @@ const submitTransaction = async () => {
       new Date().setDate(new Date().getDate() + 7)
     ).toISOString(); // Set ready by date to one week later
     const status = "Pending";
-    const invoice = await insertInvoice(invoiceNo, dateTime, readyBy, status, photoUrl);
+    const invoice = await insertInvoice(
+      invoiceNo,
+      dateTime,
+      readyBy,
+      status,
+      photoUrl
+    );
     const invoiceId = invoice.id;
 
     // Get the max tag_no
@@ -731,7 +793,7 @@ const submitTransaction = async () => {
     let serialNo = 1;
     let tagNo = maxTagNo + 1;
     const transactionsData = transactionItems.value.flatMap((item) => {
-      const typeSuffix = item.name.match(/\((L|DC|PO|O)\)$/);
+      const typeSuffix = item.suffix.match(/\((L|DC|PO|O)\)$/);
       let type = "";
       if (typeSuffix) {
         switch (typeSuffix[1]) {
@@ -763,7 +825,7 @@ const submitTransaction = async () => {
     // Insert multiple rows into transactions table
     await insertTransactions(transactionsData);
 
-    alert("Transaction submitted successfully!");
+    alert(t('submit_transaction'));
     if (currentTransaction.value === "A") {
       transactionA.value = [];
       cinfo_imageA.value = null;
@@ -773,11 +835,9 @@ const submitTransaction = async () => {
     }
   } catch (error) {
     console.error("Error submitting transaction:", error);
-    alert(`Failed to submit transaction: ${error.message}`);
+    alert(t('failed_submit_transaction', { error: error.message }));
   }
 };
-
-
 </script>
 
 <style scoped>
@@ -841,7 +901,7 @@ const submitTransaction = async () => {
 .list-buttons {
   width: 100%;
   height: 200px;
-  background-color: #f2f2f2;
+  background-color: #ffffff;
 }
 
 .list-cards {

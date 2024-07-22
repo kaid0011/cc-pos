@@ -22,7 +22,7 @@
           animated
           transition-prev="jump-up"
           transition-next="jump-down"
-          class="bg-primary"
+          class="tab-list"
         >
           <q-tab-panel
             v-for="category in categories"
@@ -66,7 +66,7 @@
       </div>
       <div class="right-container col-4 q-pl-md">
         <div class="list-area">
-          <div class="list-header q-py-md">
+          <div class="list-header q-py-xs">
             <p class="q-ma-none text-bold">
               {{ $t("transaction") }}
               <span class="text-primary text-h6"
@@ -93,7 +93,8 @@
               <template v-slot:body-cell-name="props">
                 <q-td :props="props" class="name-column">
                   <p class="q-ma-none text-left wrap-text">
-                    {{ $t(`itemsList.${props.row.name}`) }} <span> {{ props.row.suffix }} </span>
+                    {{ $t(`itemsList.${props.row.name}`) }}
+                    <span> {{ props.row.suffix }} </span>
                   </p>
                 </q-td>
               </template>
@@ -156,46 +157,24 @@
           </div>
         </div>
         <div class="customer-area q-pa-md">
-          <div class="flex items-center q-col-gutter-sm">
-            <div class="col auto-width">
-              <div class="text-caption text-uppercase">{{ t('click_upload') }}</div>
-              <q-file
-                filled
-                bottom-slots
-                v-model="currentImage"
-                :label="$t('upload_customer_info')"
-                dense
-                clearable
-                required
-                class="q-pa-none"
-              >
-                <template v-slot:before>
-                  <q-icon name="folder_open" />
-                </template>
-                <template v-slot:append>
-                  <q-btn round dense flat icon="add" />
-                </template>
-              </q-file>
-            </div>
-            <div class="col-1">
+          <div class="row items-center q-col-gutter-sm">
+            <div class="col-6">
               <q-btn
                 dense
-                flat
-                class="bg-orange-10 text-white rounded-borders"
-                icon="visibility"
-                @click="viewImage"
+                push 
+                class="bg-orange-10 text-white rounded-borders full-width"
+                label="Upload Image"
+                @click="showUploadImageDialog = true"
               ></q-btn>
-              <div class="text-caption text-uppercase">{{ t('view') }}</div>
             </div>
-            <div class="col-1">
+            <div class="col-6">
               <q-btn
                 dense
-                flat
-                class="bg-pink-10 text-white rounded-borders"
-                icon="photo_camera"
-                @click="openCamera"
+                push
+                class="bg-blue-10 text-white rounded-borders full-width"
+                label="Customer Info"
+                @click="showCustomerInfoDialog = true"
               ></q-btn>
-              <div class="text-caption text-uppercase">{{ t('camera') }}</div>
             </div>
           </div>
         </div>
@@ -264,7 +243,9 @@
             :src="selectedItem?.imageUrl"
             style="height: 150px; width: 150px; object-fit: cover"
           />
-          <div class="text-h6 text-center">{{ $t(`itemsList.${selectedItem?.name}`) }}</div>
+          <div class="text-h6 text-center">
+            {{ $t(`itemsList.${selectedItem?.name}`) }}
+          </div>
 
           <div
             v-if="selectedItem?.laundry_price !== null"
@@ -388,6 +369,131 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="showCustomerInfoDialog" backdrop-filter="brightness(50%)">
+      <q-card class="dialog-customer">
+        <q-bar>
+          <q-space></q-space>
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip class="bg-white text-primary">{{
+              $t("close")
+            }}</q-tooltip>
+          </q-btn>
+        </q-bar>
+        <q-card-section class="column items-center q-gutter-y-md">
+          <div class="full-width">
+            <div class="text-caption text-uppercase">Customer Name</div>
+          <q-input
+          v-model="currentCustomer.name"
+          filled
+          lazy-rules
+          class="full-width"
+        />
+          </div>
+          <div class="full-width">
+            <div class="text-caption text-uppercase">Contact Number</div>
+          <q-input
+          v-model="currentCustomer.contactNo"
+          type="tel"
+          filled
+          lazy-rules
+          class="full-width"
+        />
+          </div>
+          <div class="full-width">
+            <div class="text-caption text-uppercase">Delivery Address</div>
+          <q-input
+          v-model="currentCustomer.address"
+          filled
+          lazy-rules
+          class="full-width"
+        />
+          </div>
+          <div class="full-width">
+            <div class="text-caption text-uppercase">Remarks</div>
+          <q-input
+          v-model="currentCustomer.remarks"
+          filled
+          type="textarea"
+          class="full-width"
+        />
+          </div>
+        </q-card-section>
+        <q-card-actions>
+          <q-btn
+            class="full-width dialog-buttons"
+            :label="$t('add_details')"
+            color="primary"
+            v-close-popup
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="showUploadImageDialog">
+      <q-card>
+        <q-bar>
+          <q-space></q-space>
+          <q-btn dense flat icon="close" v-close-popup>
+            <q-tooltip class="bg-white text-primary">{{
+              $t("close")
+            }}</q-tooltip>
+          </q-btn>
+        </q-bar>
+        <q-card-section>
+          <div class="upload-image flex items-end q-col-gutter-sm">
+            <div class="col auto-width">
+              <q-file
+                filled
+                bottom-slots
+                v-model="currentImage"
+                :label="$t('click_here')"
+                dense
+                clearable
+                required
+                class="upload-input q-pa-none"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="cloud_upload" @click.stop.prevent></q-icon>
+                </template>
+              </q-file>
+              <div class="text-caption text-uppercase">
+                {{ t("click_upload") }}
+              </div>
+            </div>
+            <div class="col-1">
+              <q-btn
+                dense
+                flat
+                class="bg-pink-10 text-white rounded-borders"
+                icon="photo_camera"
+                @click="openCamera"
+              ></q-btn>
+              <div class="text-caption text-uppercase">{{ t("camera") }}</div>
+            </div>
+            <div class="col-1">
+              <q-btn
+                dense
+                flat
+                class="bg-orange-10 text-white rounded-borders"
+                icon="visibility"
+                @click="viewImage"
+              ></q-btn>
+              <div class="text-caption text-uppercase">{{ t("view") }}</div>
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions>
+          <q-btn
+            class="full-width dialog-buttons"
+            :label="$t('add_details')"
+            color="primary"
+            v-close-popup
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <q-dialog v-model="confirmationDialog" persistent>
       <q-card>
         <q-card-section class="row items-center">
@@ -407,7 +513,11 @@
     </q-dialog>
   </div>
   <div class="absolute-top-right q-gutter-xs q-ma-xs">
-    <q-btn @click="toggleLanguage" class="q-btn--flat q-btn--dense bg-purple text-black" icon="translate" />
+    <q-btn
+      @click="toggleLanguage"
+      class="q-btn--flat q-btn--dense bg-purple text-black"
+      icon="translate"
+    />
     <q-btn
       icon="logout"
       @click="goToHome"
@@ -423,6 +533,7 @@ import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { fetchAllItems } from "@/../supabase/api/item_list.js";
 import {
   insertInvoice,
+  insertCustomer,
   insertTransactions,
   getMaxTagNo,
   uploadPhoto,
@@ -436,18 +547,17 @@ const goToHome = () => {
   router.push({ name: "Home" });
 };
 
-import { useI18n } from 'vue-i18n';
-  
+import { useI18n } from "vue-i18n";
 
 const { locale } = useI18n();
-const currentLanguage = ref(locale.value === 'en' ? '中文' : 'English');
+const currentLanguage = ref(locale.value === "en" ? "中文" : "English");
 
 const toggleLanguage = () => {
-  locale.value = locale.value === 'en' ? 'zh' : 'en';
+  locale.value = locale.value === "en" ? "zh" : "en";
 };
 
 watch(locale, (newLocale) => {
-  currentLanguage.value = newLocale === 'en' ? '中文' : 'English';
+  currentLanguage.value = newLocale === "en" ? "中文" : "English";
 });
 
 const model = ref("Please wait...");
@@ -488,7 +598,6 @@ const openCamera = async () => {
     });
     photoUri.value = capturedPhoto.webPath;
 
-    // Convert the photo URI to a file object
     const response = await fetch(photoUri.value);
     const blob = await response.blob();
     const timestamp = new Date().getTime();
@@ -496,7 +605,6 @@ const openCamera = async () => {
       type: blob.type,
     });
 
-    // Set the file object in the q-file component
     if (currentTransaction.value === "A") {
       cinfo_imageA.value = fileObject;
     } else {
@@ -522,7 +630,6 @@ const viewImage = () => {
   }
 };
 
-// Watch for changes in the file input
 watch([cinfo_imageA, cinfo_imageB], (newFile) => {
   if (!newFile) {
     photoUri.value = null;
@@ -531,6 +638,35 @@ watch([cinfo_imageA, cinfo_imageB], (newFile) => {
 
 const tab = ref("clothings");
 const dialog = ref(false);
+const showUploadImageDialog = ref(false);
+const showCustomerInfoDialog = ref(false);
+const customerA = ref({
+  name: '',
+  contactNo: '',
+  address: '',
+  remarks: ''
+});
+const customerB = ref({
+  name: '',
+  contactNo: '',
+  address: '',
+  remarks: ''
+});
+
+const currentCustomer = computed({
+  get() {
+    return currentTransaction.value === "A"
+      ? customerA.value
+      : customerB.value;
+  },
+  set(value) {
+    if (currentTransaction.value === "A") {
+      customerA.value = value;
+    } else {
+      customerB.value = value;
+    }
+  },
+});
 const confirmationDialog = ref(false);
 const confirmationMessage = ref("");
 const selectedItem = ref(null);
@@ -551,7 +687,7 @@ const columns = computed(() => [
   {
     name: "name",
     required: true,
-    label: t('item'),
+    label: t("item"),
     align: "left",
     field: (row) => row.name,
     format: (val) => `${val}`,
@@ -560,7 +696,7 @@ const columns = computed(() => [
   {
     name: "price",
     required: true,
-    label: t('price'),
+    label: t("price"),
     align: "center",
     field: "price",
     format: (val) => `$${val}`,
@@ -569,7 +705,7 @@ const columns = computed(() => [
   {
     name: "quantity",
     required: true,
-    label: t('quantity'),
+    label: t("quantity"),
     align: "center",
     field: "quantity",
     sortable: true,
@@ -577,7 +713,7 @@ const columns = computed(() => [
   {
     name: "actions",
     required: true,
-    align: "center"
+    align: "center",
   },
 ]);
 
@@ -611,7 +747,7 @@ onMounted(async () => {
   categories.value.forEach((category) => {
     category.items = allItems
       .filter((item) => item.category === category.label)
-      .sort((a, b) => a.name.localeCompare(b.name)); // Sort items alphabetically
+      .sort((a, b) => a.name.localeCompare(b.name));
   });
 });
 
@@ -686,8 +822,8 @@ const addToTransaction = () => {
           break;
       }
       if (existingItem) {
-        existingItem.quantity += quantities.value[key]; // Sum the quantities
-        existingItem.price = price; // Update the price
+        existingItem.quantity += quantities.value[key];
+        existingItem.price = price;
       } else {
         transactionItems.value.push({
           id: selectedItem.value.id,
@@ -702,6 +838,15 @@ const addToTransaction = () => {
   dialog.value = false;
 };
 
+const openCustomer = (item) => {
+  selectedItem.value = item;
+
+  dialog_customer.value = true;
+};
+
+const addCustomerDetails = () => {
+  dialog_customer.value = false;
+};
 
 const increaseItemQuantity = (item) => {
   item.quantity++;
@@ -727,7 +872,7 @@ const confirmRemove = (item) => {
     }
     confirmationDialog.value = false;
   };
-  confirmationMessage.value = t('are_you_sure_remove', { item: item.name });
+  confirmationMessage.value = t("are_you_sure_remove", { item: item.name });
   confirmationDialog.value = true;
 };
 
@@ -735,12 +880,16 @@ const confirmCancel = () => {
   confirmAction = () => {
     if (currentTransaction.value === "A") {
       transactionA.value = [];
+      customerA.value = [];
+      cinfo_imageA.value = [];
     } else {
       transactionB.value = [];
+      customerB.value = [];
+      cinfo_imageB.value = [];
     }
     confirmationDialog.value = false;
   };
-  confirmationMessage.value = t('are_you_sure_reset');
+  confirmationMessage.value = t("are_you_sure_reset");
   confirmationDialog.value = true;
 };
 
@@ -750,46 +899,40 @@ const switchTransaction = () => {
 
 const submitTransaction = async () => {
   try {
-    // Check if there is an image
     const currentImage =
       currentTransaction.value === "A"
         ? cinfo_imageA.value
         : cinfo_imageB.value;
     if (!currentImage) {
-      throw new Error(t('upload_customer_info'));
+      throw new Error(t("upload_customer_info"));
     }
 
-    // Check if there is at least one row in the table
     if (transactionItems.value.length === 0) {
-      throw new Error(t('add_item'));
+      throw new Error(t("add_item"));
     }
 
-    // Upload the photo to Supabase storage and get the URL
     let photoUrl = null;
     if (currentImage) {
       photoUrl = await uploadPhoto(currentImage);
     }
 
-    // Insert a new invoice row with the customer photo URL
-    const invoiceNo = `INV-${Date.now()}`;
+    const orderNo = `O-${Date.now()}`;
     const dateTime = new Date().toISOString();
     const readyBy = new Date(
       new Date().setDate(new Date().getDate() + 7)
-    ).toISOString(); // Set ready by date to one week later
+    ).toISOString();
     const status = "Pending";
-    const invoice = await insertInvoice(
-      invoiceNo,
+    const order = await insertInvoice(
+      orderNo,
       dateTime,
       readyBy,
       status,
       photoUrl
     );
-    const invoiceId = invoice.id;
+    const invoiceId = order.id;
 
-    // Get the max tag_no
     const maxTagNo = (await getMaxTagNo()) || 0;
 
-    // Prepare transactions data
     let serialNo = 1;
     let tagNo = maxTagNo + 1;
     const transactionsData = transactionItems.value.flatMap((item) => {
@@ -822,10 +965,20 @@ const submitTransaction = async () => {
       }));
     });
 
-    // Insert multiple rows into transactions table
     await insertTransactions(transactionsData);
 
-    alert(t('submit_transaction'));
+    // Insert customer details into the customers table
+    const currentCustomer =
+      currentTransaction.value === "A" ? customerA.value : customerB.value;
+    await insertCustomer({
+      name: currentCustomer.name,
+      contact_no: currentCustomer.contactNo,
+      del_address: currentCustomer.address,
+      remarks: currentCustomer.remarks,
+      invoice_id: invoiceId,
+    });
+
+    alert(t("submit_transaction"));
     if (currentTransaction.value === "A") {
       transactionA.value = [];
       cinfo_imageA.value = null;
@@ -835,10 +988,11 @@ const submitTransaction = async () => {
     }
   } catch (error) {
     console.error("Error submitting transaction:", error);
-    alert(t('failed_submit_transaction', { error: error.message }));
+    alert(t("failed_submit_transaction", { error: error.message }));
   }
 };
 </script>
+
 
 <style scoped>
 .container {
@@ -847,25 +1001,25 @@ const submitTransaction = async () => {
 }
 
 .list-area {
-  height: 65vh; /* Fixed height to enable scrolling */
+  height: 68vh; /* Fixed height to enable scrolling */
   background-color: #e9e9e9;
   overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .customer-area {
   margin-top: 2vh;
-  min-height: 12vh;
+  min-height: 11vh;
   background-color: #e9e9e9;
 }
 
 .action-area {
   margin-top: 2vh;
-  min-height: 14vh;
+  min-height: 12vh;
   background-color: #aaadb2;
 }
 
 .list-header {
-  background-color: #aaadb2;
+  background-color: #bebebe;
 }
 
 .scrollable-list {
@@ -895,7 +1049,11 @@ const submitTransaction = async () => {
 .q-tabs {
   max-height: 75px;
   min-height: 75px;
-  background-color: #b29852;
+  background-color: #cfa739;
+}
+
+.tab-list {
+  background-color: #164461 !important;
 }
 
 .list-buttons {
@@ -911,6 +1069,12 @@ const submitTransaction = async () => {
 .dialog-cards {
   max-height: 80vh;
   width: 200px;
+  background-color: #e9e9e9;
+}
+
+.dialog-customer {
+  max-height: 80vh;
+  width: 400px;
   background-color: #e9e9e9;
 }
 
@@ -936,7 +1100,7 @@ const submitTransaction = async () => {
 }
 
 .action-buttons {
-  height: 9vh;
+  height: 7vh;
   margin: 0;
 }
 
@@ -973,6 +1137,10 @@ const submitTransaction = async () => {
 
 .wrap-text {
   overflow-wrap: break-word;
+}
+
+.upload-input {
+  min-width: 200px;
 }
 
 /* Chrome, Safari, Edge, Opera */

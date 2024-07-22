@@ -1,10 +1,24 @@
 import { supabase } from '../config.js';
 
 // Function to insert a new invoice
-export const insertInvoice = async (invoice_no, date_time, ready_by, status, customer_info) => {
+export const insertInvoice = async (order_no, order_date_time, ready_by, status, customer_info) => {
   const { data, error } = await supabase
     .from('invoices')
-    .insert([{ invoice_no, date_time, ready_by, status, customer_info }])
+    .insert([{ order_no, order_date_time, ready_by, status, customer_info }])
+    .select();
+
+  if (error) { 
+    throw error;
+  }
+
+  return data[0];
+};
+
+// Function to insert a new customer
+export const insertCustomer = async (customerData) => {
+  const { data, error } = await supabase
+    .from('customers')
+    .insert([customerData])
     .select();
 
   if (error) {
@@ -13,6 +27,7 @@ export const insertInvoice = async (invoice_no, date_time, ready_by, status, cus
 
   return data[0];
 };
+
 
 // Function to insert multiple transactions
 export const insertTransactions = async (transactionsData) => {
@@ -53,17 +68,17 @@ export const getMaxTagNo = async () => {
     }
   }
 
-  export async function fetchInvoiceDetails(invoiceNo) {
+  export async function fetchInvoiceDetails(orderNo) {
     try {
       let { data, error } = await supabase
         .from('invoices')
         .select('*')
-        .eq('invoice_no', invoiceNo)
+        .eq('order_no', orderNo)
         .single(); // Use single to get a single record
   
       if (error) {
         if (error.code === 'PGRST116') {
-          throw new Error(`No invoice found with invoice_no: ${invoiceNo}`);
+          throw new Error(`No invoice found with order_no: ${orderNo}`);
         }
         throw error;
       }
@@ -94,21 +109,21 @@ export const getMaxTagNo = async () => {
     }
   }
 
-  export async function fetchTransactionsByInvoiceNo(invoiceNo) {
+  export async function fetchTransactionsByorderNo(orderNo) {
     try {
       // Fetch the invoice details first to get its id
       const { data: invoice } = await supabase
         .from('invoices')
         .select('id')
-        .eq('invoice_no', invoiceNo)
+        .eq('order_no', orderNo)
         .single();
   
       if (!invoice) {
-        throw new Error(`Invoice with invoice_no ${invoiceNo} not found`);
+        throw new Error(`Invoice with order_no ${orderNo} not found`);
       }
   
       // Now fetch transactions using the invoice id
-      return await fetchTransactionsByInvoiceId(invoice.id);
+      return await fetchTransactionsByInvoiceId(order.id);
     } catch (error) {
       console.error('Error fetching transactions by invoice no:', error);
       throw error;
@@ -119,8 +134,8 @@ export const getMaxTagNo = async () => {
     try {
       const { data, error } = await supabase
         .from('invoices')
-        .update({ status: invoice.status })
-        .eq('invoice_no', invoice.invoice_no);
+        .update({ status: order.status })
+        .eq('order_no', order.order_no);
   
       if (error) throw error;
   
@@ -133,10 +148,10 @@ export const getMaxTagNo = async () => {
 
   // Function to update invoice and transactions in the database
 export const updateInvoiceAndTransactionsInDatabase = async (invoice, transactions) => {
-  const { id, invoice_no, date_time, ready_by, status } = invoice;
+  const { id, order_no, order_date_time, ready_by, status } = invoice;
 
   const invoiceUpdate = {
-    date_time,
+    order_date_time,
     ready_by,
     status
   };
@@ -146,7 +161,7 @@ export const updateInvoiceAndTransactionsInDatabase = async (invoice, transactio
     const { data: invoiceData, error: invoiceError } = await supabase
       .from('invoices')
       .update(invoiceUpdate)
-      .eq('invoice_no', invoice_no);
+      .eq('order_no', order_no);
 
     if (invoiceError) {
       console.error('Error updating invoice:', invoiceError);

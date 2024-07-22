@@ -74,3 +74,13 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Font: Syne */
+@font-face {
+  font-family: font;
+  src: url(@/assets/fonts/font.ttf);
+}
+
+.my-font {
+  font-family: 'font';
+}

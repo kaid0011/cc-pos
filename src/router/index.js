@@ -1,12 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import Dashboard from '@/views/Dashboard.vue';
 // import AuthenticationPage from '@/views/authentication/AuthenticationPage.vue'
 
 const routes = [
   {path: '/', name: 'Production Login', component: () => import('@/views/LoginPage.vue')},
-    // {path: '/authentication', name: 'Authentication', component: AuthenticationPage},
-    // {path: '/clients', name: 'Clients Management', component: () => import('@/views/clients_management/ClientsManagement.vue')},
-    {path: '/dashboard', name: 'Dashboard', component: () => import('@/views/Dashboard.vue')},
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: Dashboard, // Static import for testing
+  },
 ]
 
 const router = createRouter({

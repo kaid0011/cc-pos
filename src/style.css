@@ -149,7 +149,7 @@ button:focus-visible {
 
 .list-buttons {
   width: 100%;
-  height: 200px;
+  height: 150px;
   background-color: #ffffff;
 }
 
@@ -159,7 +159,8 @@ button:focus-visible {
 
 .dialog-cards {
   max-height: 80vh;
-  width: 200px;
+  min-width: 90% !important;
+  max-width: 90% !important;
   background-color: #e9e9e9;
 }
 
@@ -187,7 +188,7 @@ button:focus-visible {
 
 .list-counter-buttons {
   padding: 5px;
-  font-size: 6px;
+  font-size: 8px !important;
   background-color: #b29852;
 }
 
@@ -250,4 +251,49 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+.dialog-additional-info {
+  max-width: 90% !important;
+  min-width: 90% !important;
+}
+
+.text-p {
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.q-btn {
+  font-size: 19px;
+}
+
+.q-input  {
+  font-size: 19px !important;
+}
+
+.q-checkbox  {
+  font-size: 19px !important;
+}
+
+.q-tab__label  {
+  font-size: 17px !important;
+  font-weight: 600;
+}
+
+.text-h6 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+}
+
+.search-input {
+  /* background-color: #e9e9e9 !important; */
+}
+
+th {
+  font-size: 17px !important;
+}
+
+.total-container {
+  background-color: #b0b0b0;
 }

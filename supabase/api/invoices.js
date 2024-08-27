@@ -10,11 +10,12 @@ export const insertOrder = async (
   contact_person,
   contact_person_no,
   del_address,
-  remarks
+  remarks,
+  contact_person_email
 ) => {
   const { data, error } = await supabase
     .from("orders_pos")
-    .insert([{ order_no, order_date_time, ready_by, status, image, contact_person, contact_person_no, del_address, remarks }])
+    .insert([{ order_no, order_date_time, ready_by, status, image, contact_person, contact_person_no, del_address, remarks, contact_person_email}])
     .select();
 
   if (error) {

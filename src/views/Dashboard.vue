@@ -1209,6 +1209,11 @@ const addToTransaction = () => {
   dialog.value = false;
 };
 
+// Functions to handle item quantity changes
+const increaseItemQuantity = (item) => {
+  item.quantity++;
+};
+
 const confirmDecrease = (item) => {
   if (item.quantity > 1) {
     item.quantity--;

@@ -68,9 +68,13 @@ export const getMaxTagNo = async () => {
 };
 
 export const getMaxOrderId = async () => {
+  // Get the current date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0];
+
   const { data, error } = await supabase
     .from("orders_pos")
     .select("id")
+    .eq("order_date_time", today) // Assuming 'created_at' is the timestamp column
     .order("id", { ascending: false })
     .limit(1)
     .single();
@@ -82,6 +86,7 @@ export const getMaxOrderId = async () => {
 
   return data ? data.id : 0;
 };
+
 
 // Upload the photo to Supabase storage
 export const uploadPhoto = async (file) => {

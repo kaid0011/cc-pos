@@ -3,7 +3,7 @@
     <!-- Main Container -->
     <div class="container row">
       <!-- Left Container: Search Bar, Tabs, and Items -->
-      <div class="left-container col-8">
+      <div class="left-container col-6">
         <!-- Category Tabs -->
         <q-tabs
           v-model="tab"
@@ -36,7 +36,9 @@
           >
             <!-- Search Bar -->
             <q-input
-            color="lime-11" bg-color="brown-3" filled
+              color="lime-11"
+              bg-color="brown-3"
+              filled
               debounce="300"
               :placeholder="$t('search_items')"
               v-model="searchQuery"
@@ -48,38 +50,69 @@
               </template>
             </q-input>
 
-            <div class="row q-pa-sm q-col-gutter-md item-card-container">
+            <!-- Sub-category Grouping -->
+            <div
+              v-for="(items, subCategory) in groupBySubCategory(category.items)"
+              :key="subCategory"
+            >
               <div
-                v-for="item in category.items"
-                :key="item.id"
-                class="item-card q-pa-xs col-2"
+                class="text-h5 text-uppercase text-grey-4 text-weight-bold q-pb-md"
               >
-                <q-btn
-                  push
-                  @click="openDialog(item)"
-                  class="list-buttons q-pa-none"
+                {{ subCategory }}
+              </div>
+              <!-- Sub-category Title -->
+
+              <!-- Items under each sub-category -->
+              <div class="row q-pa-sm q-col-gutter-md item-card-container">
+                <div
+                  v-for="item in items"
+                  :key="item.id"
+                  class="item-card q-pa-xs col-3"
                 >
-                  <q-card flat class="list-cards">
-                    <q-card-section class="q-pa-none">
-                      <q-item>
-                        <q-item-section>
-                          <div class="text-p text-bold">
-                            {{ $t(`itemsList.${item.name}`) }}
-                          </div>
-                        </q-item-section>
-                      </q-item>
-                    </q-card-section>
-                    <q-card-section
-                      v-if="showImages"
-                      class="item-image q-pa-none"
-                    >
-                      <q-img
-                        :src="item.imageUrl"
-                        style="height: 100px; width: 100px; object-fit: cover"
-                      />
-                    </q-card-section>
-                  </q-card>
-                </q-btn>
+                  <q-btn
+                    push
+                    @click="openDialog(item)"
+                    :class="[
+                      'list-buttons',
+                      getItemCardClass(item.sub_category),
+                    ]"
+                    class="q-pa-none"
+                  >
+                    <q-card flat class="list-cards">
+                      <q-card-section class="q-pa-none">
+                        <q-item>
+                          <q-item-section>
+                            <div
+                              class="text-p text-bold"
+                              style="line-height: 1.5"
+                            >
+                              {{ $t(`itemsList.${item.name}`) }}
+                              <span
+                                :class="{
+                                  'text-blue-9': item.unit === 'kg',
+                                  'text-pink': item.unit === 'sqft',
+                                  'text-orange-9':
+                                    item.unit !== 'kg' && item.unit !== 'sqft',
+                                }"
+                              >
+                                [{{ item.unit }}]
+                              </span>
+                            </div>
+                          </q-item-section>
+                        </q-item>
+                      </q-card-section>
+                      <q-card-section
+                        v-if="showImages"
+                        class="item-image q-pa-none"
+                      >
+                        <q-img
+                          :src="item.imageUrl"
+                          style="height: 100px; width: 100px; object-fit: cover"
+                        />
+                      </q-card-section>
+                    </q-card>
+                  </q-btn>
+                </div>
               </div>
             </div>
           </q-tab-panel>
@@ -87,121 +120,158 @@
       </div>
 
       <!-- Right Container: Transaction Details and Actions -->
-      <div class="right-container col-4 q-pl-md">
+      <div class="right-container col-6 q-pl-md">
         <!-- Transaction List -->
         <div class="list-area">
           <div class="list-header q-py-xs">
             <div class="text-p text-bold">
-              {{ $t('transaction') }}
-              <span class="text-primary text-h6">
-                '{{ currentTransaction }}'
+              <!-- <span>
+                <q-btn
+                  dense
+                  push
+                  class="bg-orange-10 text-white rounded-borders"
+                  :label="$t('switch')"
+                  @click="switchTransaction"
+                ></q-btn>
+              </span> -->
+              <span>
+                {{ $t("transaction") }}
+                <span class="text-primary text-h6">
+                  '{{ currentTransaction }}'
+                </span>
+                {{ $t("items") }}
               </span>
-              {{ $t('items') }}
             </div>
           </div>
+            <div class="row d-flex justify-center bg-grey-6">
+              <div class="table-cell col-4">
+                <div class="text-p text-left">
+                  {{ $t("item") }}
+                </div>
+              </div>
+
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">
+                  {{ $t("price") }}
+                </div>
+              </div>
+
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ $t("pieces") }}
+                </div>
+              </div>
+
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ $t("quantity") }}
+                </div>
+              </div>
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">{{ $t("total") }}</div>
+              </div>
+
+              <div class="table-cell col-2 d-flex justify-center"></div>
+            </div>
           <div class="scrollable-list">
-            <q-table
-              :rows="transactionItems"
-              :columns="columns"
-              row-key="name"
-              flat
-              separator="cell"
-              :no-data-label="$t('no_items_in_transaction')"
-              virtual-scroll
-              v-model:pagination="pagination"
-              :rows-per-page-options="[0]"
-              dense
-              class="scrollable-table"
-              hide-bottom
+            <!-- Transaction Items List -->
+            <div
+              class="row d-flex align-items-center"
+              v-for="(item, index) in transactionItems"
+              :key="item.name"
             >
-              <template v-slot:body-cell-name="props">
-                <q-td :props="props" class="name-column">
-                  <div class="text-p text-left wrap-text">
-                    {{ $t(`itemsList.${props.row.name}`) }}
-                    <span> {{ props.row.suffix }} </span>
-                  </div>
-                </q-td>
-              </template>
-              <template v-slot:body-cell-price="props">
-                <q-td :props="props" class="price-column">
-                  <div class="text-p text-center wrap-text">
-                    ${{ props.row.price }}
-                  </div>
-                </q-td>
-              </template>
-              <template v-slot:body-cell-quantity="props">
-                <q-td :props="props" class="quantity-column">
-                  <div class="row items-center justify-center">
-                    <q-btn
-                      flat
-                      class="list-counter-buttons"
-                      icon="remove"
-                      @click="confirmDecrease(props.row)"
-                    />
-                    <div class="list-quantity q-border rounded-borders q-mx-xs">
-                      <div
-                        class="text-p text-center q-px-sm q-ma-none wrap-text"
-                      >
-                        {{ props.row.quantity }}
-                      </div>
-                    </div>
-                    <q-btn
-                      flat
-                      class="list-counter-buttons"
-                      icon="add"
-                      @click="increaseItemQuantity(props.row)"
-                    />
-                  </div>
-                </q-td>
-              </template>
-              <template v-slot:body-cell-actions="props">
-                <q-td :props="props" class="actions-column auto-width">
-                  <q-btn
-                    round
-                    size="7px"
-                    color="negative"
-                    icon="delete"
-                    @click="confirmRemove(props.row)"
-                  />
-                </q-td>
-              </template>
-            </q-table>
-                    <!-- Totals Display Below the Table -->
-        <div class="total-container totals q-pa-sm ">
-          <div class="row">
-            <div class="col text-left">
-              <div class="text-p">{{ $t('total_quantity') }}:</div>
-            </div>
-            <div class="col text-right">
-              <div class="text-p">{{ totalQuantities }}</div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col text-left">
-              <div class="text-p">{{ $t('total_price') }}:</div>
-            </div>
-            <div class="col text-right">
-              <div class="text-p" >${{ totalPrices.toFixed(2) }}</div>
-            </div>
-          </div>
-        </div>
-          </div>
-        </div>
+              <!-- Name Column -->
+              <div class="table-cell col-4">
+                <div
+                  class="text-p text-left text-blue-10"
+                  style="line-height: 1.5"
+                >
+                  {{ $t(`itemsList.${item.name}`) }}
+                  <span class="text-purple" v-if="item.unit === 'kg' || item.unit === 'sqft'">
+                    ({{ item.size }} {{ item.unit }})
+                  </span>
+                  <span class="text-teal"> {{ item.suffix }} </span>
+                </div>
+              </div>
 
+              <!-- Unit Price Column -->
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">
+                  ${{ item.unit_price }} <span> / {{ item.unit }}</span>
+                </div>
+              </div>
 
+              <!-- Pieces Column -->
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ item.pcs }}
+                </div>
+              </div>
 
+              <!-- Quantity Column -->
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ item.quantity }}
+                </div>
+              </div>
+              <!-- Total Price Column -->
+              <div class="table-cell col-2 text-center">
+                <div class="text-p text-green-8">${{ item.price }}</div>
+              </div>
 
-        <!-- Customer Actions -->
-        <div class="customer-area q-pa-md">
-          <div class="row items-center q-col-gutter-sm">
-            <div class="col-12">
-              <q-btn
-                dense
-                push
-                class="bg-orange-10 text-white rounded-borders full-width"
-                :label="$t('add_details')"
-                @click="showAdditionalInfoDialog = true"
-              ></q-btn>
+              <!-- Actions Column -->
+              <div class="table-cell col-2 d-flex justify-center">
+                <q-btn
+                  flat
+                  class="edit-item"
+                  icon="edit"
+                  color="primary"
+                  @click="editItem(item, index)"
+                />
+                <q-btn
+                  flat
+                  class="delete-item"
+                  icon="delete"
+                  color="negative"
+                  @click="confirmDeleteItem(item)"
+                />
+              </div>
+            </div>
+            <!-- Conditionally display the row if totalQuantities is greater than 0 -->
+            <div
+              v-if="totalQuantities > 0"
+              class="row d-flex align-items-center q-py-xs text-red"
+            >
+              <div class="table-cell col-4">
+                <div class="text-p text-left text-uppercase">
+                  {{ $t("total") }}
+                </div>
+              </div>
+
+              <div class="table-cell col-2 text-center"></div>
+
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ totalPieces }}
+                </div>
+              </div>
+
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ totalQuantities }}
+                </div>
+              </div>
+
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">${{ totalPrices.toFixed(2) }}</div>
+              </div>
+
+              <div class="table-cell col-2 d-flex justify-center"></div>
+            </div>
+
+            <!-- Display this message if totalQuantities is 0 -->
+            <div v-else class="text-center q-pa-md text-h6 text-grey-8">
+              {{ $t("no_items_in_transaction") }}
             </div>
           </div>
         </div>
@@ -211,21 +281,29 @@
           <div class="row q-col-gutter-sm">
             <div class="col-4">
               <q-btn
+                push
+                :label="$t('add_details')"
+                @click="showAdditionalInfoDialog = true"
+                class="action-buttons bg-warning full-width q-py-sm"
+              ></q-btn>
+            </div>
+            <div class="col-2">
+              <q-btn
                 :label="$t('reset')"
                 push
                 class="action-buttons bg-negative text-white full-width q-py-sm"
                 @click="confirmCancel"
               ></q-btn>
             </div>
-            <div class="col-4">
+            <div class="col-3">
               <q-btn
                 :label="$t('switch')"
                 push
-                class="action-buttons bg-warning full-width q-py-sm"
+                class="action-buttons bg-orange text-white full-width q-py-sm"
                 @click="switchTransaction"
               ></q-btn>
             </div>
-            <div class="col-4">
+            <div class="col-3">
               <q-btn
                 :label="$t('submit')"
                 push
@@ -238,6 +316,21 @@
       </div>
     </div>
 
+    <!-- <q-dialog v-model="showQuantityDialog" persistent>
+      <q-card>
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup></q-btn>
+        </q-bar>
+        <q-card-section>
+          <q-input v-model="quantities.Laundry" label="Quantity" type="number" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn @click="addToTransaction" label="Add" color="primary" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog> -->
+
     <!-- Additional Info Dialog -->
     <q-dialog
       v-model="showAdditionalInfoDialog"
@@ -246,9 +339,15 @@
       <q-card class="dialog-additional-info">
         <q-bar>
           <q-space></q-space>
-          <q-btn dense flat class="bg-negative text-white" icon="close" v-close-popup>
+          <q-btn
+            dense
+            flat
+            class="bg-negative text-white"
+            icon="close"
+            v-close-popup
+          >
             <q-tooltip class="bg-white text-primary">{{
-              $t('close')
+              $t("close")
             }}</q-tooltip>
           </q-btn>
         </q-bar>
@@ -273,7 +372,7 @@
               <!-- Customer Info Section -->
               <div class="full-width">
                 <div class="text-caption text-uppercase text-p">
-                  {{ $t('customer_name') }}
+                  {{ $t("customer_name") }}
                 </div>
                 <q-input
                   v-model="currentCustomer.name"
@@ -284,7 +383,7 @@
               </div>
               <div class="full-width q-mt-sm">
                 <div class="text-caption text-uppercase text-p">
-                  {{ $t('contact_number') }}
+                  {{ $t("contact_number") }}
                 </div>
                 <q-input
                   v-model="currentCustomer.contactNo"
@@ -296,7 +395,7 @@
               </div>
               <div class="full-width q-mt-sm">
                 <div class="text-caption text-uppercase text-p">
-                  {{ $t('email') }}
+                  {{ $t("email") }}
                 </div>
                 <q-input
                   v-model="currentCustomer.email"
@@ -309,7 +408,7 @@
               <!-- Delivery Address Section with Checkbox -->
               <div class="full-width q-mt-sm">
                 <div class="text-caption text-uppercase text-p">
-                  {{ $t('delivery_address') }}
+                  {{ $t("delivery_address") }}
                 </div>
                 <q-checkbox
                   v-model="useDefaultAddress"
@@ -336,7 +435,7 @@
               </div>
               <div class="full-width q-mt-sm">
                 <div class="text-caption text-uppercase text-p">
-                  {{ $t('remarks') }}
+                  {{ $t("remarks") }}
                 </div>
                 <q-input
                   v-model="currentCustomer.remarks"
@@ -362,7 +461,7 @@
                     </template>
                   </q-file>
                   <div class="text-caption text-uppercase text-p">
-                    {{ $t('click_upload') }}
+                    {{ $t("click_upload") }}
                   </div>
                 </div>
                 <div class="col-1">
@@ -374,7 +473,7 @@
                     @click="openCamera"
                   ></q-btn>
                   <div class="text-caption text-uppercase text-p">
-                    {{ $t('camera') }}
+                    {{ $t("camera") }}
                   </div>
                 </div>
                 <div class="col-1">
@@ -386,7 +485,7 @@
                     @click="viewImage"
                   ></q-btn>
                   <div class="text-caption text-uppercase text-p">
-                    {{ $t('view') }}
+                    {{ $t("view") }}
                   </div>
                 </div>
               </div>
@@ -399,7 +498,7 @@
               <!-- Instructions Section -->
               <div class="full-width">
                 <div class="text-caption text-uppercase text-p">
-                  {{ $t('ready_by_date') }}
+                  {{ $t("ready_by_date") }}
                 </div>
                 <q-input
                   v-model="readyByDate"
@@ -412,12 +511,17 @@
               <div class="full-width q-mt-sm">
                 <div class="row q-gutter-x-md">
                   <div class="text-caption text-uppercase text-p">
-                    {{ $t('enter_instruction') }}:
+                    {{ $t("enter_instruction") }}:
                   </div>
-                  <q-checkbox
-                    dense
+                  <!-- Radio buttons for One-time and Recurring -->
+                  <q-option-group
                     v-model="recurringInstruction"
-                    :label="$t('recurring')"
+                    type="radio"
+                    :options="[
+                      { label: $t('one_time'), value: false, color: 'yellow' },
+                      { label: $t('recurring'), value: true, color: 'orange' },
+                    ]"
+                    inline
                   />
                 </div>
                 <q-input
@@ -430,28 +534,23 @@
               <div class="q-gutter-x-sm q-mt-sm">
                 <q-checkbox
                   dense
-                  v-model="instruction_to.Tagger"
-                  :label="$t('tagger')"
+                  v-model="instruction_to.Cleaning"
+                  :label="$t('cleaning')"
                 />
                 <q-checkbox
                   dense
-                  v-model="instruction_to.Packer"
-                  :label="$t('packer')"
+                  v-model="instruction_to.Packing"
+                  :label="$t('packing')"
+                />
+                <q-checkbox
+                  dense
+                  v-model="instruction_to.PickingSending"
+                  :label="$t('picking_sending')"
                 />
                 <q-checkbox
                   dense
                   v-model="instruction_to.Admin"
                   :label="$t('admin')"
-                />
-                <q-checkbox
-                  dense
-                  v-model="instruction_to.Collection"
-                  :label="$t('collection')"
-                />
-                <q-checkbox
-                  dense
-                  v-model="instruction_to.Delivery"
-                  :label="$t('delivery')"
                 />
               </div>
               <q-btn
@@ -465,9 +564,10 @@
             <q-separator />
 
             <q-card-section>
+              <!-- Chips Display for List of Instructions -->
               <div>
                 <div class="text-p text-weight-bold text-uppercase">
-                  {{ $t('list_of_instructions') }}
+                  {{ $t("list_of_instructions") }}
                 </div>
                 <ul>
                   <li
@@ -485,9 +585,13 @@
                           class="q-mr-sm"
                           >{{ target }}</q-chip
                         >
-                        <q-chip v-if="instr.recurring" label color="blue">
-                          {{ $t('recurring') }}
-                        </q-chip>
+                        <!-- Updated Chips for Recurrence -->
+                        <q-chip
+                          v-if="instr.recurring"
+                          label="Recurring"
+                          color="orange"
+                        ></q-chip>
+                        <q-chip v-else label="One-time" color="yellow"></q-chip>
                       </div>
                     </div>
                     <div class="col-4 text-right">
@@ -529,16 +633,22 @@
       <q-card>
         <q-bar>
           <q-space></q-space>
-          <q-btn dense flat class="bg-negative text-white" icon="close" v-close-popup>
+          <q-btn
+            dense
+            flat
+            class="bg-negative text-white"
+            icon="close"
+            v-close-popup
+          >
             <q-tooltip class="bg-white text-primary">{{
-              $t('close')
+              $t("close")
             }}</q-tooltip>
           </q-btn>
         </q-bar>
         <q-card-section class="column items-center q-gutter-y-md">
           <div class="full-width">
             <div class="text-caption text-uppercase text-p">
-              {{ $t('enter_instruction') }}:
+              {{ $t("enter_instruction") }}:
             </div>
             <q-input
               v-model="editInstructionText"
@@ -548,36 +658,37 @@
             />
           </div>
           <div class="q-gutter-x-sm q-mt-sm">
+            <!-- Radio Buttons for One-time and Recurring -->
+            <q-option-group
+              v-model="editRecurringInstruction"
+              type="radio"
+              :options="[
+                { label: $t('one_time'), value: false, color: 'yellow' },
+                { label: $t('recurring'), value: true, color: 'orange' },
+              ]"
+              inline
+            />
+          </div>
+          <div class="q-gutter-x-sm q-mt-sm">
             <q-checkbox
               dense
-              v-model="editInstructionTargets.Tagger"
-              :label="$t('tagger')"
+              v-model="editInstructionTargets.Cleaning"
+              :label="$t('cleaning')"
             />
             <q-checkbox
               dense
-              v-model="editInstructionTargets.Packer"
-              :label="$t('packer')"
+              v-model="editInstructionTargets.Packing"
+              :label="$t('packing')"
+            />
+            <q-checkbox
+              dense
+              v-model="editInstructionTargets.PickingSending"
+              :label="$t('picking_sending')"
             />
             <q-checkbox
               dense
               v-model="editInstructionTargets.Admin"
               :label="$t('admin')"
-            />
-            <q-checkbox
-              dense
-              v-model="editInstructionTargets.Collection"
-              :label="$t('collection')"
-            />
-            <q-checkbox
-              dense
-              v-model="editInstructionTargets.Delivery"
-              :label="$t('delivery')"
-            />
-            <!-- Recurring Checkbox for Edit -->
-            <q-checkbox
-              dense
-              v-model="editRecurringInstruction"
-              :label="$t('recurring')"
             />
           </div>
         </q-card-section>
@@ -597,9 +708,15 @@
       <q-card>
         <q-bar>
           <q-space></q-space>
-          <q-btn dense flat class="bg-negative text-white" icon="close" v-close-popup>
+          <q-btn
+            dense
+            flat
+            class="bg-negative text-white"
+            icon="close"
+            v-close-popup
+          >
             <q-tooltip class="bg-white text-primary">{{
-              $t('close')
+              $t("close")
             }}</q-tooltip>
           </q-btn>
         </q-bar>
@@ -607,19 +724,25 @@
           <div v-if="photoUri">
             <img :src="photoUri" alt="Captured Photo" style="max-width: 100%" />
           </div>
-          <div class="text-p" v-else>{{ $t('no_photo') }}</div>
+          <div class="text-p" v-else>{{ $t("no_photo") }}</div>
         </q-card-section>
       </q-card>
     </q-dialog>
 
     <!-- Item Dialog -->
-    <q-dialog v-model="dialog" backdrop-filter="brightness(50%)">
+    <q-dialog v-model="showQuantityDialog" backdrop-filter="brightness(50%)">
       <q-card class="dialog-cards">
         <q-bar>
           <q-space></q-space>
-          <q-btn dense flat class="bg-negative text-white" icon="close" v-close-popup>
+          <q-btn
+            dense
+            flat
+            class="bg-negative text-white"
+            icon="close"
+            v-close-popup
+          >
             <q-tooltip class="bg-white text-primary">{{
-              $t('close')
+              $t("close")
             }}</q-tooltip>
           </q-btn>
         </q-bar>
@@ -642,7 +765,9 @@
               class="justify-center q-pa-sm"
             >
               <div class="text-center q-pb-md text-p">
-                {{ $t('laundry') }} - ${{ selectedItem?.laundry_price.toFixed(2) }}
+                {{ $t("laundry") }} - ${{
+                  selectedItem?.laundry_price.toFixed(2)
+                }}
               </div>
               <div class="row">
                 <q-btn
@@ -670,7 +795,9 @@
               class="justify-center q-pa-sm"
             >
               <div class="text-center q-pb-md text-p">
-                {{ $t('dry_clean') }} - ${{ selectedItem?.dryclean_price.toFixed(2) }}
+                {{ $t("dry_clean") }} - ${{
+                  selectedItem?.dryclean_price.toFixed(2)
+                }}
               </div>
               <div class="row">
                 <q-btn
@@ -698,7 +825,9 @@
               class="justify-center q-pa-sm"
             >
               <div class="text-center q-pb-md text-p">
-                {{ $t('pressing_only') }} - ${{ selectedItem?.pressing_price.toFixed(2) }}
+                {{ $t("pressing_only") }} - ${{
+                  selectedItem?.pressing_price.toFixed(2)
+                }}
               </div>
               <div class="row">
                 <q-btn
@@ -726,7 +855,9 @@
               class="justify-center q-pa-sm"
             >
               <div class="text-center q-pb-md text-p">
-                {{ $t('others_service') }} - ${{ selectedItem?.others_price.toFixed(2) }}
+                {{ $t("others_service") }} - ${{
+                  selectedItem?.others_price.toFixed(2)
+                }}
               </div>
               <div class="row">
                 <q-btn
@@ -761,6 +892,348 @@
       </q-card>
     </q-dialog>
 
+    <q-dialog v-model="showMeasurementDialog" persistent>
+      <q-card>
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup></q-btn>
+        </q-bar>
+        <q-card-section>
+          <!-- Dropdown for unit selection -->
+          <q-select
+            v-model="selectedUnit"
+            :options="['ft', 'cm']"
+            label="Select Unit"
+            outlined
+          />
+
+          <!-- Inputs for Length and Breadth -->
+          <q-input
+            v-model="length"
+            :label="`Length (in ${selectedUnit})`"
+            type="number"
+          />
+          <q-input
+            v-model="breadth"
+            :label="`Breadth (in ${selectedUnit})`"
+            type="number"
+          />
+
+          <!-- Display the total sqft -->
+          <div class="text-h6">Total: {{ totalSqft.toFixed(2) }} sqft</div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn @click="addToTransaction" label="Add" color="primary" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Weight Dialog -->
+    <q-dialog v-model="showWeightDialog" persistent>
+      <q-card class="dialog-cards" >
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup></q-btn>
+        </q-bar>
+        <q-card-section>
+          <div class="q-pa-lg">
+            <div class="text-h6 text-center text-uppercase">
+              Enter Weight (in kg) and Select Service
+            </div>
+  
+            <!-- Service Selection -->
+            <q-option-group
+              v-model="selectedProcess"
+              :options="availableServices"
+              type="radio"
+              label="Select Service"
+              inline
+            />
+  
+            <!-- Input for Weight -->
+            <q-input v-model="totalKg" label="Weight (in kg)" type="number" />
+            <q-input v-model="totalPcs" label="Pieces" type="number" />
+          </div>
+          <!-- Added Items List -->
+          <div v-if="tempWeightItems.length" class="q-pa-md q-mt-md bg-grey-5">
+            <div class="text-h6">Items to Add:</div>
+
+            <!-- Headers -->
+            <div class="row text-weight-bold text-uppercase q-mt-md bg-grey-3">
+              <div class="table-cell col-3">
+                <div class="text-p">
+                  Item Name
+                </div>
+              </div>
+              <div class="table-cell col-1">
+                <div class="text-p">
+                  Type
+                </div>
+              </div>
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">
+                  Price
+                </div>
+              </div>
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  Pcs
+                </div>
+              </div>
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">
+                  Weight (kg)
+                </div>
+              </div>
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">
+                  Total Price
+                </div>
+              </div>
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  Actions
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Rows -->
+            <div
+              v-for="(item, index) in tempWeightItems"
+              :key="index"
+              class="row bg-grey-3"
+            >
+              <!-- Item Name -->
+              <div class="table-cell col-3">
+                <div class="text-p" v-if="!item.edit" style="line-height: 1.5;">{{ item.name }}</div>
+                <q-input v-else v-model="item.name" dense />
+              </div>
+
+              <!-- Type/Service -->
+              <div class="table-cell col-1">
+                <div class="text-p" v-if="!item.edit">{{ item.process }}</div>
+                <q-input v-else v-model="item.process" dense />
+              </div>
+
+
+              <!-- Price per kg -->
+              <div class="table-cell col-2 text-center">
+                <div class="text-p" v-if="!item.edit">${{ item.unit_price }} /kg</div>
+                <q-input v-else v-model="item.unit_price" type="number" dense />
+              </div>
+                            <!-- Pcs -->
+                            <div class="table-cell col-1 text-center">
+                              <div class="text-p" v-if="!item.edit">{{ item.pcs }}</div>
+                              <q-input v-else v-model="item.pcs" type="number" dense />
+                            </div>
+
+              <!-- Weight (kg) -->
+              <div class="table-cell col-2 text-center">
+                <div class="text-p" v-if="!item.edit">{{ item.weight }} kg</div>
+                <q-input v-else v-model="item.weight" type="number" dense />
+              </div>
+              
+
+              <!-- Total Price (computed) -->
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">${{ (item.weight * item.unit_price).toFixed(2) }}</div>
+              </div>
+
+              <!-- Edit / Save Button -->
+              <div class="table-cell col-1 text-center">
+                <q-btn
+                  v-if="!item.edit"
+                  class="edit-item"
+                  icon="edit"
+                  color="primary"
+                  @click="editItemWeight(index)"
+                  flat
+                />
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions>
+          <!-- Add to Item Button -->
+          <q-btn
+            class="full-width dialog-buttons"
+            label="Add to Item"
+            color="primary"
+            @click="addToTempItems"
+          />
+
+          <!-- Final Add Button - Disable if there are no items in the tempWeightItems list -->
+          <q-btn
+            class="full-width dialog-buttons"
+            label="Add"
+            color="secondary"
+            @click="addToTransaction"
+            :disable="tempWeightItems.length === 0"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Edit Item Dialog -->
+    <q-dialog v-model="showEditWeight" persistent>
+      <q-card>
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup></q-btn>
+        </q-bar>
+        <q-card-section class="column items-center q-gutter-y-md">
+          <div class="full-width">
+            <q-input
+              v-model="editedItem.name"
+              label="Item Name"
+              filled
+              dense
+              readonly
+            />
+            <q-input
+              v-model="editedItem.pcs"
+              label="Pcs"
+              type="number"
+              filled
+              dense
+              :rules="[(val) => val > 0 || 'Pcs must be greater than 0']"
+            />
+            <q-input
+              v-model="editedItem.weight"
+              label="Weight (kg)"
+              type="number"
+              filled
+              dense
+              :rules="[(val) => val > 0 || 'Weight must be greater than 0']"
+            />
+
+            <q-input
+              v-model="editedItem.unit_price"
+              label="Price per kg"
+              type="number"
+              filled
+              dense
+              readonly
+            />
+
+            <q-option-group
+              v-model="editedItem.process"
+              :options="availableServices"
+              label="Select Process"
+              inline
+            />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            :disable="editedItem.weight <= 0 || editedItem.weight == NULL"
+            @click="saveItemEditWeight(editedIndex)"
+            label="Save"
+            color="primary"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Edit Measurement Dialog -->
+    <q-dialog v-model="showEditMeasurementDialog" persistent>
+      <q-card>
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup></q-btn>
+        </q-bar>
+        <q-card-section class="column items-center q-gutter-y-md">
+          <div class="full-width">
+            <!-- Process Selection -->
+            <q-option-group
+              v-model="editedItem.process"
+              :options="availableServices"
+              label="Select Process"
+              inline
+              @change="updateUnitPriceBasedOnProcess"
+            />
+
+            <!-- Inputs for Length and Breadth -->
+            <q-input
+              v-model="editLength"
+              label="Length (in ft)"
+              type="number"
+              filled
+              dense
+              :rules="[(val) => val > 0 || 'Length must be greater than 0']"
+            />
+
+            <q-input
+              v-model="editBreadth"
+              label="Breadth (in ft)"
+              type="number"
+              filled
+              dense
+              :rules="[(val) => val > 0 || 'Breadth must be greater than 0']"
+            />
+
+            <div>Total: {{ totalSqftEdit.toFixed(2) }} sqft</div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            :disable="editLength <= 0 || editBreadth <= 0 || editLength == NULL || editBreadth == NULL"
+            @click="saveMeasurementEdit(editedIndex)"
+            label="Save"
+            color="primary"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Edit Quantity Dialog (for non-kg, non-sqft items) -->
+    <q-dialog v-model="showEditQuantityDialog" persistent>
+      <q-card>
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup></q-btn>
+        </q-bar>
+        <q-card-section class="column items-center q-gutter-y-md">
+          <div class="full-width">
+            <q-input
+              v-model="editedItem.name"
+              label="Item Name"
+              filled
+              dense
+              readonly
+            />
+
+            <!-- Process Selection -->
+            <q-option-group
+              v-model="editedItem.process"
+              :options="availableServices"
+              label="Select Process"
+              inline
+              @change="updateUnitPriceBasedOnProcess"
+            />
+
+            <q-input
+              v-model="editedItem.quantity"
+              label="Quantity"
+              type="number"
+              filled
+              dense
+              :rules="[(val) => val > 0 || 'Quantity must be greater than 0']"
+            />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            :disable="editedItem.quantity <= 0 || editedItem.quantity == NULL"
+            @click="saveItemEdit(editedIndex)"
+            label="Save"
+            color="primary"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Confirmation Dialog -->
     <q-dialog v-model="confirmationDialog" persistent>
       <q-card>
@@ -779,6 +1252,157 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="showTransactionSummaryDialog" persistent>
+      <q-card class="dialog-cards dialog-transaction-summary">
+        <q-bar>
+          <q-space />
+          <q-btn flat icon="close" v-close-popup />
+        </q-bar>
+        
+        <q-card-section>
+          <div class="text-h6 text-bold">Transaction Summary</div>
+    
+          <!-- Customer Information -->
+          <div class="text-p q-mt-md">Customer Information:</div>
+          <div class="text-p">
+            Name: {{ currentCustomer.name }} <br />
+            Contact: {{ currentCustomer.contactNo }} <br />
+            Email: {{ currentCustomer.email }} <br />
+            Address: {{ currentCustomer.address }} <br />
+            Remarks: {{ currentCustomer.remarks }}
+          </div>
+    
+          <!-- Ready By Date -->
+          <div class="text-p q-mt-md">Ready By Date: {{ readyByDate }}</div>
+    
+          <!-- Items Summary -->
+          <div class="text-p q-mt-md">Items:</div>
+          <div class="row d-flex justify-center bg-grey-6">
+            <div class="table-cell col-6">
+              <div class="text-p text-left">
+                {{ $t("item") }}
+              </div>
+            </div>
+
+            <div class="table-cell col-2 text-center">
+              <div class="text-p">
+                {{ $t("price") }}
+              </div>
+            </div>
+
+            <div class="table-cell col-1 text-center">
+              <div class="text-p">
+                {{ $t("pieces") }}
+              </div>
+            </div>
+
+            <div class="table-cell col-1 text-center">
+              <div class="text-p">
+                {{ $t("quantity") }}
+              </div>
+            </div>
+            <div class="table-cell col-2 text-center">
+              <div class="text-p">{{ $t("total") }}</div>
+            </div>
+
+          </div>
+          <div v-for="item in transactionItems" :key="item.name" class="q-card-section row">
+            <!-- Name Column -->
+            <div class="table-cell col-6">
+              <div
+                class="text-p text-left text-blue-10"
+                style="line-height: 1.5"
+              >
+                {{ $t(`itemsList.${item.name}`) }}
+                <span class="text-purple" v-if="item.unit === 'kg' || item.unit === 'sqft'">
+                  ({{ item.size }} {{ item.unit }})
+                </span>
+                <span class="text-teal"> {{ item.suffix }} </span>
+              </div>
+            </div>
+
+            <!-- Unit Price Column -->
+            <div class="table-cell col-2 text-center">
+              <div class="text-p">
+                ${{ item.unit_price }} <span> / {{ item.unit }}</span>
+              </div>
+            </div>
+
+            <!-- Pieces Column -->
+            <div class="table-cell col-1 text-center">
+              <div class="text-p">
+                {{ item.pcs }}
+              </div>
+            </div>
+
+            <!-- Quantity Column -->
+            <div class="table-cell col-1 text-center">
+              <div class="text-p">
+                {{ item.quantity }}
+              </div>
+            </div>
+            <!-- Total Price Column -->
+            <div class="table-cell col-2 text-center">
+              <div class="text-p text-green-8">${{ item.price }}</div>
+            </div>
+
+          </div>
+            <!-- Conditionally display the row if totalQuantities is greater than 0 -->
+            <div
+              v-if="totalQuantities > 0"
+              class="row d-flex align-items-center q-py-xs text-red"
+            >
+              <div class="table-cell col-6">
+                <div class="text-p text-left text-uppercase">
+                  {{ $t("total") }}
+                </div>
+              </div>
+
+              <div class="table-cell col-2 text-center"></div>
+
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ totalPieces }}
+                </div>
+              </div>
+
+              <div class="table-cell col-1 text-center">
+                <div class="text-p">
+                  {{ totalQuantities }}
+                </div>
+              </div>
+
+              <div class="table-cell col-2 text-center">
+                <div class="text-p">${{ totalPrices.toFixed(2) }}</div>
+              </div>
+
+            </div>
+
+            <!-- Display this message if totalQuantities is 0 -->
+            <div v-else class="text-center q-pa-md text-h6 text-grey-8">
+              {{ $t("no_items_in_transaction") }}
+            </div>
+    
+          <!-- Instructions -->
+          <div class="text-p q-mt-md">Instructions:</div>
+          <div v-for="(instr, index) in instructions" :key="index" class="text-p">
+            {{ instr.text }} - 
+            <q-chip v-for="target in instr.targets" :key="target">{{ target }}</q-chip>
+            <q-chip v-if="instr.recurring" label="Recurring" color="orange" />
+            <q-chip v-else label="One-time" color="yellow" />
+          </div>
+        </q-card-section>
+    
+        <!-- Action Buttons -->
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="negative" v-close-popup />
+          <q-btn flat label="Confirm & Submit" color="primary" @click="confirmSubmitTransaction" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+    
+    
   </div>
 
   <div class="absolute-top-right q-gutter-xs q-ma-xs">
@@ -793,9 +1417,17 @@
             <q-icon name="aspect_ratio" />
           </q-item-section>
           <q-item-section>
-            {{ isFullscreen ? $t('exit_fullscreen') : $t('enter_fullscreen') }}
+            {{ isFullscreen ? $t("exit_fullscreen") : $t("enter_fullscreen") }}
           </q-item-section>
-        </q-item>        
+        </q-item>
+        <q-item clickable @click="switchTransaction">
+          <q-item-section avatar>
+            <q-icon name="swap_horiz" />
+          </q-item-section>
+          <q-item-section>
+            {{ $t("switch") }}
+          </q-item-section>
+        </q-item>
         <q-item clickable @click="toggleLanguage">
           <q-item-section avatar>
             <q-icon name="translate" />
@@ -809,7 +1441,7 @@
             <q-icon name="visibility_off" />
           </q-item-section>
           <q-item-section>
-            {{ showImages ? $t('hide_images') : $t('show_images') }}
+            {{ showImages ? $t("hide_images") : $t("show_images") }}
           </q-item-section>
         </q-item>
         <q-item clickable @click="goToHome">
@@ -817,14 +1449,13 @@
             <q-icon name="logout" />
           </q-item-section>
           <q-item-section>
-            {{ $t('logout') }}
+            {{ $t("logout") }}
           </q-item-section>
         </q-item>
       </q-list>
     </q-btn-dropdown>
   </div>
 </template>
-
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
@@ -861,11 +1492,14 @@ function openFullscreen() {
   const elem = document.documentElement;
   if (elem.requestFullscreen) {
     elem.requestFullscreen();
-  } else if (elem.mozRequestFullScreen) { /* Firefox */
+  } else if (elem.mozRequestFullScreen) {
+    /* Firefox */
     elem.mozRequestFullScreen();
-  } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+  } else if (elem.webkitRequestFullscreen) {
+    /* Chrome, Safari & Opera */
     elem.webkitRequestFullscreen();
-  } else if (elem.msRequestFullscreen) { /* IE/Edge */
+  } else if (elem.msRequestFullscreen) {
+    /* IE/Edge */
     elem.msRequestFullscreen();
   }
   isFullscreen.value = true;
@@ -874,11 +1508,14 @@ function openFullscreen() {
 function closeFullscreen() {
   if (document.exitFullscreen) {
     document.exitFullscreen();
-  } else if (document.mozCancelFullScreen) { /* Firefox */
+  } else if (document.mozCancelFullScreen) {
+    /* Firefox */
     document.mozCancelFullScreen();
-  } else if (document.webkitExitFullscreen) { /* Chrome, Safari & Opera */
+  } else if (document.webkitExitFullscreen) {
+    /* Chrome, Safari & Opera */
     document.webkitExitFullscreen();
-  } else if (document.msExitFullscreen) { /* IE/Edge */
+  } else if (document.msExitFullscreen) {
+    /* IE/Edge */
     document.msExitFullscreen();
   }
   isFullscreen.value = false;
@@ -1067,16 +1704,27 @@ const columns = computed(() => [
     align: "left",
     field: (row) => row.name,
     format: (val) => `${val}`,
-    sortable: true,
+    sortable: false,
+    style: "width: 40%", // Set column width
   },
   {
-    name: "price",
+    name: "unit_price",
     required: true,
     label: t("price"),
     align: "center",
-    field: "price",
+    field: "unit_price",
     format: (val) => `$${val}`,
-    sortable: true,
+    sortable: false,
+    style: "width: 15%", // Set column width
+  },
+  {
+    name: "pcs",
+    required: true,
+    label: t("pieces"),
+    align: "center",
+    field: "pcs",
+    sortable: false,
+    style: "width: 10%", // Set column width
   },
   {
     name: "quantity",
@@ -1084,12 +1732,26 @@ const columns = computed(() => [
     label: t("quantity"),
     align: "center",
     field: "quantity",
-    sortable: true,
+    sortable: false,
+    style: "width: 10%", // Set column width
+  },
+  {
+    name: "price",
+    required: true,
+    label: t("total"),
+    align: "center",
+    field: "price",
+    format: (val) => `$${val}`,
+    sortable: false,
+    style: "width: 20%", // Set column width
   },
   {
     name: "actions",
-    required: true,
+    // label: t("actions"),
     align: "center",
+    sortable: false,
+    field: "actions",
+    style: "width: 15%", // Set column width
   },
 ]);
 
@@ -1133,6 +1795,11 @@ const totalPrices = computed(() => {
   );
 });
 
+const totalPieces = computed(() => {
+  return transactionItems.value.reduce((total, item) => total + Number(item.pcs), 0);
+});
+
+
 const totalQuantities = computed(() => {
   return transactionItems.value.reduce(
     (total, item) => total + item.quantity,
@@ -1146,11 +1813,25 @@ const transactionItems = computed(() => {
     : transactionB.value;
 });
 
-// Dialog Functions
 const openDialog = (item) => {
   selectedItem.value = item;
   quantities.value = { Laundry: 0, DryClean: 0, PressingOnly: 0, Others: 0 };
-  dialog.value = true;
+
+  if (selectedItem.value.unit === "kg") {
+    // Reset weight-related fields
+    totalKg.value = 0;
+    totalPcs.value = 0;
+    selectedProcess.value = "Laundry";
+    showWeightDialog.value = true;
+  } else if (selectedItem.value.unit === "sqft") {
+    // Reset measurement-related fields
+    length.value = null;
+    breadth.value = null;
+    selectedProcess.value = "Laundry";
+    showMeasurementDialog.value = true;
+  } else {
+    showQuantityDialog.value = true;
+  }
 };
 
 const increaseQuantity = (type) => {
@@ -1161,52 +1842,6 @@ const decreaseQuantity = (type) => {
   if (quantities.value[type] > 0) {
     quantities.value[type]--;
   }
-};
-
-const addToTransaction = () => {
-  const services = {
-    Laundry: "(L)",
-    DryClean: "(DC)",
-    PressingOnly: "(PO)",
-    Others: "(O)",
-  };
-
-  for (const [key, suffix] of Object.entries(services)) {
-    if (quantities.value[key] > 0) {
-      const name = selectedItem.value.name;
-      const existingItem = transactionItems.value.find(
-        (i) => i.name === name && i.suffix === suffix
-      );
-      let price = 0;
-      switch (suffix) {
-        case "(L)":
-          price = selectedItem.value.laundry_price.toFixed(2);
-          break;
-        case "(DC)":
-          price = selectedItem.value.dryclean_price.toFixed(2);
-          break;
-        case "(PO)":
-          price = selectedItem.value.pressing_price.toFixed(2);
-          break;
-        case "(O)":
-          price = selectedItem.value.others_price.toFixed(2);
-          break;
-      }
-      if (existingItem) {
-        existingItem.quantity += quantities.value[key];
-        existingItem.price = price;
-      } else {
-        transactionItems.value.push({
-          id: selectedItem.value.id,
-          name: name,
-          suffix: suffix,
-          quantity: quantities.value[key],
-          price: price,
-        });
-      }
-    }
-  }
-  dialog.value = false;
 };
 
 // Functions to handle item quantity changes
@@ -1261,6 +1896,20 @@ const switchTransaction = () => {
   currentTransaction.value = currentTransaction.value === "A" ? "B" : "A";
 };
 
+const confirmDeleteItem = (item) => {
+  confirmAction = () => {
+    const updatedItems = transactionItems.value.filter((i) => i !== item);
+    if (currentTransaction.value === "A") {
+      transactionA.value = updatedItems;
+    } else {
+      transactionB.value = updatedItems;
+    }
+    confirmationDialog.value = false;
+  };
+  confirmationMessage.value = t("are_you_sure_remove", { item: item.name });
+  confirmationDialog.value = true;
+};
+
 const readyByDate = ref(calculateWorkingDate(5));
 // Function to calculate the date after a given number of working days
 function calculateWorkingDate(days) {
@@ -1279,7 +1928,130 @@ function calculateWorkingDate(days) {
 }
 
 // Submit Transaction
-const submitTransaction = async () => {
+// const submitTransaction = async () => {
+//   try {
+//     const currentImage =
+//       currentTransaction.value === "A"
+//         ? cinfo_imageA.value
+//         : cinfo_imageB.value;
+
+//     if (transactionItems.value.length === 0) {
+//       throw new Error(t("add_item"));
+//     }
+
+//     let photoUrl = null;
+//     if (currentImage) {
+//       photoUrl = await uploadPhoto(currentImage);
+//     }
+
+//     const date = new Date();
+//     const year = date.getFullYear().toString().slice(-2);
+//     const month = ("0" + (date.getMonth() + 1)).slice(-2);
+//     const day = ("0" + date.getDate()).slice(-2);
+//     const maxOrderId = (await getMaxOrderId()) || 0;
+//     const nextOrderId = maxOrderId + 1;
+//     const nextOrder = nextOrderId.toString().padStart(2, "0");
+//     const orderNo = `CC-${day}${month}${year}Sfc${nextOrder}`;
+
+//     const currentCustomer =
+//       currentTransaction.value === "A" ? customerA.value : customerB.value;
+//     const contact_person = currentCustomer.name;
+//     const contact_person_no = currentCustomer.contactNo;
+//     const contact_person_email = currentCustomer.email;
+//     const del_address = currentCustomer.address;
+//     const remarks = currentCustomer.remarks;
+
+//     const dateTime = new Date().toISOString();
+//     const readyBy = new Date(readyByDate.value).toISOString(); // Use selected date
+//     const status = "Pending";
+//     const order = await insertOrder(
+//       orderNo,
+//       dateTime,
+//       readyBy,
+//       status,
+//       photoUrl,
+//       contact_person,
+//       contact_person_no,
+//       del_address,
+//       remarks,
+//       contact_person_email
+//     );
+//     const orderId = order.id;
+
+//     const maxTagNo = (await getMaxTagNo()) || 0;
+//     let serialNo = 1;
+//     let tagNo = maxTagNo + 1;
+//     const transactionsData = transactionItems.value.flatMap((item) => {
+//       const typeSuffix = item.suffix.match(/\((L|DC|PO|O)\)$/);
+//       let type = "";
+//       if (typeSuffix) {
+//         switch (typeSuffix[1]) {
+//           case "L":
+//             type = "Laundry";
+//             break;
+//           case "DC":
+//             type = "Dry Clean";
+//             break;
+//           case "PO":
+//             type = "Pressing Only";
+//             break;
+//           case "O":
+//             type = "Others";
+//             break;
+//         }
+//       }
+//       const itemName = item.name.replace(/\s*\((L|DC|PO|O)\)$/, "");
+//       return Array.from({ length: item.quantity }, () => ({
+//         item_name: itemName,
+//         type: type,
+//         price: item.price,
+//         order_id: orderId,
+//         serial_no: serialNo++,
+//         tag_no: tagNo++,
+//       }));
+//     });
+
+//     await insertTransactions(transactionsData);
+
+//     const instructionsData = instructions.value.map((instruction) => ({
+//       description: instruction.text,
+//       order_id: orderId,
+//       admin: instruction.targets.includes("Admin"),
+//       packing: instruction.targets.includes("Packing"),
+//       cleaning: instruction.targets.includes("Cleaning"),
+//       picking_sending: instruction.targets.includes("PickingSending"),
+//       recurring: instruction.recurring ? 1 : 0,
+//     }));
+
+//     for (const instructionData of instructionsData) {
+//       await insertInstructions(instructionData);
+//     }
+
+//     alert(t("submit_transaction"));
+//     if (currentTransaction.value === "A") {
+//       transactionA.value = [];
+//       instructionsA.value = [];
+//       cinfo_imageA.value = null;
+//     } else {
+//       transactionB.value = [];
+//       instructionsB.value = [];
+//       cinfo_imageB.value = null;
+//     }
+//   } catch (error) {
+//     console.error("Error submitting transaction:", error);
+//     alert(t("failed_submit_transaction", { error: error.message }));
+//   }
+// };
+const submitTransaction = () => {
+  // Open the dialog to show transaction summary
+  showTransactionSummaryDialog.value = true;
+};
+
+const showTransactionSummaryDialog = ref(false);
+
+
+const confirmSubmitTransaction = async () => {
+  showTransactionSummaryDialog.value = false; // Close the summary dialog
   try {
     const currentImage =
       currentTransaction.value === "A"
@@ -1302,7 +2074,7 @@ const submitTransaction = async () => {
     const maxOrderId = (await getMaxOrderId()) || 0;
     const nextOrderId = maxOrderId + 1;
     const nextOrder = nextOrderId.toString().padStart(2, "0");
-    const orderNo = `CC-${year}${month}${day}Sfc${nextOrder}`;
+    const orderNo = `CC-${day}${month}${year}Sfc${nextOrder}`;
 
     const currentCustomer =
       currentTransaction.value === "A" ? customerA.value : customerB.value;
@@ -1368,10 +2140,9 @@ const submitTransaction = async () => {
       description: instruction.text,
       order_id: orderId,
       admin: instruction.targets.includes("Admin"),
-      packer: instruction.targets.includes("Packer"),
-      tagger: instruction.targets.includes("Tagger"),
-      collection: instruction.targets.includes("Collection"),
-      delivery: instruction.targets.includes("Delivery"),
+      packing: instruction.targets.includes("Packing"),
+      cleaning: instruction.targets.includes("Cleaning"),
+      picking_sending: instruction.targets.includes("PickingSending"),
       recurring: instruction.recurring ? 1 : 0,
     }));
 
@@ -1395,16 +2166,15 @@ const submitTransaction = async () => {
   }
 };
 
+
 // Instructions
 const instruction = ref("");
 const instruction_to = ref({
-  Tagger: false,
-  Packer: false,
+  Cleaning: false,
+  Packing: false,
   Admin: false,
-  Collection: false,
-  Delivery: false,
+  PickingSending: false,
 });
-const recurringInstruction = ref(false);
 
 const instructionsA = ref([]);
 const instructionsB = ref([]);
@@ -1418,39 +2188,14 @@ const showEditInstructionDialog = ref(false);
 const editInstructionIndex = ref(null);
 const editInstructionText = ref("");
 const editInstructionTargets = ref({
-  Tagger: false,
-  Packer: false,
+  Cleaning: false,
+  Packing: false,
+  PickingSending: false,
   Admin: false,
-  Collection: false,
-  Delivery: false,
 });
-const editRecurringInstruction = ref(false);
 
-const addInstruction = () => {
-  if (instruction.value.trim() === "") return;
-
-  const selectedInstructions = Object.keys(instruction_to.value).filter(
-    (key) => instruction_to.value[key]
-  );
-
-  const newInstruction = {
-    text: instruction.value,
-    targets: selectedInstructions,
-    recurring: recurringInstruction.value ? 1 : 0,
-  };
-
-  if (currentTransaction.value === "A") {
-    instructionsA.value.push(newInstruction);
-  } else {
-    instructionsB.value.push(newInstruction);
-  }
-
-  instruction.value = "";
-  recurringInstruction.value = false;
-  Object.keys(instruction_to.value).forEach((key) => {
-    instruction_to.value[key] = false;
-  });
-};
+const recurringInstruction = ref(false); // Default to One-time
+const editRecurringInstruction = ref(false); // Default to One-time in Edit Dialog
 
 const editInstruction = (index) => {
   editInstructionIndex.value = index;
@@ -1463,6 +2208,33 @@ const editInstruction = (index) => {
   showEditInstructionDialog.value = true;
 };
 
+const addInstruction = () => {
+  if (instruction.value.trim() === "") return;
+
+  const selectedInstructions = Object.keys(instruction_to.value).filter(
+    (key) => instruction_to.value[key]
+  );
+
+  const newInstruction = {
+    text: instruction.value,
+    targets: selectedInstructions,
+    recurring: recurringInstruction.value,
+  };
+
+  if (currentTransaction.value === "A") {
+    instructionsA.value.push(newInstruction);
+  } else {
+    instructionsB.value.push(newInstruction);
+  }
+
+  instruction.value = "";
+  recurringInstruction.value = false; // Reset to One-time
+  Object.keys(instruction_to.value).forEach((key) => {
+    instruction_to.value[key] = false;
+  });
+};
+
+// Adjusted saveInstructionEdit method:
 const saveInstructionEdit = () => {
   if (editInstructionText.value.trim() === "") return;
 
@@ -1473,7 +2245,7 @@ const saveInstructionEdit = () => {
   const updatedInstruction = {
     text: editInstructionText.value,
     targets: selectedInstructions,
-    recurring: editRecurringInstruction.value ? 1 : 0,
+    recurring: editRecurringInstruction.value,
   };
 
   if (currentTransaction.value === "A") {
@@ -1500,4 +2272,415 @@ const deleteInstruction = (index) => {
     instructionsB.value.splice(index, 1);
   }
 };
+
+const selectedProcess = ref("Laundry"); // Do not default to 'Laundry'
+
+const length = ref(null);
+const breadth = ref(null);
+// Unit selection for measurement
+const selectedUnit = ref("ft"); // Default to 'ft'
+
+// Computed total square footage, with conversion from cm to ft if needed
+const totalSqft = computed(() => {
+  if (selectedUnit.value === "cm") {
+    // Convert cm to feet
+    const lengthInFt = length.value * 0.0328084;
+    const breadthInFt = breadth.value * 0.0328084;
+    return lengthInFt * breadthInFt;
+  } else {
+    // No conversion needed for ft
+    return length.value * breadth.value;
+  }
+});
+
+const showMeasurementDialog = ref(false);
+
+const showQuantityDialog = ref(false);
+
+const showWeightDialog = ref(false); // Dialog to enter weight in kg
+const totalKg = ref(0);
+const totalPcs = ref(0);
+const tempWeightItems = ref([]);
+
+// Compute available services based on prices that are not null
+const availableServices = computed(() => {
+  const services = [];
+
+  if (selectedItem.value.laundry_price !== null) {
+    services.push({
+      label: `Laundry - $${selectedItem.value.laundry_price.toFixed(2)} /kg`,
+      value: "Laundry",
+    });
+  }
+  if (selectedItem.value.dryclean_price !== null) {
+    services.push({
+      label: `Dry Clean - $${selectedItem.value.dryclean_price.toFixed(2)} /kg`,
+      value: "DryClean",
+    });
+  }
+  if (selectedItem.value.pressing_price !== null) {
+    services.push({
+      label: `Pressing Only - $${selectedItem.value.pressing_price.toFixed(
+        2
+      )} /kg`,
+      value: "PressingOnly",
+    }); // Ensure this is correctly added
+  }
+  if (selectedItem.value.others_price !== null) {
+    services.push({
+      label: `Others - $${selectedItem.value.others_price.toFixed(2)} /kg`,
+      value: "Others",
+    });
+  }
+
+  return services;
+});
+
+// Function to add items to the tempWeightItems list
+const addToTempItems = () => {
+  if (totalKg.value <= 0 || !selectedProcess.value) {
+    alert("Please enter a valid weight and select a service");
+    return;
+  }
+
+  if (totalPcs.value <= 0 || !selectedProcess.value) {
+    alert("Please enter a valid quantity and select a service");
+    return;
+  }
+
+  // Helper function to get the correct unit price
+  const getUnitPrice = (serviceType) => {
+    if (serviceType === "Laundry") return selectedItem.value.laundry_price;
+    if (serviceType === "DryClean") return selectedItem.value.dryclean_price;
+    if (serviceType === "PressingOnly")
+      return selectedItem.value.pressing_price;
+    if (serviceType === "Others") return selectedItem.value.others_price;
+    return 0;
+  };
+
+  const unit_price = getUnitPrice(selectedProcess.value);
+
+  tempWeightItems.value.push({
+    name: selectedItem.value.name,
+    process: selectedProcess.value,
+    weight: totalKg.value,
+    pcs: totalPcs.value,
+    unit_price: unit_price.toFixed(2),
+    total_price: (totalKg.value * unit_price).toFixed(2),
+  });
+
+  // Reset the fields
+  totalKg.value = 0;
+  totalPcs.value = 0;
+  selectedProcess.value = "Laundry";
+};
+
+// Function to save the edited item
+const saveItemEditWeight = (index) => {
+  // Recalculate the price based on the new weight and unit price
+  const newTotalPrice = (
+    editedItem.value.weight * editedItem.value.unit_price
+  ).toFixed(2);
+
+  // Update the edited item with the new weight and price
+  tempWeightItems.value[index] = {
+    ...editedItem.value,
+    total_price: newTotalPrice, // Update the total price after editing
+  };
+
+  // Find the corresponding item in the transaction list (by index or name)
+  const transactionIndex = transactionItems.value.findIndex(
+    (item) =>
+      item.name === tempWeightItems.value[index].name && item.unit === "kg"
+  );
+
+  if (transactionIndex !== -1) {
+    // Update the transaction list with the edited weight and price
+    transactionItems.value[transactionIndex] = {
+      ...transactionItems.value[transactionIndex],
+      size: editedItem.value.weight, // Update the size (weight)
+      price: newTotalPrice, // Update the price
+    };
+  }
+
+  // Close the edit dialog
+  showEditWeight.value = false;
+};
+
+// const addMeasurementToTransaction = () => {
+//   const serviceSuffix = selectedProcess.value === "Laundry" ? "(L)" : "(DC)";
+//   const price = selectedProcess.value === "Laundry"
+//     ? selectedItem.value.laundry_price * totalSqft.value
+//     : selectedItem.value.dryclean_price * totalSqft.value;
+
+//   transactionItems.value.push({
+//     id: selectedItem.value.id,
+//     name: `${selectedItem.value.name} ${serviceSuffix} (${totalSqft.value.toFixed(2)} sqft)`,
+//     suffix: serviceSuffix,
+//     quantity: 1,
+//     price: price.toFixed(2),
+//     unit: selectedItem.value.unit,
+//   });
+
+//   showMeasurementDialog.value = false;
+// };
+
+const addToTransaction = () => {
+  const services = {
+    Laundry: "(L)",
+    DryClean: "(DC)",
+    PressingOnly: "(PO)",
+    Others: "(O)",
+  };
+
+  // Helper function to get the correct unit price
+  const getUnitPrice = (serviceType) => {
+    if (serviceType === "Laundry") return selectedItem.value.laundry_price;
+    if (serviceType === "DryClean") return selectedItem.value.dryclean_price;
+    if (serviceType === "PressingOnly")
+      return selectedItem.value.pressing_price;
+    if (serviceType === "Others") return selectedItem.value.others_price;
+    return 0;
+  };
+
+  // Add items in tempWeightItems list to the transaction for kg unit
+  tempWeightItems.value.forEach((item) => {
+    // Add a new item to the transaction with the correct suffix for kg unit
+    transactionItems.value.push({
+      id: selectedItem.value.id,
+      name: `${item.name}`,
+      suffix: `(${item.process})`,
+      quantity: 1,
+      pcs: item.pcs,
+      unit_price: item.unit_price,
+      price: item.total_price,
+      unit: "kg",
+      size: item.weight,
+    });
+  });
+
+  // Clear tempWeightItems list after adding to the transaction
+  tempWeightItems.value = [];
+
+  // Handle items for sqft unit
+  if (selectedItem.value.unit === "sqft" && totalSqft.value > 0) {
+    const serviceSuffix = services[selectedProcess.value]; // Get suffix for the selected process
+    const unit_price = getUnitPrice(selectedProcess.value); // Get the correct price
+    const quantity = 1;
+    const pieces = selectedItem.value.pieces;
+    const pcs = pieces * quantity;
+    const price = unit_price * totalSqft.value; // Calculate price for sqft
+
+    // Add new sqft item to the transaction
+    transactionItems.value.push({
+      id: selectedItem.value.id,
+      name: `${selectedItem.value.name}`,
+      suffix: serviceSuffix,
+      quantity: quantity,
+      pcs: pcs,
+      unit_price: unit_price.toFixed(2),
+      price: price.toFixed(2),
+      unit: "sqft",
+      size: totalSqft.value.toFixed(2), // Store total sqft
+    });
+  }
+
+  // Handle other units (Laundry, DryClean, PressingOnly, Others)
+  for (const [key, suffix] of Object.entries(services)) {
+    if (
+      quantities.value[key] > 0 &&
+      selectedItem.value.unit !== "sqft" &&
+      selectedItem.value.unit !== "kg"
+    ) {
+      const name = selectedItem.value.name;
+      const unit = selectedItem.value.unit;
+      const unit_price = getUnitPrice(key); // Get the correct unit price
+      const price = unit_price * quantities.value[key];
+      const pieces = selectedItem.value.pieces;
+      const pcs = pieces * quantities.value[key];
+
+      // Add a new entry for each service unit
+      transactionItems.value.push({
+        id: selectedItem.value.id,
+        name: name,
+        suffix: suffix,
+        quantity: quantities.value[key],
+        unit_price: unit_price.toFixed(2),
+        price: price.toFixed(2),
+        pcs: pcs,
+        unit: unit,
+      });
+    }
+  }
+
+  // Close dialogs
+  showWeightDialog.value = false;
+  showMeasurementDialog.value = false;
+  showQuantityDialog.value = false;
+};
+
+const showEditWeight = ref(false); // Controls visibility of the edit dialog
+
+// Function to open the edit dialog
+const editItemWeight = (index) => {
+  editedItem.value = { ...tempWeightItems.value[index] }; // Copy the current item data
+  editedIndex.value = index;
+  showEditWeight.value = true; // Show the edit dialog
+};
+
+const showEditMeasurementDialog = ref(false); // Measurement Dialog
+const showEditQuantityDialog = ref(false); // Quantity Dialog
+
+// Function to handle the edit button click
+const editItem = (item, index) => {
+  editedItem.value = { ...item }; // Copy the selected item to editedItem
+  editedIndex.value = index; // Store the index
+
+  // Set the process (type) to the item's current process
+  if (item.suffix.includes("(L)")) {
+    editedItem.value.process = "Laundry";
+  } else if (item.suffix.includes("(DC)")) {
+    editedItem.value.process = "DryClean";
+  } else if (item.suffix.includes("(PO)")) {
+    editedItem.value.process = "PressingOnly";
+  } else if (item.suffix.includes("(O)")) {
+    editedItem.value.process = "Others";
+  }
+
+  // Open the appropriate dialog based on the item's unit
+  if (item.unit === "kg") {
+    showEditWeight.value = true; // Open the Weight Edit Dialog
+  } else if (item.unit === "sqft") {
+    showEditMeasurementDialog.value = true; // Open the Measurement Edit Dialog
+  } else {
+    showEditQuantityDialog.value = true; // Open the Quantity Edit Dialog
+  }
+};
+
+const saveItemEdit = (index) => {
+  const process = editedItem.value.process; // Get the selected process
+
+  // Update unit_price based on the selected process
+  const unitPriceMapping = {
+    Laundry: selectedItem.value.laundry_price,
+    DryClean: selectedItem.value.dryclean_price,
+    PressingOnly: selectedItem.value.pressing_price,
+    Others: selectedItem.value.others_price,
+  };
+
+  // Update suffix based on the selected process
+  const suffixMapping = {
+    Laundry: "(L)",
+    DryClean: "(DC)",
+    PressingOnly: "(PO)",
+    Others: "(O)",
+  };
+
+  // Set the new unit price and suffix
+  editedItem.value.unit_price = unitPriceMapping[process].toFixed(2);
+  editedItem.value.suffix = suffixMapping[process];
+
+  // Update the full name without concatenating an additional suffix
+  editedItem.value.name = `${selectedItem.value.name}`;
+
+  // Recalculate the total price based on the updated process and unit price
+  editedItem.value.price = (
+    editedItem.value.quantity * editedItem.value.unit_price
+  ).toFixed(2);
+
+  // Save the edited item back into the transactionItems list
+  transactionItems.value[index] = { ...editedItem.value };
+
+  // Close the edit dialogs
+  showEditWeight.value = false;
+  showEditMeasurementDialog.value = false;
+  showEditQuantityDialog.value = false;
+};
+
+// Variables for editing an existing item (for showEditMeasurementDialog)
+const editLength = ref(null);
+const editBreadth = ref(null);
+const totalSqftEdit = computed(() => editLength.value * editBreadth.value);
+
+// Sample editedItem and editedIndex to show how saving works
+const editedItem = ref({});
+const editedIndex = ref(null);
+
+// Sample save function for measurement edit
+const saveMeasurementEdit = (index) => {
+  const price = editedItem.value.unit_price * totalSqftEdit.value;
+
+  transactionItems.value[index] = {
+    ...editedItem.value,
+    size: totalSqftEdit.value.toFixed(2),
+    price: price.toFixed(2),
+  };
+
+  // Clear the fields after saving the edit
+  editLength.value = null;
+  editBreadth.value = null;
+  editedItem.value = {};
+  editedIndex.value = null;
+
+  // Close the edit dialog
+  showEditMeasurementDialog.value = false;
+};
+
+// Helper function to update the unit_price and suffix when the process is changed
+const updateUnitPriceBasedOnProcess = () => {
+  const process = editedItem.value.process; // Get the selected process
+
+  // Update the unit price based on the selected process
+  const unitPriceMapping = {
+    Laundry: selectedItem.value.laundry_price,
+    DryClean: selectedItem.value.dryclean_price,
+    PressingOnly: selectedItem.value.pressing_price,
+    Others: selectedItem.value.others_price,
+  };
+
+  // Update suffix based on the selected process
+  const suffixMapping = {
+    Laundry: "(L)",
+    DryClean: "(DC)",
+    PressingOnly: "(PO)",
+    Others: "(O)",
+  };
+
+  // Set the updated unit price
+  editedItem.value.unit_price = unitPriceMapping[process];
+
+  // Set the updated suffix
+  editedItem.value.suffix = suffixMapping[process];
+
+  // Update the full item name with the new suffix
+  editedItem.value.name = `${selectedItem.value.name}`;
+};
+
+// Function to group items by sub_category
+function groupBySubCategory(items) {
+  return items.reduce((acc, item) => {
+    const subCategory = item.sub_category || "Uncategorized"; // Handle missing sub-categories
+    if (!acc[subCategory]) {
+      acc[subCategory] = [];
+    }
+    acc[subCategory].push(item);
+    return acc;
+  }, {});
+}
+
+// Method to determine the background color class based on the sub_category
+function getItemCardClass(subCategory) {
+  switch (subCategory) {
+    case "Casual Wear":
+      return "bg-lime-4";
+    case "Winter Wear":
+      return "bg-light-blue-12";
+    case "Cultural Wear":
+      return "bg-green-12";
+    case "Accessory Wear":
+      return "bg-purple-11";
+    default:
+      return "bg-teal-2"; // Default class or no background change
+  }
+}
 </script>

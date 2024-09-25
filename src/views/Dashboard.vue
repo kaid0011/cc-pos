@@ -279,15 +279,15 @@
         <!-- Action Buttons -->
         <div class="action-area q-pa-md">
           <div class="row q-col-gutter-sm">
-            <div class="col-4">
+            <div class="col-6">
               <q-btn
                 push
-                :label="$t('add_details')"
+                :label="$t('customer_details')"
                 @click="showAdditionalInfoDialog = true"
                 class="action-buttons bg-warning full-width q-py-sm"
               ></q-btn>
             </div>
-            <div class="col-2">
+            <div class="col-3">
               <q-btn
                 :label="$t('reset')"
                 push
@@ -295,14 +295,14 @@
                 @click="confirmCancel"
               ></q-btn>
             </div>
-            <div class="col-3">
+            <!-- <div class="col-3">
               <q-btn
                 :label="$t('switch')"
                 push
                 class="action-buttons bg-orange text-white full-width q-py-sm"
                 @click="switchTransaction"
               ></q-btn>
-            </div>
+            </div> -->
             <div class="col-3">
               <q-btn
                 :label="$t('submit')"
@@ -939,7 +939,7 @@
           <div class="q-pa-lg">
             <div class="text-h6 text-center text-uppercase">
               Enter Weight (in kg) and Select Service
-            </div>
+            </div>  
   
             <!-- Service Selection -->
             <q-option-group
@@ -954,6 +954,14 @@
             <q-input v-model="totalKg" label="Weight (in kg)" type="number" />
             <q-input v-model="totalPcs" label="Pieces" type="number" />
           </div>
+
+                    <!-- Add to Item Button -->
+                    <q-btn
+                    class="full-width dialog-buttons"
+                    label="Add Item to List"
+                    color="primary"
+                    @click="addToTempItems"
+                  />
           <!-- Added Items List -->
           <div v-if="tempWeightItems.length" class="q-pa-md q-mt-md bg-grey-5">
             <div class="text-h6">Items to Add:</div>
@@ -1039,7 +1047,7 @@
                 <div class="text-p">${{ (item.weight * item.unit_price).toFixed(2) }}</div>
               </div>
 
-              <!-- Edit / Save Button -->
+              <!-- Edit / Delete Button -->
               <div class="table-cell col-1 text-center">
                 <q-btn
                   v-if="!item.edit"
@@ -1049,24 +1057,23 @@
                   @click="editItemWeight(index)"
                   flat
                 />
+                <q-btn
+                class="delete-item"
+                icon="delete"
+                color="negative"
+                @click="deleteItemWeight(index)"
+                flat
+              />
               </div>
             </div>
           </div>
         </q-card-section>
 
         <q-card-actions>
-          <!-- Add to Item Button -->
-          <q-btn
-            class="full-width dialog-buttons"
-            label="Add to Item"
-            color="primary"
-            @click="addToTempItems"
-          />
-
           <!-- Final Add Button - Disable if there are no items in the tempWeightItems list -->
           <q-btn
             class="full-width dialog-buttons"
-            label="Add"
+            label="Add To Transaction"
             color="secondary"
             @click="addToTransaction"
             :disable="tempWeightItems.length === 0"
@@ -1436,14 +1443,14 @@
             {{ currentLanguage }}
           </q-item-section>
         </q-item>
-        <q-item clickable @click="toggleImages">
+        <!-- <q-item clickable @click="toggleImages">
           <q-item-section avatar>
             <q-icon name="visibility_off" />
           </q-item-section>
           <q-item-section>
             {{ showImages ? $t("hide_images") : $t("show_images") }}
           </q-item-section>
-        </q-item>
+        </q-item> -->
         <q-item clickable @click="goToHome">
           <q-item-section avatar>
             <q-icon name="logout" />
@@ -1765,15 +1772,15 @@ const categories = ref([
     items: [],
   },
   {
-    name: "onsite_cleaning",
-    icon: "fas fa-broom",
-    label: "Onsite Cleaning",
-    items: [],
-  },
-  {
     name: "miscellaneous",
     icon: "fas fa-th-large",
     label: "Miscellaneous",
+    items: [],
+  },
+  {
+    name: "onsite_cleaning",
+    icon: "fas fa-broom",
+    label: "Onsite Cleaning",
     items: [],
   },
   { name: "others", icon: "fas fa-ellipsis-h", label: "Others", items: [] },
@@ -1790,7 +1797,7 @@ onMounted(async () => {
 
 const totalPrices = computed(() => {
   return transactionItems.value.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + Number(item.price),
     0
   );
 });
@@ -1802,7 +1809,7 @@ const totalPieces = computed(() => {
 
 const totalQuantities = computed(() => {
   return transactionItems.value.reduce(
-    (total, item) => total + item.quantity,
+    (total, item) => total + Number(item.quantity),
     0
   );
 });
@@ -2528,6 +2535,10 @@ const editItemWeight = (index) => {
   showEditWeight.value = true; // Show the edit dialog
 };
 
+const deleteItemWeight = (index) => {
+  tempWeightItems.value.splice(index, 1);
+};
+
 const showEditMeasurementDialog = ref(false); // Measurement Dialog
 const showEditQuantityDialog = ref(false); // Quantity Dialog
 
@@ -2671,13 +2682,19 @@ function groupBySubCategory(items) {
 // Method to determine the background color class based on the sub_category
 function getItemCardClass(subCategory) {
   switch (subCategory) {
-    case "Casual Wear":
+    case "Casual Attire":
+    case "Bathroom Essentials":
+    case "Curtains/Blinds":
       return "bg-lime-4";
-    case "Winter Wear":
+    case "Winter Attire":
+    case "Bed Linens":
+    case "Carpets":
       return "bg-light-blue-12";
-    case "Cultural Wear":
+    case "Heritage Attire":
+    case "Snuggle Essentials":
+    case "Cushions":
       return "bg-green-12";
-    case "Accessory Wear":
+    case "Accessory Attire":
       return "bg-purple-11";
     default:
       return "bg-teal-2"; // Default class or no background change

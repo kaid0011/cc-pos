@@ -1,5 +1,5 @@
 [[redirects]]
-    from = "cc-pos.netlify.app"
-    to = "pos.cc-systems.net"
+    from = "https://cc-pos.netlify.app"
+    to = "https://pos.cc-systems.net"
     status = 301
     force = true

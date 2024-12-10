@@ -1,6 +1,63 @@
 <template>
-  <q-layout view="hHh lpR fFf">
-    <q-page-container class="app-page">
+  <q-layout view="hhh lpR lFf">
+    <!-- Conditionally render Header and Drawer only if the route requires authentication -->
+    <template v-if="requiresAuth">
+      <!-- Top Toolbar with Menu Icon -->
+      <q-header reveal>
+        <q-toolbar>
+          <q-btn flat round dense icon="menu" @click="toggleLeftDrawer" />
+          <q-toolbar-title>POS</q-toolbar-title>
+        </q-toolbar>  
+      </q-header>
+
+      <!-- Sidebar Menu -->
+      <q-drawer v-model="leftDrawerOpen" side="left" overlay width="250">
+        <q-list>
+          <!-- POS Tab -->
+          <q-item clickable @click="goToPOS" :active="isPOSActive" class="q-pa-md">
+            <q-item-section avatar>
+              <q-icon name="point_of_sale" />
+            </q-item-section>
+            <q-item-section>
+              POS
+            </q-item-section>
+          </q-item>
+
+          <!-- Transaction History Page -->
+          <q-item clickable @click="goToTransactionHistory" :active="isTransactionHistoryActive" class="q-pa-md">
+            <q-item-section avatar>
+              <q-icon name="receipt_long" />
+            </q-item-section>
+            <q-item-section>
+              Transaction History
+            </q-item-section>
+          </q-item>
+
+                    <!-- Customers Page -->
+                    <!-- <q-item clickable @click="goToCustomersPage" :active="isCustomersPageActive" class="q-pa-md">
+                      <q-item-section avatar>
+                        <q-icon name="receipt_long" />
+                      </q-item-section>
+                      <q-item-section>
+                        Customer Management
+                      </q-item-section>
+                    </q-item> -->
+
+          <!-- Log Out Tab -->
+          <q-item clickable @click="logout" class="q-pa-md">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
+            <q-item-section>
+              Log Out
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-drawer>
+    </template>
+
+    <!-- Main Content -->
+    <q-page-container>
       <q-page>
         <router-view />
       </q-page>
@@ -9,41 +66,51 @@
 </template>
 
 <script setup>
-// import { ref } from 'vue';
-// import { supabase } from "@/../supabase/config.js";
+import { ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuth } from '@/../supabase/api/auth';
 
-// const session = ref();
+const router = useRouter();
+const route = useRoute();
+const { logoutUser } = useAuth();
 
-// Uncomment if you need session-based logic
-// onMounted(() => {
-//   supabase.auth.getSession().then(({ data }) => {
-//     session.value = data.session;
-//   });
+const leftDrawerOpen = ref(false);
 
-//   supabase.auth.onAuthStateChange((_, _session) => {
-//     session.value = _session;
-//   });
-// });
+// Check if the current route is POS
+const isPOSActive = computed(() => route.path === '/pos');
+// Check if the current route is Transaction History
+const isTransactionHistoryActive = computed(() => route.path === '/transactions');
+// Check if the current route is Customers Page
+const isCustomersPageActive = computed(() => route.path === '/customers');
+
+// Check if the current route requires authentication
+const requiresAuth = computed(() => {
+  // Define routes that require authentication
+  const authRequiredRoutes = ['/pos', '/transactions', '/customers'];
+  return authRequiredRoutes.includes(route.path);
+});
+
+const toggleLeftDrawer = () => {
+  leftDrawerOpen.value = !leftDrawerOpen.value;
+};
+
+const logout = async () => {
+  const { error } = await logoutUser();
+
+  if (!error) {
+    router.push('/login'); // Redirect to login after logout
+  }
+};
+
+const goToPOS = () => {
+  router.push('/pos');
+};
+
+const goToTransactionHistory = () => {
+  router.push('/transactions');
+};
+
+const goToCustomersPage = () => {
+  router.push('/customers');
+}; 
 </script>
-
-<style scoped>
-.app-page {
-  margin: 0;
-  padding: 0;
-  position: relative;
-  overflow: auto;
-  width: 100vw;
-  height: 100vh;
-}
-
-.app-page::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  z-index: -1; /* Place the pseudo-element behind the content */
-}
-</style>

@@ -1,230 +1,303 @@
 <template>
   <div class="main-container">
-  <div class="review-tab">
-    <!-- Order Summary Header -->
-    <div class="row summary-header text-p">
-      <div class="col summary-card-header justify-between text-p">
-        <div class="text-h6 text-center text-weight-bold">Order Details</div>
-        <q-separator class="q-my-sm" />
-        <div class="text-summary-row">
-          Customer Name:
-          <span class="text-summary">{{
-            transactionStore.selectedCustomer?.name || "N/A"
-          }}</span>
-        </div>
-        <div class="text-summary-row">
-          Contact No:
-          <span class="text-summary">{{
-            transactionStore.selectedCustomer?.contact_no1 || "N/A"
-          }}</span>
-        </div>
-        <div class="text-summary-row">
-          Email:
-          <span class="text-summary">{{
-            transactionStore.selectedCustomer?.email || "N/A"
-          }}</span>
-        </div>
-        <div class="text-summary-row">
-          Order No:
-          <span class="text-summary">{{
-            transactionStore?.orderNo || "N/A"
-          }}</span>
-        </div>
-        <div class="text-summary-row">
-          Ready By:
-          <span class="text-summary">{{
-            transactionStore?.readyBy || "N/A"
-          }}</span>
-        </div>
-      </div>
-      <!-- Collection Details -->
-      <div class="col summary-card-header">
-        <div class="text-h6 text-center text-weight-bold">Collection Details</div>
-        <q-separator class="q-my-sm"/>
-        <div class="text-summary-row">Contact Person: <span class="text-summary">{{ collectionContact?.name || 'N/A' }}</span></div>
-        <div class="text-summary-row">Contact No: <span class="text-summary">{{ collectionContact?.contact_no1 || 'N/A' }}</span></div>
-        <div class="text-summary-row">Address: <span class="text-summary">{{ collectionAddress?.address || 'N/A' }}</span></div>
-        <div class="text-summary-row">Date From: <span class="text-summary">{{ formattedCollectionDateFrom }}</span></div>
-        <div class="text-summary-row">Date To: <span class="text-summary">{{ formattedCollectionDateTo }}</span></div>
-      </div>
-
-      <!-- Delivery Details -->
-      <div class="col summary-card-header">
-        <div class="text-h6 text-center text-weight-bold">Delivery Details</div>
-        <q-separator class="q-my-sm"/>
-        <div class="text-summary-row">Contact Person: <span class="text-summary">{{ deliveryContact?.name || 'N/A' }}</span></div>
-        <div class="text-summary-row">Contact No: <span class="text-summary">{{ deliveryContact?.contact_no1 || 'N/A' }}</span></div>
-        <div class="text-summary-row">Address: <span class="text-summary">{{ deliveryAddress?.address || 'N/A' }}</span></div>
-        <div class="text-summary-row">Date From: <span class="text-summary">{{ formattedDeliveryDateFrom }}</span></div>
-        <div class="text-summary-row">Date To: <span class="text-summary">{{ formattedDeliveryDateTo }}</span></div>
-      </div>
-    </div>
-
-    <!-- Transaction Summary -->
-    <div class="transaction-summary">
-      <!-- Table Header -->
-      <div class="row row-col-header">
-        <div class="col col-4 text-weight-bold bordered">Item</div>
-        <div class="col col-2 text-weight-bold bordered">Process</div>
-        <div class="col col-2 text-weight-bold bordered">Price</div>
-        <div class="col col-1 text-weight-bold bordered">Pcs</div>
-        <div class="col col-1 text-weight-bold bordered">Qty</div>
-        <div class="col col-2 text-weight-bold bordered">Subtotal</div>
-      </div>
-
-      <!-- Transactions or Fallback Message -->
-      <div v-if="rows.length > 0">
-        <div
-          v-for="item in rows"
-          :key="item.name"
-          class="row row-col-row summary-row"
-        >
-          <div class="col col-4 bordered">{{ item.name }}</div>
-          <div class="col col-2 bordered">{{ item.process }}</div>
-          <div class="col col-2 bordered">{{ item.price }}</div>
-          <div class="col col-1 bordered">{{ item.pieces }}</div>
-          <div class="col col-1 bordered">{{ item.quantity }}</div>
-          <div class="col col-2 bordered">{{ item.subtotal }}</div>
-        </div>
-      </div>
-
-      <!-- No Items Message -->
-      <div v-else class="text-center text-grey q-my-md">
-        No items added to the list.
-      </div>
-
-      <div class="row row-col-footer">
-        <div class="col col-6 text-weight-bold text-uppercase"></div>
-        <div class="col col-2 text-weight-bold text-uppercase bordered">
-          Total
-        </div>
-        <div class="col col-1 text-weight-bold bordered">{{ totalPcs }}</div>
-        <div class="col col-1 text-weight-bold bordered">{{ totalQty }}</div>
-        <div class="col col-2 text-weight-bold bordered">
-          {{ totalSubtotal }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Instructions and Error Reporting Summaries -->
-    <div class="row">
-      <!-- Instructions Summary -->
-      <div class="col-6">
-        <q-card flat class="summary-card q-mt-md">
-          <div class="text-h6 text-center text-weight-bold">Instructions</div>
+    <div class="review-tab">
+      <!-- Order Summary Header -->
+      <div class="row summary-header text-p">
+        <div class="col summary-card-header justify-between text-p">
+          <div class="text-h6 text-center text-weight-bold">Order Details</div>
           <q-separator class="q-my-sm" />
-          <!-- Display instructions or a fallback message -->
-          <div v-if="instructions.length > 0">
-            <div
-              v-for="instruction in instructions"
-              :key="instruction.id"
-              class="per-instruction q-mb-sm"
-            >
-              <div class="text-p">
-                <span>
-                  <q-icon
-                    name="circle"
-                    color="primary"
-                    size="8px"
-                    class="q-mr-sm q-ml-md"
-                  />
-                </span>
-                {{ instruction.desc }}
-              </div>
-              <div class="instruction-chips q-ml-lg">
-                <q-chip
-                  square
-                  :color="
-                    instruction.type === 'onetime' ? 'purple-10' : 'pink-10'
-                  "
-                  text-color="white"
-                  class="instructions-type"
-                >
-                  {{
-                    instruction.type === "onetime" ? "One-time" : "Recurring"
-                  }}
-                </q-chip>
-                <span> | </span>
-                <q-chip
-                  v-for="section in instruction.to"
-                  :key="section"
-                  :color="getSectionColor(section)"
-                  text-color="white"
-                  class="instructions-to"
-                >
-                  {{ formatSectionLabel(section) }}
-                </q-chip>
-              </div>
-            </div>
+          <div class="text-summary-row">
+            Customer Name:
+            <span class="text-summary">{{
+              transactionStore.selectedCustomer?.name || "N/A"
+            }}</span>
           </div>
-          <div v-else class="text-center text-grey">
-            No instructions listed.
+          <div class="text-summary-row">
+            Contact No:
+            <span class="text-summary">{{
+              transactionStore.selectedCustomer?.contact_no1 || "N/A"
+            }}</span>
           </div>
-        </q-card>
-      </div>
-
-      <!-- Error Reporting Summary -->
-      <div class="col-6">
-        <q-card flat class="summary-card q-mt-md">
+          <div class="text-summary-row">
+            Email:
+            <span class="text-summary">{{
+              transactionStore.selectedCustomer?.email || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Order No:
+            <span class="text-summary">{{
+              transactionStore?.orderNo || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Ready By:
+            <span class="text-summary">{{ formattedReadyByDate }}</span>
+          </div>
+        </div>
+        <!-- Collection Details -->
+        <div class="col summary-card-header">
           <div class="text-h6 text-center text-weight-bold">
-            Error Reporting
+            Collection Details
           </div>
           <q-separator class="q-my-sm" />
-          <!-- Display error reports or a fallback message -->
-          <div v-if="reports.length > 0">
-            <div
-              v-for="report in reports"
-              :key="report.id"
-              class="per-report q-mb-sm"
-            >
-              <!-- Error Description -->
-              <div class="text-p">
-                <span>
-                  <q-icon
-                    name="circle"
-                    color="primary"
-                    size="8px"
-                    class="q-mr-sm q-ml-md"
-                  />
-                </span>
-                {{ report.desc }}
-              </div>
+          <div class="text-summary-row">
+            Contact Person:
+            <span class="text-summary">{{
+              collectionContact?.name || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Contact No:
+            <span class="text-summary">{{
+              collectionContact?.contact_no1 || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Address:
+            <span class="text-summary">{{
+              collectionAddress?.address || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Date From:
+            <span class="text-summary">{{ formattedCollectionDateFrom }}</span>
+          </div>
+          <div class="text-summary-row">
+            Date To:
+            <span class="text-summary">{{ formattedCollectionDateTo }}</span>
+          </div>
+        </div>
 
-              <!-- Error Category and Sub-category -->
-              <div class="q-ml-lg text-weight-bold text-red">
-                {{ report.category }} - {{ report.subCategory }}
-              </div>
+        <!-- Delivery Details -->
+        <div class="col summary-card-header">
+          <div class="text-h6 text-center text-weight-bold">
+            Delivery Details
+          </div>
+          <q-separator class="q-my-sm" />
+          <div class="text-summary-row">
+            Contact Person:
+            <span class="text-summary">{{
+              deliveryContact?.name || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Contact No:
+            <span class="text-summary">{{
+              deliveryContact?.contact_no1 || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Address:
+            <span class="text-summary">{{
+              deliveryAddress?.address || "N/A"
+            }}</span>
+          </div>
+          <div class="text-summary-row">
+            Date From:
+            <span class="text-summary">{{ formattedDeliveryDateFrom }}</span>
+          </div>
+          <div class="text-summary-row">
+            Date To:
+            <span class="text-summary">{{ formattedDeliveryDateTo }}</span>
+          </div>
+        </div>
+      </div>
 
-              <!-- Error Photo Preview (if available) -->
-              <q-img
-                v-if="report.photo"
-                :src="report.photo"
-                class="q-mt-sm q-ml-lg"
-                style="max-width: 200px; height: auto"
-              />
+      <!-- Transaction Summary -->
+      <div class="transaction-summary">
+        <!-- Table Header -->
+        <div class="row row-col-header">
+          <div class="col col-4 text-weight-bold bordered">Item</div>
+          <div class="col col-2 text-weight-bold bordered">Process</div>
+          <div class="col col-2 text-weight-bold bordered">Price</div>
+          <div class="col col-1 text-weight-bold bordered">Pcs</div>
+          <div class="col col-1 text-weight-bold bordered">Qty</div>
+          <div class="col col-2 text-weight-bold bordered">Subtotal</div>
+        </div>
+
+        <!-- Transactions or Fallback Message -->
+        <div v-if="rows.length > 0">
+          <div
+            v-for="item in rows"
+            :key="item.name"
+            class="row row-col-row summary-row"
+          >
+            <div class="col col-4 bordered">{{ item.name }}</div>
+            <div class="col col-2 bordered">{{ item.process }}</div>
+            <div class="col col-2 bordered">{{ item.price }}</div>
+            <div class="col col-1 bordered">{{ item.pieces }}</div>
+            <div class="col col-1 bordered">{{ item.quantity }}</div>
+            <div class="col col-2 bordered">{{ item.subtotal }}</div>
+          </div>
+        </div>
+
+        <!-- No Items Message -->
+        <div v-else class="text-center text-grey q-my-md">
+          No items added to the list.
+        </div>
+
+        <div class="row row-col-footer">
+          <div class="col col-6 text-weight-bold text-uppercase"></div>
+          <div class="col col-2 text-weight-bold text-uppercase bordered">
+            Total
+          </div>
+          <div class="col col-1 text-weight-bold bordered">{{ totalPcs }}</div>
+          <div class="col col-1 text-weight-bold bordered">{{ totalQty }}</div>
+          <div class="col col-2 text-weight-bold bordered">
+            {{ totalSubtotal }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions and Error Reporting Summaries -->
+      <div class="row">
+        <!-- Instructions Summary -->
+        <div class="col-6">
+          <q-card flat class="summary-card q-mt-md">
+            <div class="text-h6 text-center text-weight-bold">Instructions</div>
+            <q-separator class="q-my-sm" />
+            <!-- Display instructions or a fallback message -->
+            <div v-if="instructions.length > 0">
+              <div
+                v-for="instruction in instructions"
+                :key="instruction.id"
+                class="per-instruction q-mb-sm"
+              >
+                <div class="text-p">
+                  <span>
+                    <q-icon
+                      name="circle"
+                      color="primary"
+                      size="8px"
+                      class="q-mr-sm q-ml-md"
+                    />
+                  </span>
+                  {{ instruction.description }}
+                </div>
+                <div class="instruction-chips q-ml-lg">
+                  <q-chip
+                    square
+                    :color="
+                      instruction.type === 'onetime' ? 'purple-10' : 'pink-10'
+                    "
+                    text-color="white"
+                    class="instructions-type"
+                  >
+                    {{
+                      instruction.type === "onetime" ? "One-time" : "Recurring"
+                    }}
+                  </q-chip>
+                  <span> | </span>
+                  <q-chip
+                    v-for="section in instruction.to"
+                    :key="section"
+                    :color="getSectionColor(section)"
+                    text-color="white"
+                    class="instructions-to"
+                  >
+                    {{ formatSectionLabel(section) }}
+                  </q-chip>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center text-grey">
+              No instructions listed.
+            </div>
+          </q-card>
+        </div>
+
+        <!-- Error Reporting Summary -->
+        <div class="col-6">
+          <q-card flat class="summary-card q-mt-md">
+            <div class="text-h6 text-center text-weight-bold">
+              Error Reporting
+            </div>
+            <q-separator class="q-my-sm" />
+            <!-- Display error reports or a fallback message -->
+            <div v-if="reports.length > 0">
+              <div
+                v-for="report in reports"
+                :key="report.id"
+                class="per-report q-mb-sm"
+              >
+                <!-- Error Description -->
+                <div class="text-p">
+                  <span>
+                    <q-icon
+                      name="circle"
+                      color="primary"
+                      size="8px"
+                      class="q-mr-sm q-ml-md"
+                    />
+                  </span>
+                  {{ report.description }}
+                </div>
+
+                <!-- Error Category and Sub-category -->
+                <div class="q-ml-lg text-weight-bold text-red">
+                  {{ report.category }} - {{ report.sub_category }}
+                </div>
+
+                <!-- Error Photo Preview (if available) -->
+                <q-img
+                  v-if="report.image"
+                  :src="report.image"
+                  class="q-mt-sm q-ml-lg"
+                  style="max-width: 200px; height: auto"
+                />
+              </div>
+            </div>
+            <div v-else class="text-center text-grey">
+              No error reports listed.
+            </div>
+          </q-card>
+        </div>
+      </div>
+
+<!-- Success/Failure Dialog -->
+<q-dialog v-model="isDialogOpen">
+  <q-card>
+    <q-card-section class="text-h6 text-center">
+      {{ dialogMessage }}
+    </q-card-section>
+    <q-card-actions align="center" class="q-pt-md">
+      <q-btn
+        v-if="transactionSuccess"
+        label="Generate Invoice"
+        color="primary"
+        @click="handleGenerateInvoice"
+      />
+      <q-btn
+        label="Close"
+        color="secondary"
+        @click="isDialogOpen = false"
+      />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
+
+
+      <q-dialog v-model="isPrintTagsDialogOpen">
+        <q-card class="tag-print-container">
+          <div class="tag-print-paper" id="tagPaper">
+            <div class="tag-row full-width" v-for="n in 26" :key="n">
+              <!-- Content of each row -->
+              Row {{ n }}
             </div>
           </div>
-          <div v-else class="text-center text-grey">
-            No error reports listed.
-          </div>
+          <q-card-actions class="row justify-between" align="right">
+            <q-btn label="Close" color="accent" v-close-popup />
+            <q-btn label="Print" color="primary" @click="printTagPaper" />
+          </q-card-actions>
         </q-card>
-      </div>
-    </div>
+      </q-dialog>      
+      
 
-    <!-- Dialog for Success/Failure Messages -->
-    <q-dialog v-model="isDialogOpen">
-      <q-card>
-        <q-card-section class="text-h6">{{ dialogMessage }}</q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Close" color="primary" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <!-- Stepper Navigation -->
-    <q-stepper-navigation>
-      <div class="row justify-end q-mx-md q-my-sm">
-        <!-- <q-btn @click="$emit('back')" color="primary" label="Back" />
+      <!-- Stepper Navigation -->
+      <q-stepper-navigation>
+        <div class="row justify-end q-mx-md q-my-sm">
+          <!-- <q-btn @click="$emit('back')" color="primary" label="Back" />
           <q-btn
             flat
             class="secondary-button text-white q-mb-md q-ml-sm"
@@ -232,10 +305,21 @@
             label="Download PDF"
           />
           <q-btn flat color="primary" label="Reset" class="q-ml-sm" /> -->
-          <q-btn @click="handleSubmit" color="primary" label="Submit Transaction" />
-      </div>
-    </q-stepper-navigation>
-  </div></div>
+          <q-btn
+            @click="handlePrintTags"
+            color="accent"
+            label="Print Tags"
+            class="q-mr-md"
+          />
+          <q-btn
+            @click="handleSubmit"
+            color="primary"
+            label="Submit Transaction"
+          />
+        </div>
+      </q-stepper-navigation>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -291,18 +375,6 @@ function formatSectionLabel(section) {
 const isDialogOpen = ref(false);
 const dialogMessage = ref("");
 
-// Method to handle Submit button press
-async function handleSubmit() {
-  try {
-    await transactionStore.saveTransaction();
-    dialogMessage.value = "Transaction saved successfully!";
-    isDialogOpen.value = true;
-  } catch (error) {
-    dialogMessage.value = "Error saving transaction. Please try again.";
-    isDialogOpen.value = true;
-    console.error("Error saving transaction:", error);
-  }
-}
 
 // Download Invoice
 const downloadInvoice = async () => {
@@ -460,27 +532,146 @@ const totalSubtotal = computed(() => {
 });
 
 // Computed properties for formatted collection and delivery dates
+const formattedReadyByDate = computed(() => {
+  return transactionStore.readyBy
+    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
+        new Date(transactionStore.readyBy)
+      )
+    : "N/A";
+});
+
 const formattedCollectionDateFrom = computed(() => {
   return transactionStore.collectionDateFrom
-    ? new Date(transactionStore.collectionDateFrom).toLocaleDateString()
+    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
+        new Date(transactionStore.collectionDateFrom)
+      )
     : "N/A";
 });
 
 const formattedCollectionDateTo = computed(() => {
   return transactionStore.collectionDateTo
-    ? new Date(transactionStore.collectionDateTo).toLocaleDateString()
+    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
+        new Date(transactionStore.collectionDateTo)
+      )
     : "N/A";
 });
 
 const formattedDeliveryDateFrom = computed(() => {
   return transactionStore.deliveryDateFrom
-    ? new Date(transactionStore.deliveryDateFrom).toLocaleDateString()
+    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
+        new Date(transactionStore.deliveryDateFrom)
+      )
     : "N/A";
 });
 
 const formattedDeliveryDateTo = computed(() => {
   return transactionStore.deliveryDateTo
-    ? new Date(transactionStore.deliveryDateTo).toLocaleDateString()
+    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
+        new Date(transactionStore.deliveryDateTo)
+      )
     : "N/A";
 });
+
+
+const isPrintTagsDialogOpen = ref(false);
+
+function handlePrintTags() {
+  isPrintTagsDialogOpen.value = true;
+}
+
+function printTagPaper() {
+  const tagPaper = document.getElementById("tagPaper");
+  if (tagPaper) {
+    const printWindow = window.open("", "_blank");
+    const printContent = tagPaper.outerHTML;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <html>
+        <head>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            .tag-print-paper {
+              width: 10cm;
+              height: 27.5cm;
+              border: 1px solid #ccc;
+              display: flex;
+              flex-direction: column;
+              box-sizing: border-box;
+            }
+            .tag-row {
+              flex: 1;
+              border: 1px solid black;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>${printContent}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  }
+}
+
+const transactionSuccess = ref(false); // Tracks if transaction was successful
+let submittedOrderId = null; // Store the submitted order ID for invoice generation
+
+// Handle transaction submission
+async function handleSubmit() {
+  try {
+    const orderNo = await transactionStore.saveTransaction(); // Save transaction and get orderNo
+    if (!orderNo) {
+      throw new Error("Order number could not be retrieved.");
+    }
+
+    dialogMessage.value = `Transaction for Order No: ${orderNo} submitted successfully!`;
+    transactionStore.orderNo = orderNo; // Save the orderNo in the store
+    transactionSuccess.value = true;
+    isDialogOpen.value = true;
+  } catch (error) {
+    dialogMessage.value = `Error submitting transaction: ${error.message}`;
+    transactionSuccess.value = false;
+    isDialogOpen.value = true;
+    console.error("Error submitting transaction:", error.message);
+  }
+}
+
+async function handleGenerateInvoice() {
+  try {
+    const orderNo = transactionStore.orderNo; // Retrieve the orderNo from the store
+    if (!orderNo) {
+      throw new Error("Order number is missing. Please submit the transaction first.");
+    }
+
+    const result = await transactionStore.generateInvoice(orderNo);
+    if (result) {
+      dialogMessage.value = `Invoice generated successfully for Order No: ${orderNo}!`;
+      transactionSuccess.value = true;
+
+      // Open the payment page in a new tab
+      window.open(`/payment/${orderNo}`, "_blank");
+    } else {
+      dialogMessage.value = "Failed to generate invoice.";
+      transactionSuccess.value = false;
+    }
+  } catch (error) {
+    console.error("Error generating invoice:", error.message);
+    dialogMessage.value = `Error: ${error.message}`;
+    transactionSuccess.value = false;
+  }
+}
+
+
 </script>

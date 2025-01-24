@@ -131,10 +131,9 @@ body {
 }
 
 .search-container {
-  padding: 1em 0 0 0 !important;
+  padding: 0 0 0 0 !important;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 10px;
 }
 
 .search-input {
@@ -487,4 +486,168 @@ padding: 0.7em !important;
 .preview-right-container {
   padding: 0 !important;
   background-color: #edd0bd;
+}
+
+.tag-print-container {
+  background-color: #edd0bd;
+  padding: 16px;
+}
+
+.tag-print-paper {
+  width: 10cm;
+  height: 27.5cm;
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.tag-content {
+  padding: 16px;
+  text-align: center;
+}
+
+.tag-row {
+  flex: 1; /* Makes all rows equal height */
+  border: 1px solid black; /* Black border for each container */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px; /* Adjust font size as needed */
+}
+
+.contact-persons-container {
+  background-color: #eac7b1;
+}
+
+.addresses-container {
+  background-color: #eac7b1;
+}
+
+.show-list-tab {
+  background-color: #ffede2;
+}
+
+.dialog-header {
+  background-color: #46717d;
+  color: white;
+  padding: 0.8em 1.5em;
+}
+
+.dialog-body {
+  background-color: #dde4e6;
+}
+
+.dialog-inputs {
+  background-color: white;
+  margin-bottom: 0.5em;
+  border-radius: 0.5em;
+}
+
+.outline-btn {
+  background-color: #d6eef3 !important;
+  font-weight: bold;
+}
+
+.text-large {
+  font-size: 1.2em;
+}
+
+.others-input {
+  margin-top: 0.2em;
+  margin-bottom: 0.5em;
+  margin-left: 0.2em;
+}
+
+.trash-icon {
+  padding: 0 !important;
+}
+
+.styled-camera {
+  width: 100%; /* Adjust as per your layout */
+  height: 300px; /* Fixed height */
+  object-fit: cover; /* Ensures the aspect ratio is maintained */
+  border: 1px solid #ccc; /* Optional: Adds a border */
+}
+
+.payment-btn {
+  height: 6em;
+  width: 100%;
+}
+
+.payment-btn-txt {
+font-size: 1.3em;
+font-weight: bold;
+}
+
+.status-done {
+  color: green;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-to-print {
+  color: red;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.editable-field {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  text-align: center;
+  font-size: inherit;
+}
+.editable-field:focus {
+  border-bottom: 1px solid #000;
+}
+
+.showhidetab {
+  background-color: #dcbaa5;
+}
+
+.tag-borders {
+  border-style: solid; 
+  border-width: 1px;
+}
+
+.tags-view-container {
+  background-color: #ffe0cd;
+  height: 100%; /* Full height */
+  min-height: calc(100vh - 7.5em) !important;
+  padding: 0 !important;
+}
+
+.tags-left-container{
+  padding: 1em !important;
+  background-color: #ffe0cd;
+}
+
+.tags-right-container {
+  padding: 0 !important;
+  background-color: #edd0bd;
+}
+
+.tag-card {
+  width: 100%;
+  padding: 10px;
+}
+
+.tag-card-cell {
+  border-style: solid; 
+  border-width: 0.5px;
+  padding: 5px;
+}
+
+.bottom-border {
+  border-style: solid;
+  border-width: 1px 0 0 0;
+  margin-bottom: 1.5em;
+  margin-top: 1.5em;
 }

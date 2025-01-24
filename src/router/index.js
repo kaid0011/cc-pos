@@ -6,6 +6,9 @@ import TransactionsPage from "@/views/TransactionsPage.vue";
 import CustomersPage from "@/views/CustomersPage.vue";
 import CustomerView from "@/views/CustomerView.vue";
 import OrderPage from "@/views/OrderPage.vue";
+import PaymentPage from "@/views/PaymentPage.vue";
+import TagsPage from "@/views/TagsPage.vue";
+import TagsView from "@/views/TagsView.vue";
 
 const routes = [
   {
@@ -60,7 +63,29 @@ const routes = [
       requiresAuth: true,
     },
   },
-
+  
+  {
+    path: "/payment/:order_no",
+    name: "PaymentPage",
+    component: PaymentPage,
+    meta: { requiresAuth: true },
+  },  
+  {
+    path: "/tags",
+    name: "Tags",
+    component: TagsPage,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
+  {
+    path: "/tags/:order_no",
+    name: "TagsView",
+    component: TagsView,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
   {
     path: "/:catchAll(.*)", // Catch-all route for 404 pages
     name: "NotFound",

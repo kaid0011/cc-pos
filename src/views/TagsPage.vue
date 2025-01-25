@@ -1,12 +1,12 @@
 <template>
   <div class="full-container transactions-history">
     <div class="text-h6 text-center text-uppercase text-weight-bold q-mb-md">
-      Transaction History
+      Tags Management
     </div>
     <!-- Search Bar -->
     <div class="row justify-end q-mb-sm q-gutter-x-sm">
       <!-- Date Range Filters -->
-      <div class="date-filter-container row q-gutter-x-sm">
+      <!-- <div class="date-filter-container row q-gutter-x-sm">
         <q-input
           class="date-input"
           v-model="startDate"
@@ -25,13 +25,13 @@
           label="End Date"
           clearable
         />
-      </div>
+      </div> -->
       <q-input
         class="search-transactions search-input"
         v-model="searchQuery"
         outlined
         dense
-        placeholder="Search by Order No, Customer Name, or Contact No"
+        placeholder="Search Here..."
         @input="filterOrders"
       >
         <template v-slot:prepend>
@@ -43,20 +43,25 @@
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
         <div class="col">Order No</div>
-        <div class="col">Date Created</div>
-        <div class="col">Ready By</div>
-        <div class="col">Goods Status</div>
-        <div class="col">Logistic Status</div>
-        <div class="col">Payment Status</div>
+        <div class="col">Collection Date</div>
+        <div class="col">Delivery Date</div>
+        <div class="col">Driver</div>
         <div class="col">Customer Name</div>
-        <!-- <div class="col">Actions</div> -->
+        <div class="col">Tag Timestamp</div>
+        <div class="col">Changes</div>
+        <div class="col">Status</div>
+        <div class="col">Actions</div>
       </div>
 
       <!-- Table Rows -->
-      <div v-if="filteredOrders.length === 0" class="text-center text-grey q-pa-lg text-h6">
+      <div
+        v-if="filteredOrders.length === 0"
+        class="text-center text-grey q-pa-lg text-h6"
+      >
         No existing transactions.
       </div>
-      <div v-else
+      <div
+        v-else
         v-for="order in filteredOrders"
         :key="order.id"
         class="row row-col-row q-mx-md"
@@ -64,27 +69,41 @@
         <div class="col">
           <a @click="openOrderDialog(order)">{{ order.order_no }}</a>
         </div>
-        <div class="col">{{ formatDate(order.order_date_time) }}</div>
-        <div class="col">{{ formatDate(order.ready_by) }}</div>
-        <div class="col">{{ order.goods_status }}</div>
-        <div class="col">{{ order.logistics_status }}</div>
-        <div class="col">{{ order.payment_status }}</div>
+        <div class="col">{{ formatDate(order.collection_date) }}</div>
+        <div class="col">{{ formatDate(order.delivery_date) }}</div>
+        <div class="col">{{ order.driver || "N/A" }}</div>
         <div class="col">
           <div class="col">
-            <a @click.prevent="openCustomerTab(order.customer_id)">{{ order.customer_name }}</a>
+            <a @click.prevent="openCustomerTab(order.customer_id)">{{
+              order.customer_name
+            }}</a>
           </div>
-          
         </div>
+        <div class="col">{{ formatTimestamp(order.tag_timestamp) }}</div>
+        <div class="col">{{ order.tag_changes }}</div>
+        <div
+        class="col"
+        :class="getStatusClass(order.tag_status)"
+      >
+        {{ order.tag_status }}
+      </div>
+      <div class="col">
+        <q-btn
+          label="View Tag"
+          color="primary"
+          @click="viewTag(order.order_no)"
+        />
+      </div>
+
         <!-- <div class="col">
-          <q-btn
-            flat
-            dense
-            label="Create transa..."
-            color="primary"
-            @click="createTransaction(order)"
-          />
-        </div> -->
-        
+            <q-btn
+              flat
+              dense
+              label="Create transa..."
+              color="primary"
+              @click="createTransaction(order)"
+            />
+          </div> -->
       </div>
     </div>
   </div>
@@ -173,38 +192,39 @@ const startDate = ref(null);
 const endDate = ref(null);
 
 const router = useRouter();
-// Fetch orders and customer details on component mount
+// Fetch data on mount
 onMounted(async () => {
   try {
     const rawOrders = await fetchAllOrders();
-    console.log("Fetched Orders:", rawOrders); // Debug orders
 
+    // Fetch related data for collections, deliveries, and customers
     orders.value = await Promise.all(
       rawOrders.map(async (order) => {
-        const customerDetails = await transactionStore.fetchCustomerDetailsById(
+        const collection = await transactionStore.fetchCollectionDetailsById(
+          order.collection_id
+        );
+        const delivery = await transactionStore.fetchDeliveriesDetailsById(
+          order.delivery_id
+        );
+        const customer = await transactionStore.fetchCustomerDetailsById(
           order.customer_id
         );
 
-        console.log("Customer Details:", customerDetails); // Debug customers
-
         return {
           ...order,
-          customer_name: customerDetails?.name || "Unknown",
-          contact_no1: customerDetails?.contact_no1 || "N/A",
-              contact_no2: customerDetails?.contact_no2 || null,
-              email: customerDetails?.email || null,
-              remarks: customerDetails?.remarks || null,
-              type: customerDetails?.type || null,
+          collection_date: collection?.date_collected || "N/A",
+          delivery_date: delivery?.date_delivered || "N/A",
+          driver: order.driver_name || "N/A",
+          customer_name: customer?.name || "Unknown", // Map customer_name
         };
       })
     );
 
-    console.log("Orders with Customer Details:", orders.value);
+    filteredOrders.value = orders.value; // Initialize filteredOrders
   } catch (error) {
-    console.error("Error initializing orders:", error);
+    console.error("Error fetching orders:", error);
   }
 });
-
 
 
 // Filtered Orders Computed Property
@@ -234,10 +254,11 @@ const filteredOrders = computed(() => {
   });
 });
 
-// Helper function to format order_date_time to display date only
-const formatDate = (timestamp) => {
-  if (!timestamp) return "";
-  return new Date(timestamp).toLocaleDateString(); // Format to "MM/DD/YYYY" or local format
+// Helper function to format dates
+const formatDate = (date) => {
+  if (!date) return "N/A";
+  const d = new Date(date);
+  return d.toLocaleDateString();
 };
 
 const openCustomerTab = (customerId) => {
@@ -252,11 +273,11 @@ const createTransaction = async (order) => {
       id: order.customer_id,
       name: order.customer_name,
       contact_no1: order.contact_no1,
-      
-              contact_no2: order?.contact_no2,
-              email: order?.email,
-              remarks: order?.remarks,
-              type: order?.type,
+
+      contact_no2: order?.contact_no2,
+      email: order?.email,
+      remarks: order?.remarks,
+      type: order?.type,
     });
 
     // Adjust the order number
@@ -301,7 +322,36 @@ const openOrderDialog = async (order) => {
     console.error("Error creating transaction:", error);
   }
 };
+// Helper function to format tag timestamp
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return "N/A";
+  const date = new Date(timestamp);
+  
+  // Format: mm/dd/yy hh:mm AM/PM
+  const options = {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+  return date.toLocaleString("en-US", options);
+};
 
+// Helper method to get status classes
+const getStatusClass = (status) => {
+  if (!status) return '';
+  const formattedStatus = status.toLowerCase();
+  if (formattedStatus === 'done') return 'status-done';
+  if (formattedStatus === 'to print') return 'status-to-print';
+  return '';
+};
 
+const viewTag = (orderNo) => {
+  // Open /tags/:order_no in a new tab
+  const url = `/tags/${orderNo}`;
+  window.open(url, '_blank');
+};
 
 </script>

@@ -46,7 +46,7 @@
 
       <!-- Step 5: Print -->
       <!-- <q-step class="cat-step" :name="5" title="Print" icon="print">
-        <PrintTab @back="step = 4" />
+        <PaymentTab @back="step = 4" />
       </q-step> -->
     </q-stepper>
   </div>
@@ -59,7 +59,6 @@ import CustomerTab from "@/components/CustomerTab.vue";
 import TransactionTab from "@/components/TransactionTab.vue";
 import InstructionsTab from "@/components/InstructionsTab.vue";
 import ReviewTab from "@/components/ReviewTab.vue";
-import PrintTab from "@/components/PrintTab.vue";
 
 const transactionStore = useTransactionStore();
 const step = ref(1);

@@ -41,6 +41,7 @@
         <div class="col bordered">Contact No 1</div>
         <div class="col bordered">Contact No 2</div>
         <div class="col bordered">Email</div>
+        <div class="col bordered">Payment Type </div>
         <div class="col bordered">Remarks</div>
         <div class="col bordered">Actions</div>
       </div>
@@ -64,6 +65,7 @@
         <div class="col bordered">{{ customer.contact_no1 }}</div>
         <div class="col bordered">{{ customer.contact_no2 }}</div>
         <div class="col bordered">{{ customer.email }}</div>
+        <div class="col bordered">{{ customer.payment_type }}</div>
         <div class="col bordered">{{ customer.remarks }}</div>
         <div class="col bordered actions">
 <q-btn
@@ -315,6 +317,7 @@ const newCustomer = ref({
   contact_no2: "",
   email: "",
   remarks: "",
+  payment_type: "",
 });
 
 const selectedCustomer = ref({
@@ -324,6 +327,7 @@ const selectedCustomer = ref({
   contact_no2: "",
   email: "",
   remarks: "",
+  payment_type: "",
   addresses: [],
 });
 
@@ -401,6 +405,7 @@ const resetAndCloseAddDialog = () => {
     contact_no2: "",
     email: "",
     remarks: "",
+    payment_type:"",
   };
   showAddCustomerDialog.value = false;
 };
@@ -488,6 +493,7 @@ const navigateToPOS = (customer) => {
       contact_no2: customer.contact_no2,
       email: customer.email,
       remarks: customer.remarks,
+      payment_type: customer.payment_type,
     });
 
     // Navigate to POS page

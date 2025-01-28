@@ -1,6 +1,6 @@
 <template>
   <div class="full-container customers-management">
-    <div class="row items-center justify-between">
+    <div class="row items-center justify-between q-mb-sm">
       <!-- Search Field and Button -->
       <div class="search-container">
         <q-input
@@ -27,6 +27,7 @@
       <q-btn
         class="main-button"
         color="primary"
+        icon="person_add"
         @click="showAddCustomerDialog = true"
         label="Add Customer"
       />
@@ -38,8 +39,7 @@
       <div class="row row-col-header q-px-md">
         <div class="col bordered">Name</div>
         <div class="col bordered">Address</div>
-        <div class="col bordered">Contact No 1</div>
-        <div class="col bordered">Contact No 2</div>
+        <div class="col bordered">Contact Nos</div>
         <div class="col bordered">Email</div>
         <div class="col bordered">Payment Type </div>
         <div class="col bordered">Remarks</div>
@@ -54,16 +54,26 @@
       >
         <div class="col bordered">{{ customer.name }}</div>
         <div class="col bordered">
-          <ul v-if="customer.addresses?.length">
+          <ul v-if="customer.addresses?.length" class="q-pl-md">
             <li v-for="address in customer.addresses" :key="address.id">
-              {{ address.address }}
+              {{address.block_no}} {{address.road_name}} {{address.unit_no}} {{address.building_name}}, {{address.postal_code}} ({{address?.additional_info || ""}})
             </li>
           </ul>
           <span v-else>No Address Available</span>
         </div>
         
-        <div class="col bordered">{{ customer.contact_no1 }}</div>
-        <div class="col bordered">{{ customer.contact_no2 }}</div>
+        <div class="col bordered">
+          <ul class="q-pl-md q-mb-none">
+            <li>
+              {{ customer.contact_no1 || 'N/A'}}
+            </li>
+          </ul>
+          <ul class="q-pl-md q-mt-none">
+            <li>
+              {{ customer.contact_no2 || 'N/A'}}
+            </li>
+          </ul>
+         </div>
         <div class="col bordered">{{ customer.email }}</div>
         <div class="col bordered">{{ customer.payment_type }}</div>
         <div class="col bordered">{{ customer.remarks }}</div>

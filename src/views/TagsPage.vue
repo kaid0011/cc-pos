@@ -212,8 +212,8 @@ onMounted(async () => {
 
         return {
           ...order,
-          collection_date: collection?.date_collected || "N/A",
-          delivery_date: delivery?.date_delivered || "N/A",
+          collection_date: collection?.collection_date || "",
+          delivery_date: delivery?.delivery_date || "",
           driver: order.driver_name || "N/A",
           customer_name: customer?.name || "Unknown", // Map customer_name
         };

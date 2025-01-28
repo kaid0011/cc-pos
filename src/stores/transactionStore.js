@@ -1275,6 +1275,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             remarks: orderDetails.collections?.remarks,
             date_from: orderDetails.collections?.date_from || null,
             date_to: orderDetails.collections?.date_to || null,
+            collection_date: orderDetails.collections?.collection_date || null,
             contactPerson: orderDetails.collections?.contact_persons || null,
           },
           delivery: {
@@ -1285,6 +1286,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             remarks: orderDetails.deliveries?.remarks,
             date_from: orderDetails.deliveries?.date_from || null,
             date_to: orderDetails.deliveries?.date_to || null,
+            delivery_date: orderDetails.deliveries?.delivery_date || null,
             contactPerson: orderDetails.deliveries?.contact_persons || null,
           },
         };

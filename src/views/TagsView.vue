@@ -2,7 +2,9 @@
   <div class="tags-view-container row">
     <!-- Left Container -->
     <div class="col-6 tags-left-container">
-      <button @click="printCard" class="q-btn q-btn-item q-btn-red">Print</button>
+      <button @click="printCard" class="q-btn q-btn-item q-btn-red">
+        Print
+      </button>
       <q-card class="tag-card" ref="printableCard">
         <div>
           <div class="">
@@ -25,6 +27,12 @@
             >
           </div>
           <div class="">
+            Delivery Date:
+            <span class="text-summary">{{
+              delivery?.delivery_date || "N/A"
+            }}</span>
+          </div>
+          <div class="">
             No. of Bags:
             <span class="text-summary">{{ "N/A" }}</span>
           </div>
@@ -33,53 +41,45 @@
             <span class="text-summary">{{ "N/A" }}</span>
           </div>
           <div class="">BARCODE</div>
-
         </div>
-                <!-- Transaction Table -->
-                  <div class="row">
-                    <div class="col col-3 text-weight-bold tag-card-cell">Item</div>
-                    <div class="col col-2 text-weight-bold tag-card-cell">Method</div>
-                    <div class="col col-2 text-weight-bold tag-card-cell">Price</div>
-                    <div class="col col-1 text-weight-bold tag-card-cell">Pcs</div>
-                    <div class="col col-1 text-weight-bold tag-card-cell">Qty</div>
-                    <div class="col col-3 text-weight-bold tag-card-cell">Remarks</div>
-                  </div>
-        
-                  <div v-if="transactions.length > 0">
-                    <div
-                      v-for="item in transactions"
-                      :key="item.name"
-                      class="row"
-                    >
-                      <div class="col col-3 tag-card-cell">{{ item.item_name }}</div>
-                      <div class="col col-2 tag-card-cell">{{ item.process }}</div>
-                      <div class="col col-2 tag-card-cell">
-                        {{ `$${item.price.toFixed(2)}` }}
-                      </div>
-                      <div class="col col-1 tag-card-cell">{{ item.pieces }}</div>
-                      <div class="col col-1 tag-card-cell">{{ item.quantity }}</div>
-                      <div class="col col-3 tag-card-cell">
-                      </div>
-                    </div>
-                  </div>
-                  <div v-else class="text-center text-grey q-my-md">
-                    No items added to the list.
-                  </div>
-                  <div class="row">
-                    <div class="col col-5 text-weight-bold text-uppercase"></div>
-                    <div class="col col-2 text-weight-bold text-uppercase tag-card-cell">
-                      Total
-                    </div>
-                    <div class="col col-1 text-weight-bold tag-card-cell">
-                      {{ totalPcs }}
-                    </div>
-                    <div class="col col-1 text-weight-bold tag-card-cell">
-                      {{ totalQty }}
-                    </div>
-                    <div class="col col-3 text-weight-bold">
-                     
-                    </div>
-                  </div>
+        <!-- Transaction Table -->
+        <div class="row">
+          <div class="col col-3 text-weight-bold tag-card-cell">Item</div>
+          <div class="col col-2 text-weight-bold tag-card-cell">Method</div>
+          <div class="col col-2 text-weight-bold tag-card-cell">Price</div>
+          <div class="col col-1 text-weight-bold tag-card-cell">Pcs</div>
+          <div class="col col-1 text-weight-bold tag-card-cell">Qty</div>
+          <div class="col col-3 text-weight-bold tag-card-cell">Remarks</div>
+        </div>
+
+        <div v-if="transactions.length > 0">
+          <div v-for="item in transactions" :key="item.name" class="row">
+            <div class="col col-3 tag-card-cell">{{ item.item_name }}</div>
+            <div class="col col-2 tag-card-cell">{{ item.process }}</div>
+            <div class="col col-2 tag-card-cell">
+              {{ `$${item.price.toFixed(2)}` }}
+            </div>
+            <div class="col col-1 tag-card-cell">{{ item.pieces }}</div>
+            <div class="col col-1 tag-card-cell">{{ item.quantity }}</div>
+            <div class="col col-3 tag-card-cell"></div>
+          </div>
+        </div>
+        <div v-else class="text-center text-grey q-my-md">
+          No items added to the list.
+        </div>
+        <div class="row">
+          <div class="col col-5 text-weight-bold text-uppercase"></div>
+          <div class="col col-2 text-weight-bold text-uppercase tag-card-cell">
+            Total
+          </div>
+          <div class="col col-1 text-weight-bold tag-card-cell">
+            {{ totalPcs }}
+          </div>
+          <div class="col col-1 text-weight-bold tag-card-cell">
+            {{ totalQty }}
+          </div>
+          <div class="col col-3 text-weight-bold"></div>
+        </div>
         <div class="">Other Remarks:</div>
         <div>
           <div class="bottom-border"></div>
@@ -88,37 +88,86 @@
         </div>
         <div class="row q-mb-sm">
           <div class="col">A. Clothing</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.clothing || 0 }}
+          </div>
         </div>
         <div class="row q-mb-sm">
           <div class="col">B. Bedding</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.bedding || 0 }}
+          </div>
         </div>
         <div class="row q-mb-sm">
           <div class="col">C. Curtain</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.curtain || 0 }}
+          </div>
         </div>
         <div class="row q-mb-sm">
           <div class="col">D. Sofa</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.sofa || 0 }}
+          </div>
         </div>
         <div class="row q-mb-sm">
           <div class="col">E. Stuffed Toy</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.stuffed_toy || 0 }}
+          </div>
         </div>
         <div class="row q-mb-sm">
           <div class="col">F. Carpet</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.carpet || 0 }}
+          </div>
         </div>
         <div class="row q-mb-sm">
           <div class="col">G. Others</div>
-          <div class="col tag-borders"></div>
+          <div class="col tag-borders q-pl-md">
+            {{ tagCategoryCounts.others || 0 }}
+          </div>
         </div>
       </q-card>
     </div>
     <!-- Right Container -->
     <div class="col-6 tags-right-container">
-
+      <q-card style="width: 100mm; height: 0.5in">
+        <!-- Right Card Content -->
+          <div class="text-center row q-pa-xs">
+          <div class="col">
+            <div>{{ tagCategoryCounts.clothings || 0 }}</div>
+            <div>A</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.beddings || 0 }}</div>
+            <div>B</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.curtain || 0 }}</div>
+            <div>C</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.sofa || 0 }}</div>
+            <div>D</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.stuffed_toy || 0 }}</div>
+            <div>E</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.carpet || 0 }}</div>
+            <div>F</div>
+          </div>
+          <div class="col q-mr-sm">
+            <div>{{ tagCategoryCounts.others || 0 }}</div>
+            <div>G</div>
+          </div>
+          <div class="col-6 tag-details">
+            {{ formattedTagDetails }}
+          </div>
+        </div>
+      </q-card>
     </div>
   </div>
 </template>
@@ -303,7 +352,7 @@ async function downloadOrderPDF() {
 // Print Function
 async function printCard() {
   const cardElement = document.querySelector(".tag-card");
-  
+
   if (!cardElement) {
     console.error("Card element not found.");
     return;
@@ -356,4 +405,28 @@ async function printCard() {
     console.error("Error capturing and printing the card:", error);
   }
 }
+const tagCategoryCounts = computed(() => {
+  return transactions.value.reduce((counts, item) => {
+    const category = item.tag_category?.toLowerCase() || "others";
+    counts[category] = (counts[category] || 0) + 1;
+    return counts;
+  }, {});
+});
+
+function formatDate(date) {
+  if (!date) return "N/A";
+  const parsedDate = new Date(date);
+  const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
+  const weekday = weekdays[parsedDate.getDay()]; // Day abbreviation
+  const monthDay = parsedDate.getDate().toString().padStart(2, "0"); // 2-digit day
+  const month = (parsedDate.getMonth() + 1).toString().padStart(2, "0"); // 2-digit month
+  return `${weekday}${month}${monthDay}`; // Combine into format
+}
+
+const formattedTagDetails = computed(() => {
+  const collectionDate = formatDate(collection.value.collection_date);
+  const deliveryDate = formatDate(delivery.value.delivery_date);
+  const orderNoLast5 = order.value?.order_no?.slice(-5) || "N/A";
+  return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
+});
 </script>

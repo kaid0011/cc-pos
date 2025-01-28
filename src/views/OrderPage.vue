@@ -80,6 +80,26 @@
           </div>
         </div>
 
+        <!-- Add Contact Person Button -->
+        <q-btn
+          label="Add Contact Person"
+          color="primary"
+          icon="person_add"
+          size="sm"
+          flat
+          class="q-ml-sm"
+          @click="openAddContactPersonDialog"
+        />
+        <!-- Add Address Button -->
+        <q-btn
+          label="Add Address"
+          color="primary"
+          icon="add_home"
+          size="sm"
+          flat
+          class="q-ml-sm"
+          @click="openAddAddressDialog"
+        />
         <!-- Collection and Delivery Details -->
         <div class="row summary-header text-p">
           <div class="col slip-card">
@@ -224,7 +244,7 @@
             @click="updateReadyByCollectionAndDelivery"
           />
         </div>
-<q-separator/>
+        <q-separator />
         <!-- Transaction Table -->
         <div class="transaction-summary">
           <!-- Add Row Button Aligned Right -->
@@ -337,15 +357,15 @@
             <div class="col col-1 text-weight-bold bordered"></div>
           </div>
         </div>
-            <!-- Update Transactions Button -->
-    <div class="row justify-center q-pb-md">
-      <q-btn
-        label="Update Transactions"
-        color="primary"
-        icon="update"
-        @click="updateTransactions"
-      />
-    </div>
+        <!-- Update Transactions Button -->
+        <div class="row justify-center q-pb-md">
+          <q-btn
+            label="Update Transactions"
+            color="primary"
+            icon="update"
+            @click="updateTransactions"
+          />
+        </div>
       </q-card>
     </div>
 
@@ -359,7 +379,6 @@
         @click="downloadOrderPDF"
         label="Download PDF"
       /> -->
-
 
       <q-card flat class="preview-card q-mt-md">
         <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
@@ -466,7 +485,9 @@
         </div>
       </q-card>
       <!-- Collapsible Header -->
-      <div class="row showhidetab text-p text-center text-uppercase text-weight-bold q-mb-sm">
+      <div
+        class="row showhidetab text-p text-center text-uppercase text-weight-bold q-mb-sm"
+      >
         <q-btn
           dense
           flat
@@ -616,7 +637,9 @@
           <div v-else class="text-center text-grey">No instructions added.</div>
         </q-card>
       </div>
-      <div class="row showhidetab text-p text-center text-uppercase text-weight-bold q-mb-sm">
+      <div
+        class="row showhidetab text-p text-center text-uppercase text-weight-bold q-mb-sm"
+      >
         <q-btn
           dense
           flat
@@ -625,7 +648,6 @@
           :icon="showReports ? 'arrow_up' : 'arrow_down'"
           @click="toggleReports"
           label="List of Error Reports"
-          
         />
       </div>
       <!-- Reports Section -->
@@ -860,235 +882,402 @@
         <div>Are you sure you want to delete this transaction?</div>
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="primary" @click="cancelDeleteTransaction" />
-        <q-btn flat label="Delete" color="negative" @click="confirmDeleteTransaction" />
+        <q-btn
+          flat
+          label="Cancel"
+          color="primary"
+          @click="cancelDeleteTransaction"
+        />
+        <q-btn
+          flat
+          label="Delete"
+          color="negative"
+          @click="confirmDeleteTransaction"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
-<!-- Add Transaction Dialog -->
-<q-dialog v-model="isAddTransactionDialogOpen" persistent>
-  <q-card>
-    <q-card-section>
-      <div class="text-h6 text-center">Add Transaction</div>
-    </q-card-section>
-    <q-card-section>
-      <!-- Add Transaction Form (Copied from OthersComponent) -->
-      <div class="text-p">
-        <q-checkbox
-          v-model="searchModeActive"
-          label="Search an item instead"
-          class="q-my-sm"
-          @update:model="resetInputs"
-        />
+  <!-- Add Transaction Dialog -->
+  <q-dialog v-model="isAddTransactionDialogOpen" persistent>
+    <q-card>
+      <q-card-section>
+        <div class="text-h6 text-center">Add Transaction</div>
+      </q-card-section>
+      <q-card-section>
+        <!-- Add Transaction Form (Copied from OthersComponent) -->
+        <div class="text-p">
+          <q-checkbox
+            v-model="searchModeActive"
+            label="Search an item instead"
+            class="q-my-sm"
+            @update:model="resetInputs"
+          />
 
-        <div v-if="searchModeActive">
-          <div>Search an item...</div>
-          <q-select
-            v-model="selectedSearchItemName"
-            :options="filteredSearchItemOptions"
-            square
-            dense
-            outlined
-            use-input
-            input-debounce="300"
-            class="others-input q-mb-xs bg-white"
-            label="Type to search item"
-            @filter="filterSearchItemsByInput"
-          >
-            <template v-slot:prepend>
-              <q-icon name="search" />
-            </template>
-            <template v-slot:append>
-              <q-icon name="close" @click="clearSearchInput" class="cursor-pointer" />
-            </template>
-          </q-select>
-        </div>
+          <div v-if="searchModeActive">
+            <div>Search an item...</div>
+            <q-select
+              v-model="selectedSearchItemName"
+              :options="filteredSearchItemOptions"
+              square
+              dense
+              outlined
+              use-input
+              input-debounce="300"
+              class="others-input q-mb-xs bg-white"
+              label="Type to search item"
+              @filter="filterSearchItemsByInput"
+            >
+              <template v-slot:prepend>
+                <q-icon name="search" />
+              </template>
+              <template v-slot:append>
+                <q-icon
+                  name="close"
+                  @click="clearSearchInput"
+                  class="cursor-pointer"
+                />
+              </template>
+            </q-select>
+          </div>
 
-        <div v-else>
-          <div class="row">
-            <div class="col">
-              <div>Category</div>
+          <div v-else>
+            <div class="row">
+              <div class="col">
+                <div>Category</div>
+                <q-select
+                  v-model="selectedCategoryName"
+                  :options="categoryOptions"
+                  square
+                  dense
+                  outlined
+                  input-debounce="300"
+                  class="others-input q-mb-xs bg-white"
+                  label="Select Category"
+                />
+              </div>
+            </div>
+
+            <div v-if="isNewItemSelected">
+              <div>Enter New Item:</div>
+              <q-input
+                v-model="newItemNameInput"
+                square
+                dense
+                outlined
+                class="others-input q-mb-xs bg-white"
+                placeholder="Enter item name"
+              />
+              <div>Unit:</div>
               <q-select
-                v-model="selectedCategoryName"
-                :options="categoryOptions"
+                v-model="newItemUnitType"
+                :options="unitTypeOptions"
+                square
+                dense
+                outlined
+                class="others-input q-mb-xs bg-white"
+                label="Select Unit"
+              />
+            </div>
+            <div v-else>
+              <div>Sub-category</div>
+              <q-select
+                v-model="selectedSubCategoryName"
+                :options="filteredSubCategoryOptions"
                 square
                 dense
                 outlined
                 input-debounce="300"
                 class="others-input q-mb-xs bg-white"
-                label="Select Category"
+                label="Select Sub-category"
+              />
+
+              <div>Item Name:</div>
+              <q-select
+                v-model="selectedItemName"
+                :options="filteredItemOptions"
+                square
+                dense
+                outlined
+                input-debounce="300"
+                class="others-input q-mb-xs bg-white"
+                label="Select Item"
               />
             </div>
           </div>
 
-          <div v-if="isNewItemSelected">
-            <div>Enter New Item:</div>
+          <div>Process</div>
+          <q-select
+            v-model="selectedProcessOption"
+            :options="filteredProcessOptions"
+            square
+            dense
+            outlined
+            class="others-input q-mb-xs bg-white"
+            label="Select Process"
+            @update:model="calculatePriceForSelectedType"
+          />
+
+          <div class="row q-col-gutter-sm">
+            <div class="col-6">
+              <div>Price Type</div>
+              <q-select
+                v-model="selectedPriceTypeOption"
+                :options="filteredPriceTypeOptions"
+                square
+                dense
+                outlined
+                class="others-input q-mb-xs bg-white"
+                label="Select Price Type"
+              />
+            </div>
+            <div class="col-6">
+              <div>Price:</div>
+              <q-input
+                v-model="priceInputValue"
+                square
+                dense
+                outlined
+                class="others-input q-mb-xs bg-white"
+                label="Enter Price"
+                :disable="isPriceInputDisabled"
+              />
+            </div>
+          </div>
+
+          <div
+            v-if="
+              selectedUnitType === 'pc' ||
+              (isNewItemSelected && newItemUnitType === 'pc')
+            "
+          >
+            <div>Quantity:</div>
             <q-input
-              v-model="newItemNameInput"
+              v-model="pieceQuantityInput"
+              type="number"
               square
               dense
               outlined
               class="others-input q-mb-xs bg-white"
-              placeholder="Enter item name"
-            />
-            <div>Unit:</div>
-            <q-select
-              v-model="newItemUnitType"
-              :options="unitTypeOptions"
-              square
-              dense
-              outlined
-              class="others-input q-mb-xs bg-white"
-              label="Select Unit"
+              label="Enter Quantity"
             />
           </div>
-          <div v-else>
-            <div>Sub-category</div>
-            <q-select
-              v-model="selectedSubCategoryName"
-              :options="filteredSubCategoryOptions"
-              square
-              dense
-              outlined
-              input-debounce="300"
-              class="others-input q-mb-xs bg-white"
-              label="Select Sub-category"
-            />
 
-            <div>Item Name:</div>
-            <q-select
-              v-model="selectedItemName"
-              :options="filteredItemOptions"
+          <div
+            v-else-if="
+              selectedUnitType === 'sqft' ||
+              (isNewItemSelected && newItemUnitType === 'sqft')
+            "
+            class="row q-col-gutter-sm"
+          >
+            <div class="col">
+              <div>Width:</div>
+              <q-input
+                v-model="areaWidthInput"
+                type="number"
+                square
+                dense
+                outlined
+                class="others-input q-mb-xs bg-white"
+                label="Enter Width (ft)"
+              />
+            </div>
+            <div class="col">
+              <div>Breadth:</div>
+              <q-input
+                v-model="areaBreadthInput"
+                type="number"
+                square
+                dense
+                outlined
+                class="others-input q-mb-xs bg-white"
+                label="Enter Breadth (ft)"
+              />
+            </div>
+          </div>
+
+          <div
+            v-else-if="
+              selectedUnitType === 'kg' ||
+              (isNewItemSelected && newItemUnitType === 'kg')
+            "
+          >
+            <div>Weight:</div>
+            <q-input
+              v-model="weightInput"
+              type="number"
               square
               dense
               outlined
-              input-debounce="300"
               class="others-input q-mb-xs bg-white"
-              label="Select Item"
+              label="Enter Weight (kg)"
+            />
+          </div>
+
+          <!-- Display area, weight, and subtotal conditionally -->
+          <div
+            v-if="(selectedUnitType || newItemUnitType) === 'sqft'"
+            class="q-mt-md text-right"
+          >
+            <div>
+              Area:
+              <span class="text-summary"
+                >{{ computedArea.toFixed(2) }} sqft</span
+              >
+            </div>
+            <div>
+              Subtotal:
+              <span class="text-summary"
+                >${{ computedSubtotal.toFixed(2) }}</span
+              >
+            </div>
+          </div>
+          <div
+            v-else-if="(selectedUnitType || newItemUnitType) === 'kg'"
+            class="text-right q-mt-md"
+          >
+            <div>
+              Weight: <span class="text-summary">{{ weightInput }} kg</span>
+            </div>
+            <div>
+              Subtotal:
+              <span class="text-summary"
+                >${{ computedSubtotal.toFixed(2) }}</span
+              >
+            </div>
+          </div>
+
+          <div class="row justify-end">
+            <q-btn
+              class="float-right q-my-md"
+              label="Add to Transaction"
+              color="primary"
+              @click="addTransactionItem"
             />
           </div>
         </div>
-
-        <div>Process</div>
-        <q-select
-          v-model="selectedProcessOption"
-          :options="filteredProcessOptions"
-          square
-          dense
-          outlined
-          class="others-input q-mb-xs bg-white"
-          label="Select Process"
-          @update:model="calculatePriceForSelectedType"
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn
+          flat
+          label="Close"
+          color="negative"
+          @click="closeAddTransactionDialog"
         />
-
-        <div class="row q-col-gutter-sm">
-          <div class="col-6">
-            <div>Price Type</div>
-            <q-select
-              v-model="selectedPriceTypeOption"
-              :options="filteredPriceTypeOptions"
-              square
-              dense
-              outlined
-              class="others-input q-mb-xs bg-white"
-              label="Select Price Type"
-            />
-          </div>
-          <div class="col-6">
-            <div>Price:</div>
-            <q-input
-              v-model="priceInputValue"
-              square
-              dense
-              outlined
-              class="others-input q-mb-xs bg-white"
-              label="Enter Price"
-              :disable="isPriceInputDisabled"
-            />
-          </div>
-        </div>
-
-        <div v-if="selectedUnitType === 'pc' || (isNewItemSelected && newItemUnitType === 'pc')">
-          <div>Quantity:</div>
-          <q-input
-            v-model="pieceQuantityInput"
-            type="number"
-            square
-            dense
-            outlined
-            class="others-input q-mb-xs bg-white"
-            label="Enter Quantity"
-          />
-        </div>
-
-        <div
-          v-else-if="selectedUnitType === 'sqft' || (isNewItemSelected && newItemUnitType === 'sqft')"
-          class="row q-col-gutter-sm"
-        >
-          <div class="col">
-            <div>Width:</div>
-            <q-input
-              v-model="areaWidthInput"
-              type="number"
-              square
-              dense
-              outlined
-              class="others-input q-mb-xs bg-white"
-              label="Enter Width (ft)"
-            />
-          </div>
-          <div class="col">
-            <div>Breadth:</div>
-            <q-input
-              v-model="areaBreadthInput"
-              type="number"
-              square
-              dense
-              outlined
-              class="others-input q-mb-xs bg-white"
-              label="Enter Breadth (ft)"
-            />
-          </div>
-        </div>
-
-        <div v-else-if="selectedUnitType === 'kg' || (isNewItemSelected && newItemUnitType === 'kg')">
-          <div>Weight:</div>
-          <q-input
-            v-model="weightInput"
-            type="number"
-            square
-            dense
-            outlined
-            class="others-input q-mb-xs bg-white"
-            label="Enter Weight (kg)"
-          />
-        </div>
-
-            <!-- Display area, weight, and subtotal conditionally -->
-    <div v-if="(selectedUnitType || newItemUnitType) === 'sqft'" class="q-mt-md text-right">
-      <div>Area: <span class="text-summary">{{ computedArea.toFixed(2) }} sqft</span></div>
-      <div>Subtotal: <span class="text-summary">${{ computedSubtotal.toFixed(2) }}</span></div>
-    </div>
-    <div v-else-if="(selectedUnitType || newItemUnitType) === 'kg'" class="text-right q-mt-md">
-      <div>Weight: <span class="text-summary">{{ weightInput }} kg</span></div>
-      <div>Subtotal: <span class="text-summary">${{ computedSubtotal.toFixed(2) }}</span></div>
-    </div>
-
-        <div class="row justify-end">
-          <q-btn
-            class="float-right q-my-md"
-            label="Add to Transaction"
-            color="primary"
-            @click="addTransactionItem"
-          />
-        </div>
-      </div>
-    </q-card-section>
-    <q-card-actions align="right">
-      <q-btn flat label="Close" color="negative" @click="closeAddTransactionDialog" />
-    </q-card-actions>
-  </q-card>
-</q-dialog>
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  <q-dialog v-model="isAddContactPersonDialogOpen" persistent>
+    <q-card style="min-width: 400px">
+      <q-card-section>
+        <div class="text-h6 text-center">Add Contact Person</div>
+      </q-card-section>
+      <q-card-section>
+        <q-input
+          v-model="newContactPerson.name"
+          label="Name"
+          outlined
+          dense
+          class="q-mb-md"
+          required
+        />
+        <q-input
+          v-model="newContactPerson.contact_no1"
+          label="Contact Number 1"
+          outlined
+          dense
+          class="q-mb-md"
+        />
+        <q-input
+          v-model="newContactPerson.contact_no2"
+          label="Contact Number 2"
+          outlined
+          dense
+          class="q-mb-md"
+        />
+        <q-input
+          v-model="newContactPerson.email"
+          label="Email"
+          outlined
+          dense
+          type="email"
+          class="q-mb-md"
+        />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn
+          label="Cancel"
+          flat
+          color="negative"
+          @click="closeAddContactPersonDialog"
+        />
+        <q-btn label="Add" color="primary" @click="addContactPerson" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  <!-- Add Address Dialog -->
+  <q-dialog v-model="isAddAddressDialogOpen" persistent>
+    <q-card style="min-width: 400px">
+      <q-card-section>
+        <div class="text-h6 text-center">Add Address</div>
+      </q-card-section>
+      <q-card-section>
+        <q-input
+          v-model="newAddress.block_no"
+          label="Block No."
+          outlined
+          dense
+          class="q-mb-md"
+          required
+        />
+        <q-input
+          v-model="newAddress.road_name"
+          label="Road Name"
+          outlined
+          dense
+          class="q-mb-md"
+          required
+        />
+        <q-input
+          v-model="newAddress.unit_no"
+          label="Unit No."
+          outlined
+          dense
+          class="q-mb-md"
+        />
+        <q-input
+          v-model="newAddress.building_name"
+          label="Building Name"
+          outlined
+          dense
+          class="q-mb-md"
+        />
+        <q-input
+          v-model="newAddress.postal_code"
+          label="Postal Code"
+          outlined
+          dense
+          class="q-mb-md"
+          required
+        />
+        <q-input
+          v-model="newAddress.additional_info"
+          label="Additional Info"
+          outlined
+          dense
+          class="q-mb-md"
+        />
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn
+          label="Cancel"
+          flat
+          color="negative"
+          @click="closeAddAddressDialog"
+        />
+        <q-btn label="Add" color="primary" @click="addAddress" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -1117,7 +1306,7 @@ watch(
     newTransactions.forEach((transaction) => {
       transaction.subtotal =
         (transaction.price || 0) * (transaction.quantity || 1); // Exclude pieces
-        // transaction.subtotal = (transaction.price || 0) * (transaction.quantity || 0) * (transaction.pieces || 1);
+      // transaction.subtotal = (transaction.price || 0) * (transaction.quantity || 0) * (transaction.pieces || 1);
     });
   },
   { deep: true }
@@ -1193,6 +1382,10 @@ onMounted(async () => {
     ];
 
     reports.value = orderDetails.errorReports || [];
+    // Set the selected customer in the store
+    if (customer.value.id) {
+      transactionStore.setSelectedCustomer(customer.value);
+    }
   } catch (error) {
     console.error("Error loading order details:", error);
   }
@@ -1320,7 +1513,11 @@ const filteredSubCategories = computed(() => {
 async function addErrorReport() {
   try {
     // Validate required fields
-    if (!selectedCategory.value || !selectedSubCategory.value || !reportDesc.value) {
+    if (
+      !selectedCategory.value ||
+      !selectedSubCategory.value ||
+      !reportDesc.value
+    ) {
       Notify.create({
         message: "Category, sub-category, and description are required.",
         color: "red",
@@ -1372,7 +1569,6 @@ async function addErrorReport() {
     });
   }
 }
-
 
 // Watchers for category and sub-category selection (optional, based on dynamic dropdowns)
 watch(selectedCategory, (newCategory) => {
@@ -1820,7 +2016,6 @@ function toggleReports() {
   showReports.value = !showReports.value;
 }
 
-
 // Reactive state for delete dialog
 const isDeleteTransactionDialogOpen = ref(false);
 const transactionToDeleteIndex = ref(null);
@@ -1871,8 +2066,10 @@ function cancelDeleteTransaction() {
 }
 
 const isAddTransactionDialogOpen = ref(false);
-const openAddTransactionDialog = () => (isAddTransactionDialogOpen.value = true);
-const closeAddTransactionDialog = () => (isAddTransactionDialogOpen.value = false);
+const openAddTransactionDialog = () =>
+  (isAddTransactionDialogOpen.value = true);
+const closeAddTransactionDialog = () =>
+  (isAddTransactionDialogOpen.value = false);
 
 // Data Initialization
 onMounted(async () => {
@@ -2016,7 +2213,12 @@ const clearSearchInput = () => {
 const updateProcessOptionsList = () => {
   if (isNewItemSelected.value) {
     // If the category is 'New Item', use predefined options
-    filteredProcessOptions.value = ['Laundry', 'Dry Clean', 'Pressing Only', 'Others'];
+    filteredProcessOptions.value = [
+      "Laundry",
+      "Dry Clean",
+      "Pressing Only",
+      "Others",
+    ];
   } else {
     // Otherwise, derive process options based on the selected item
     const selectedItemBaseName = searchModeActive.value
@@ -2036,7 +2238,6 @@ const updateProcessOptionsList = () => {
       : [];
   }
 };
-
 
 const calculatePriceForSelectedType = () => {
   const currentItemName = searchModeActive.value
@@ -2126,9 +2327,7 @@ const addTransactionItem = async () => {
       category: selectedCategoryName.value,
       tag_category: tagCategory, // Include tag_category in the transaction
       price:
-        selectedPriceTypeOption.value === "TBA"
-          ? "TBA"
-          : numericPrice.value,
+        selectedPriceTypeOption.value === "TBA" ? "TBA" : numericPrice.value,
       process: selectedProcessOption.value,
       quantity: pieceQuantityInput.value,
       subtotal: subtotalValue,
@@ -2161,20 +2360,31 @@ const addTransactionItem = async () => {
   }
 };
 
-
 watch(searchModeActive, resetInputs);
 watch(
-  [selectedPriceTypeOption, selectedProcessOption, selectedItemName, selectedSearchItemName],
+  [
+    selectedPriceTypeOption,
+    selectedProcessOption,
+    selectedItemName,
+    selectedSearchItemName,
+  ],
   calculatePriceForSelectedType
 );
 watch(
-  [selectedItemName, selectedSearchItemName, searchModeActive, selectedCategoryName],
+  [
+    selectedItemName,
+    selectedSearchItemName,
+    searchModeActive,
+    selectedCategoryName,
+  ],
   updateProcessOptionsList
 );
 
 watch(selectedSearchItemName, (newItemName) => {
   if (newItemName) {
-    const selectedItem = transactionStore.items.find((item) => item.name === newItemName);
+    const selectedItem = transactionStore.items.find(
+      (item) => item.name === newItemName
+    );
     if (selectedItem) {
       selectedCategoryName.value = selectedItem.category || null;
     }
@@ -2204,5 +2414,154 @@ async function updateTransactions() {
     });
   }
 }
+// Start of ass contact person
+const isAddContactPersonDialogOpen = ref(false);
+const newContactPerson = ref({
+  name: "",
+  contact_no1: "",
+  contact_no2: "",
+  email: "",
+});
 
+const openAddContactPersonDialog = () => {
+  isAddContactPersonDialogOpen.value = true;
+};
+
+const closeAddContactPersonDialog = () => {
+  isAddContactPersonDialogOpen.value = false;
+};
+
+// Add contact person function
+const addContactPerson = async () => {
+  try {
+    if (
+      !newContactPerson.value.name ||
+      !transactionStore.selectedCustomer?.id
+    ) {
+      Notify.create({
+        message: "Name is required, and a customer must be selected.",
+        color: "red",
+      });
+      return;
+    }
+
+    // Call the transaction store to add the contact person
+    const contact = {
+      ...newContactPerson.value,
+      customer_id: transactionStore.selectedCustomer.id,
+    };
+    await transactionStore.addContactPerson(contact);
+
+    // Reload contact options to reflect the new contact person
+    await transactionStore.loadContactOptions(
+      transactionStore.selectedCustomer.id
+    );
+
+    Notify.create({
+      message: "Contact person added successfully!",
+      color: "green",
+    });
+
+    closeAddContactPersonDialog();
+  } catch (error) {
+    console.error("Error adding contact person:", error);
+    Notify.create({
+      message: "Failed to add contact person. Please try again.",
+      color: "red",
+    });
+  }
+};
+
+// End of add contact person
+
+// Start of add address
+
+// Reactive variable to control the dialog visibility
+const isAddAddressDialogOpen = ref(false);
+
+// Reactive object to store the new address form data
+const newAddress = ref({
+  block_no: "",
+  road_name: "",
+  unit_no: "",
+  building_name: "",
+  postal_code: "",
+  additional_info: "",
+});
+
+// Function to open the "Add Address" dialog
+const openAddAddressDialog = () => {
+  isAddAddressDialogOpen.value = true;
+};
+
+// Function to close the "Add Address" dialog
+const closeAddAddressDialog = () => {
+  isAddAddressDialogOpen.value = false;
+};
+
+const capitalize = (str) => {
+  return str ? str.toUpperCase() : ""; // Convert string to uppercase or return empty if null/undefined
+};
+
+const addAddress = async () => {
+  try {
+    // Validate required fields
+    if (
+      !newAddress.value.block_no ||
+      !newAddress.value.road_name ||
+      !newAddress.value.postal_code ||
+      !transactionStore.selectedCustomer?.id
+    ) {
+      Notify.create({
+        message: "Block No., Road Name, and Postal Code are required.",
+        color: "red",
+      });
+      return;
+    }
+
+    // Add customer_id to the address object and capitalize fields
+    const address = {
+      block_no: capitalize(newAddress.value.block_no),
+      road_name: capitalize(newAddress.value.road_name),
+      unit_no: capitalize(newAddress.value.unit_no),
+      building_name: capitalize(newAddress.value.building_name),
+      postal_code: capitalize(newAddress.value.postal_code),
+      additional_info: capitalize(newAddress.value.additional_info),
+      customer_id: transactionStore.selectedCustomer.id,
+    };
+
+    // Call the store function to save the address
+    await transactionStore.addAddress(address);
+
+    // Reload the address options to reflect the new address
+    await transactionStore.loadAddressOptions(
+      transactionStore.selectedCustomer.id
+    );
+
+    // Notify success
+    Notify.create({
+      message: "Address added successfully!",
+      color: "green",
+    });
+
+    // Reset the form and close the dialog
+    newAddress.value = {
+      block_no: "",
+      road_name: "",
+      unit_no: "",
+      building_name: "",
+      postal_code: "",
+      additional_info: "",
+    };
+    closeAddAddressDialog();
+  } catch (error) {
+    console.error("Error adding address:", error);
+    Notify.create({
+      message: "Failed to add address. Please try again.",
+      color: "red",
+    });
+  }
+};
+
+// End of add address
 </script>

@@ -8,7 +8,7 @@
           <div class="col-4" v-for="category in categories" :key="category">
             <q-btn
               flat
-              class="cat-btn ellipsis"
+              class="cat-btn ellipsis text-weight-bold"
               @click="filterByCategory(category)"
             >
               {{ category }}
@@ -50,7 +50,7 @@
             :key="subCategory"
           >
             <div
-              class="text-h5 text-uppercase text-weight-bold text-center q-py-sm"
+              class="text-h6 text-uppercase text-weight-bolder text-center q-py-sm"
             >
               {{ subCategory }}
             </div>
@@ -81,36 +81,43 @@
     </div>
 
     <div class="right-container col-7">
-      <div class="row">
-        <div class="row items-center q-gutter-x-md q-mr-lg">
-          <div class="text-p">Order No:</div>
-          <q-input
-            square
-            dense
-            outlined
-            class="bg-white"
-            v-model="orderNo"
-            readonly
-          />
-        </div>
-        <div class="row items-center q-gutter-x-md">
-          <div class="text-p">Ready By:</div>
-          <q-input
-            square
-            dense
-            outlined
-            class="bg-white"
-            type="date"
-            v-model="readyBy"
-          />
-        </div>
-      </div>
 
-      <div class="row q-gutter-x-md items-center q-mt-md text-p">
+      <div class="row q-gutter-x-md items-center text-p">
+        <div class="col">
+          <div>
+            Order No:
+          </div></div>
         <!-- Customer Name -->
         <div class="col">
           <div>
             Customer Name:
+          </div>
+        </div>
+
+        <!-- Contact No -->
+        <div class="col">
+          <div>
+            Contact Nos:
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="col">
+          <div>
+            Email:
+          </div>
+        </div>
+      </div>
+      <div class="row q-gutter-x-md items-center text-p">
+        <div class="col">
+          <div>
+            <span class="text-summary">{{
+              transactionStore.orderNo || "N/A"
+            }}</span>
+          </div></div>
+        <!-- Customer Name -->
+        <div class="col">
+          <div>
             <span class="text-summary">{{
               transactionStore.selectedCustomer?.name || "N/A"
             }}</span>
@@ -120,9 +127,10 @@
         <!-- Contact No -->
         <div class="col">
           <div>
-            Contact No:
             <span class="text-summary">{{
               transactionStore.selectedCustomer?.contact_no1 || "N/A"
+            }} / {{
+              transactionStore.selectedCustomer?.contact_no2 || "-"
             }}</span>
           </div>
         </div>
@@ -130,7 +138,6 @@
         <!-- Email -->
         <div class="col">
           <div>
-            Email:
             <span class="text-summary">{{
               transactionStore.selectedCustomer?.email || "N/A"
             }}</span>
@@ -143,12 +150,12 @@
         <div
           class="row row-col-header text-p text-center text-uppercase text-weight-bold"
         >
-          <div class="col-5 col bordered">Item</div>
-          <div class="col-2 col bordered">Process</div>
-          <div class="col-1 col bordered">Price</div>
-          <div class="col-1 col bordered">Qty</div>
-          <div class="col-2 col bordered">Subtotal</div>
-          <div class="col-1 col bordered"></div>
+          <div class="col-5 col bordered text-weight-bolder">Item</div>
+          <div class="col-2 col bordered text-weight-bolder">Process</div>
+          <div class="col-1 col bordered text-weight-bolder">Price</div>
+          <div class="col-1 col bordered text-weight-bolder">Qty</div>
+          <div class="col-2 col bordered text-weight-bolder">Subtotal</div>
+          <div class="col-1 col bordered text-weight-bolder"></div>
         </div>
 
         <!-- Render each transaction item if there are items in the list -->
@@ -182,7 +189,7 @@
         </div>
         <!-- Total Row -->
         <div
-          class="row row-col-footer text-p text-center text-weight-bold items-center"
+          class="row row-col-footer text-p text-center text-weight-bolder items-center"
         >
           <div class="col-5 text-left q-pl-sm text-uppercase">Total</div>
           <div class="col-2"></div>
@@ -2642,4 +2649,11 @@ function confirmDeleteItem() {
   deleteTarget.value = { type: null, id: null };
 }
 
+const removeItem = (index) => {
+  if (index >= 0 && index < transactionStore.transactionItems.length) {
+    transactionStore.transactionItems.splice(index, 1);
+  } else {
+    console.error("Invalid index for removal:", index);
+  }
+};
 </script>

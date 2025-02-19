@@ -64,18 +64,7 @@
             </div>
             <div class="text-slip-row">
               Order Date:
-              <span class="text-summary">{{ formattedOrderDate }}</span>
-            </div>
-            <div class="text-slip-row">
-              Ready By:
-              <q-input
-                v-model="order.ready_by"
-                type="date"
-                outlined
-                dense
-                placeholder="Select Ready By Date"
-                class="q-mb-xs bg-white"
-              />
+              <span class="text-summary">{{ formatDate(order?.order_date_time) }}</span>
             </div>
           </div>
         </div>
@@ -147,26 +136,22 @@
             </div>
 
             <div class="text-slip-row">
-              Date From:
+              Collection Date:
               <q-input
-                v-model="collection.date_from"
+                v-model="formattedCollectionDate"
                 outlined
                 dense
-                type="date"
-                placeholder="Collection Date From"
+                readonly
                 class="q-mb-xs bg-white"
-              />
-            </div>
-            <div class="text-slip-row">
-              Date To:
-              <q-input
-                v-model="collection.date_to"
-                outlined
-                dense
-                type="date"
-                placeholder="Collection Date To"
-                class="q-mb-xs bg-white"
-              />
+              >
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy>
+                      <q-date v-model="collection.collection_date" mask="YYYY-MM-DD" />
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
             </div>
           </div>
           <div class="col slip-card">
@@ -212,33 +197,29 @@
             </div>
 
             <div class="text-slip-row">
-              Date From:
+              Delivery Date:
               <q-input
-                v-model="delivery.date_from"
-                type="date"
+                v-model="formattedDeliveryDate"
                 outlined
                 dense
-                placeholder="Select Date From"
+                readonly
                 class="q-mb-xs bg-white"
-              />
-            </div>
-            <div class="text-slip-row">
-              Date To:
-              <q-input
-                v-model="delivery.date_to"
-                type="date"
-                outlined
-                dense
-                placeholder="Select Date To"
-                class="q-mb-xs bg-white"
-              />
+              >
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy>
+                      <q-date v-model="delivery.delivery_date" mask="YYYY-MM-DD" />
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
             </div>
           </div>
         </div>
         <!-- Update Button -->
         <div class="row justify-center q-mb-md">
           <q-btn
-            label="Update Ready By, Collection, and Delivery Details"
+            label="Update Collection and Delivery Details"
             color="primary"
             icon="update"
             @click="updateReadyByCollectionAndDelivery"
@@ -299,13 +280,8 @@
                 />
               </div>
               <div class="col col-1 bordered">
-                <input
-                  type="number"
-                  v-model.number="transactions[index].pieces"
-                  class="editable-field"
-                  placeholder="Pcs"
-                />
-              </div>
+                {{ computedPcs(transactions[index]) }}
+              </div>              
               <div class="col col-1 bordered">
                 <input
                   type="number"
@@ -1321,15 +1297,13 @@ onMounted(async () => {
     collection.value = {
       ...orderDetails.collection,
       address: orderDetails.collection?.address || null,
-      date_from: orderDetails.collection?.date_from || "",
-      date_to: orderDetails.collection?.date_to || "",
+      collection_date: orderDetails.collection?.collection_date || "",
     };
 
     delivery.value = {
       ...orderDetails.delivery,
       address: orderDetails.delivery?.address || null,
-      date_from: orderDetails.delivery?.date_from || "",
-      date_to: orderDetails.delivery?.date_to || "",
+      delivery_date: orderDetails.delivery?.delivery_date || "",
     };
 
     customer.value = orderDetails.customer || {};
@@ -1647,12 +1621,9 @@ function clearUploadedPhoto() {
 }
 
 // Computed properties for totals
-const totalPcs = computed(() => {
-  return transactions.value.reduce((acc, item) => {
-    const pcs = parseFloat(item.pieces) || 0; // Ensure a numeric value
-    return acc + pcs;
-  }, 0);
-});
+const totalPcs = computed(() =>
+  transactions.value.reduce((acc, item) => acc + computedPcs(item), 0)
+);
 
 const totalQty = computed(() => {
   return transactions.value.reduce((acc, item) => {
@@ -1670,16 +1641,28 @@ const totalSubtotal = computed(() => {
     .toFixed(2); // Format as a fixed two-decimal string
 });
 
-// Date formatting
-const formattedOrderDate = computed(() =>
-  order.value?.order_date_time
-    ? new Date(order.value.order_date_time).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "N/A"
+// Computed properties for formatted display
+const formattedCollectionDate = computed(() =>
+  formatDate(collection.value.collection_date)
 );
+const formattedDeliveryDate = computed(() =>
+  formatDate(delivery.value.delivery_date)
+);
+
+// Function to format dates as "Thu, 30/01/2025"
+const formatDate = (dateString) => {
+  if (!dateString) return "N/A"; // If the date is missing or null, return "N/A"
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "N/A"; // If the date is invalid, return "N/A"
+
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short", // "Thu"
+    day: "2-digit", // "30"
+    month: "2-digit", // "01"
+    year: "numeric", // "2025"
+  });
+};
 
 onMounted(async () => {
   try {
@@ -1695,22 +1678,16 @@ onMounted(async () => {
     collection.value = {
       ...orderDetails.collection,
       address: orderDetails.collection?.address || null, // Set address directly from database
-      date_from: orderDetails.collection?.date_from
-        ? new Date(orderDetails.collection.date_from).toISOString().slice(0, 10) // Format date
-        : "",
-      date_to: orderDetails.collection?.date_to
-        ? new Date(orderDetails.collection.date_to).toISOString().slice(0, 10)
+      collection_date: orderDetails.collection?.collection_date
+        ? new Date(orderDetails.collection.collection_date).toISOString().slice(0, 10) // Format date
         : "",
     };
 
     delivery.value = {
       ...orderDetails.delivery,
       address: orderDetails.delivery?.address || null, // Set address directly from database
-      date_from: orderDetails.delivery?.date_from
-        ? new Date(orderDetails.delivery.date_from).toISOString().slice(0, 10)
-        : "",
-      date_to: orderDetails.delivery?.date_to
-        ? new Date(orderDetails.delivery.date_to).toISOString().slice(0, 10)
+      delivery_date: orderDetails.delivery?.delivery_date
+        ? new Date(orderDetails.delivery.delivery_date).toISOString().slice(0, 10)
         : "",
     };
 
@@ -1837,20 +1814,13 @@ async function updateReadyByCollectionAndDelivery() {
     const collectionPayload = {
       contact_person_id: collection.value.contactPerson?.id || null,
       address: collection.value.address || collection.address_id, // Retain existing address if not updated
-      date_from: collection.value.date_from || null,
-      date_to: collection.value.date_to || null,
+      collection_date: collection.value.collection_date || null,
     };
 
     const deliveryPayload = {
       contact_person_id: delivery.value.contactPerson?.id || null,
       address: delivery.value.address || delivery.address_id, // Retain existing address if not updated
-      date_from: delivery.value.date_from || null,
-      date_to: delivery.value.date_to || null,
-    };
-
-    // Include the ready_by field
-    const readyByPayload = {
-      ready_by: order.value.ready_by || null, // Ensure the date is included
+      delivery_date: delivery.value.delivery_date || null,
     };
 
     // Update the collection, delivery, and order "ready by" details in the store
@@ -1858,13 +1828,12 @@ async function updateReadyByCollectionAndDelivery() {
       orderNo,
       collectionPayload,
       deliveryPayload,
-      readyByPayload
     );
 
     // Notify success
     Notify.create({
       message:
-        "Ready By, Collection, and Delivery details updated successfully.",
+        "Collection and Delivery details updated successfully.",
       color: "green",
       icon: "check_circle",
       position: "top",
@@ -1872,7 +1841,7 @@ async function updateReadyByCollectionAndDelivery() {
   } catch (error) {
     // Notify error
     Notify.create({
-      message: "Failed to update Ready By, Collection, and Delivery details.",
+      message: "Failed to update Collection and Delivery details.",
       color: "red",
       icon: "error",
       position: "top",
@@ -2276,89 +2245,75 @@ const calculatePriceForSelectedType = () => {
 const isPriceInputDisabled = ref(false);
 
 const addTransactionItem = async () => {
-  try {
-    // Validate input
-    if (!order.value?.id) {
-      Notify.create({
-        message: "Order ID is missing. Cannot add transaction.",
-        color: "red",
-      });
-      return;
-    }
+  console.log("🚀 Starting addTransactionItem...");
 
-    const unitType = isNewItemSelected.value
-      ? newItemUnitType.value
-      : selectedUnitType.value;
+  const unitType = isNewItemSelected.value
+    ? newItemUnitType.value
+    : selectedUnitType.value;
 
-    let baseName = searchModeActive.value
-      ? selectedSearchItemName.value
-      : isNewItemSelected.value
+  let baseName = searchModeActive.value
+    ? selectedSearchItemName.value
+    : isNewItemSelected.value
       ? newItemNameInput.value
       : selectedItemName.value;
 
-    let itemDetails = "";
-    let subtotalValue = 0;
+  if (!baseName) {
+    console.error("❌ No item selected!");
+    Notify.create({ message: "Please select an item before adding.", color: "red" });
+    return;
+  }
 
-    // Calculate subtotal based on unit type
-    if (unitType === "pc") {
-      itemDetails = "";
-      subtotalValue =
-        selectedPriceTypeOption.value === "TBA"
-          ? 0
-          : pieceQuantityInput.value * numericPrice.value;
-    } else if (unitType === "sqft") {
-      itemDetails = ` (${computedArea.value.toFixed(2)} sqft)`;
-      subtotalValue =
-        selectedPriceTypeOption.value === "TBA"
-          ? 0
-          : computedArea.value * numericPrice.value;
-    } else if (unitType === "kg") {
-      itemDetails = ` (${weightInput.value} kg)`;
-      subtotalValue =
-        selectedPriceTypeOption.value === "TBA"
-          ? 0
-          : weightInput.value * numericPrice.value;
-    }
-    const tagCategory = selectedItem ? selectedItem.tag_category : null;
-    // Prepare the transaction payload
-    const newTransaction = {
-      order_id: order.value.id, // Attach the current order ID
-      item_name: `${baseName}${itemDetails}`,
-      category: selectedCategoryName.value,
-      tag_category: tagCategory, // Include tag_category in the transaction
-      price:
-        selectedPriceTypeOption.value === "TBA" ? "TBA" : numericPrice.value,
-      process: selectedProcessOption.value,
-      quantity: pieceQuantityInput.value,
-      subtotal: subtotalValue,
-    };
+  let itemDetails = "";
+  let subtotalValue = 0; // ✅ Declare subtotalValue before using it
 
-    // Save transaction to database
-    const addedTransaction = await transactionStore.addTransaction(
-      newTransaction
-    );
+  // Calculate subtotal based on unit type
+  if (unitType === "pc") {
+    itemDetails = "";
+    subtotalValue =
+      selectedPriceTypeOption.value === "TBA"
+        ? 0
+        : pieceQuantityInput.value * numericPrice.value;
+  } else if (unitType === "sqft") {
+    itemDetails = ` (${computedArea.value.toFixed(2)} sqft)`;
+    subtotalValue =
+      selectedPriceTypeOption.value === "TBA"
+        ? 0
+        : computedArea.value * numericPrice.value;
+  } else if (unitType === "kg") {
+    itemDetails = ` (${weightInput.value} kg)`;
+    subtotalValue =
+      selectedPriceTypeOption.value === "TBA"
+        ? 0
+        : weightInput.value * numericPrice.value;
+  }
 
-    // Update the local transactions array
+  // Prepare the transaction payload
+  const newTransaction = {
+    order_id: order.value.id,
+    item_name: `${baseName}${itemDetails}`,
+    category: selectedCategoryName.value,
+    price: selectedPriceTypeOption.value === "TBA" ? "TBA" : numericPrice.value,
+    process: selectedProcessOption.value,
+    quantity: pieceQuantityInput.value,
+    subtotal: subtotalValue, // ✅ Now subtotalValue is properly defined
+  };
+
+  console.log("📤 Sending Transaction:", newTransaction);
+
+  try {
+    const addedTransaction = await transactionStore.addTransaction(newTransaction);
+    console.log("✅ Transaction added:", addedTransaction);
+
     transactions.value.push(addedTransaction);
+    Notify.create({ message: "Transaction added successfully!", color: "green" });
 
-    // Notify success
-    Notify.create({
-      message: "Transaction added successfully!",
-      color: "green",
-      icon: "check_circle",
-    });
-
-    // Reset inputs
-    resetInputs();
     closeAddTransactionDialog();
   } catch (error) {
-    console.error("Error adding transaction:", error);
-    Notify.create({
-      message: "Failed to add transaction. Please try again.",
-      color: "red",
-    });
+    console.error("❌ Error adding transaction:", error);
+    Notify.create({ message: "Failed to add transaction. Please try again.", color: "red" });
   }
 };
+
 
 watch(searchModeActive, resetInputs);
 watch(
@@ -2564,4 +2519,9 @@ const addAddress = async () => {
 };
 
 // End of add address
+
+const computedPcs = (item) => {
+  return (item.pieces || 1) * (item.quantity || 1);
+};
+
 </script>

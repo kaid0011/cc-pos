@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { supabase } from "@/../supabase/config.js";
 
+import DashboardPage from "@/views/DashboardPage.vue";
 import PosPage from "@/views/PosPage.vue";
 import TransactionsPage from "@/views/TransactionsPage.vue";
 import CustomersPage from "@/views/CustomersPage.vue";
@@ -21,6 +22,14 @@ const routes = [
     component: () => import("@/views/LoginPage.vue"),
     meta: {
       requiresAuth: false, // Login does not require authentication
+    },
+  },
+  {
+    path: "/dashboard",
+    name: "Dashboard",
+    component: DashboardPage,
+    meta: {
+      requiresAuth: true, // POS requires authentication
     },
   },
   {
@@ -116,7 +125,7 @@ router.beforeEach(async (to, from, next) => {
 
   // If trying to access login while authenticated, redirect to POS
   if (to.name === "Login" && session) {
-    return next({ path: "/pos" });
+    return next({ path: "/dashboard" });
   }
 
   next(); // Proceed to the route

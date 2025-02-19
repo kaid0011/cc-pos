@@ -215,7 +215,7 @@ body {
 
 /* transaction table */
 .transaction-table {
-  background-color: #ffe3d2;
+  background-color: #fff1e9;
   margin-top: 1em;
 }
 
@@ -346,12 +346,9 @@ textarea {
 }
 
 .row-col-table {
-  background-color: #ffe9db;
+  background-color: #fff1e6;
 }
 
-.search-transactions {
-width: 25em;
-}
 
 .text-link {
   color: #007bff;
@@ -369,7 +366,7 @@ width: 25em;
 .summary-card-header {
   margin: 1em;
   padding: 1em;
-  background-color: #ebccb9;
+  background-color: #fff1e6;
 }
 
 .text-summary-row {
@@ -382,7 +379,7 @@ width: 25em;
 }
 
 .summary-row {
-  background-color: #ffebde;
+  background-color: #fff1e9;
 }
 
 .login-container {
@@ -658,4 +655,8 @@ font-weight: bold;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.window-height {
+  height: auto !important;
 }

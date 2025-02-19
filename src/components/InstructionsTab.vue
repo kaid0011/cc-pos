@@ -3,7 +3,7 @@
     <!-- Instructions Section -->
     <div class="left-container col-6">
       <q-card flat class="card1">
-        <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
+        <div class="text-p text-center text-uppercase text-weight-bolder q-mb-sm">
           Instructions
         </div>
         <div class="row q-gutter-x-md">
@@ -185,7 +185,7 @@
     <div class="right-container col-6">
       <!-- Error Reporting Section -->
       <q-card flat class="card3">
-        <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
+        <div class="text-p text-center text-uppercase text-weight-bolder q-mb-sm">
           Error Reporting
         </div>
         <div class="q-px-md">

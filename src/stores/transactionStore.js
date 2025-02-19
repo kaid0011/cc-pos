@@ -14,6 +14,8 @@ export const useTransactionStore = defineStore("transactionStore", {
     items: [],
     customers: [],
     selectedCustomer: "",
+    selectedContact: "",
+    selectedAddress:'',
     contactOptions: [],
     addressOptions: [],
     selectedCustomer: null,
@@ -22,13 +24,10 @@ export const useTransactionStore = defineStore("transactionStore", {
     selectedDeliveryAddress: null,
     selectedCollectionAddress: null,
     orderNo: "",
-    readyBy: "",
     addresses: "",
     isOrderNoManuallySet: false,
-    collectionDateFrom: null, // Reactive collection date "from"
-    collectionDateTo: null, // Reactive collection date "to"
-    deliveryDateFrom: null, // Reactive delivery date "from"
-    deliveryDateTo: null, // Reactive delivery date "to"
+    collectionDate: null,
+    deliveryDate: null,
     useCcCollection: false, // New: Self-collect checkbox state
     useCcDelivery: false, // New: Self-pickup checkbox state
     transactions: [],
@@ -106,6 +105,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               // remarks: newCustomer.remarks || null,
               type: newCustomer.type || null,
               sub_type: newCustomer.sub_type || null,
+              remarks: newCustomer.remarks || null,
             },
           ])
           .select();
@@ -115,26 +115,13 @@ export const useTransactionStore = defineStore("transactionStore", {
         const createdCustomer = customerData[0]; // Retrieve the newly created customer
         if (!createdCustomer) throw new Error("Failed to create customer");
 
-        // Step 2: Insert the address into the 'customer_address' table
-        if (newCustomer.address) {
-          const { error: addressError } = await supabase
-            .from("customer_address")
-            .insert([
-              {
-                address: newCustomer.address,
-                customer_id: createdCustomer.id, // Link the customer ID
-              },
-            ]);
-
-          if (addressError) throw addressError;
-        }
-
-        // Step 3: Insert a contact person with the same details as the customer
+        // Step 2: Insert a contact person with the same details as the customer
         const contactPerson = {
           name: createdCustomer.name,
           contact_no1: createdCustomer.contact_no1,
           contact_no2: createdCustomer.contact_no2,
           email: createdCustomer.email,
+          remarks: createdCustomer.remarks,
           customer_id: createdCustomer.id, // Link the contact person to the customer
         };
 
@@ -346,6 +333,66 @@ export const useTransactionStore = defineStore("transactionStore", {
       console.log("Customer and related options reset.");
     },
 
+    setSelectedContact(contact) {
+      this.selectedContact = contact;
+    },
+    
+    clearSelectedContact() {
+      this.selectedContact = null;
+    },
+
+    setSelectedAddress(address) {
+      this.selectedAddress = address;
+    },
+    
+    clearSelectedAddress() {
+      this.selectedAddress = null;
+    },
+    
+    async updateContactPerson(contact) {
+      try {
+        const { error } = await supabase
+          .from("contact_persons")
+          .update({
+            name: contact.name,
+            contact_no1: contact.contact_no1,
+            contact_no2: contact.contact_no2,
+            email: contact.email,
+            remarks: contact.remarks,
+          })
+          .eq("id", contact.id);
+    
+        if (error) throw error;
+    
+        // Reload the contact options after update
+        // await this.loadContactOptions(contact.customer_id);
+      } catch (error) {
+        console.error("Error updating contact person:", error);
+        throw error;
+      }
+    },    
+
+    async updateCustomerAddress(address) {
+      try {
+        const { error } = await supabase
+          .from("customer_address")
+          .update({
+            block_no: address.block_no,
+            road_name: address.road_name,
+            building_name: address.building_name,
+            postal_code: address.postal_code,
+            unit_no: address.unit_no,
+            additional_info: address.additional_info,
+          })
+          .eq("id", address.id);
+    
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error updating address:", error);
+        throw error;
+      }
+    },    
+
     setSelectedCollectionContact(contactId) {
       this.selectedCollectionContact = contactId;
     },
@@ -393,10 +440,6 @@ export const useTransactionStore = defineStore("transactionStore", {
     setOrderNo(orderNo) {
       this.orderNo = orderNo;
       this.isOrderNoManuallySet = true; // Mark as manually set
-    },
-
-    setReadyBy(date) {
-      this.readyBy = date;
     },
 
     addItem(item) {
@@ -476,7 +519,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.instructions = [];
       this.reports = [];
       this.orderNo = "";
-      this.readyBy = "";
       this.selectedCustomer = "";
       this.selectedDeliveryContact = "";
       this.selectedCollectionContact = "";
@@ -646,22 +688,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       deliveryDateTo
     ) {
       try {
-        // Insert Collection Details
-        const { data: collectionData, error: collectionError } = await supabase
-          .from("collections")
-          .insert([
-            {
-              contact_person_id: this.selectedCollectionContact?.id || null,
-              address: this.selectedCollectionAddress?.address || null,
-              date_from: this.collectionDateFrom,
-              date_to: this.collectionDateTo,
-            },
-          ])
-          .select("id, date_from, date_to")
-          .single();
-
-        if (collectionError) throw collectionError;
-
+        
         // Insert Delivery Details
         const { data: deliveryData, error: deliveryError } = await supabase
           .from("deliveries")
@@ -669,14 +696,29 @@ export const useTransactionStore = defineStore("transactionStore", {
             {
               contact_person_id: this.selectedDeliveryContact?.id || null,
               address: this.selectedDeliveryAddress?.address || null,
-              date_from: this.deliveryDateFrom,
-              date_to: this.deliveryDateTo,
+              delivery_date: this.deliveryDate,
             },
           ])
-          .select("id, date_from, date_to")
+          .select("id, delivery_date")
           .single();
 
         if (deliveryError) throw deliveryError;
+
+        // Insert Collection Details
+        const { data: collectionData, error: collectionError } = await supabase
+          .from("collections")
+          .insert([
+            {
+              contact_person_id: this.selectedCollectionContact?.id || null,
+              address: this.selectedCollectionAddress?.address || null,
+              collection_date: this.collectionDate,
+              delivery_id: deliveryData.id,
+            },
+          ])
+          .select("id, collection_date")
+          .single();
+
+        if (collectionError) throw collectionError;
 
         // Insert Order
         const currentTimestamp = new Date().toISOString();
@@ -685,7 +727,6 @@ export const useTransactionStore = defineStore("transactionStore", {
           .insert([
             {
               order_no: this.orderNo,
-              ready_by: this.readyBy,
               collection_id: collectionData.id,
               delivery_id: deliveryData.id,
               customer_id: this.selectedCustomer?.id || null,
@@ -1051,19 +1092,26 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
     async fetchAddressesForCustomer(customerId) {
       try {
+        if (!customerId) {
+          console.error("Customer ID is required to fetch addresses.");
+          return [];
+        }
+    
         const { data, error } = await supabase
           .from("customer_address")
-          .select("id, address")
+          .select("id, block_no, road_name, building_name, postal_code, unit_no, additional_info")
           .eq("customer_id", customerId);
-
-        if (error) throw error;
-
-        return data || [];
+    
+        if (error) {
+          throw new Error(`Error fetching addresses: ${error.message}`);
+        }
+    
+        return data || []; // Return addresses or an empty array
       } catch (error) {
-        console.error("Error fetching addresses:", error);
+        console.error("Unexpected error fetching addresses:", error);
         return [];
       }
-    },
+    },    
     async updateCustomer(customer) {
       const { error } = await supabase
         .from("customers")
@@ -1072,46 +1120,13 @@ export const useTransactionStore = defineStore("transactionStore", {
           contact_no1: customer.contact_no1,
           contact_no2: customer.contact_no2,
           email: customer.email,
+          type: customer.type,
+          sub_type: customer.sub_type,
           remarks: customer.remarks,
         })
         .eq("id", customer.id);
 
       if (error) throw error;
-    },
-    async updateCustomer(customer) {
-      console.log("Updating customer:", customer);
-      const { error } = await supabase
-        .from("customers")
-        .update({
-          name: customer.name,
-          contact_no1: customer.contact_no1,
-          contact_no2: customer.contact_no2,
-          email: customer.email,
-          remarks: customer.remarks,
-        })
-        .eq("id", customer.id);
-
-      if (error) throw error;
-    },
-    async updateCustomerAddress(address) {
-      try {
-        const { error } = await supabase
-          .from("customer_address")
-          .update({
-            block_no: address.value.block_no,
-            road_name: address.value.road_name,
-            building_name: address.value.building_name,
-            postal_code: address.value.postal_code,
-            unit_no: address.value.unit_no,
-            additional_info: address.value.additional_info,
-          })
-          .eq("id", address.id);
-
-        if (error) throw error;
-      } catch (error) {
-        console.error("Error updating address:", error);
-        throw error;
-      }
     },
     async createCustomerAddress(newAddress) {
       try {
@@ -1163,16 +1178,59 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
+    async deleteContactPerson(contactId) {
+      try {
+        if (!contactId) {
+          throw new Error("Contact ID is required for deletion.");
+        }
+
+        // Delete from Supabase
+        const { error } = await supabase
+          .from("contact_persons")
+          .delete()
+          .eq("id", contactId);
+
+        if (error) {
+          throw new Error(`Error deleting contact person: ${error.message}`);
+        }
+
+        // Remove from store state
+        this.contactOptions = this.contactOptions.filter(
+          (contact) => contact.id !== contactId
+        );
+
+        console.log(`Contact Person with ID ${contactId} deleted successfully.`);
+      } catch (error) {
+        console.error("Error deleting contact person:", error);
+        throw error;
+      }
+    },
+
+    // Delete a customer address by ID
     async deleteCustomerAddress(addressId) {
       try {
+        if (!addressId) {
+          throw new Error("Address ID is required for deletion.");
+        }
+
+        // Delete from Supabase
         const { error } = await supabase
           .from("customer_address")
           .delete()
           .eq("id", addressId);
 
-        if (error) throw error;
+        if (error) {
+          throw new Error(`Error deleting address: ${error.message}`);
+        }
+
+        // Remove from store state
+        this.addressOptions = this.addressOptions.filter(
+          (address) => address.id !== addressId
+        );
+
+        console.log(`Customer Address with ID ${addressId} deleted successfully.`);
       } catch (error) {
-        console.error("Error deleting address:", error);
+        console.error("Error deleting customer address:", error);
         throw error;
       }
     },
@@ -1180,9 +1238,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.transactionItems = [];
     },
 
-    setReadyBy(date) {
-      this.readyBy = date;
-    },
     async fetchContactPersons(customerId) {
       try {
         const { data, error } = await supabase
@@ -1273,8 +1328,6 @@ export const useTransactionStore = defineStore("transactionStore", {
             area: orderDetails.collections?.area,
             status: orderDetails.collections?.status,
             remarks: orderDetails.collections?.remarks,
-            date_from: orderDetails.collections?.date_from || null,
-            date_to: orderDetails.collections?.date_to || null,
             collection_date: orderDetails.collections?.collection_date || null,
             contactPerson: orderDetails.collections?.contact_persons || null,
           },
@@ -1284,8 +1337,6 @@ export const useTransactionStore = defineStore("transactionStore", {
             area: orderDetails.deliveries?.area,
             status: orderDetails.deliveries?.status,
             remarks: orderDetails.deliveries?.remarks,
-            date_from: orderDetails.deliveries?.date_from || null,
-            date_to: orderDetails.deliveries?.date_to || null,
             delivery_date: orderDetails.deliveries?.delivery_date || null,
             contactPerson: orderDetails.deliveries?.contact_persons || null,
           },
@@ -1349,7 +1400,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               name: defaultContact.name,
               contact_no1: defaultContact.contact_no1,
               contact_no2: defaultContact.contact_no2,
-              label: `${defaultContact.name} - ${defaultContact.contact_no1}`,
+              label: `${defaultContact.name} - ${defaultContact.contact_no1} / ${defaultContact.contact_no2 || '-'}`,
             }
           : null;
 
@@ -1402,7 +1453,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               name: defaultContact.name,
               contact_no1: defaultContact.contact_no1,
               contact_no2: defaultContact.contact_no2,
-              label: `${defaultContact.name} - ${defaultContact.contact_no1}`,
+              label: `${defaultContact.name} - ${defaultContact.contact_no1} / ${defaultContact.contact_no2 || '-'}`,
             }
           : null;
 
@@ -1437,7 +1488,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       orderNo,
       collectionPayload,
       deliveryPayload,
-      readyByPayload
     ) {
       try {
         // Fetch the order details to get collection and delivery IDs
@@ -1460,8 +1510,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             .update({
               contact_person_id: collectionPayload.contact_person_id,
               address: collectionPayload.address,
-              date_from: collectionPayload.date_from,
-              date_to: collectionPayload.date_to,
+              collection_date: collectionPayload.collection_date,
             })
             .eq("id", collection_id);
 
@@ -1477,8 +1526,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             .update({
               contact_person_id: deliveryPayload.contact_person_id,
               address: deliveryPayload.address,
-              date_from: deliveryPayload.date_from,
-              date_to: deliveryPayload.date_to,
+              delivery_date: deliveryPayload.delivery_date,
             })
             .eq("id", delivery_id);
 
@@ -1487,20 +1535,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           }
         }
 
-        // Update ready_by field in the orders table
-        const { error: readyByError } = await supabase
-          .from("orders")
-          .update({
-            ready_by: readyByPayload.ready_by,
-          })
-          .eq("id", orderId);
-
-        if (readyByError) {
-          throw new Error("Failed to update ready_by field.");
-        }
-
+        
         console.log(
-          "Ready By, Collection, and Delivery details updated successfully."
+          "Collection, and Delivery details updated successfully."
         );
         return true; // Indicate success
       } catch (error) {
@@ -1684,5 +1721,69 @@ export const useTransactionStore = defineStore("transactionStore", {
         this.displayInstructions = []; // Reset on error
       }
     },    
+    async fetchCustomerTypes() {
+      try {
+        const { data, error } = await supabase
+          .from("customer_types")
+          .select("type, sub_type");
+    
+        if (error) {
+          throw error;
+        }
+    
+        // Group sub-types under their respective types
+        const groupedData = data.reduce((acc, item) => {
+          const { type, sub_type } = item;
+    
+          if (!acc[type]) {
+            acc[type] = [];
+          }
+    
+          if (sub_type && !acc[type].includes(sub_type)) {
+            acc[type].push(sub_type);
+          }
+    
+          return acc;
+        }, {});
+    
+        // Extract unique customer types
+        const customerTypes = Object.keys(groupedData);
+    
+        // Map types to their sub-types
+        const subTypeMapping = Object.entries(groupedData).reduce((acc, [type, subTypes]) => {
+          acc[type] = subTypes.map((subType) => ({ label: subType, value: subType }));
+          return acc;
+        }, {});
+    
+        return { customerTypes, subTypeMapping };
+      } catch (error) {
+        console.error("Error fetching customer types:", error);
+        return { customerTypes: [], subTypeMapping: {} }; // Return empty structure on error
+      }
+    },    
+    async fetchDatesByOrderId(orderId) {
+      try {
+        const { data, error } = await supabase
+          .from("orders") // Start from the 'orders' table
+          .select(`
+            collections(collection_date), 
+            deliveries(delivery_date)
+          `)
+          .eq("id", orderId)
+          .single();
+    
+        if (error) throw error;
+    
+        // Extract collection_date and delivery_date safely
+        return {
+          collectionDate: data.collections?.collection_date || "N/A",
+          deliveryDate: data.deliveries?.delivery_date || "N/A",
+        };
+      } catch (error) {
+        console.error("Error fetching dates:", error);
+        return { collectionDate: "N/A", deliveryDate: "N/A" };
+      }
+    },
+      
   },
 });

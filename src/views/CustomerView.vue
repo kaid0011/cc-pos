@@ -2,6 +2,14 @@
   <div class="full-container contact-persons-management">
     <div class="customer-details-container q-pb-md">
       <q-card flat bordered>
+        
+        <q-btn
+        dense
+        label="Update"
+        color="primary"
+        class="secondary-button q-ma-xs q-px-sm"
+        @click="openUpdateDialog(customerDetails)"
+      />
         <q-card-section>
           <div class="row items-start q-gutter-md">
             <div class="col">
@@ -13,7 +21,7 @@
                 <strong>Customer Type:</strong> {{ customerDetails.type }}
               </div>
               <div>
-                <strong>Organisation / Department:</strong>
+                <strong>Customer Sub Type:</strong>
                 {{ customerDetails.sub_type }}
               </div>
               <div>
@@ -25,7 +33,7 @@
               <div><strong>Email:</strong> {{ customerDetails.email }}</div>
               <div>
                 <strong>Customer Since:</strong>
-                {{ customerDetails.created_at }}
+                {{ formatDate(customerDetails.created_at) }}
               </div>
               <div>
                 <strong>Recommended By:</strong>
@@ -70,7 +78,7 @@
             :key="address.id"
             class="row row-col-row q-mx-md"
           >
-            <div class="col col-6 bordered">{{ address.block_no }} {{ address.road_name }} {{ address.building_name }} {{ address.lot_no }}, {{ address.postal_code }}, ({{ address.additional_info }})</div>
+            <div class="col col-6 bordered">{{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}, ({{ address.additional_info }})</div>
             <div class="col col-3 bordered">{{ address.type || "N/A" }}</div>
             <div class="col col-3 bordered actions">
               <q-btn
@@ -85,7 +93,7 @@
                 label="Delete"
                 color="negative"
                 class="negative-button q-ma-xs q-px-sm"
-                @click="openDeleteAddressDialog(address)"
+                @click="openDeleteDialog(address, 'address')"
               />
             </div>
           </div>
@@ -171,14 +179,14 @@
                 label="Update"
                 color="primary"
                 class="main-button q-ma-xs q-px-sm"
-                @click="openUpdateDialog(person)"
+                @click="openUpdateContactDialog(person)"
               />
               <q-btn
                 dense
                 label="Delete"
                 color="negative"
                 class="negative-button q-ma-xs q-px-sm"
-                @click="openDeleteDialog(person)"
+                @click="openDeleteDialog(person, 'contact')"
               />
             </div>
           </div>
@@ -196,156 +204,16 @@
       <div>Outstanding Complaints History (with view image)</div>
       <div>Compensation History</div>
     </div>
-    <!-- Add Contact Person Dialog -->
-    <q-dialog
-      v-model="showAddContactPersonDialog"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
-    >
-      <q-card class="dialog" style="width: 500px">
-        <q-card-section class="dialog-header">
-          <div class="text-body1 text-uppercase text-weight-bold">
-            Add New Contact Person
-          </div>
-        </q-card-section>
-        <q-card-section>
-          <!-- Add Contact Person Form -->
-          <q-form @submit.prevent="addContactPerson" class="q-gutter-md">
-            <q-input
-              v-model="newContactPerson.name"
-              label="Name"
-              outlined
-              required
-            />
-            <q-input
-              v-model="newContactPerson.contact_no1"
-              label="Contact No 1"
-              outlined
-            />
-            <q-input
-              v-model="newContactPerson.contact_no2"
-              label="Contact No 2"
-              outlined
-            />
-            <q-input v-model="newContactPerson.email" label="Email" outlined />
-            <q-input
-              v-model="newContactPerson.remarks"
-              label="Remarks"
-              outlined
-            />
-            <q-card-actions align="right">
-              <q-btn
-                flat
-                class="negative-button"
-                @click="showAddContactPersonDialog = false"
-                label="Cancel"
-              />
-              <q-btn
-                flat
-                class="main-button"
-                type="submit"
-                label="Add Contact Person"
-              />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+    <AddContactPersonDialog
+    v-model="showAddContactPersonDialog"
+    @contact-added="handleContactAdded"
+  />
 
-    <!-- Update Contact Person Dialog -->
-    <q-dialog
-      v-model="showUpdateContactPersonDialog"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
-    >
-      <q-card class="dialog" style="width: 500px">
-        <q-card-section class="dialog-header">
-          <div class="text-body1 text-uppercase text-weight-bold">
-            Update Contact Person
-          </div>
-        </q-card-section>
-        <q-card-section>
-          <!-- Update Contact Person Form -->
-          <q-form @submit.prevent="updateContactPerson" class="q-gutter-md">
-            <q-input
-              v-model="selectedContactPerson.name"
-              label="Name"
-              outlined
-              required
-            />
-            <q-input
-              v-model="selectedContactPerson.contact_no1"
-              label="Contact No 1"
-              outlined
-            />
-            <q-input
-              v-model="selectedContactPerson.contact_no2"
-              label="Contact No 2"
-              outlined
-            />
-            <q-input
-              v-model="selectedContactPerson.email"
-              label="Email"
-              outlined
-            />
-            <q-input
-              v-model="selectedContactPerson.remarks"
-              label="Remarks"
-              outlined
-            />
-            <q-card-actions align="right">
-              <q-btn
-                flat
-                class="negative-button"
-                @click="showUpdateContactPersonDialog = false"
-                label="Cancel"
-              />
-              <q-btn
-                flat
-                class="main-button"
-                type="submit"
-                label="Update Contact Person"
-              />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+  <UpdateContactDialog
+  v-model="showUpdateContactPersonDialog"
+  @contact-updated="handleContactUpdated"
+/>
 
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog
-      v-model="showDeleteContactPersonDialog"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
-    >
-      <q-card class="dialog" style="width: 500px">
-        <q-card-section class="dialog-header">
-          <div class="text-body1 text-uppercase text-weight-bold">
-            Delete Contact Person
-          </div>
-        </q-card-section>
-        <q-card-section>
-          <p>Are you sure you want to delete this contact person?</p>
-          <q-card-actions align="right">
-            <q-btn
-              flat
-              class="negative-button"
-              label="No"
-              @click="showDeleteContactPersonDialog = false"
-            />
-            <q-btn
-              flat
-              class="main-button"
-              label="Yes"
-              @click="deleteContactPerson"
-            />
-          </q-card-actions>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
 
     <!-- Create Collection Dialog -->
     <q-dialog
@@ -407,84 +275,23 @@
         </q-card-section>
       </q-card>
     </q-dialog>
-    <q-dialog v-model="showAddAddressDialog" persistent>
-      <q-card style="width: 400px">
-        <q-card-section>
-          <div class="text-h6">Add New Address</div>
-        </q-card-section>
-        <q-card-section>
-          <q-form @submit.prevent="addAddress(newAddress)">
-            <q-input v-model="newAddress.address" label="Address" outlined />
-            <q-input v-model="newAddress.type" label="Type" outlined />
-            <q-card-actions align="right">
-              <q-btn
-                flat
-                label="Cancel"
-                @click="showAddAddressDialog = false"
-              />
-              <q-btn flat label="Add" type="submit" />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <q-dialog v-model="showUpdateAddressDialog" persistent>
-      <q-card style="width: 400px">
-        <q-card-section>
-          <div class="text-h6">Update Address</div>
-        </q-card-section>
-        <q-card-section>
-          <q-form @submit.prevent="updateAddress(selectedAddress)">
-            <q-input
-              v-model="selectedAddress.address"
-              label="Address"
-              outlined
-            />
-            <q-input v-model="selectedAddress.type" label="Type" outlined />
-            <q-card-actions align="right">
-              <q-btn
-                flat
-                label="Cancel"
-                @click="showUpdateAddressDialog = false"
-              />
-              <q-btn flat label="Update" type="submit" />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog
-      v-model="showDeleteAddressDialog"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
-    >
-      <q-card class="dialog" style="width: 500px">
-        <q-card-section class="dialog-header">
-          <div class="text-body1 text-uppercase text-weight-bold">
-            Delete Address
-          </div>
-        </q-card-section>
-        <q-card-section>
-          <p>Are you sure you want to delete this address?</p>
-          <q-card-actions align="right">
-            <q-btn
-              flat
-              class="negative-button"
-              label="No"
-              @click="showDeleteAddressDialog = false"
-            />
-            <q-btn
-              flat
-              class="main-button"
-              label="Yes"
-              @click="deleteAddress"
-            />
-          </q-card-actions>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+    <AddAddressDialog
+      v-model="showAddAddressDialog"
+      @address-added="handleAddressAdded"
+    />
+    <UpdateAddressDialog
+      v-model="showUpdateAddressDialog"
+      :initialAddress="selectedAddress"
+      @address-updated="handleAddressUpdated"
+    />
+    <DeleteConfirmationDialog
+    :isOpen="showDeleteDialog"
+    :title="deleteDialogTitle"
+    :message="deleteDialogMessage"
+    @update:isOpen="showDeleteDialog = $event"
+    @confirm="deleteItem"
+  />
+  <UpdateCustomerDialog v-model="showUpdateCustomerDialog" :customerData="selectedCustomer" @customer-updated="handleCustomerUpdated" />
   </div>
 </template>
 
@@ -492,46 +299,39 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 
-import { fetchAllCustomers } from "@/../supabase/api/customers.js";
-import {
-  fetchContactPersonsByCustomerId,
-  createContactPerson,
-  updateContactPersons,
-  deleteContactPersons,
-} from "@/../supabase/api/contacts.js";
-import {
-  fetchAddressesByCustomerId,
-  createCustomerAddress,
-  updateCustomerAddress,
-  deleteCustomerAddress,
-} from "@/../supabase/api/addresses.js";
+import { useTransactionStore } from "@/stores/transactionStore";
+import AddContactPersonDialog from "@/components/dialogs/AddContactDialog.vue";
+import AddAddressDialog from "@/components/dialogs/AddAddressDialog.vue";
+import UpdateContactDialog from "@/components/dialogs/UpdateContactDialog.vue";
+import UpdateAddressDialog from "@/components/dialogs/UpdateAddressDialog.vue";
+import DeleteConfirmationDialog from "@/components/dialogs/DeleteConfirmationDialog.vue";
+import UpdateCustomerDialog from "@/components/dialogs/UpdateCustomerDialog.vue";
+
+const transactionStore = useTransactionStore();
 
 const route = useRoute();
-const customerDetails = ref({});
-const addresses = ref([]);
-const contactPersons = ref([]);
 
 // State management
 const showAddresses = ref(false);
 const showContactPersons = ref(false);
 const showAddContactPersonDialog = ref(false);
 const showUpdateContactPersonDialog = ref(false);
-const showDeleteContactPersonDialog = ref(false);
 const showCreateCollectionDialog = ref(false);
 const showAddAddressDialog = ref(false);
 const showUpdateAddressDialog = ref(false);
-const showDeleteAddressDialog = ref(false);
+const showDeleteDialog = ref(false);
+const showUpdateCustomerDialog = ref(false);
 
-// Selected and new items
-const newContactPerson = ref({
-  name: "",
-  contact_no1: "",
-  contact_no2: "",
-  email: "",
-  remarks: "",
-});
+// Deletion state variables
+const deleteTarget = ref(null);
+const deleteType = ref("");
+const deleteDialogTitle = ref("");
+const deleteDialogMessage = ref("");
+
+const customerDetails = ref({});
+const addresses = ref([]);
+const contactPersons = ref([]);
 const selectedContactPerson = ref({});
-const newAddress = ref({});
 const selectedAddress = ref({});
 const collectionDate = ref("");
 const collectionTime = ref("");
@@ -548,133 +348,55 @@ const formatDate = (timestamp) => {
   });
 };
 
-// Loaders
-const loadCustomerDetails = async () => {
+const loadCustomerData = async () => {
+  const customerId = route.params.id;
+  customerDetails.value = await transactionStore.fetchCustomerDetailsById(customerId);
+  addresses.value = await transactionStore.fetchAddressesForCustomer(customerId);
+  contactPersons.value = await transactionStore.fetchContactPersons(customerId);
+};
+
+// Computed filter for contacts
+const filteredContactPersons = computed(() => {
+  return searchQuery.value
+    ? contactPersons.value.filter((person) =>
+        person.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
+    : contactPersons.value;
+});
+
+const openDeleteDialog = (item, type) => {
+  deleteTarget.value = item;
+  deleteType.value = type;
+  showDeleteDialog.value = true;
+
+  if (type === "contact") {
+    deleteDialogTitle.value = "Delete Contact Person";
+    deleteDialogMessage.value = "Are you sure you want to delete this contact person?";
+  } else {
+    deleteDialogTitle.value = "Delete Address";
+    deleteDialogMessage.value = "Are you sure you want to delete this address?";
+  }
+};
+
+const deleteItem = async () => {
+  if (!deleteTarget.value) return;
+
   try {
-    const allCustomers = await fetchAllCustomers();
-    const customer = allCustomers.find(
-      (c) => c.id === parseInt(route.params.id, 10)
-    );
-    if (customer) {
-      customerDetails.value = {
-        ...customer,
-        created_at: formatDate(customer.created_at),
-      };
-    } else {
-      console.error(`Customer with ID ${route.params.id} not found.`);
+    if (deleteType.value === "contact") {
+      await transactionStore.deleteContactPerson(deleteTarget.value.id);
+      await loadCustomerData(); // Refresh contact persons
+    } else if (deleteType.value === "address") {
+      await transactionStore.deleteCustomerAddress(deleteTarget.value.id);
+      await loadCustomerData(); // Refresh addresses
     }
+
+    console.log(`${deleteType.value} deleted successfully.`);
+    showDeleteDialog.value = false; // Close dialog after deletion
   } catch (error) {
-    console.error("Error fetching customer details:", error);
+    console.error(`Error deleting ${deleteType.value}:`, error);
   }
 };
 
-const loadAddresses = async () => {
-  try {
-    addresses.value = await fetchAddressesByCustomerId(route.params.id);
-  } catch (error) {
-    console.error("Error loading addresses:", error);
-  }
-};
-
-const loadContactPersons = async () => {
-  try {
-    contactPersons.value = await fetchContactPersonsByCustomerId(
-      route.params.id
-    );
-  } catch (error) {
-    console.error("Error loading contact persons:", error);
-  }
-};
-
-// Address Actions
-const addAddress = async () => {
-  try {
-    await createCustomerAddress({
-      ...newAddress.value,
-      customer_id: route.params.id,
-    });
-    await loadAddresses();
-    showAddAddressDialog.value = false;
-  } catch (error) {
-    console.error("Error adding address:", error);
-  }
-};
-
-const updateAddress = async () => {
-  try {
-    await updateCustomerAddress(selectedAddress.value);
-    await loadAddresses();
-    showUpdateAddressDialog.value = false;
-  } catch (error) {
-    console.error("Error updating address:", error);
-  }
-};
-
-const deleteAddress = async () => {
-  try {
-    await deleteCustomerAddress(selectedAddress.value.id);
-    await loadAddresses();
-    showDeleteAddressDialog.value = false;
-  } catch (error) {
-    console.error("Error deleting address:", error);
-  }
-};
-
-// Address Dialog Controls
-const openUpdateAddressDialog = (address) => {
-  selectedAddress.value = { ...address };
-  showUpdateAddressDialog.value = true;
-};
-
-const openDeleteAddressDialog = (address) => {
-  selectedAddress.value = { ...address };
-  showDeleteAddressDialog.value = true;
-};
-
-// Contact Person Actions
-const addContactPerson = async () => {
-  try {
-    await createContactPerson({
-      ...newContactPerson.value,
-      customer_id: route.params.id,
-    });
-    await loadContactPersons();
-    showAddContactPersonDialog.value = false;
-  } catch (error) {
-    console.error("Error adding contact person:", error);
-  }
-};
-
-const updateContactPerson = async () => {
-  try {
-    await updateContactPersons(selectedContactPerson.value);
-    await loadContactPersons();
-    showUpdateContactPersonDialog.value = false;
-  } catch (error) {
-    console.error("Error updating contact person:", error);
-  }
-};
-
-const deleteContactPerson = async () => {
-  try {
-    await deleteContactPersons(selectedContactPerson.value.id);
-    await loadContactPersons();
-    showDeleteContactPersonDialog.value = false;
-  } catch (error) {
-    console.error("Error deleting contact person:", error);
-  }
-};
-
-// Contact Person Dialog Controls
-const openUpdateDialog = (contactPerson) => {
-  selectedContactPerson.value = { ...contactPerson };
-  showUpdateContactPersonDialog.value = true;
-};
-
-const openDeleteDialog = (contactPerson) => {
-  selectedContactPerson.value = { ...contactPerson };
-  showDeleteContactPersonDialog.value = true;
-};
 
 // Collection Actions
 const openCollectionDialog = (contactPerson) => {
@@ -694,20 +416,45 @@ const toggleAddresses = () => (showAddresses.value = !showAddresses.value);
 const toggleContactPersons = () =>
   (showContactPersons.value = !showContactPersons.value);
 
-// Filtering
-const filteredContactPersons = computed(() => {
-  if (!searchQuery.value) return contactPersons.value;
-  return contactPersons.value.filter((person) =>
-    Object.values(person).some((val) =>
-      String(val).toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  );
-});
 
-// Lifecycle Hooks
-onMounted(async () => {
-  await loadCustomerDetails();
-  await loadAddresses();
-  await loadContactPersons();
-});
+  onMounted(loadCustomerData);
+
+  const handleContactAdded = loadCustomerData;
+  const handleAddressAdded = loadCustomerData;
+
+const openUpdateContactDialog = (contactPerson) => {
+  transactionStore.setSelectedContact(contactPerson);
+  showUpdateContactPersonDialog.value = true;
+};
+
+const handleContactUpdated = async () => {
+  try {
+    await loadCustomerData(); // Refresh contact persons after update
+    showUpdateContactPersonDialog.value = false; // Close dialog
+    console.log("Contact person updated successfully.");
+  } catch (error) {
+    console.error("Error updating contact person:", error);
+  }
+};
+
+const handleAddressUpdated = async () => {
+  try {
+    await loadCustomerData(); // Refresh addresses after update
+    showUpdateAddressDialog.value = false; // Close dialog
+    console.log("Address updated successfully.");
+  } catch (error) {
+    console.error("Error updating address:", error);
+  }
+};
+
+const openUpdateDialog = (customer) => {
+  transactionStore.setSelectedCustomer(customer);
+  showUpdateCustomerDialog.value = true;
+};
+
+const handleCustomerUpdated = async () => {
+  await loadCustomerData();
+  showUpdateCustomerDialog.value = false;
+  await transactionStore.loadCustomers();
+};
 </script>

@@ -18,11 +18,17 @@ export const useTransactionStore = defineStore("transactionStore", {
     selectedAddress:'',
     contactOptions: [],
     addressOptions: [],
+    driverOptions: [],
+    timeOptions: [],
     selectedCustomer: null,
     selectedDeliveryContact: null,
     selectedCollectionContact: null,
     selectedDeliveryAddress: null,
     selectedCollectionAddress: null,
+    selectedCollectionDriver: null,
+  selectedDeliveryDriver: null,
+  selectedCollectionTime: null,
+  selectedDeliveryTime: null,
     orderNo: "",
     addresses: "",
     isOrderNoManuallySet: false,
@@ -238,6 +244,69 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
+    async loadDrivers() {
+      try {
+        const { data, error } = await supabase
+          .from("drivers")
+          .select("id, name, contact_no1");
+    
+        if (error) {
+          throw error;
+        }
+    
+        // Map drivers into the format required for the dropdowns
+        this.driverOptions = data.map((driver) => ({
+          id: driver.id,
+          label: `${driver.name} - ${driver.contact_no1 || ""}`,
+        }));
+    
+        console.log("Loaded Drivers:", this.driverOptions);
+      } catch (error) {
+        console.error("Error loading drivers:", error);
+      }
+    },
+
+    async loadDriverOptions() {
+      await this.loadDrivers();
+    
+      if (this.selectedCollectionDriver) {
+        this.selectedCollectionDriver = this.driverOptions.find(
+          (driver) => driver.id === this.selectedCollectionDriver
+        )?.id || null;
+      }
+    
+      if (this.selectedDeliveryDriver) {
+        this.selectedDeliveryDriver = this.driverOptions.find(
+          (driver) => driver.id === this.selectedDeliveryDriver
+        )?.id || null;
+      }
+    
+      console.log("Driver Options Loaded:", this.driverOptions);
+    },    
+    async loadTimeOptions() {
+      try {
+        const { data, error } = await supabase
+          .from("time_options")
+          .select("time");
+  
+        if (error) {
+          console.error("Error fetching time options:", error);
+          return;
+        }
+  
+        // Map and sort time options alphabetically
+        this.timeOptions = data
+          .map(option => ({
+            label: option.time,
+            value: option.time,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+  
+        console.log("Sorted Time Options:", this.timeOptions);
+      } catch (error) {
+        console.error("Unexpected error fetching time options:", error);
+      }
+    },
     // Load recurring instructions for a specific customer
     async loadRecurringInstructions(customerId) {
       try {
@@ -347,6 +416,16 @@ export const useTransactionStore = defineStore("transactionStore", {
     
     clearSelectedAddress() {
       this.selectedAddress = null;
+    },
+    
+    setSelectedCollectionDriver(driverId) {
+      this.selectedCollectionDriver = driverId;
+      console.log("Selected Collection Driver:", this.selectedCollectionDriver);
+    },
+    
+    setSelectedDeliveryDriver(driverId) {
+      this.selectedDeliveryDriver = driverId;
+      console.log("Selected Delivery Driver:", this.selectedDeliveryDriver);
     },
     
     async updateContactPerson(contact) {
@@ -697,9 +776,11 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedDeliveryContact?.id || null,
               address: this.selectedDeliveryAddress?.address || null,
               delivery_date: this.deliveryDate,
+              delivery_time: this.deliveryTime,
+              driver_id: this.selectedDeliveryDriver?.id || null,
             },
           ])
-          .select("id, delivery_date")
+          .select("id, delivery_date, delivery_time")
           .single();
 
         if (deliveryError) throw deliveryError;
@@ -712,10 +793,12 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedCollectionContact?.id || null,
               address: this.selectedCollectionAddress?.address || null,
               collection_date: this.collectionDate,
+              collection_time: this.collectionTime,
+              driver_id: this.selectedCollectionDriver?.id || null,
               delivery_id: deliveryData.id,
             },
           ])
-          .select("id, collection_date")
+          .select("id, collection_date. collection_time")
           .single();
 
         if (collectionError) throw collectionError;
@@ -976,48 +1059,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    // Fetch collection details by collection ID
-    async fetchCollectionDetailsById(collectionId) {
-      try {
-        const { data: collection, error } = await supabase
-          .from("collections")
-          .select("*")
-          .eq("id", collectionId)
-          .single();
-
-        if (error) {
-          console.error("Error fetching collection details:", error);
-          return null;
-        }
-
-        return collection;
-      } catch (error) {
-        console.error("Unexpected error fetching collection details:", error);
-        return null;
-      }
-    },
-
-    // Fetch delivery details by delivery ID
-    async fetchDeliveriesDetailsById(deliveryId) {
-      try {
-        const { data: delivery, error } = await supabase
-          .from("deliveries")
-          .select("*")
-          .eq("id", deliveryId)
-          .single();
-
-        if (error) {
-          console.error("Error fetching delivery details:", error);
-          return null;
-        }
-
-        return delivery;
-      } catch (error) {
-        console.error("Unexpected error fetching delivery details:", error);
-        return null;
-      }
-    },
-
+   
     // Fetch contact person details by contact person ID
     async fetchContactPersonById(contactPersonId) {
       try {
@@ -1784,6 +1826,231 @@ export const useTransactionStore = defineStore("transactionStore", {
         return { collectionDate: "N/A", deliveryDate: "N/A" };
       }
     },
-      
+    async fetchAllCollections() {
+      try {
+        const { data, error } = await supabase
+          .from("collections")
+          .select(`
+            id,
+            created_at,
+            driver_id,
+            status,
+            area,
+            remarks,
+            contact_person_id,
+            address,
+            date_collected,
+            collection_date,
+            collection_type,
+            delivery_id,
+            contact_persons (
+              id,
+              name,
+              customer_id,
+              customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                type,
+                sub_type
+              )
+            ),
+            drivers (
+              id,
+              name,
+              contact_no1
+            )
+          `);
+    
+        if (error) {
+          throw error;
+        }
+    
+        // Transform data to include related customer and driver details
+        const formattedData = data.map((collection) => ({
+          id: collection.id,
+          created_at: collection.created_at,
+          driver_id: collection.driver_id,
+          status: collection.status,
+          remarks: collection.remarks,
+          contact_person_id: collection.contact_person_id,
+          address: collection.address,
+          collection_date: collection.collection_date,
+          delivery_id: collection.delivery_id,
+          contact_person: collection.contact_persons
+            ? {
+                id: collection.contact_persons.id,
+                name: collection.contact_persons.name,
+              }
+            : null,
+          customer: collection.contact_persons?.customers
+            ? {
+                id: collection.contact_persons.customers.id,
+                name: collection.contact_persons.customers.name,
+                contact_no1: collection.contact_persons.customers.contact_no1,
+                contact_no2: collection.contact_persons.customers.contact_no2,
+                email: collection.contact_persons.customers.email,
+                type: collection.contact_persons.customers.type,
+                sub_type: collection.contact_persons.customers.sub_type,
+              }
+            : null,
+          driver: collection.drivers
+            ? {
+                id: collection.drivers.id,
+                name: collection.drivers.name,
+              }
+            : null
+        }));
+    
+        console.log("Fetched Collections with Drivers:", formattedData);
+        return formattedData || [];
+      } catch (error) {
+        console.error("Error fetching collections:", error);
+        return [];
+      }
+    },
+    async fetchCollectionsById(collectionId) {
+      try {
+        // Query collections with related tables, including drivers and contact_persons for deliveries
+        const { data: collection, error } = await supabase
+          .from("collections")
+          .select(
+            `
+            *,
+            drivers (
+              id,
+              name,
+              contact_no1
+            ),
+            contact_persons (
+              id,
+              name,
+              contact_no1,
+              contact_no2,
+              email,
+              remarks,
+              customer_id,
+              customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                remarks,
+                payment_type
+              )
+            ),
+            deliveries (
+              id,
+              address,
+              area,
+              status,
+              remarks,
+              delivery_date,
+              delivery_time,
+              driver_id,
+              contact_person_id,
+              drivers (
+                id,
+                name,
+                contact_no1
+              ),
+              contact_persons (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                remarks
+              )
+            )
+          `
+          )
+          .eq("id", collectionId)
+          .single(); // Fetch a single collection
+    
+        if (error) {
+          throw new Error(`Error fetching collection details: ${error.message}`);
+        }
+    
+        if (!collection) {
+          console.warn(`No collection found with ID: ${collectionId}`);
+          return null;
+        }
+    
+        // Transform data for easy use in the frontend
+        return {
+          id: collection.id,
+          collection_date: collection.collection_date,
+          collection_time: collection.collection_time,
+          address: collection.address,
+          area: collection.area,
+          status: collection.status,
+          remarks: collection.remarks,
+          driver: collection.deliveries?.drivers
+            ? {
+                id: collection.deliveries.drivers.id,
+                name: collection.deliveries.drivers.name,
+                contact_no1: collection.deliveries.drivers.contact_no1,
+              }
+            : null,
+          contact_person: collection.contact_persons
+            ? {
+                id: collection.contact_persons.id,
+                name: collection.contact_persons.name,
+                contact_no1: collection.contact_persons.contact_no1,
+                contact_no2: collection.contact_persons.contact_no2,
+                email: collection.contact_persons.email,
+                remarks: collection.contact_persons.remarks,
+              }
+            : null,
+          customer: collection.contact_persons?.customers
+            ? {
+                id: collection.contact_persons.customers.id,
+                name: collection.contact_persons.customers.name,
+                contact_no1: collection.contact_persons.customers.contact_no1,
+                contact_no2: collection.contact_persons.customers.contact_no2,
+                email: collection.contact_persons.customers.email,
+                remarks: collection.contact_persons.customers.remarks,
+                payment_type: collection.contact_persons.customers.payment_type,
+              }
+            : null,
+          delivery: collection.deliveries
+            ? {
+                id: collection.deliveries.id,
+                address: collection.deliveries.address,
+                area: collection.deliveries.area,
+                status: collection.deliveries.status,
+                remarks: collection.deliveries.remarks,
+                delivery_date: collection.deliveries.delivery_date,
+                delivery_time: collection.deliveries.delivery_time,
+                driver: collection.deliveries.drivers
+                  ? {
+                      id: collection.deliveries.drivers.id,
+                      name: collection.deliveries.drivers.name,
+                      contact_no1: collection.deliveries.drivers.contact_no1,
+                    }
+                  : null,
+                contact_person: collection.deliveries.contact_persons
+                  ? {
+                      id: collection.deliveries.contact_persons.id,
+                      name: collection.deliveries.contact_persons.name,
+                      contact_no1: collection.deliveries.contact_persons.contact_no1,
+                      contact_no2: collection.deliveries.contact_persons.contact_no2,
+                      email: collection.deliveries.contact_persons.email,
+                      remarks: collection.deliveries.contact_persons.remarks,
+                    }
+                  : null,
+              }
+            : null,
+        };
+      } catch (error) {
+        console.error("Unexpected error fetching collection by ID:", error);
+        return null;
+      }
+    },    
+    
   },
 });

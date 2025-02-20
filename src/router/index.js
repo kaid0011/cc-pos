@@ -9,7 +9,10 @@ import CustomerView from "@/views/CustomerView.vue";
 import OrderPage from "@/views/OrderPage.vue";
 import PaymentPage from "@/views/PaymentPage.vue";
 import TagsPage from "@/views/TagsPage.vue";
-import TagsView from "@/views/TagsView.vue";
+import TagView from "@/views/TagView.vue";
+import CollectionsPage from "@/views/CollectionsPage.vue";
+import LogisticsView from "@/views/LogisticsView.vue";
+import DeliveriesPage from "@/views/DeliveriesPage.vue";
 
 const routes = [
   {
@@ -88,9 +91,33 @@ const routes = [
     },
   },
   {
+    path: "/collections",
+    name: "Collections",
+    component: CollectionsPage,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
+  {
+    path: "/logistics/:id",
+    name: "LogisticsView",
+    component: LogisticsView,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
+  {
+    path: "/deliveries",
+    name: "Deliveries",
+    component: DeliveriesPage,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
+  {
     path: "/tags/:order_no",
-    name: "TagsView",
-    component: TagsView,
+    name: "TagView",
+    component: TagView,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },

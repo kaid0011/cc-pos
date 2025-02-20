@@ -16,6 +16,7 @@
               </div>
             </div>
             <q-input v-model="contact.email" label="Email" outlined class="dialog-inputs" />
+            <q-input v-model="contact.remarks" label="Remarks" outlined class="dialog-inputs" />
   
             <q-card-actions align="right">
               <q-btn label="Cancel" color="negative" @click="closeDialog" />

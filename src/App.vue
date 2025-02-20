@@ -79,6 +79,40 @@
             <q-item-section> Customer Management </q-item-section>
           </q-item>
 
+          <!-- Logistics Management -->
+
+          <q-expansion-item
+          expand-separator
+          icon="local_shipping"
+          label="Logistics Management"
+          header-class="q-pa-md"
+          default-closed
+        >
+          <q-item
+            clickable
+            @click="goToCollections"
+            :active="isCollectionsActive"
+            class="q-pl-lg q-pa-sm"
+          >
+            <q-item-section avatar>
+              <q-icon name="inventory_2" />
+            </q-item-section>
+            <q-item-section> Collections </q-item-section>
+          </q-item>
+
+          <q-item
+            clickable
+            @click="goToDeliveries"
+            :active="isDeliveriesActive"
+            class="q-pl-lg q-pa-sm"
+          >
+            <q-item-section avatar>
+              <q-icon name="local_shipping" />
+            </q-item-section>
+            <q-item-section> Deliveries </q-item-section>
+          </q-item>
+        </q-expansion-item>
+
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
             <q-item-section avatar>
@@ -125,10 +159,24 @@ const isCustomersPageActive = computed(() => route.path === "/customers");
 // Check if the current route is Tags Page
 const isTagsPageActive = computed(() => route.path === "/tags");
 
+// Check if the current route is Collections
+const isCollectionsActive = computed(() => route.path === "/collections");
+
+// Check if the current route is Deliveries
+const isDeliveriesActive = computed(() => route.path === "/deliveries");
+
 // Check if the current route requires authentication
 const requiresAuth = computed(() => {
   // Define routes that require authentication
-  const authRequiredRoutes = ["/dashboard", "/pos", "/transactions", "/customers", "/tags"];
+  const authRequiredRoutes = [
+    "/dashboard",
+    "/pos",
+    "/transactions",
+    "/customers",
+    "/tags",
+    "/collections",
+    "/deliveries",
+  ];
   return authRequiredRoutes.includes(route.path);
 });
 
@@ -159,7 +207,16 @@ const goToTransactionHistory = () => {
 const goToTagsPage = () => {
   router.push("/tags");
 };
+
 const goToCustomersPage = () => {
   router.push("/customers");
+};
+
+const goToCollections = () => {
+  router.push("/collections");
+};
+
+const goToDeliveries = () => {
+  router.push("/deliveries");
 };
 </script>

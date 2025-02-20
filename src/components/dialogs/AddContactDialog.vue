@@ -38,6 +38,12 @@
               outlined
               class="dialog-inputs"
             />
+            <q-input
+              v-model="contact.remarks"
+              label="Remarks"
+              outlined
+              class="dialog-inputs"
+            />
             <q-card-actions align="right">
               <q-btn label="Cancel" color="negative" @click="closeDialog" />
               <q-btn label="Add" color="primary" type="submit" />
@@ -67,6 +73,7 @@
     contact_no1: "",
     contact_no2: "",
     email: "",
+    remarks: "",
   });
   
   const handleAddContact = async () => {
@@ -90,6 +97,7 @@
       contact_no1: "",
       contact_no2: "",
       email: "",
+      remarks: "",
     };
   };
   </script>

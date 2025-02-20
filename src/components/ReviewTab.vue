@@ -61,6 +61,14 @@
             Collection Date:
             <span class="text-summary">{{ formattedCollectionDate }}</span>
           </div>
+          <div class="text-summary-row">
+            Collection Time:
+            <span class="text-summary">{{ transactionStore.selectedCollectionTime?.label || "-" }}</span>
+          </div>
+          <div class="text-summary-row">
+            Collection Driver:
+            <span class="text-summary">{{ transactionStore.selectedCollectionDriver?.label || "-" }}</span>
+          </div>
         </div>
 
         <!-- Delivery Details -->
@@ -89,6 +97,14 @@
           <div class="text-summary-row">
             Delivery Date:
             <span class="text-summary">{{ formattedDeliveryDate }}</span>
+          </div>
+          <div class="text-summary-row">
+            Delivery Time:
+            <span class="text-summary">{{ transactionStore.selectedDeliveryTime?.label || "-" }}</span>
+          </div>
+          <div class="text-summary-row">
+            Delivery Driver:
+            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver?.label || "-" }}</span>
           </div>
         </div>
       </div>

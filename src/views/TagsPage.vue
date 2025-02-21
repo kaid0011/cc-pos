@@ -1,31 +1,10 @@
 <template>
   <div class="full-container transactions-history">
-    <div class="text-h6 text-center text-uppercase text-weight-bold q-mb-md">
+    <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
       Tags Management
     </div>
     <!-- Search Bar -->
     <div class="row justify-end q-mb-sm q-gutter-x-sm">
-      <!-- Date Range Filters -->
-      <!-- <div class="date-filter-container row q-gutter-x-sm">
-        <q-input
-          class="date-input"
-          v-model="startDate"
-          type="date"
-          outlined
-          dense
-          label="Start Date"
-          clearable
-        />
-        <q-input
-          class="date-input"
-          v-model="endDate"
-          type="date"
-          outlined
-          dense
-          label="End Date"
-          clearable
-        />
-      </div> -->
       <q-input
         class="search-transactions search-input"
         v-model="searchQuery"
@@ -42,15 +21,15 @@
     <div class="row-col-table">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
-        <div class="col">Order No</div>
-        <div class="col">Collection Date</div>
-        <div class="col">Delivery Date</div>
-        <div class="col">Driver</div>
-        <div class="col">Customer Name</div>
-        <div class="col">Tag Timestamp</div>
-        <div class="col">Changes</div>
-        <div class="col">Status</div>
-        <div class="col">Actions</div>
+        <div class="col text-weight-bolder q-py-sm">Order No</div>
+        <div class="col text-weight-bolder q-py-sm">Collection Date</div>
+        <div class="col text-weight-bolder q-py-sm">Delivery Date</div>
+        <div class="col text-weight-bolder q-py-sm">Driver</div>
+        <div class="col text-weight-bolder q-py-sm">Customer Name</div>
+        <div class="col text-weight-bolder q-py-sm">Tag Timestamp</div>
+        <div class="col text-weight-bolder q-py-sm">Changes</div>
+        <div class="col text-weight-bolder q-py-sm">Status</div>
+        <div class="col text-weight-bolder q-py-sm">Actions</div>
       </div>
 
       <!-- Table Rows -->
@@ -73,11 +52,9 @@
         <div class="col">{{ formatDate(order.delivery_date) }}</div>
         <div class="col">{{ order.driver || "N/A" }}</div>
         <div class="col">
-          <div class="col">
-            <a @click.prevent="openCustomerTab(order.customer_id)">{{
-              order.customer_name
-            }}</a>
-          </div>
+          <a @click.prevent="openCustomerTab(order.customer_id)">{{
+            order.customer_name
+          }}</a>
         </div>
         <div class="col">{{ formatTimestamp(order.tag_timestamp) }}</div>
         <div class="col">{{ order.tag_changes }}</div>
@@ -108,90 +85,19 @@
     </div>
   </div>
 
-  <!-- Customer Dialog -->
-  <q-dialog v-model="customerDialog">
-    <q-card>
-      <q-card-section>
-        <div class="text-h6">
-          Customer Details (ID: {{ selectedCustomer?.id }})
-        </div>
-        <div class="customer-details text-p">
-          <div>
-            <span class="text-weight-bold">Created At:</span>
-            {{ selectedCustomer?.created_at }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Name:</span>
-            {{ selectedCustomer?.name }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Contact No 1:</span>
-            {{ selectedCustomer?.contact_no1 }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Contact No 2:</span>
-            {{ selectedCustomer?.contact_no2 }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Email:</span>
-            {{ selectedCustomer?.email }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Address:</span>
-            {{ selectedCustomer?.address }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Remarks:</span>
-            {{ selectedCustomer?.remarks }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Postal:</span>
-            {{ selectedCustomer?.postal }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Recommended By:</span>
-            {{ selectedCustomer?.recommended_by }}
-          </div>
-          <div>
-            <span class="text-weight-bold">Type:</span>
-            {{ selectedCustomer?.type }}
-          </div>
-        </div>
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          label="Close"
-          color="primary"
-          @click="customerDialog = false"
-        />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { fetchAllOrders } from "@/../supabase/api/orders";
-import { useRouter } from "vue-router";
 const transactionStore = useTransactionStore();
 const orders = ref([]);
-const orderDialog = ref(false);
-const collectionDialog = ref(false);
-const deliveryDialog = ref(false);
-const customerDialog = ref(false);
-const selectedOrder = ref(null);
-const selectedCollection = ref(null);
-const selectedDelivery = ref(null);
-const selectedCustomer = ref(null);
-const contactPerson = ref(null);
-const transactionItems = ref([]);
 const searchQuery = ref("");
 const startDate = ref(null);
 const endDate = ref(null);
 
-const router = useRouter();
 // Fetch data on mount
 onMounted(async () => {
   try {
@@ -256,43 +162,17 @@ const filteredOrders = computed(() => {
 
 // Helper function to format dates
 const formatDate = (date) => {
-  if (!date) return "N/A";
+  if (!date) return "N/A"; // Handle empty or null dates
+
   const d = new Date(date);
-  return d.toLocaleDateString();
-};
+  if (isNaN(d.getTime())) return "N/A"; // Handle invalid dates
 
-const openCustomerTab = (customerId) => {
-  const url = `/customers/${customerId}`;
-  window.open(url, "_blank"); // Open in a new tab
-};
-
-const createTransaction = async (order) => {
-  try {
-    // Pre-fill the transaction store with customer details
-    transactionStore.setSelectedCustomer({
-      id: order.customer_id,
-      name: order.customer_name,
-      contact_no1: order.contact_no1,
-
-      contact_no2: order?.contact_no2,
-      email: order?.email,
-      remarks: order?.remarks,
-      type: order?.type,
-    });
-
-    // Adjust the order number
-    const newOrderNo = `${order.order_no}-1`;
-    transactionStore.setOrderNo(newOrderNo);
-
-    // Reset other transaction details except items
-    transactionStore.resetItems();
-    transactionStore.setReadyBy("");
-
-    // Navigate to PosPage.vue
-    router.push({ name: "Pos" });
-  } catch (error) {
-    console.error("Error creating transaction:", error);
-  }
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short", // "Fri"
+    day: "2-digit",   // "31"
+    month: "2-digit", // "01"
+    year: "numeric",  // "2025"
+  });
 };
 
 // Open Order Dialog and fetch transaction items
@@ -301,12 +181,6 @@ const openOrderDialog = async (order) => {
     // Pre-fill the transaction store with customer details
     transactionStore.setSelectedCustomer({
       id: order.customer_id,
-      name: order.customer_name,
-      contact_no1: order.contact_no1,
-      contact_no2: order?.contact_no2,
-      email: order?.email,
-      remarks: order?.remarks,
-      type: order?.type,
     });
 
     // Set order number
@@ -314,7 +188,6 @@ const openOrderDialog = async (order) => {
 
     // Set other transaction details
     transactionStore.resetItems(); // Reset previous transaction items
-    transactionStore.setReadyBy(order.ready_by);
 
     // Open a new tab for the ReviewTab with the order_no as a parameter
     window.open(`/orders/${order.order_no}`, "_blank");
@@ -354,4 +227,8 @@ const viewTag = (orderNo) => {
   window.open(url, '_blank');
 };
 
+const openCustomerTab = (customerId) => {
+  const url = `/customers/${customerId}`;
+  window.open(url, "_blank"); // Open in a new tab
+};
 </script>

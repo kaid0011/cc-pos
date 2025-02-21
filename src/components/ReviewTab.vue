@@ -4,102 +4,107 @@
       <!-- Order Summary Header -->
       <div class="row summary-header text-p">
         <div class="col summary-card-header justify-between text-p">
-          <div class="text-h6 text-center text-weight-bold">Order Details</div>
+          <div class="text-h6 text-center text-weight-bolder text-uppercase">
+            Order Details
+          </div>
           <q-separator class="q-my-sm" />
           <div class="text-summary-row">
-            Customer Name:
+            Order No:
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.name || "N/A"
+              transactionStore?.orderNo || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
-            Contact No:
+            Customer Name:
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.contact_no1 || "N/A"
+              transactionStore.selectedCustomer?.name || "-"
             }}</span>
+          </div>
+          <div class="text-summary-row">
+            Contact Nos:
+            <span class="text-summary"
+              >{{ transactionStore.selectedCustomer?.contact_no1 || "N/A" }} /
+              {{ transactionStore.selectedCustomer?.contact_no2 || "-" }}</span
+            >
           </div>
           <div class="text-summary-row">
             Email:
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.email || "N/A"
+              transactionStore.selectedCustomer?.email || "-"
             }}</span>
-          </div>
-          <div class="text-summary-row">
-            Order No:
-            <span class="text-summary">{{
-              transactionStore?.orderNo || "N/A"
-            }}</span>
-          </div>
-          <div class="text-summary-row">
-            Ready By:
-            <span class="text-summary">{{ formattedReadyByDate }}</span>
           </div>
         </div>
         <!-- Collection Details -->
         <div class="col summary-card-header">
-          <div class="text-h6 text-center text-weight-bold">
+          <div class="text-h6 text-center text-weight-bolder text-uppercase">
             Collection Details
           </div>
           <q-separator class="q-my-sm" />
           <div class="text-summary-row">
             Contact Person:
             <span class="text-summary">{{
-              collectionContact?.name || "N/A"
+              collectionContact?.name || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
-            Contact No:
-            <span class="text-summary">{{
-              collectionContact?.contact_no1 || "N/A"
-            }}</span>
+            Contact Nos:
+            <span class="text-summary"
+              >{{ collectionContact?.contact_no1 || "N/A" }} /
+              {{ collectionContact?.contact_no2 || "-" }}</span
+            >
           </div>
           <div class="text-summary-row">
-            Address:
-            <span class="text-summary">{{
-              collectionAddress?.address || "N/A"
-            }}</span>
+            Address: 
+            <span class="text-summary">{{ collectionAddress?.label || '-'}} </span>
           </div>
           <div class="text-summary-row">
-            Date From:
-            <span class="text-summary">{{ formattedCollectionDateFrom }}</span>
+            Collection Date:
+            <span class="text-summary">{{ formattedCollectionDate }}</span>
           </div>
           <div class="text-summary-row">
-            Date To:
-            <span class="text-summary">{{ formattedCollectionDateTo }}</span>
+            Collection Time:
+            <span class="text-summary">{{ transactionStore.collectionTime?.label || "-" }}</span>
+          </div>
+          <div class="text-summary-row">
+            Collection Driver:
+            <span class="text-summary">{{ transactionStore.selectedCollectionDriver?.label || "-" }}</span>
           </div>
         </div>
 
         <!-- Delivery Details -->
         <div class="col summary-card-header">
-          <div class="text-h6 text-center text-weight-bold">
+          <div class="text-h6 text-center text-weight-bolder text-uppercase">
             Delivery Details
           </div>
           <q-separator class="q-my-sm" />
           <div class="text-summary-row">
             Contact Person:
             <span class="text-summary">{{
-              deliveryContact?.name || "N/A"
+              deliveryContact?.name || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
-            Contact No:
-            <span class="text-summary">{{
-              deliveryContact?.contact_no1 || "N/A"
-            }}</span>
+            Contact Nos:
+            <span class="text-summary"
+              >{{ deliveryContact?.contact_no1 || "N/A" }} /
+              {{ deliveryContact?.contact_no2 || "-" }}</span
+            >
           </div>
           <div class="text-summary-row">
             Address:
-            <span class="text-summary">{{
-              deliveryAddress?.address || "N/A"
-            }}</span>
+            <span class="text-summary">{{ deliveryAddress?.label || '-' }}</span>
           </div>
           <div class="text-summary-row">
-            Date From:
-            <span class="text-summary">{{ formattedDeliveryDateFrom }}</span>
+            Delivery Date:
+            <span class="text-summary">{{ formattedDeliveryDate }}</span>
           </div>
           <div class="text-summary-row">
-            Date To:
-            <span class="text-summary">{{ formattedDeliveryDateTo }}</span>
+            Delivery Time:
+            <span class="text-summary">{{ transactionStore.deliveryTime?.label || "-" }}</span>
+          </div>
+          <div class="text-summary-row">
+            Delivery Driver:
+            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver?.label || "-" }}</span>
           </div>
         </div>
       </div>
@@ -108,12 +113,12 @@
       <div class="transaction-summary">
         <!-- Table Header -->
         <div class="row row-col-header">
-          <div class="col col-4 text-weight-bold bordered">Item</div>
-          <div class="col col-2 text-weight-bold bordered">Process</div>
-          <div class="col col-2 text-weight-bold bordered">Price</div>
-          <div class="col col-1 text-weight-bold bordered">Pcs</div>
-          <div class="col col-1 text-weight-bold bordered">Qty</div>
-          <div class="col col-2 text-weight-bold bordered">Subtotal</div>
+          <div class="col col-4 text-weight-bolder bordered">Item</div>
+          <div class="col col-2 text-weight-bolder bordered">Process</div>
+          <div class="col col-2 text-weight-bolder bordered">Price</div>
+          <div class="col col-1 text-weight-bolder bordered">Pcs</div>
+          <div class="col col-1 text-weight-bolder bordered">Qty</div>
+          <div class="col col-2 text-weight-bolder bordered">Subtotal</div>
         </div>
 
         <!-- Transactions or Fallback Message -->
@@ -126,7 +131,7 @@
             <div class="col col-4 bordered">{{ item.name }}</div>
             <div class="col col-2 bordered">{{ item.process }}</div>
             <div class="col col-2 bordered">{{ item.price }}</div>
-            <div class="col col-1 bordered">{{ item.pieces }}</div>
+            <div class="col col-1 bordered">{{ computedPcs(item) }}</div>
             <div class="col col-1 bordered">{{ item.quantity }}</div>
             <div class="col col-2 bordered">{{ item.subtotal }}</div>
           </div>
@@ -138,13 +143,17 @@
         </div>
 
         <div class="row row-col-footer">
-          <div class="col col-6 text-weight-bold text-uppercase"></div>
-          <div class="col col-2 text-weight-bold text-uppercase bordered">
+          <div class="col col-6 text-weight-bolder text-uppercase"></div>
+          <div class="col col-2 text-weight-bolder text-uppercase bordered">
             Total
           </div>
-          <div class="col col-1 text-weight-bold bordered">{{ totalPcs }}</div>
-          <div class="col col-1 text-weight-bold bordered">{{ totalQty }}</div>
-          <div class="col col-2 text-weight-bold bordered">
+          <div class="col col-1 text-weight-bolder bordered">
+            {{ totalPcs }}
+          </div>
+          <div class="col col-1 text-weight-bolder bordered">
+            {{ totalQty }}
+          </div>
+          <div class="col col-2 text-weight-bolder bordered">
             {{ totalSubtotal }}
           </div>
         </div>
@@ -155,9 +164,60 @@
         <!-- Instructions Summary -->
         <div class="col-6">
           <q-card flat class="summary-card q-mt-md">
-            <div class="text-h6 text-center text-weight-bold">Instructions</div>
+            <div class="text-h6 text-center text-weight-bolder text-uppercase">
+              Instructions
+            </div>
             <q-separator class="q-my-sm" />
-            <!-- Display instructions or a fallback message -->
+            <div v-if="transactionStore.displayInstructions.length > 0">
+              <div
+                v-for="displayInstruction in transactionStore.displayInstructions"
+                :key="displayInstruction.id"
+                class="row justify-between per-instruction q-mb-sm"
+              >
+                <div>
+                  <div class="text-p">
+                    <span>
+                      <q-icon
+                        name="circle"
+                        color="primary"
+                        size="8px"
+                        class="q-mr-sm q-ml-md"
+                      />
+                    </span>
+                    {{ displayInstruction.description }}
+                  </div>
+                  <div class="instruction-chips q-ml-lg">
+                    <q-chip
+                      square
+                      :color="
+                        displayInstruction.type === 'onetime'
+                          ? 'purple-10'
+                          : 'pink-10'
+                      "
+                      text-color="white"
+                      class="instructions-type"
+                    >
+                      {{
+                        displayInstruction.type === "onetime"
+                          ? "One-time"
+                          : "Recurring"
+                      }}
+                    </q-chip>
+                    <span> | </span>
+                    <q-chip
+                      v-for="section in displayInstruction.to"
+                      :key="section"
+                      :color="getSectionColor(section)"
+                      text-color="white"
+                      class="instructions-to"
+                    >
+                      {{ formatSectionLabel(section) }}
+                    </q-chip>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <q-separator class="q-mb-lg" />
             <div v-if="instructions.length > 0">
               <div
                 v-for="instruction in instructions"
@@ -210,7 +270,7 @@
         <!-- Error Reporting Summary -->
         <div class="col-6">
           <q-card flat class="summary-card q-mt-md">
-            <div class="text-h6 text-center text-weight-bold">
+            <div class="text-h6 text-center text-weight-bolder text-uppercase">
               Error Reporting
             </div>
             <q-separator class="q-my-sm" />
@@ -255,62 +315,31 @@
         </div>
       </div>
 
-<!-- Success/Failure Dialog -->
-<q-dialog v-model="isDialogOpen">
-  <q-card>
-    <q-card-section class="text-h6 text-center">
-      {{ dialogMessage }}
-    </q-card-section>
-    <q-card-actions align="center" class="q-pt-md">
-      <q-btn
-        v-if="transactionSuccess"
-        label="Generate Invoice"
-        color="primary"
-        @click="handleGenerateInvoice"
-      />
-      <q-btn
-        label="Close"
-        color="secondary"
-        @click="isDialogOpen = false"
-      />
-    </q-card-actions>
-  </q-card>
-</q-dialog>
-
-
-      <q-dialog v-model="isPrintTagsDialogOpen">
-        <q-card class="tag-print-container">
-          <div class="tag-print-paper" id="tagPaper">
-            <div class="tag-row full-width" v-for="n in 26" :key="n">
-              <!-- Content of each row -->
-              Row {{ n }}
-            </div>
-          </div>
-          <q-card-actions class="row justify-between" align="right">
-            <q-btn label="Close" color="accent" v-close-popup />
-            <q-btn label="Print" color="primary" @click="printTagPaper" />
+      <!-- Success/Failure Dialog -->
+      <q-dialog v-model="isDialogOpen">
+        <q-card>
+          <q-card-section class="text-h6 text-center">
+            {{ dialogMessage }}
+          </q-card-section>
+          <q-card-actions align="center" class="q-pt-md">
+            <q-btn
+              v-if="transactionSuccess"
+              label="Generate Invoice"
+              color="primary"
+              @click="handleGenerateInvoice"
+            />
+            <q-btn
+              label="Close"
+              color="secondary"
+              @click="isDialogOpen = false"
+            />
           </q-card-actions>
         </q-card>
-      </q-dialog>      
-      
+      </q-dialog>
 
       <!-- Stepper Navigation -->
       <q-stepper-navigation>
         <div class="row justify-end q-mx-md q-my-sm">
-          <!-- <q-btn @click="$emit('back')" color="primary" label="Back" />
-          <q-btn
-            flat
-            class="secondary-button text-white q-mb-md q-ml-sm"
-            @click="downloadInvoice"
-            label="Download PDF"
-          />
-          <q-btn flat color="primary" label="Reset" class="q-ml-sm" /> -->
-          <q-btn
-            @click="handlePrintTags"
-            color="accent"
-            label="Print Tags"
-            class="q-mr-md"
-          />
           <q-btn
             @click="handleSubmit"
             color="primary"
@@ -325,8 +354,6 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 
 const transactionStore = useTransactionStore();
 
@@ -337,17 +364,17 @@ const reports = computed(() => transactionStore.reports); // Instructions
 
 // Access selected delivery and collection contacts from the store
 const deliveryContact = computed(
-  () => transactionStore.selectedDeliveryContact || "N/A"
+  () => transactionStore.selectedDeliveryContact || "-"
 );
 const collectionContact = computed(
-  () => transactionStore.selectedCollectionContact || "N/A"
+  () => transactionStore.selectedCollectionContact || "-"
 );
 
 const collectionAddress = computed(
-  () => transactionStore.selectedCollectionAddress || "N/A"
+  () => transactionStore.selectedCollectionAddress || "-"
 );
 const deliveryAddress = computed(
-  () => transactionStore.selectedDeliveryAddress || "N/A"
+  () => transactionStore.selectedDeliveryAddress || "-"
 );
 
 // Helper functions for instruction chip colors and labels
@@ -375,148 +402,8 @@ function formatSectionLabel(section) {
 const isDialogOpen = ref(false);
 const dialogMessage = ref("");
 
-
-// Download Invoice
-const downloadInvoice = async () => {
-  const element = document.querySelector(".review-tab");
-
-  try {
-    // Convert inches to mm (1 inch = 25.4 mm)
-    const margin = 0.2 * 25.4; // 0.2 inches in mm
-
-    // Use html2canvas with high resolution
-    const canvas = await html2canvas(element, {
-      scale: 2, // High resolution
-      useCORS: true, // Cross-origin support for images
-      scrollX: 0,
-      scrollY: 0,
-    });
-
-    // Grayscale conversion for the full canvas (commented out)
-    const ctx = canvas.getContext("2d");
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-
-    // Commented-out grayscale conversion loop:
-    // for (let i = 0; i < data.length; i += 4) {
-    //   const grayscale = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11; // Grayscale formula
-    //   data[i] = grayscale; // Set Red to grayscale
-    //   data[i + 1] = grayscale; // Set Green to grayscale
-    //   data[i + 2] = grayscale; // Set Blue to grayscale
-    //   // Alpha channel (data[i + 3]) remains unchanged for transparency
-    // }
-    // ctx.putImageData(imageData, 0, 0); // Update the canvas with the grayscale data
-
-    const imgData = canvas.toDataURL("image/png");
-
-    // Get the true dimensions of the canvas
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-
-    // A4 dimensions in mm (landscape)
-    const pageWidth = 297; // A4 width
-    const pageHeight = 210; // A4 height
-    const contentWidth = pageWidth - 2 * margin; // Account for horizontal margins
-    const contentHeight = pageHeight - 2 * margin; // Account for vertical margins
-
-    // Convert canvas dimensions to mm
-    const pxToMm = contentWidth / canvasWidth; // Conversion factor
-    const scaledCanvasHeight = canvasHeight * pxToMm;
-
-    const pdf = new jsPDF("landscape", "mm", "a4");
-
-    // If the content height fits on one page, add it directly
-    if (scaledCanvasHeight <= contentHeight) {
-      pdf.addImage(
-        imgData,
-        "PNG",
-        margin,
-        margin,
-        contentWidth,
-        scaledCanvasHeight
-      );
-    } else {
-      // Split the content into multiple pages
-      let yPosition = 0; // Current Y position on canvas
-      const pageCanvasHeight =
-        canvasHeight / (scaledCanvasHeight / contentHeight); // Page height in canvas pixels
-
-      while (yPosition < canvasHeight) {
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = pageCanvasHeight;
-
-        const pageContext = pageCanvas.getContext("2d");
-
-        // Draw the current slice of the canvas onto the new page canvas
-        pageContext.drawImage(
-          canvas,
-          0,
-          yPosition,
-          canvas.width,
-          pageCanvasHeight,
-          0,
-          0,
-          canvas.width,
-          pageCanvasHeight
-        );
-
-        // Grayscale conversion for the page slice (commented out):
-        // const pageImageData = pageContext.getImageData(
-        //   0,
-        //   0,
-        //   pageCanvas.width,
-        //   pageCanvas.height
-        // );
-        // const pageData = pageImageData.data;
-        // for (let i = 0; i < pageData.length; i += 4) {
-        //   const grayscale =
-        //     pageData[i] * 0.3 + pageData[i + 1] * 0.59 + pageData[i + 2] * 0.11; // Grayscale formula
-        //   pageData[i] = grayscale; // Set Red to grayscale
-        //   pageData[i + 1] = grayscale; // Set Green to grayscale
-        //   pageData[i + 2] = grayscale; // Set Blue to grayscale
-        // }
-        // pageContext.putImageData(pageImageData, 0, 0); // Update the page canvas with grayscale data
-
-        // Convert the page canvas to image
-        const pageImgData = pageCanvas.toDataURL("image/png");
-
-        // Add the page to the PDF
-        if (yPosition === 0) {
-          pdf.addImage(
-            pageImgData,
-            "PNG",
-            margin,
-            margin,
-            contentWidth,
-            contentHeight
-          );
-        } else {
-          pdf.addPage();
-          pdf.addImage(
-            pageImgData,
-            "PNG",
-            margin,
-            margin,
-            contentWidth,
-            contentHeight
-          );
-        }
-
-        // Move to the next slice
-        yPosition += pageCanvasHeight;
-      }
-    }
-
-    // Save the PDF
-    pdf.save(`${transactionStore.orderNo}.pdf`);
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-  }
-};
-
 const totalPcs = computed(() =>
-  rows.value.reduce((acc, item) => acc + (item.pieces || 0), 0)
+  rows.value.reduce((acc, item) => acc + computedPcs(item), 0)
 );
 
 const totalQty = computed(() =>
@@ -531,99 +418,31 @@ const totalSubtotal = computed(() => {
   }).format(total);
 });
 
-// Computed properties for formatted collection and delivery dates
-const formattedReadyByDate = computed(() => {
-  return transactionStore.readyBy
-    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
-        new Date(transactionStore.readyBy)
-      )
-    : "N/A";
+const formattedCollectionDate = computed(() => {
+  return transactionStore.collectionDate
+    ? new Intl.DateTimeFormat("en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+        .format(new Date(transactionStore.collectionDate))
+
+    : "--/--/----";
 });
 
-const formattedCollectionDateFrom = computed(() => {
-  return transactionStore.collectionDateFrom
-    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
-        new Date(transactionStore.collectionDateFrom)
-      )
-    : "N/A";
+const formattedDeliveryDate = computed(() => {
+  return transactionStore.deliveryDate
+    ? new Intl.DateTimeFormat("en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+        .format(new Date(transactionStore.deliveryDate))
+
+    : "--/--/----";
 });
-
-const formattedCollectionDateTo = computed(() => {
-  return transactionStore.collectionDateTo
-    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
-        new Date(transactionStore.collectionDateTo)
-      )
-    : "N/A";
-});
-
-const formattedDeliveryDateFrom = computed(() => {
-  return transactionStore.deliveryDateFrom
-    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
-        new Date(transactionStore.deliveryDateFrom)
-      )
-    : "N/A";
-});
-
-const formattedDeliveryDateTo = computed(() => {
-  return transactionStore.deliveryDateTo
-    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "2-digit", year: "numeric" }).format(
-        new Date(transactionStore.deliveryDateTo)
-      )
-    : "N/A";
-});
-
-
-const isPrintTagsDialogOpen = ref(false);
-
-function handlePrintTags() {
-  isPrintTagsDialogOpen.value = true;
-}
-
-function printTagPaper() {
-  const tagPaper = document.getElementById("tagPaper");
-  if (tagPaper) {
-    const printWindow = window.open("", "_blank");
-    const printContent = tagPaper.outerHTML;
-
-    printWindow.document.open();
-    printWindow.document.write(`
-      <html>
-        <head>
-          <style>
-            body {
-              margin: 0;
-              padding: 0;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-            }
-            .tag-print-paper {
-              width: 10cm;
-              height: 27.5cm;
-              border: 1px solid #ccc;
-              display: flex;
-              flex-direction: column;
-              box-sizing: border-box;
-            }
-            .tag-row {
-              flex: 1;
-              border: 1px solid black;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 12px;
-            }
-          </style>
-        </head>
-        <body>${printContent}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  }
-}
 
 const transactionSuccess = ref(false); // Tracks if transaction was successful
 let submittedOrderId = null; // Store the submitted order ID for invoice generation
@@ -652,7 +471,9 @@ async function handleGenerateInvoice() {
   try {
     const orderNo = transactionStore.orderNo; // Retrieve the orderNo from the store
     if (!orderNo) {
-      throw new Error("Order number is missing. Please submit the transaction first.");
+      throw new Error(
+        "Order number is missing. Please submit the transaction first."
+      );
     }
 
     const result = await transactionStore.generateInvoice(orderNo);
@@ -673,5 +494,7 @@ async function handleGenerateInvoice() {
   }
 }
 
-
+const computedPcs = (item) => {
+  return (item.pieces || 1) * (item.quantity || 1);
+};
 </script>

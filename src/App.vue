@@ -13,6 +13,20 @@
       <!-- Sidebar Menu -->
       <q-drawer v-model="leftDrawerOpen" side="left" overlay width="250">
         <q-list>
+          
+          <!-- Dashboard Tab -->
+          <q-item
+            clickable
+            @click="goToDashboard"
+            :active="isDashboardActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="dashboard" />
+            </q-item-section>
+            <q-item-section> Dashboard </q-item-section>
+          </q-item>
+
           <!-- POS Tab -->
           <q-item
             clickable
@@ -47,20 +61,57 @@
             class="q-pa-md"
           >
             <q-item-section avatar>
-              <q-icon name="receipt" />
+              <q-icon name="sell" />
             </q-item-section>
             <q-item-section> Tag Management </q-item-section>
           </q-item>
 
           <!-- Customers Page -->
-          <q-item clickable @click="goToCustomersPage" :active="isCustomersPageActive" class="q-pa-md">
-                      <q-item-section avatar>
-                        <q-icon name="receipt_long" />
-                      </q-item-section>
-                      <q-item-section>
-                        Customer Management
-                      </q-item-section>
-                    </q-item>
+          <q-item
+            clickable
+            @click="goToCustomersPage"
+            :active="isCustomersPageActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="groups" />
+            </q-item-section>
+            <q-item-section> Customer Management </q-item-section>
+          </q-item>
+
+          <!-- Logistics Management -->
+
+          <q-expansion-item
+          expand-separator
+          icon="local_shipping"
+          label="Logistics Management"
+          header-class="q-pa-md"
+          default-closed
+        >
+          <q-item
+            clickable
+            @click="goToCollections"
+            :active="isCollectionsActive"
+            class="q-pl-lg q-pa-sm"
+          >
+            <q-item-section avatar>
+              <q-icon name="inventory_2" />
+            </q-item-section>
+            <q-item-section> Collections </q-item-section>
+          </q-item>
+
+          <q-item
+            clickable
+            @click="goToDeliveries"
+            :active="isDeliveriesActive"
+            class="q-pl-lg q-pa-sm"
+          >
+            <q-item-section avatar>
+              <q-icon name="local_shipping" />
+            </q-item-section>
+            <q-item-section> Deliveries </q-item-section>
+          </q-item>
+        </q-expansion-item>
 
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
@@ -93,21 +144,39 @@ const { logoutUser } = useAuth();
 
 const leftDrawerOpen = ref(false);
 
+// Check if the current route is Dashboard
+const isDashboardActive = computed(() => route.path === "/dashboard");
+
 // Check if the current route is POS
 const isPOSActive = computed(() => route.path === "/pos");
+
 // Check if the current route is Transaction History
-const isTransactionHistoryActive = computed(
-  () => route.path === "/transactions"
-);
+const isTransactionHistoryActive = computed(() => route.path === "/transactions");
+
 // Check if the current route is Customers Page
 const isCustomersPageActive = computed(() => route.path === "/customers");
+
 // Check if the current route is Tags Page
 const isTagsPageActive = computed(() => route.path === "/tags");
+
+// Check if the current route is Collections
+const isCollectionsActive = computed(() => route.path === "/collections");
+
+// Check if the current route is Deliveries
+const isDeliveriesActive = computed(() => route.path === "/deliveries");
 
 // Check if the current route requires authentication
 const requiresAuth = computed(() => {
   // Define routes that require authentication
-  const authRequiredRoutes = ["/pos", "/transactions", "/customers", "/tags"];
+  const authRequiredRoutes = [
+    "/dashboard",
+    "/pos",
+    "/transactions",
+    "/customers",
+    "/tags",
+    "/collections",
+    "/deliveries",
+  ];
   return authRequiredRoutes.includes(route.path);
 });
 
@@ -123,6 +192,10 @@ const logout = async () => {
   }
 };
 
+const goToDashboard = () => {
+  router.push("/dashboard");
+};
+
 const goToPOS = () => {
   router.push("/pos");
 };
@@ -134,7 +207,16 @@ const goToTransactionHistory = () => {
 const goToTagsPage = () => {
   router.push("/tags");
 };
+
 const goToCustomersPage = () => {
   router.push("/customers");
+};
+
+const goToCollections = () => {
+  router.push("/collections");
+};
+
+const goToDeliveries = () => {
+  router.push("/deliveries");
 };
 </script>

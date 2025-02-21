@@ -11,7 +11,7 @@ import PaymentPage from "@/views/PaymentPage.vue";
 import TagsPage from "@/views/TagsPage.vue";
 import TagView from "@/views/TagView.vue";
 import CollectionsPage from "@/views/CollectionsPage.vue";
-import LogisticsView from "@/views/LogisticsView.vue";
+import CollectionsDeliveriesView from "@/views/CollectionsDeliveriesView.vue";
 import DeliveriesPage from "@/views/DeliveriesPage.vue";
 
 const routes = [
@@ -100,8 +100,8 @@ const routes = [
   },
   {
     path: "/logistics/:id",
-    name: "LogisticsView",
-    component: LogisticsView,
+    name: "CollectionsDeliveriesView",
+    component: CollectionsDeliveriesView,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },

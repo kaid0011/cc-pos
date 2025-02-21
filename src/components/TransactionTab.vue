@@ -112,14 +112,14 @@
         <div class="col">
           <div>
             <span class="text-summary">{{
-              transactionStore.orderNo || "N/A"
+              transactionStore.orderNo || "-"
             }}</span>
           </div></div>
         <!-- Customer Name -->
         <div class="col">
           <div>
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.name || "N/A"
+              transactionStore.selectedCustomer?.name || "-"
             }}</span>
           </div>
         </div>
@@ -139,7 +139,7 @@
         <div class="col">
           <div>
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.email || "N/A"
+              transactionStore.selectedCustomer?.email || "-"
             }}</span>
           </div>
         </div>

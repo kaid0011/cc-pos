@@ -294,10 +294,10 @@ const collection = ref({
   }
 });
 
-const fetchCollectionDetails = async () => {
+const fetchCollectionDeliveryDetails = async () => {
   const collectionId = route.params.id;
   try {
-    const data = await transactionStore.fetchCollectionsById(collectionId);
+    const data = await transactionStore.fetchCollectionsDeliveriesById(collectionId);
     console.log("Fetched Collection Details:", data);
 
     // Safely populate the fields while maintaining default empty strings
@@ -350,6 +350,6 @@ const goBack = () => {
 };
 
 onMounted(() => {
-  fetchCollectionDetails();
+  fetchCollectionDeliveryDetails();
 });
 </script>

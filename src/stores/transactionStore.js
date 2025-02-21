@@ -13,9 +13,6 @@ export const useTransactionStore = defineStore("transactionStore", {
     reports: [],
     items: [],
     customers: [],
-    selectedCustomer: "",
-    selectedContact: "",
-    selectedAddress:'',
     contactOptions: [],
     addressOptions: [],
     driverOptions: [],
@@ -26,14 +23,16 @@ export const useTransactionStore = defineStore("transactionStore", {
     selectedDeliveryAddress: null,
     selectedCollectionAddress: null,
     selectedCollectionDriver: null,
-  selectedDeliveryDriver: null,
-  selectedCollectionTime: null,
-  selectedDeliveryTime: null,
+    selectedDeliveryDriver: null,
     orderNo: "",
     addresses: "",
     isOrderNoManuallySet: false,
     collectionDate: null,
     deliveryDate: null,
+    collectionTime: null,
+    deliveryTime: null,
+    collectionRemarks: null,
+    deliveryRemarks: null,
     useCcCollection: false, // New: Self-collect checkbox state
     useCcDelivery: false, // New: Self-pickup checkbox state
     transactions: [],
@@ -249,59 +248,43 @@ export const useTransactionStore = defineStore("transactionStore", {
         const { data, error } = await supabase
           .from("drivers")
           .select("id, name, contact_no1");
-    
+
         if (error) {
           throw error;
         }
-    
+
         // Map drivers into the format required for the dropdowns
         this.driverOptions = data.map((driver) => ({
           id: driver.id,
+          name: driver.name,
           label: `${driver.name} - ${driver.contact_no1 || ""}`,
         }));
-    
+
         console.log("Loaded Drivers:", this.driverOptions);
       } catch (error) {
         console.error("Error loading drivers:", error);
       }
     },
 
-    async loadDriverOptions() {
-      await this.loadDrivers();
-    
-      if (this.selectedCollectionDriver) {
-        this.selectedCollectionDriver = this.driverOptions.find(
-          (driver) => driver.id === this.selectedCollectionDriver
-        )?.id || null;
-      }
-    
-      if (this.selectedDeliveryDriver) {
-        this.selectedDeliveryDriver = this.driverOptions.find(
-          (driver) => driver.id === this.selectedDeliveryDriver
-        )?.id || null;
-      }
-    
-      console.log("Driver Options Loaded:", this.driverOptions);
-    },    
     async loadTimeOptions() {
       try {
         const { data, error } = await supabase
           .from("time_options")
           .select("time");
-  
+
         if (error) {
           console.error("Error fetching time options:", error);
           return;
         }
-  
+
         // Map and sort time options alphabetically
         this.timeOptions = data
-          .map(option => ({
+          .map((option) => ({
             label: option.time,
             value: option.time,
           }))
           .sort((a, b) => a.label.localeCompare(b.label));
-  
+
         console.log("Sorted Time Options:", this.timeOptions);
       } catch (error) {
         console.error("Unexpected error fetching time options:", error);
@@ -405,7 +388,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     setSelectedContact(contact) {
       this.selectedContact = contact;
     },
-    
+
     clearSelectedContact() {
       this.selectedContact = null;
     },
@@ -413,21 +396,21 @@ export const useTransactionStore = defineStore("transactionStore", {
     setSelectedAddress(address) {
       this.selectedAddress = address;
     },
-    
+
     clearSelectedAddress() {
       this.selectedAddress = null;
     },
-    
+
     setSelectedCollectionDriver(driverId) {
       this.selectedCollectionDriver = driverId;
       console.log("Selected Collection Driver:", this.selectedCollectionDriver);
     },
-    
+
     setSelectedDeliveryDriver(driverId) {
       this.selectedDeliveryDriver = driverId;
       console.log("Selected Delivery Driver:", this.selectedDeliveryDriver);
     },
-    
+
     async updateContactPerson(contact) {
       try {
         const { error } = await supabase
@@ -440,16 +423,16 @@ export const useTransactionStore = defineStore("transactionStore", {
             remarks: contact.remarks,
           })
           .eq("id", contact.id);
-    
+
         if (error) throw error;
-    
+
         // Reload the contact options after update
         // await this.loadContactOptions(contact.customer_id);
       } catch (error) {
         console.error("Error updating contact person:", error);
         throw error;
       }
-    },    
+    },
 
     async updateCustomerAddress(address) {
       try {
@@ -464,13 +447,13 @@ export const useTransactionStore = defineStore("transactionStore", {
             additional_info: address.additional_info,
           })
           .eq("id", address.id);
-    
+
         if (error) throw error;
       } catch (error) {
         console.error("Error updating address:", error);
         throw error;
       }
-    },    
+    },
 
     setSelectedCollectionContact(contactId) {
       this.selectedCollectionContact = contactId;
@@ -522,7 +505,17 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
 
     addItem(item) {
-      const { name, unit, process, price, pieces, quantity, subtotal, category, tag_category } = item;
+      const {
+        name,
+        unit,
+        process,
+        price,
+        pieces,
+        quantity,
+        subtotal,
+        category,
+        tag_category,
+      } = item;
 
       const unitType = this.detectUnitType(unit);
       let newItem;
@@ -538,7 +531,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           subtotal: 0,
           unit,
           category,
-          tag_category
+          tag_category,
         };
         this.transactionItems = [...this.transactionItems, newItem]; // Add directly
         return;
@@ -559,7 +552,17 @@ export const useTransactionStore = defineStore("transactionStore", {
           this.transactionItems[existingItemIndex].subtotal += subtotal;
         } else {
           // Add new item
-          newItem = { name, process, price, pieces, quantity, subtotal, unit, category, tag_category };
+          newItem = {
+            name,
+            process,
+            price,
+            pieces,
+            quantity,
+            subtotal,
+            unit,
+            category,
+            tag_category,
+          };
           this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
         }
       } else {
@@ -576,7 +579,17 @@ export const useTransactionStore = defineStore("transactionStore", {
           existingItem.subtotal += subtotal;
         } else {
           // Add new item
-          newItem = { name, process, price, pieces, quantity, subtotal, unit, category, tag_category };
+          newItem = {
+            name,
+            process,
+            price,
+            pieces,
+            quantity,
+            subtotal,
+            unit,
+            category,
+            tag_category,
+          };
           this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
         }
       }
@@ -601,6 +614,16 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.selectedCustomer = "";
       this.selectedDeliveryContact = "";
       this.selectedCollectionContact = "";
+      this.selectedDeliveryAddress = "";
+      this.selectedCollectionAddress = "";
+      this.selectedCollectionDriver = "";
+      this.selectedDeliveryDriver = "";
+      this.collectionTime = "";
+      this.deliveryTime = "";
+      this.collectionDate = "";
+      this.deliveryDate = "";
+      this.useCcCollection = false;
+      this.useCcDelivery = false;
     },
 
     addInstruction(instruction) {
@@ -767,20 +790,20 @@ export const useTransactionStore = defineStore("transactionStore", {
       deliveryDateTo
     ) {
       try {
-        
         // Insert Delivery Details
         const { data: deliveryData, error: deliveryError } = await supabase
           .from("deliveries")
           .insert([
             {
               contact_person_id: this.selectedDeliveryContact?.id || null,
-              address: this.selectedDeliveryAddress?.address || null,
+              address: this.selectedDeliveryAddress?.label || null,
               delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime,
+              delivery_time: this.deliveryTime.value,
+              remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
             },
           ])
-          .select("id, delivery_date, delivery_time")
+          .select("id, delivery_date, delivery_time, remarks")
           .single();
 
         if (deliveryError) throw deliveryError;
@@ -791,14 +814,15 @@ export const useTransactionStore = defineStore("transactionStore", {
           .insert([
             {
               contact_person_id: this.selectedCollectionContact?.id || null,
-              address: this.selectedCollectionAddress?.address || null,
+              address: this.selectedCollectionAddress?.label || null,
               collection_date: this.collectionDate,
-              collection_time: this.collectionTime,
+              collection_time: this.collectionTime.value,
+              remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
               delivery_id: deliveryData.id,
             },
           ])
-          .select("id, collection_date. collection_time")
+          .select("id, collection_date, collection_time, remarks")
           .single();
 
         if (collectionError) throw collectionError;
@@ -814,9 +838,9 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_id: deliveryData.id,
               customer_id: this.selectedCustomer?.id || null,
               order_date_time: currentTimestamp,
-              goods_status: "-",
-              logistics_status: "-",
-              payment_status: "-",
+              goods_status: "none",
+              logistics_status: "collection arranged",
+              payment_status: "unpaid",
               job_type: "-",
               job_subtype: "-",
               no_packets_hangers: "-",
@@ -967,9 +991,11 @@ export const useTransactionStore = defineStore("transactionStore", {
               description: report.description,
               category: report.category,
               sub_category: report.sub_category,
-              order_id: orderId,
+              // order_id: orderId,
               image: uploadedFileUrl, // Insert the uploaded image URL here
             };
+
+            reportData.order_id = orderId;
 
             const { error: reportError } = await supabase
               .from("error_reports")
@@ -1059,7 +1085,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-   
     // Fetch contact person details by contact person ID
     async fetchContactPersonById(contactPersonId) {
       try {
@@ -1138,22 +1163,24 @@ export const useTransactionStore = defineStore("transactionStore", {
           console.error("Customer ID is required to fetch addresses.");
           return [];
         }
-    
+
         const { data, error } = await supabase
           .from("customer_address")
-          .select("id, block_no, road_name, building_name, postal_code, unit_no, additional_info")
+          .select(
+            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info"
+          )
           .eq("customer_id", customerId);
-    
+
         if (error) {
           throw new Error(`Error fetching addresses: ${error.message}`);
         }
-    
+
         return data || []; // Return addresses or an empty array
       } catch (error) {
         console.error("Unexpected error fetching addresses:", error);
         return [];
       }
-    },    
+    },
     async updateCustomer(customer) {
       const { error } = await supabase
         .from("customers")
@@ -1241,7 +1268,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           (contact) => contact.id !== contactId
         );
 
-        console.log(`Contact Person with ID ${contactId} deleted successfully.`);
+        console.log(
+          `Contact Person with ID ${contactId} deleted successfully.`
+        );
       } catch (error) {
         console.error("Error deleting contact person:", error);
         throw error;
@@ -1270,7 +1299,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           (address) => address.id !== addressId
         );
 
-        console.log(`Customer Address with ID ${addressId} deleted successfully.`);
+        console.log(
+          `Customer Address with ID ${addressId} deleted successfully.`
+        );
       } catch (error) {
         console.error("Error deleting customer address:", error);
         throw error;
@@ -1442,7 +1473,9 @@ export const useTransactionStore = defineStore("transactionStore", {
               name: defaultContact.name,
               contact_no1: defaultContact.contact_no1,
               contact_no2: defaultContact.contact_no2,
-              label: `${defaultContact.name} - ${defaultContact.contact_no1} / ${defaultContact.contact_no2 || '-'}`,
+              label: `${defaultContact.name} - ${
+                defaultContact.contact_no1
+              } / ${defaultContact.contact_no2 || "-"}`,
             }
           : null;
 
@@ -1495,7 +1528,9 @@ export const useTransactionStore = defineStore("transactionStore", {
               name: defaultContact.name,
               contact_no1: defaultContact.contact_no1,
               contact_no2: defaultContact.contact_no2,
-              label: `${defaultContact.name} - ${defaultContact.contact_no1} / ${defaultContact.contact_no2 || '-'}`,
+              label: `${defaultContact.name} - ${
+                defaultContact.contact_no1
+              } / ${defaultContact.contact_no2 || "-"}`,
             }
           : null;
 
@@ -1529,7 +1564,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     async updateCollectionAndDelivery(
       orderNo,
       collectionPayload,
-      deliveryPayload,
+      deliveryPayload
     ) {
       try {
         // Fetch the order details to get collection and delivery IDs
@@ -1577,10 +1612,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           }
         }
 
-        
-        console.log(
-          "Collection, and Delivery details updated successfully."
-        );
+        console.log("Collection, and Delivery details updated successfully.");
         return true; // Indicate success
       } catch (error) {
         console.error("Error updating details:", error);
@@ -1664,15 +1696,17 @@ export const useTransactionStore = defineStore("transactionStore", {
           .from("transactions")
           .delete()
           .eq("id", transactionId);
-    
+
         if (error) throw error;
-    
-        console.log(`Transaction with ID ${transactionId} deleted successfully.`);
+
+        console.log(
+          `Transaction with ID ${transactionId} deleted successfully.`
+        );
       } catch (error) {
         console.error("Error deleting transaction from database:", error);
         throw error;
       }
-    },    
+    },
     async addTransaction(transaction) {
       try {
         const { data, error } = await supabase
@@ -1699,7 +1733,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         if (!transaction.id) {
           throw new Error("Transaction ID is required for updates.");
         }
-    
+
         // Prepare the payload with the updated fields
         const payload = {
           item_name: transaction.item_name,
@@ -1709,18 +1743,20 @@ export const useTransactionStore = defineStore("transactionStore", {
           quantity: transaction.quantity,
           subtotal: transaction.subtotal,
         };
-    
+
         // Perform the update in the database
         const { error } = await supabase
           .from("transactions")
           .update(payload)
           .eq("id", transaction.id);
-    
+
         if (error) {
           throw error;
         }
-    
-        console.log(`Transaction with ID ${transaction.id} updated successfully.`);
+
+        console.log(
+          `Transaction with ID ${transaction.id} updated successfully.`
+        );
       } catch (error) {
         console.error("Error updating transaction:", error);
         throw error; // Rethrow to handle in the caller
@@ -1729,7 +1765,9 @@ export const useTransactionStore = defineStore("transactionStore", {
     async fetchRecurringInstructions(customerId) {
       try {
         if (!customerId) {
-          console.error("Customer ID is required to fetch recurring instructions.");
+          console.error(
+            "Customer ID is required to fetch recurring instructions."
+          );
           return;
         }
 
@@ -1757,65 +1795,76 @@ export const useTransactionStore = defineStore("transactionStore", {
           ],
         }));
 
-        console.log("Formatted recurring instructions:", this.displayInstructions);
+        console.log(
+          "Formatted recurring instructions:",
+          this.displayInstructions
+        );
       } catch (error) {
         console.error("Error fetching recurring instructions:", error);
         this.displayInstructions = []; // Reset on error
       }
-    },    
+    },
     async fetchCustomerTypes() {
       try {
         const { data, error } = await supabase
           .from("customer_types")
           .select("type, sub_type");
-    
+
         if (error) {
           throw error;
         }
-    
+
         // Group sub-types under their respective types
         const groupedData = data.reduce((acc, item) => {
           const { type, sub_type } = item;
-    
+
           if (!acc[type]) {
             acc[type] = [];
           }
-    
+
           if (sub_type && !acc[type].includes(sub_type)) {
             acc[type].push(sub_type);
           }
-    
+
           return acc;
         }, {});
-    
+
         // Extract unique customer types
         const customerTypes = Object.keys(groupedData);
-    
+
         // Map types to their sub-types
-        const subTypeMapping = Object.entries(groupedData).reduce((acc, [type, subTypes]) => {
-          acc[type] = subTypes.map((subType) => ({ label: subType, value: subType }));
-          return acc;
-        }, {});
-    
+        const subTypeMapping = Object.entries(groupedData).reduce(
+          (acc, [type, subTypes]) => {
+            acc[type] = subTypes.map((subType) => ({
+              label: subType,
+              value: subType,
+            }));
+            return acc;
+          },
+          {}
+        );
+
         return { customerTypes, subTypeMapping };
       } catch (error) {
         console.error("Error fetching customer types:", error);
         return { customerTypes: [], subTypeMapping: {} }; // Return empty structure on error
       }
-    },    
+    },
     async fetchDatesByOrderId(orderId) {
       try {
         const { data, error } = await supabase
           .from("orders") // Start from the 'orders' table
-          .select(`
+          .select(
+            `
             collections(collection_date), 
             deliveries(delivery_date)
-          `)
+          `
+          )
           .eq("id", orderId)
           .single();
-    
+
         if (error) throw error;
-    
+
         // Extract collection_date and delivery_date safely
         return {
           collectionDate: data.collections?.collection_date || "N/A",
@@ -1828,9 +1877,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
     async fetchAllCollections() {
       try {
-        const { data, error } = await supabase
-          .from("collections")
-          .select(`
+        const { data, error } = await supabase.from("collections").select(`
             id,
             created_at,
             driver_id,
@@ -1841,7 +1888,6 @@ export const useTransactionStore = defineStore("transactionStore", {
             address,
             date_collected,
             collection_date,
-            collection_type,
             delivery_id,
             contact_persons (
               id,
@@ -1863,11 +1909,11 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_no1
             )
           `);
-    
+
         if (error) {
           throw error;
         }
-    
+
         // Transform data to include related customer and driver details
         const formattedData = data.map((collection) => ({
           id: collection.id,
@@ -1901,9 +1947,9 @@ export const useTransactionStore = defineStore("transactionStore", {
                 id: collection.drivers.id,
                 name: collection.drivers.name,
               }
-            : null
+            : null,
         }));
-    
+
         console.log("Fetched Collections with Drivers:", formattedData);
         return formattedData || [];
       } catch (error) {
@@ -1911,7 +1957,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
-    async fetchCollectionsById(collectionId) {
+    async fetchCollectionsDeliveriesById(collectionId) {
       try {
         // Query collections with related tables, including drivers and contact_persons for deliveries
         const { data: collection, error } = await supabase
@@ -1970,16 +2016,18 @@ export const useTransactionStore = defineStore("transactionStore", {
           )
           .eq("id", collectionId)
           .single(); // Fetch a single collection
-    
+
         if (error) {
-          throw new Error(`Error fetching collection details: ${error.message}`);
+          throw new Error(
+            `Error fetching collection details: ${error.message}`
+          );
         }
-    
+
         if (!collection) {
           console.warn(`No collection found with ID: ${collectionId}`);
           return null;
         }
-    
+
         // Transform data for easy use in the frontend
         return {
           id: collection.id,
@@ -1989,11 +2037,11 @@ export const useTransactionStore = defineStore("transactionStore", {
           area: collection.area,
           status: collection.status,
           remarks: collection.remarks,
-          driver: collection.deliveries?.drivers
+          driver: collection.drivers
             ? {
-                id: collection.deliveries.drivers.id,
-                name: collection.deliveries.drivers.name,
-                contact_no1: collection.deliveries.drivers.contact_no1,
+                id: collection.drivers.id,
+                name: collection.drivers.name,
+                contact_no1: collection.drivers.contact_no1,
               }
             : null,
           contact_person: collection.contact_persons
@@ -2037,8 +2085,10 @@ export const useTransactionStore = defineStore("transactionStore", {
                   ? {
                       id: collection.deliveries.contact_persons.id,
                       name: collection.deliveries.contact_persons.name,
-                      contact_no1: collection.deliveries.contact_persons.contact_no1,
-                      contact_no2: collection.deliveries.contact_persons.contact_no2,
+                      contact_no1:
+                        collection.deliveries.contact_persons.contact_no1,
+                      contact_no2:
+                        collection.deliveries.contact_persons.contact_no2,
                       email: collection.deliveries.contact_persons.email,
                       remarks: collection.deliveries.contact_persons.remarks,
                     }
@@ -2050,7 +2100,6 @@ export const useTransactionStore = defineStore("transactionStore", {
         console.error("Unexpected error fetching collection by ID:", error);
         return null;
       }
-    },    
-    
+    },
   },
 });

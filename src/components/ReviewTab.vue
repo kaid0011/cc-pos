@@ -11,13 +11,13 @@
           <div class="text-summary-row">
             Order No:
             <span class="text-summary">{{
-              transactionStore?.orderNo || "N/A"
+              transactionStore?.orderNo || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
             Customer Name:
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.name || "N/A"
+              transactionStore.selectedCustomer?.name || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
@@ -30,7 +30,7 @@
           <div class="text-summary-row">
             Email:
             <span class="text-summary">{{
-              transactionStore.selectedCustomer?.email || "N/A"
+              transactionStore.selectedCustomer?.email || "-"
             }}</span>
           </div>
         </div>
@@ -43,7 +43,7 @@
           <div class="text-summary-row">
             Contact Person:
             <span class="text-summary">{{
-              collectionContact?.name || "N/A"
+              collectionContact?.name || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
@@ -55,7 +55,7 @@
           </div>
           <div class="text-summary-row">
             Address: 
-            <span class="text-summary">{{ collectionAddress?.label || 'N/A'}} </span>
+            <span class="text-summary">{{ collectionAddress?.label || '-'}} </span>
           </div>
           <div class="text-summary-row">
             Collection Date:
@@ -63,7 +63,7 @@
           </div>
           <div class="text-summary-row">
             Collection Time:
-            <span class="text-summary">{{ transactionStore.selectedCollectionTime?.label || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.collectionTime?.label || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Collection Driver:
@@ -80,7 +80,7 @@
           <div class="text-summary-row">
             Contact Person:
             <span class="text-summary">{{
-              deliveryContact?.name || "N/A"
+              deliveryContact?.name || "-"
             }}</span>
           </div>
           <div class="text-summary-row">
@@ -92,7 +92,7 @@
           </div>
           <div class="text-summary-row">
             Address:
-            <span class="text-summary">{{ deliveryAddress?.label || 'N/A' }}</span>
+            <span class="text-summary">{{ deliveryAddress?.label || '-' }}</span>
           </div>
           <div class="text-summary-row">
             Delivery Date:
@@ -100,7 +100,7 @@
           </div>
           <div class="text-summary-row">
             Delivery Time:
-            <span class="text-summary">{{ transactionStore.selectedDeliveryTime?.label || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.deliveryTime?.label || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Delivery Driver:
@@ -364,17 +364,17 @@ const reports = computed(() => transactionStore.reports); // Instructions
 
 // Access selected delivery and collection contacts from the store
 const deliveryContact = computed(
-  () => transactionStore.selectedDeliveryContact || "N/A"
+  () => transactionStore.selectedDeliveryContact || "-"
 );
 const collectionContact = computed(
-  () => transactionStore.selectedCollectionContact || "N/A"
+  () => transactionStore.selectedCollectionContact || "-"
 );
 
 const collectionAddress = computed(
-  () => transactionStore.selectedCollectionAddress || "N/A"
+  () => transactionStore.selectedCollectionAddress || "-"
 );
 const deliveryAddress = computed(
-  () => transactionStore.selectedDeliveryAddress || "N/A"
+  () => transactionStore.selectedDeliveryAddress || "-"
 );
 
 // Helper functions for instruction chip colors and labels
@@ -428,7 +428,7 @@ const formattedCollectionDate = computed(() => {
       })
         .format(new Date(transactionStore.collectionDate))
 
-    : "N/A";
+    : "--/--/----";
 });
 
 const formattedDeliveryDate = computed(() => {
@@ -441,7 +441,7 @@ const formattedDeliveryDate = computed(() => {
       })
         .format(new Date(transactionStore.deliveryDate))
 
-    : "N/A";
+    : "--/--/----";
 });
 
 const transactionSuccess = ref(false); // Tracks if transaction was successful

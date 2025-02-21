@@ -146,41 +146,27 @@
             <div class="row q-col-gutter-sm">
               <div class="col-6">
                 <q-input
-      v-model="formattedDate"
-      label="Collection Date"
-      outlined
-      dense
-      class="q-mb-xs bg-white"
-      readonly
-    >
-      <template #append>
-        <q-icon 
-          name="event" 
-          class="cursor-pointer" 
-          @click="openDatePicker"
-        />
-      </template>
-    </q-input>
-
-    <q-dialog v-model="isDatePickerOpen">
-      <q-card>
-        <q-card-section>
-          <q-date
-            v-model="transactionStore.collectionDate"
-            @update:model-value="updateDate"
-            mask="YYYY-MM-DD"
-          />
-        </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="primary" @click="isDatePickerOpen = false" />
-          <q-btn flat label="OK" color="primary" @click="confirmDate" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+                  v-model="formattedCollectionDate"
+                  outlined
+                  dense
+                  readonly
+                  class="q-mb-xs bg-white"
+                >
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer">
+                      <q-popup-proxy>
+                        <q-date
+                          v-model="transactionStore.collectionDate"
+                          mask="YYYY-MM-DD"
+                        />
+                      </q-popup-proxy>
+                    </q-icon>
+                  </template>
+                </q-input>
               </div>
               <div class="col-6">
                 <q-select
-                  v-model="transactionStore.selectedCollectionTime"
+                  v-model="transactionStore.collectionTime"
                   :options="transactionStore.timeOptions"
                   option-label="label"
                   option-value="value"
@@ -193,17 +179,23 @@
               </div>
             </div>
             <q-select
-            v-model="transactionStore.selectedCollectionDriver"
-            :options="transactionStore.driverOptions"
-            option-label="label"
-            option-value="id"
-            label="Select Collection Driver"
-            outlined
-            dense
-            clearable
-            class="q-mb-xs bg-white"
-            @update:model-value="transactionStore.setSelectedCollectionDriver"
-          />          
+              v-model="transactionStore.selectedCollectionDriver"
+              :options="transactionStore.driverOptions"
+              option-label="label"
+              option-value="id"
+              label="Select Collection Driver"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+            <q-input
+              v-model="transactionStore.collectionRemarks"
+              label="Remarks"
+              outlined
+              dense
+              class="q-mb-xs bg-white"
+            />
           </div>
 
           <!-- Delivery Section -->
@@ -261,41 +253,27 @@
             <div class="row q-col-gutter-sm">
               <div class="col-6">
                 <q-input
-        v-model="formattedDeliveryDate"
-        label="Delivery Date"
-        outlined
-        dense
-        class="q-mb-xs bg-white"
-        readonly
-      >
-        <template #append>
-          <q-icon 
-            name="event" 
-            class="cursor-pointer" 
-            @click="isDeliveryDatePickerOpen = true"
-          />
-        </template>
-      </q-input>
-
-      <q-dialog v-model="isDeliveryDatePickerOpen">
-        <q-card>
-          <q-card-section>
-            <q-date
-              v-model="transactionStore.deliveryDate"
-              @update:model-value="updateDeliveryDate"
-              mask="YYYY-MM-DD"
-            />
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Cancel" color="primary" @click="isDeliveryDatePickerOpen = false" />
-            <q-btn flat label="OK" color="primary" @click="isDeliveryDatePickerOpen = false" />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
+                  v-model="formattedDeliveryDate"
+                  outlined
+                  dense
+                  readonly
+                  class="q-mb-xs bg-white"
+                >
+                  <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer">
+                      <q-popup-proxy>
+                        <q-date
+                          v-model="transactionStore.deliveryDate"
+                          mask="YYYY-MM-DD"
+                        />
+                      </q-popup-proxy>
+                    </q-icon>
+                  </template>
+                </q-input>
               </div>
               <div class="col-6">
                 <q-select
-                  v-model="transactionStore.selectedDeliveryTime"
+                  v-model="transactionStore.deliveryTime"
                   :options="transactionStore.timeOptions"
                   option-label="label"
                   option-value="value"
@@ -308,17 +286,24 @@
               </div>
             </div>
             <q-select
-            v-model="transactionStore.selectedDeliveryDriver"
-            :options="transactionStore.driverOptions"
-            option-label="label"
-            option-value="id"
-            label="Select Delivery Driver"
-            outlined
-            dense
-            clearable
-            class="q-mb-xs bg-white"
-            @update:model-value="transactionStore.setSelectedDeliveryDriver"
-          />
+              v-model="transactionStore.selectedDeliveryDriver"
+              :options="transactionStore.driverOptions"
+              option-label="label"
+              option-value="id"
+              label="Select Delivery Driver"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+
+            <q-input
+              v-model="transactionStore.deliveryRemarks"
+              label="Remarks"
+              outlined
+              dense
+              class="q-mb-xs bg-white"
+            />
           </div>
         </div>
       </div>
@@ -363,8 +348,10 @@ const filterCustomers = (term) => {
   filteredCustomers.value = transactionStore.customers.filter((customer) => {
     return (
       customer.name.toLowerCase().includes(searchLower) ||
-      (customer.contact_no1 && customer.contact_no1.toLowerCase().includes(searchLower)) ||
-      (customer.contact_no2 && customer.contact_no2.toLowerCase().includes(searchLower)) ||
+      (customer.contact_no1 &&
+        customer.contact_no1.toLowerCase().includes(searchLower)) ||
+      (customer.contact_no2 &&
+        customer.contact_no2.toLowerCase().includes(searchLower)) ||
       (customer.email && customer.email.toLowerCase().includes(searchLower))
     );
   });
@@ -376,8 +363,8 @@ watch(searchTerm, (newVal) => {
 
 onMounted(async () => {
   await transactionStore.loadCustomers();
-  await transactionStore.loadDriverOptions();
-  await transactionStore.loadTimeOptions(); 
+  await transactionStore.loadDrivers();
+  await transactionStore.loadTimeOptions();
   updateOptions();
   filterCustomers(searchTerm.value);
 });
@@ -389,7 +376,6 @@ const contactOptions = ref([]);
 const addressOptions = ref([]);
 const driverOptions = ref([]);
 
-
 const updateOptions = async () => {
   try {
     const customerId = transactionStore.selectedCustomer?.id || null;
@@ -399,8 +385,14 @@ const updateOptions = async () => {
       transactionStore.loadDrivers(),
     ]);
 
+    transactionStore.collectionDate = new Date().toISOString().split("T")[0];
+    transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
+    
     contactOptions.value = transactionStore.contactOptions.map((contact) => ({
       id: contact.id,
+      name: contact.name,
+      contact_no1: contact.contact_no1,
+      contact_no2: contact.contact_no2,
       label: `${contact.name} - ${contact.contact_no1 || ""} / ${
         contact.contact_no2 || "-"
       }`,
@@ -413,7 +405,7 @@ const updateOptions = async () => {
       }, ${address.postal_code} (${address?.additional_info || ""})`,
     }));
 
-    driverOptions.value = transactionStore.drivers.map((driver) => ({
+    driverOptions.value = transactionStore.driverOptions.map((driver) => ({
       id: driver.id,
       label: `${driver.name} - ${driver.contact_no1 || ""}`,
     }));
@@ -441,6 +433,12 @@ const selectCustomer = async (customer) => {
     transactionStore.selectedDeliveryContact = null;
     transactionStore.selectedCollectionAddress = null;
     transactionStore.selectedDeliveryAddress = null;
+    transactionStore.collectionDate = null;
+    transactionStore.deliveryDate = null;
+    transactionStore.collectionTime = null;
+    transactionStore.deliveryTime = null;
+    transactionStore.collectionRemarks = null;
+    transactionStore.deliveryRemarks = null;
 
     // Set the selected customer in the store
     await transactionStore.setSelectedCustomer(customer);
@@ -474,31 +472,6 @@ function addWorkingDays(startDate, workingDays) {
   }
   return date.toISOString().split("T")[0]; // Return date in YYYY-MM-DD format
 }
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const options = {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  };
-  return date.toLocaleDateString("en-GB", options);
-};
-
-onMounted(() => {
-  const today = new Date().toISOString().split("T")[0]; // Format today's date as YYYY-MM-DD
-
-  // Initialize collection dates to today's date
-  transactionStore.collectionDate = today;
-
-  // Calculate delivery dates (7 working days from today)
-  const deliveryDate = addWorkingDays(new Date(), 7);
-
-  transactionStore.deliveryDate = deliveryDate;
-
-  console.log(`Initialized collection date: ${today}`);
-  console.log(`Initialized delivery date: ${deliveryDate}`);
-});
 
 const handleCheckboxChange = (type, value) => {
   if (type === "collection") {
@@ -530,46 +503,25 @@ const handleAddressAdded = async () => {
   await updateOptions(); // Refresh address list
 };
 
-const isDatePickerOpen = ref(false);
+const formattedCollectionDate = computed(() =>
+  formatDate(transactionStore.collectionDate)
+);
+const formattedDeliveryDate = computed(() =>
+  formatDate(transactionStore.deliveryDate)
+);
 
-const openDatePicker = () => {
-  isDatePickerOpen.value = true;
-};
+// Function to format dates as "Thu, 30/01/2025"
+const formatDate = (dateString) => {
+  if (!dateString) return "--/--/----"; // If the date is missing or null, return "--/--/----"
 
-const confirmDate = () => {
-  isDatePickerOpen.value = false;
-};
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "--/--/----"; // If the date is invalid, return "--/--/----"
 
-const formattedDate = computed(() => {
-  if (transactionStore.collectionDate) {
-    const date = new Date(transactionStore.collectionDate);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
-  return '';
-});
-
-const updateDate = (value) => {
-  transactionStore.collectionDate = value;
-};
-
-const isDeliveryDatePickerOpen = ref(false);
-
-/** Delivery Date Formatting and Update */
-const formattedDeliveryDate = computed(() => {
-  if (transactionStore.deliveryDate) {
-    const date = new Date(transactionStore.deliveryDate);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
-  return '';
-});
-
-const updateDeliveryDate = (value) => {
-  transactionStore.deliveryDate = value;
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short", // "Thu"
+    day: "2-digit", // "30"
+    month: "2-digit", // "01"
+    year: "numeric", // "2025"
+  });
 };
 </script>

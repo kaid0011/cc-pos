@@ -208,7 +208,7 @@ const filteredCollections = computed(() => {
 // View Collection Action
 const viewCollection = (collection) => {
   const url = router.resolve({
-    name: "LogisticsView",
+    name: "CollectionsDeliveriesView",
     params: { id: collection.id },
   }).href;
   window.open(url, "_blank");

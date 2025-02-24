@@ -1,6 +1,4 @@
 <template>
-  
-      <div class="col-6 right-container">
         <div class="selected-customer" v-if="selectedCustomer">
           <q-card flat class="customer-card q-pa-sm text-p">
             <q-card-section>
@@ -244,7 +242,6 @@
             </div>
           </div>
         </div>
-      </div>
   
       <AddContactPersonDialog
         v-model="showAddContactPersonDialog"

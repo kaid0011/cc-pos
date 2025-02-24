@@ -2101,5 +2101,56 @@ export const useTransactionStore = defineStore("transactionStore", {
         return null;
       }
     },
+
+    async createCollection(
+      collectionDateFrom,
+      collectionDateTo,
+      deliveryDateFrom,
+      deliveryDateTo
+    ) {
+      try {
+        // Insert Delivery Details
+        const { data: deliveryData, error: deliveryError } = await supabase
+          .from("deliveries")
+          .insert([
+            {
+              contact_person_id: this.selectedDeliveryContact?.id || null,
+              address: this.selectedDeliveryAddress?.label || null,
+              delivery_date: this.deliveryDate,
+              delivery_time: this.deliveryTime.value,
+              remarks: this.deliveryRemarks,
+              driver_id: this.selectedDeliveryDriver?.id || null,
+            },
+          ])
+          .select("id, delivery_date, delivery_time, remarks")
+          .single();
+
+        if (deliveryError) throw deliveryError;
+
+        // Insert Collection Details
+        const { data: collectionData, error: collectionError } = await supabase
+          .from("collections")
+          .insert([
+            {
+              contact_person_id: this.selectedCollectionContact?.id || null,
+              address: this.selectedCollectionAddress?.label || null,
+              collection_date: this.collectionDate,
+              collection_time: this.collectionTime.value,
+              remarks: this.collectionRemarks,
+              driver_id: this.selectedCollectionDriver?.id || null,
+              delivery_id: deliveryData.id,
+            },
+          ])
+          .select("id, collection_date, collection_time, remarks")
+          .single();
+
+        if (collectionError) throw collectionError;
+
+        
+        return orderNo; // Return the order ID for further use
+      } catch (error) {
+        console.error("Error in saveTransaction:", error);
+      }
+    },
   },
 });

@@ -827,6 +827,14 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         if (collectionError) throw collectionError;
 
+        // After inserting into the collections table, update the related deliveries row
+        const { error: updateDeliveryError } = await supabase
+          .from("deliveries")
+          .update({ collection_id: collectionData.id })
+          .eq("id", deliveryData.id);
+
+        if (updateDeliveryError) throw updateDeliveryError;
+
         // Insert Order
         const currentTimestamp = new Date().toISOString();
         const { data: orderData, error: orderError } = await supabase
@@ -1923,6 +1931,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           remarks: collection.remarks,
           contact_person_id: collection.contact_person_id,
           address: collection.address,
+          date_collected: collection.date_collected,
           collection_date: collection.collection_date,
           delivery_id: collection.delivery_id,
           contact_person: collection.contact_persons
@@ -1954,6 +1963,89 @@ export const useTransactionStore = defineStore("transactionStore", {
         return formattedData || [];
       } catch (error) {
         console.error("Error fetching collections:", error);
+        return [];
+      }
+    },
+    async fetchAllDeliveries() {
+      try {
+        const { data, error } = await supabase.from("deliveries").select(`
+            id,
+            created_at,
+            driver_id,
+            status,
+            area,
+            remarks,
+            contact_person_id,
+            address,
+            date_delivered,
+            delivery_date,
+            collection_id,
+            contact_persons (
+              id,
+              name,
+              customer_id,
+              customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                type,
+                sub_type
+              )
+            ),
+            drivers (
+              id,
+              name,
+              contact_no1
+            )
+          `);
+
+        if (error) {
+          throw error;
+        }
+
+        // Transform data to include related customer and driver details
+        const formattedData = data.map((delivery) => ({
+          id: delivery.id,
+          created_at: delivery.created_at,
+          driver_id: delivery.driver_id,
+          status: delivery.status,
+          remarks: delivery.remarks,
+          contact_person_id: delivery.contact_person_id,
+          address: delivery.address,
+          date_delivered: delivery.date_delivered,
+          delivery_date: delivery.delivery_date,
+          collection_id: delivery.collection_id,
+          contact_person: delivery.contact_persons
+            ? {
+                id: delivery.contact_persons.id,
+                name: delivery.contact_persons.name,
+              }
+            : null,
+          customer: delivery.contact_persons?.customers
+            ? {
+                id: delivery.contact_persons.customers.id,
+                name: delivery.contact_persons.customers.name,
+                contact_no1: delivery.contact_persons.customers.contact_no1,
+                contact_no2: delivery.contact_persons.customers.contact_no2,
+                email: delivery.contact_persons.customers.email,
+                type: delivery.contact_persons.customers.type,
+                sub_type: delivery.contact_persons.customers.sub_type,
+              }
+            : null,
+          driver: delivery.drivers
+            ? {
+                id: delivery.drivers.id,
+                name: delivery.drivers.name,
+              }
+            : null,
+        }));
+
+        console.log("Fetched Deliveries with Drivers:", formattedData);
+        return formattedData || [];
+      } catch (error) {
+        console.error("Error fetching deliveries:", error);
         return [];
       }
     },
@@ -2117,7 +2209,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedDeliveryContact?.id || null,
               address: this.selectedDeliveryAddress?.label || null,
               delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime.value,
+              delivery_time: this.deliveryTime?.value || null,
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
             },
@@ -2135,7 +2227,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedCollectionContact?.id || null,
               address: this.selectedCollectionAddress?.label || null,
               collection_date: this.collectionDate,
-              collection_time: this.collectionTime.value,
+              collection_time: this.collectionTime?.value || null,
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
               delivery_id: deliveryData.id,
@@ -2146,10 +2238,16 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         if (collectionError) throw collectionError;
 
-        
-        return orderNo; // Return the order ID for further use
+         // After inserting into the collections table, update the related deliveries row
+         const { error: updateDeliveryError } = await supabase
+         .from("deliveries")
+         .update({ collection_id: collectionData.id })
+         .eq("id", deliveryData.id);
+
+       if (updateDeliveryError) throw updateDeliveryError;
+
       } catch (error) {
-        console.error("Error in saveTransaction:", error);
+        console.error("Error in create collection:", error);
       }
     },
   },

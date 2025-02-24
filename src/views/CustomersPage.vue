@@ -80,6 +80,14 @@
         <div class="col bordered">{{ customer.payment_type }}</div>
         <div class="col bordered">{{ customer.remarks }}</div>
         <div class="col bordered actions">
+
+          <q-btn
+            dense
+            label="Create Collection"
+            color="primary"
+            class="main-button q-ma-xs q-px-sm"
+            @click="openCollectionDialog(customer)"
+          />
           <q-btn
             dense
             label="Create Transaction"
@@ -87,7 +95,6 @@
             class="main-button q-ma-xs q-px-sm"
             @click="navigateToPOS(customer)"
           />
-
           <q-btn
             dense
             label="View Customer"
@@ -103,20 +110,55 @@
     @customer-added="handleCustomerAdded"
   />
 
-  
+  <q-dialog
+  v-model="showCreateCollectionDialog"
+  persistent
+  transition-show="slide-down"
+  transition-hide="slide-up"
+>
+  <q-card class="dialog" style="width: 600px">
+    <q-card-section class="dialog-header">
+      <div class="text-body1 text-uppercase text-weight-bold">
+        Create Collection
+      </div>
+    </q-card-section>
+    <q-card-section>
+      <!-- Inject the CreateCollectionTab Component Here -->
+      <CreateCollectionTab/>
+    </q-card-section>
+    <q-card-actions align="right">
+      <q-btn
+        flat
+        class="negative-button"
+        @click="showCreateCollectionDialog = false"
+        label="Close"
+      />
+      <q-btn
+        flat
+        class=""
+        @click="createCollection()"
+        label="Create Collection"
+      />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
   </div>
 </template>
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useTransactionStore } from "@/stores/transactionStore";
+import { useQuasar } from "quasar";
 import AddCustomerDialog from "@/components/dialogs/AddCustomerDialog.vue";
+import CreateCollectionTab from "@/components/CreateCollectionTab.vue";
 
 const transactionStore = useTransactionStore();
 const router = useRouter();
+const $q = useQuasar();
 
 const searchQuery = ref("");
 const showAddCustomerDialog = ref(false);
+const showCreateCollectionDialog = ref(false);
 
 onMounted(async () => {
   try {
@@ -151,18 +193,26 @@ const filteredCustomersWithAddress = computed(() => {
   if (!query) return transactionStore.customers;
 
   return transactionStore.customers.filter((customer) => {
+    const inAddresses = (customer.addresses || []).some((address) => {
+      return (
+        address.block_no?.toLowerCase().includes(query) ||
+        address.road_name?.toLowerCase().includes(query) ||
+        address.unit_no?.toLowerCase().includes(query) ||
+        address.building_name?.toLowerCase().includes(query) ||
+        address.postal_code?.toLowerCase().includes(query) ||
+        address.additional_info?.toLowerCase().includes(query)
+      );
+    });
+
     return (
       customer.name.toLowerCase().includes(query) ||
       customer.contact_no1?.toLowerCase().includes(query) ||
       customer.contact_no2?.toLowerCase().includes(query) ||
       customer.email?.toLowerCase().includes(query) ||
-      (customer.addresses || []).some((address) =>
-        address.address.toLowerCase().includes(query)
-      )
+      inAddresses
     );
   });
 });
-
 
 // Handle viewing a customer (for navigation or modal display)
 const viewCustomer = (customer) => {
@@ -172,6 +222,13 @@ const viewCustomer = (customer) => {
   }).href;
   window.open(url, "_blank");
 };
+
+const handleCustomerAdded = async () => {
+  console.log("Customer successfully added");
+  showAddCustomerDialog.value = false;
+  await transactionStore.loadCustomers();
+};
+
 
 const navigateToPOS = (customer) => {
   try {
@@ -192,12 +249,48 @@ const navigateToPOS = (customer) => {
     console.error("Error navigating to POS:", error);
   }
 };
-const handleCustomerAdded = async () => {
-  console.log("Customer successfully added");
-  showAddCustomerDialog.value = false;
-  await transactionStore.loadCustomers();
+
+const openCollectionDialog = (customer) => {
+  transactionStore.setSelectedCustomer(customer); // Set the selected customer in the store
+  showCreateCollectionDialog.value = true;
 };
 
+async function createCollection() {
+  try {
+    // Call the store function to create the collection
+    await transactionStore.createCollection();
 
+    // Show success dialog
+    $q.dialog({
+      title: "Success",
+      message: "Collection created successfully!",
+      ok: "OK",
+      color: "positive",
+    });
+
+    // Reset the fields
+    transactionStore.selectedCollectionContact = null;
+    transactionStore.selectedDeliveryContact = null;
+    transactionStore.selectedCollectionAddress = null;
+    transactionStore.selectedDeliveryAddress = null;
+    transactionStore.selectedCollectionDriver = null;
+    transactionStore.selectedDeliveryDriver = null;
+    transactionStore.collectionRemarks = "";
+    transactionStore.deliveryRemarks = "";
+
+    // Close the dialog
+    showCreateCollectionDialog.value = false;
+  } catch (error) {
+    console.error("Error submitting collection:", error.message);
+
+    // Show error dialog
+    $q.dialog({
+      title: "Error",
+      message: "Failed to create collection. Please try again.",
+      ok: "Close",
+      color: "negative",
+    });
+  }
+}
 
 </script>

@@ -1,15 +1,21 @@
 <template>
   <div class="full-container contact-persons-management">
     <div class="customer-details-container q-pb-md">
-      <q-card flat bordered>
-        
-        <q-btn
+      <q-btn
         dense
-        label="Update"
+        label="Create Collection"
         color="primary"
         class="secondary-button q-ma-xs q-px-sm"
-        @click="openUpdateDialog(customerDetails)"
+        @click="openCollectionDialog(customerDetails)"
       />
+      <q-card flat bordered>
+        <q-btn
+          dense
+          label="Update"
+          color="primary"
+          class="secondary-button q-ma-xs q-px-sm"
+          @click="openUpdateDialog(customerDetails)"
+        />
         <q-card-section>
           <div class="row items-start q-gutter-md">
             <div class="col">
@@ -78,7 +84,11 @@
             :key="address.id"
             class="row row-col-row q-mx-md"
           >
-            <div class="col col-6 bordered">{{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}, ({{ address.additional_info }})</div>
+            <div class="col col-6 bordered">
+              {{ address.block_no }} {{ address.road_name }}
+              {{ address.unit_no }} {{ address.building_name }}
+              {{ address.postal_code }}, ({{ address.additional_info }})
+            </div>
             <div class="col col-3 bordered">{{ address.type || "N/A" }}</div>
             <div class="col col-3 bordered actions">
               <q-btn
@@ -169,13 +179,6 @@
             <div class="col col-2 bordered actions">
               <q-btn
                 dense
-                label="Create Collection"
-                color="primary"
-                class="secondary-button q-ma-xs q-px-sm"
-                @click="openCollectionDialog(person)"
-              />
-              <q-btn
-                dense
                 label="Update"
                 color="primary"
                 class="main-button q-ma-xs q-px-sm"
@@ -205,76 +208,49 @@
       <div>Compensation History</div>
     </div>
     <AddContactPersonDialog
-    v-model="showAddContactPersonDialog"
-    @contact-added="handleContactAdded"
-  />
+      v-model="showAddContactPersonDialog"
+      @contact-added="handleContactAdded"
+    />
 
-  <UpdateContactDialog
-  v-model="showUpdateContactPersonDialog"
-  @contact-updated="handleContactUpdated"
-/>
+    <UpdateContactDialog
+      v-model="showUpdateContactPersonDialog"
+      @contact-updated="handleContactUpdated"
+    />
 
-
-    <!-- Create Collection Dialog -->
     <q-dialog
       v-model="showCreateCollectionDialog"
       persistent
       transition-show="slide-down"
       transition-hide="slide-up"
     >
-      <q-card class="dialog" style="width: 500px">
+      <q-card class="dialog" style="width: 600px">
         <q-card-section class="dialog-header">
           <div class="text-body1 text-uppercase text-weight-bold">
             Create Collection
           </div>
         </q-card-section>
         <q-card-section>
-          <!-- Display Contact Person Info -->
-          <div class="q-mb-md">
-            <div><strong>Name:</strong> {{ selectedContactPerson.name }}</div>
-            <div>
-              <strong>Contact No 1:</strong>
-              {{ selectedContactPerson.contact_no1 }}
-            </div>
-            <div>
-              <strong>Contact No 2:</strong>
-              {{ selectedContactPerson.contact_no2 }}
-            </div>
-          </div>
-          <!-- Collection Form -->
-          <q-form @submit.prevent="createCollection" class="q-gutter-md">
-            <q-input
-              v-model="collectionDate"
-              label="Collection Date"
-              outlined
-              type="date"
-              required
-            />
-            <q-input
-              v-model="collectionTime"
-              label="Collection Time"
-              outlined
-              type="time"
-              required
-            />
-            <q-card-actions align="right">
-              <q-btn
-                flat
-                class="negative-button"
-                @click="showCreateCollectionDialog = false"
-                label="Cancel"
-              />
-              <q-btn
-                flat
-                class="main-button"
-                type="submit"
-                label="Create Collection"
-              />
-            </q-card-actions>
-          </q-form>
+          <!-- Inject the CreateCollectionTab Component Here -->
+          <CreateCollectionTab />
         </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            class="negative-button"
+            @click="showCreateCollectionDialog = false"
+            label="Close"
+          />
+
+          <q-btn
+            flat
+            class=""
+            @click="createCollection()"
+            label="Create Collection"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
+
     <AddAddressDialog
       v-model="showAddAddressDialog"
       @address-added="handleAddressAdded"
@@ -285,19 +261,24 @@
       @address-updated="handleAddressUpdated"
     />
     <DeleteConfirmationDialog
-    :isOpen="showDeleteDialog"
-    :title="deleteDialogTitle"
-    :message="deleteDialogMessage"
-    @update:isOpen="showDeleteDialog = $event"
-    @confirm="deleteItem"
-  />
-  <UpdateCustomerDialog v-model="showUpdateCustomerDialog" :customerData="selectedCustomer" @customer-updated="handleCustomerUpdated" />
+      :isOpen="showDeleteDialog"
+      :title="deleteDialogTitle"
+      :message="deleteDialogMessage"
+      @update:isOpen="showDeleteDialog = $event"
+      @confirm="deleteItem"
+    />
+    <UpdateCustomerDialog
+      v-model="showUpdateCustomerDialog"
+      :customerData="selectedCustomer"
+      @customer-updated="handleCustomerUpdated"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import { useQuasar } from "quasar";
 
 import { useTransactionStore } from "@/stores/transactionStore";
 import AddContactPersonDialog from "@/components/dialogs/AddContactDialog.vue";
@@ -306,8 +287,10 @@ import UpdateContactDialog from "@/components/dialogs/UpdateContactDialog.vue";
 import UpdateAddressDialog from "@/components/dialogs/UpdateAddressDialog.vue";
 import DeleteConfirmationDialog from "@/components/dialogs/DeleteConfirmationDialog.vue";
 import UpdateCustomerDialog from "@/components/dialogs/UpdateCustomerDialog.vue";
+import CreateCollectionTab from "@/components/CreateCollectionTab.vue";
 
 const transactionStore = useTransactionStore();
+const $q = useQuasar();
 
 const route = useRoute();
 
@@ -331,10 +314,7 @@ const deleteDialogMessage = ref("");
 const customerDetails = ref({});
 const addresses = ref([]);
 const contactPersons = ref([]);
-const selectedContactPerson = ref({});
 const selectedAddress = ref({});
-const collectionDate = ref("");
-const collectionTime = ref("");
 const searchQuery = ref("");
 
 // Helper function for formatting
@@ -350,8 +330,12 @@ const formatDate = (timestamp) => {
 
 const loadCustomerData = async () => {
   const customerId = route.params.id;
-  customerDetails.value = await transactionStore.fetchCustomerDetailsById(customerId);
-  addresses.value = await transactionStore.fetchAddressesForCustomer(customerId);
+  customerDetails.value = await transactionStore.fetchCustomerDetailsById(
+    customerId
+  );
+  addresses.value = await transactionStore.fetchAddressesForCustomer(
+    customerId
+  );
   contactPersons.value = await transactionStore.fetchContactPersons(customerId);
 };
 
@@ -371,7 +355,8 @@ const openDeleteDialog = (item, type) => {
 
   if (type === "contact") {
     deleteDialogTitle.value = "Delete Contact Person";
-    deleteDialogMessage.value = "Are you sure you want to delete this contact person?";
+    deleteDialogMessage.value =
+      "Are you sure you want to delete this contact person?";
   } else {
     deleteDialogTitle.value = "Delete Address";
     deleteDialogMessage.value = "Are you sure you want to delete this address?";
@@ -397,30 +382,59 @@ const deleteItem = async () => {
   }
 };
 
-
-// Collection Actions
-const openCollectionDialog = (contactPerson) => {
-  selectedContactPerson.value = { ...contactPerson };
+const openCollectionDialog = (customer) => {
+  transactionStore.setSelectedCustomer(customer);
   showCreateCollectionDialog.value = true;
 };
 
-const createCollection = () => {
-  console.log("Collection created for:", selectedContactPerson.value.name);
-  console.log("Date:", collectionDate.value);
-  console.log("Time:", collectionTime.value);
-  showCreateCollectionDialog.value = false;
-};
+async function createCollection() {
+  try {
+    // Call the store function to create the collection
+    await transactionStore.createCollection();
+
+    // Show success dialog
+    $q.dialog({
+      title: "Success",
+      message: "Collection created successfully!",
+      ok: "OK",
+      color: "positive",
+    });
+
+    // Reset the fields
+    transactionStore.selectedCollectionContact = null;
+    transactionStore.selectedDeliveryContact = null;
+    transactionStore.selectedCollectionAddress = null;
+    transactionStore.selectedDeliveryAddress = null;
+    transactionStore.selectedCollectionDriver = null;
+    transactionStore.selectedDeliveryDriver = null;
+    transactionStore.collectionRemarks = "";
+    transactionStore.deliveryRemarks = "";
+
+    // Close the dialog
+    showCreateCollectionDialog.value = false;
+  } catch (error) {
+    console.error("Error submitting collection:", error.message);
+
+    // Show error dialog
+    $q.dialog({
+      title: "Error",
+      message: "Failed to create collection. Please try again.",
+      ok: "Close",
+      color: "negative",
+    });
+  }
+}
+
 
 // Toggles
 const toggleAddresses = () => (showAddresses.value = !showAddresses.value);
 const toggleContactPersons = () =>
   (showContactPersons.value = !showContactPersons.value);
 
+onMounted(loadCustomerData);
 
-  onMounted(loadCustomerData);
-
-  const handleContactAdded = loadCustomerData;
-  const handleAddressAdded = loadCustomerData;
+const handleContactAdded = loadCustomerData;
+const handleAddressAdded = loadCustomerData;
 
 const openUpdateContactDialog = (contactPerson) => {
   transactionStore.setSelectedContact(contactPerson);

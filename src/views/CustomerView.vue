@@ -382,8 +382,8 @@ const deleteItem = async () => {
   }
 };
 
-const openCollectionDialog = (customer) => {
-  transactionStore.setSelectedCustomer(customer);
+const openCollectionDialog = (customerDetails) => {
+  transactionStore.setSelectedCustomer(customerDetails);
   showCreateCollectionDialog.value = true;
 };
 

@@ -14,7 +14,7 @@
           label="Update"
           color="primary"
           class="secondary-button q-ma-xs q-px-sm"
-          @click="openUpdateDialog(customerDetails)"
+          @click="openUpdateCustomerDialog(customerDetails)"
         />
         <q-card-section>
           <div class="row items-start q-gutter-md">
@@ -441,12 +441,6 @@ const toggleContactPersons = () =>
 const handleContactAdded = loadCustomerData;
 const handleAddressAdded = loadCustomerData;
 
-const handleCustomerUpdated = async () => {
-  await loadCustomerData();
-  showUpdateCustomerDialog.value = false;
-  await transactionStore.loadCustomers();
-};
-
 const openUpdateDialog = (item, type) => {
   if (type === "address") {
     transactionStore.setSelectedAddress(item);
@@ -471,4 +465,14 @@ const handleUpdated = async () => {
   }
 };
 
+const openUpdateCustomerDialog = (customer) => {
+  transactionStore.setSelectedCustomer(customer);
+  showUpdateCustomerDialog.value = true;
+};
+
+const handleCustomerUpdated = async () => {
+  await loadCustomerData();
+  showUpdateCustomerDialog.value = false;
+  await transactionStore.loadCustomers();
+};
 </script>

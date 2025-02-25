@@ -74,7 +74,7 @@
           <!-- Table Header -->
           <div class="row row-col-header q-px-md">
             <div class="col col-6 bordered">Address</div>
-            <div class="col col-3 bordered">Type</div>
+            <div class="col col-3 bordered">Remarks</div>
             <div class="col col-3 bordered">Actions</div>
           </div>
 
@@ -87,17 +87,18 @@
             <div class="col col-6 bordered">
               {{ address.block_no }} {{ address.road_name }}
               {{ address.unit_no }} {{ address.building_name }}
-              {{ address.postal_code }}, ({{ address.additional_info }})
+              {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
             </div>
-            <div class="col col-3 bordered">{{ address.type || "N/A" }}</div>
+            <div class="col col-3 bordered">{{ address.remarks || "-" }}</div>
             <div class="col col-3 bordered actions">
               <q-btn
-                dense
-                label="Update"
-                color="primary"
-                class="main-button q-ma-xs q-px-sm"
-                @click="openUpdateAddressDialog(address)"
-              />
+              dense
+              label="Update"
+              color="primary"
+              class="main-button q-ma-xs q-px-sm"
+              @click="openUpdateDialog(address, 'address')"
+            />
+            
               <q-btn
                 dense
                 label="Delete"
@@ -178,12 +179,13 @@
             <div class="col col-2 bordered">{{ person.remarks }}</div>
             <div class="col col-2 bordered actions">
               <q-btn
-                dense
-                label="Update"
-                color="primary"
-                class="main-button q-ma-xs q-px-sm"
-                @click="openUpdateContactDialog(person)"
-              />
+              dense
+              label="Update"
+              color="primary"
+              class="main-button q-ma-xs q-px-sm"
+              @click="openUpdateDialog(person, 'contact')"
+            />
+            
               <q-btn
                 dense
                 label="Delete"
@@ -211,11 +213,11 @@
       v-model="showAddContactPersonDialog"
       @contact-added="handleContactAdded"
     />
-
     <UpdateContactDialog
-      v-model="showUpdateContactPersonDialog"
-      @contact-updated="handleContactUpdated"
-    />
+    v-model="showUpdateContactPersonDialog"
+    @contact-updated="handleUpdated"
+  />
+  
 
     <q-dialog
       v-model="showCreateCollectionDialog"
@@ -256,10 +258,11 @@
       @address-added="handleAddressAdded"
     />
     <UpdateAddressDialog
-      v-model="showUpdateAddressDialog"
-      :initialAddress="selectedAddress"
-      @address-updated="handleAddressUpdated"
-    />
+    v-model="showUpdateAddressDialog"
+    :initialAddress="selectedAddress"
+    @address-updated="handleUpdated"
+  />
+  
     <DeleteConfirmationDialog
       :isOpen="showDeleteDialog"
       :title="deleteDialogTitle"
@@ -430,7 +433,6 @@ async function createCollection() {
   }
 }
 
-
 // Toggles
 const toggleAddresses = () => (showAddresses.value = !showAddresses.value);
 const toggleContactPersons = () =>
@@ -439,39 +441,34 @@ const toggleContactPersons = () =>
 const handleContactAdded = loadCustomerData;
 const handleAddressAdded = loadCustomerData;
 
-const openUpdateContactDialog = (contactPerson) => {
-  transactionStore.setSelectedContact(contactPerson);
-  showUpdateContactPersonDialog.value = true;
-};
-
-const handleContactUpdated = async () => {
-  try {
-    await loadCustomerData(); // Refresh contact persons after update
-    showUpdateContactPersonDialog.value = false; // Close dialog
-    console.log("Contact person updated successfully.");
-  } catch (error) {
-    console.error("Error updating contact person:", error);
-  }
-};
-
-const handleAddressUpdated = async () => {
-  try {
-    await loadCustomerData(); // Refresh addresses after update
-    showUpdateAddressDialog.value = false; // Close dialog
-    console.log("Address updated successfully.");
-  } catch (error) {
-    console.error("Error updating address:", error);
-  }
-};
-
-const openUpdateDialog = (customer) => {
-  transactionStore.setSelectedCustomer(customer);
-  showUpdateCustomerDialog.value = true;
-};
-
 const handleCustomerUpdated = async () => {
   await loadCustomerData();
   showUpdateCustomerDialog.value = false;
   await transactionStore.loadCustomers();
 };
+
+const openUpdateDialog = (item, type) => {
+  if (type === "address") {
+    transactionStore.setSelectedAddress(item);
+    showUpdateAddressDialog.value = true;
+  } else if (type === "contact") {
+    transactionStore.setSelectedContact(item);
+    showUpdateContactPersonDialog.value = true;
+  }
+};
+
+const handleUpdated = async () => {
+  try {
+    await loadCustomerData(); // Refresh both addresses and contacts
+
+    // Close both dialogs
+    showUpdateAddressDialog.value = false;
+    showUpdateContactPersonDialog.value = false;
+
+    console.log("Item updated successfully.");
+  } catch (error) {
+    console.error("Error updating item:", error);
+  }
+};
+
 </script>

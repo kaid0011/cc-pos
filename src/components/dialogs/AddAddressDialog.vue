@@ -35,6 +35,9 @@
               <div class="col-9">
                 <q-input v-model="address.additional_info" label="Additional Info" outlined class="dialog-inputs" />
               </div>
+              <div class="col-12">
+                <q-input v-model="address.remarks" label="Remarks" outlined class="dialog-inputs" />
+              </div>
             </div>
   
             <q-card-actions align="right">
@@ -70,6 +73,7 @@
     building_name: "",
     unit_no: "",
     additional_info: "",
+    remarks: ""
   });
   
   const handleAddAddress = async () => {
@@ -86,6 +90,7 @@
         building_name: address.value.building_name.toUpperCase(),
         unit_no: address.value.unit_no.toUpperCase(),
         additional_info: address.value.additional_info.toUpperCase(),
+        remarks: address.value.remarks.toUpperCase(),
       };
   
       await transactionStore.addAddress(formattedAddress);
@@ -140,6 +145,7 @@
       building_name: "",
       unit_no: "",
       additional_info: "",
+      remarks: ""
     };
   };
   </script>

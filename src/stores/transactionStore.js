@@ -205,7 +205,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           const { data, error } = await supabase
             .from("customer_address")
             .select(
-              "id, block_no, road_name, building_name, postal_code, unit_no, additional_info"
+              "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
             )
             .eq("customer_id", customerId);
 
@@ -217,7 +217,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         const { data: defaultData, error: defaultError } = await supabase
           .from("customer_address")
           .select(
-            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info"
+            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
           )
           .eq("id", 1)
           .single();
@@ -445,6 +445,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             postal_code: address.postal_code,
             unit_no: address.unit_no,
             additional_info: address.additional_info,
+            remarks: address.remarks
           })
           .eq("id", address.id);
 
@@ -1175,7 +1176,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         const { data, error } = await supabase
           .from("customer_address")
           .select(
-            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info"
+            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
           )
           .eq("customer_id", customerId);
 

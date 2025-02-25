@@ -56,9 +56,7 @@
         <div class="col bordered">
           <ul v-if="customer.addresses?.length" class="q-pl-md">
             <li v-for="address in customer.addresses" :key="address.id">
-              {{ address.block_no }} {{ address.road_name }}
-              {{ address.unit_no }} {{ address.building_name }},
-              {{ address.postal_code }} ({{ address?.additional_info || "" }})
+              {{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
             </li>
           </ul>
           <span v-else>No Address Available</span>

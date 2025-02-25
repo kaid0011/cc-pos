@@ -1,7 +1,7 @@
 <template>
   <div class="full-container transactions-history">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
-      Transaction History
+Order Management
     </div>
     <!-- Search Bar -->
     <div class="row justify-end q-mb-sm q-gutter-x-sm">

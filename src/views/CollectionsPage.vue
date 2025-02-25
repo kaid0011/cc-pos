@@ -1,5 +1,5 @@
 <template>
-  <div class="full-container collections-history">
+  <div class="collections-history">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
       Collections
     </div>

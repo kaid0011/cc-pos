@@ -40,17 +40,17 @@
             <q-item-section> POS </q-item-section>
           </q-item>
 
-          <!-- Transaction History Page -->
+          <!-- Orders Page -->
           <q-item
             clickable
-            @click="goToTransactionHistory"
-            :active="isTransactionHistoryActive"
+            @click="goToOrdersPage"
+            :active="isOrdersPageActive"
             class="q-pa-md"
           >
             <q-item-section avatar>
               <q-icon name="receipt_long" />
             </q-item-section>
-            <q-item-section> Transaction History </q-item-section>
+            <q-item-section> Order Management </q-item-section>
           </q-item>
 
           <!-- Customers Page -->
@@ -80,8 +80,22 @@
           </q-item>
 
           <!-- Logistics Management -->
+          <q-item
+            clickable
+            @click="goToLogisticsPage"
+            :active="isLogisticsPageActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="local_shipping" />
+            </q-item-section>
+            <q-item-section> Logistics Management </q-item-section>
+          </q-item>
 
-          <q-expansion-item
+
+          <!-- Logistics Management -->
+
+          <!-- <q-expansion-item
           expand-separator
           icon="local_shipping"
           label="Logistics Management"
@@ -111,7 +125,7 @@
             </q-item-section>
             <q-item-section> Deliveries </q-item-section>
           </q-item>
-        </q-expansion-item>
+        </q-expansion-item> -->
 
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
@@ -151,7 +165,7 @@ const isDashboardActive = computed(() => route.path === "/dashboard");
 const isPOSActive = computed(() => route.path === "/pos");
 
 // Check if the current route is Transaction History
-const isTransactionHistoryActive = computed(() => route.path === "/transactions");
+const isOrdersPageActive = computed(() => route.path === "/orders");
 
 // Check if the current route is Customers Page
 const isCustomersPageActive = computed(() => route.path === "/customers");
@@ -159,11 +173,14 @@ const isCustomersPageActive = computed(() => route.path === "/customers");
 // Check if the current route is Tags Page
 const isTagsPageActive = computed(() => route.path === "/tags");
 
+// Check if the current route is Tags Page
+const isLogisticsPageActive = computed(() => route.path === "/logistics");
+
 // Check if the current route is Collections
-const isCollectionsActive = computed(() => route.path === "/collections");
+// const isCollectionsActive = computed(() => route.path === "/collections");
 
 // Check if the current route is Deliveries
-const isDeliveriesActive = computed(() => route.path === "/deliveries");
+// const isDeliveriesActive = computed(() => route.path === "/deliveries");
 
 // Check if the current route requires authentication
 const requiresAuth = computed(() => {
@@ -171,11 +188,12 @@ const requiresAuth = computed(() => {
   const authRequiredRoutes = [
     "/dashboard",
     "/pos",
-    "/transactions",
+    "/orders",
     "/customers",
     "/tags",
-    "/collections",
-    "/deliveries",
+    "/logistics",
+    // "/collections",
+    // "/deliveries",
   ];
   return authRequiredRoutes.includes(route.path);
 });
@@ -200,8 +218,8 @@ const goToPOS = () => {
   router.push("/pos");
 };
 
-const goToTransactionHistory = () => {
-  router.push("/transactions");
+const goToOrdersPage = () => {
+  router.push("/orders");
 };
 
 const goToTagsPage = () => {
@@ -212,11 +230,15 @@ const goToCustomersPage = () => {
   router.push("/customers");
 };
 
-const goToCollections = () => {
-  router.push("/collections");
+const goToLogisticsPage = () => {
+  router.push("/logistics");
 };
 
-const goToDeliveries = () => {
-  router.push("/deliveries");
-};
+// const goToCollections = () => {
+//   router.push("/collections");
+// };
+
+// const goToDeliveries = () => {
+//   router.push("/deliveries");
+// };
 </script>

@@ -317,6 +317,11 @@ const contactPersons = ref([]);
 const selectedAddress = ref({});
 const searchQuery = ref("");
 
+onMounted(async () => {
+  await loadCustomerData();
+  await transactionStore.setSelectedCustomer(customerDetails);
+});
+
 // Helper function for formatting
 const formatDate = (timestamp) => {
   if (!timestamp) return "";
@@ -430,8 +435,6 @@ async function createCollection() {
 const toggleAddresses = () => (showAddresses.value = !showAddresses.value);
 const toggleContactPersons = () =>
   (showContactPersons.value = !showContactPersons.value);
-
-onMounted(loadCustomerData);
 
 const handleContactAdded = loadCustomerData;
 const handleAddressAdded = loadCustomerData;

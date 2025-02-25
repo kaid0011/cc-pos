@@ -1,5 +1,5 @@
 <template>
-  <div class="full-container logistics-view">
+  <div class="logistics-view">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
       Logistics Details
     </div>

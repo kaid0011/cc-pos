@@ -3,16 +3,17 @@ import { supabase } from "@/../supabase/config.js";
 
 import DashboardPage from "@/views/DashboardPage.vue";
 import PosPage from "@/views/PosPage.vue";
-import TransactionsPage from "@/views/TransactionsPage.vue";
+import OrdersPage from "@/views/OrdersPage.vue";
+import OrderView from "@/views/OrderView.vue";
 import CustomersPage from "@/views/CustomersPage.vue";
 import CustomerView from "@/views/CustomerView.vue";
-import OrderPage from "@/views/OrderPage.vue";
 import PaymentPage from "@/views/PaymentPage.vue";
 import TagsPage from "@/views/TagsPage.vue";
 import TagView from "@/views/TagView.vue";
-import CollectionsPage from "@/views/CollectionsPage.vue";
-import CollectionsDeliveriesView from "@/views/CollectionsDeliveriesView.vue";
-import DeliveriesPage from "@/views/DeliveriesPage.vue";
+import LogisticsPage from "@/views/LogisticsPage.vue";
+import LogisticsView from "@/views/LogisticsView.vue";
+// import CollectionsPage from "@/views/CollectionsPage.vue";
+// import DeliveriesPage from "@/views/DeliveriesPage.vue";
 
 const routes = [
   {
@@ -44,9 +45,9 @@ const routes = [
     },
   },
   {
-    path: "/transactions",
-    name: "Transactions",
-    component: TransactionsPage,
+    path: "/orders",
+    name: "OrdersPage",
+    component: OrdersPage,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },
@@ -69,8 +70,8 @@ const routes = [
   },
   {
     path: "/orders/:order_no",
-    name: "OrderPage",
-    component: OrderPage,
+    name: "OrderView",
+    component: OrderView,
     meta: {
       requiresAuth: true,
     },
@@ -91,29 +92,37 @@ const routes = [
     },
   },
   {
-    path: "/collections",
-    name: "Collections",
-    component: CollectionsPage,
+    path: "/logistics",
+    name: "LogisticsPage",
+    component: LogisticsPage,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },
   },
   {
     path: "/logistics/:id",
-    name: "CollectionsDeliveriesView",
-    component: CollectionsDeliveriesView,
+    name: "LogisticsView",
+    component: LogisticsView,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },
   },
-  {
-    path: "/deliveries",
-    name: "Deliveries",
-    component: DeliveriesPage,
-    meta: {
-      requiresAuth: true, // Transactions require authentication
-    },
-  },
+  // {
+  //   path: "/collections",
+  //   name: "Collections",
+  //   component: CollectionsPage,
+  //   meta: {
+  //     requiresAuth: true, // Transactions require authentication
+  //   },
+  // },
+  // {
+  //   path: "/deliveries",
+  //   name: "Deliveries",
+  //   component: DeliveriesPage,
+  //   meta: {
+  //     requiresAuth: true, // Transactions require authentication
+  //   },
+  // },
   {
     path: "/tags/:order_no",
     name: "TagView",

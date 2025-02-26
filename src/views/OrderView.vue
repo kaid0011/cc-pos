@@ -222,7 +222,7 @@
             label="Update Collection and Delivery Details"
             color="primary"
             icon="update"
-            @click="updateReadyByCollectionAndDelivery"
+            @click="updateCollectionAndDelivery"
           />
         </div>
         <q-separator />
@@ -1806,7 +1806,7 @@ const openCustomerTab = (customerId) => {
   window.open(url, "_blank"); // Open in a new tab
 };
 
-async function updateReadyByCollectionAndDelivery() {
+async function updateCollectionAndDelivery() {
   try {
     const orderNo = order.value.order_no;
 

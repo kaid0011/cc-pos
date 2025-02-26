@@ -1,6 +1,6 @@
 <template>
-  <div class="logistics-view">
-    <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
+  <div class="preview logistics-view">
+    <div class="text-h6 text-center text-uppercase text-weight-bolder q-pt-md">
       Logistics Details
     </div>
     <q-form @submit.prevent="saveChanges">
@@ -44,194 +44,207 @@
           dense
         />
       </div>
+      <!-- Two Column Layout -->
+      <div class="row q-gutter-md">
+        <!-- Collections Column -->
+        <div class="col">
+          <q-card class="logistics-card">
+            <div class="q-pa-md">
+              <div class="text-h6">Collection Details</div>
+              <q-input
+                v-model="collection.collection_date"
+                label="Collection Date"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.collection_time"
+                label="Collection Time"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.address"
+                label="Collection Address"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.area"
+                label="Collection Area"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.status"
+                label="Collection Status"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.remarks"
+                label="Collection Remarks"
+                outlined
+                dense
+              />
+            </div>
 
-      <!-- Collection Details -->
-      <div class="q-pa-md">
-        <div class="text-h6">Collection Details</div>
-        <q-input
-          v-model="collection.collection_date"
-          label="Collection Date"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.collection_time"
-          label="Collection Time"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.address"
-          label="Address"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.area"
-          label="Area"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.status"
-          label="Status"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.remarks"
-          label="Remarks"
-          outlined
-          dense
-        />
-      </div>
+            <div class="q-pa-md">
+              <div class="text-h6">Collection Driver Details</div>
+              <q-input
+                v-model="collection.driver.name"
+                label="Driver Name"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.driver.contact_no1"
+                label="Driver Contact"
+                outlined
+                dense
+              />
+            </div>
 
-      <!-- Collection Driver Details -->
-      <div class="q-pa-md">
-        <q-input
-          v-model="collection.driver.name"
-          label="Collection Driver Name"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.driver.contact_no1"
-          label="Driver Contact"
-          outlined
-          dense
-        />
-      </div>
+            <div class="q-pa-md">
+              <div class="text-h6">Collection Contact Person</div>
+              <q-input
+                v-model="collection.contact_person.name"
+                label="Contact Person Name"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.contact_person.contact_no1"
+                label="Contact No 1"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.contact_person.contact_no2"
+                label="Contact No 2"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.contact_person.email"
+                label="Email"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.contact_person.remarks"
+                label="Remarks"
+                outlined
+                dense
+              />
+            </div>
+          </q-card>
+        </div>
 
-      <!-- Contact Person Details -->
-      <div class="q-pa-md">
-        <q-input
-          v-model="collection.contact_person.name"
-          label="Contact Person Name"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.contact_person.contact_no1"
-          label="Contact Person Contact No 1"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.contact_person.contact_no2"
-          label="Contact Person Contact No 2"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.contact_person.email"
-          label="Contact Person Email"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.contact_person.remarks"
-          label="Contact Person Remarks"
-          outlined
-          dense
-        />
-      </div>
+        <!-- Deliveries Column -->
+        <div class="col">
+          <q-card class="logistics-card">
+            <div class="q-pa-md">
+              <div class="text-h6">Delivery Details</div>
+              <q-input
+                v-model="collection.delivery.delivery_date"
+                label="Delivery Date"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.delivery_time"
+                label="Delivery Time"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.address"
+                label="Delivery Address"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.area"
+                label="Delivery Area"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.status"
+                label="Delivery Status"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.remarks"
+                label="Delivery Remarks"
+                outlined
+                dense
+              />
+            </div>
 
-      <!-- Delivery Details -->
-      <div class="q-pa-md">
-        <div class="text-h6">Delivery Details</div>
-        <q-input
-          v-model="collection.delivery.delivery_date"
-          label="Delivery Date"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.delivery_time"
-          label="Delivery Time"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.address"
-          label="Delivery Address"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.area"
-          label="Delivery Area"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.status"
-          label="Delivery Status"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.remarks"
-          label="Delivery Remarks"
-          outlined
-          dense
-        />
-      </div>
+            <div class="q-pa-md">
+              <div class="text-h6">Delivery Driver Details</div>
+              <q-input
+                v-model="collection.delivery.driver.name"
+                label="Driver Name"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.driver.contact_no1"
+                label="Driver Contact"
+                outlined
+                dense
+              />
+            </div>
 
-      <!-- Delivery Contact Person Details -->
-      <div class="q-pa-md">
-        <div class="text-h6">Delivery Contact Person Details</div>
-        <q-input
-          v-model="collection.delivery.contact_person.name"
-          label="Contact Person Name"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.contact_person.contact_no1"
-          label="Contact No 1"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.contact_person.contact_no2"
-          label="Contact No 2"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.contact_person.email"
-          label="Email"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.contact_person.remarks"
-          label="Remarks"
-          outlined
-          dense
-        />
-      </div>
-
-      <!-- Delivery Driver Details -->
-      <div class="q-pa-md">
-        <div class="text-h6">Delivery Driver Details</div>
-        <q-input
-          v-model="collection.delivery.driver.name"
-          label="Driver Name"
-          outlined
-          dense
-        />
-        <q-input
-          v-model="collection.delivery.driver.contact_no1"
-          label="Driver Contact"
-          outlined
-          dense
-        />
+            <div class="q-pa-md">
+              <div class="text-h6">Delivery Contact Person</div>
+              <q-input
+                v-model="collection.delivery.contact_person.name"
+                label="Contact Person Name"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.contact_person.contact_no1"
+                label="Contact No 1"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.contact_person.contact_no2"
+                label="Contact No 2"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.contact_person.email"
+                label="Email"
+                outlined
+                dense
+              />
+              <q-input
+                v-model="collection.delivery.contact_person.remarks"
+                label="Remarks"
+                outlined
+                dense
+              />
+            </div>
+          </q-card>
+        </div>
       </div>
 
       <!-- Action Buttons -->
-      <div class="q-pa-md">
-        <q-btn label="Save Changes" type="submit" color="primary" />
+      <div class="q-pa-md text-center">
+        <q-btn
+          label="Save Changes"
+          type="submit"
+          color="primary"
+          class="q-mr-sm"
+        />
         <q-btn label="Back" @click="goBack" color="secondary" flat />
       </div>
     </q-form>
@@ -290,14 +303,16 @@ const collection = ref({
     driver: {
       name: "",
       contact_no1: "",
-    }
-  }
+    },
+  },
 });
 
 const fetchCollectionDeliveryDetails = async () => {
   const collectionId = route.params.id;
   try {
-    const data = await transactionStore.fetchCollectionsDeliveriesById(collectionId);
+    const data = await transactionStore.fetchCollectionsDeliveriesById(
+      collectionId
+    );
     console.log("Fetched Collection Details:", data);
 
     // Safely populate the fields while maintaining default empty strings
@@ -326,8 +341,8 @@ const fetchCollectionDeliveryDetails = async () => {
         driver: {
           ...collection.value.delivery.driver,
           ...data.delivery?.driver,
-        }
-      }
+        },
+      },
     };
   } catch (error) {
     console.error("Error fetching collection details:", error);

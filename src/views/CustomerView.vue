@@ -31,11 +31,12 @@
                 {{ customerDetails.sub_type }}
               </div>
               <div>
-                <strong>Contact No 1:</strong> {{ customerDetails.contact_no1 }}
+                <strong>Contact No 1:</strong> {{ customerDetails.contact_no1 }}<span v-if="customerDetails.contact_no2 && customerDetails.contact_no2.length"> / {{ customerDetails.contact_no2 }}</span>
+
               </div>
-              <div>
+              <!-- <div>
                 <strong>Contact No 2:</strong> {{ customerDetails.contact_no2 }}
-              </div>
+              </div> -->
               <div><strong>Email:</strong> {{ customerDetails.email }}</div>
               <div>
                 <strong>Customer Since:</strong>
@@ -159,8 +160,8 @@
           <!-- Table Header -->
           <div class="row row-col-header q-px-md">
             <div class="col col-2 bordered">Name</div>
-            <div class="col col-2 bordered">Contact No 1</div>
-            <div class="col col-2 bordered">Contact No 2</div>
+            <div class="col col-2 bordered">Contact No</div>
+            <!-- <div class="col col-2 bordered">Contact No 2</div> -->
             <div class="col col-2 bordered">Email</div>
             <div class="col col-2 bordered">Remarks</div>
             <div class="col col-2 bordered">Actions</div>
@@ -173,8 +174,8 @@
             class="row row-col-row q-mx-md"
           >
             <div class="col col-2 bordered">{{ person.name }}</div>
-            <div class="col col-2 bordered">{{ person.contact_no1 }}</div>
-            <div class="col col-2 bordered">{{ person.contact_no2 }}</div>
+            <div class="col col-2 bordered">{{ person.contact_no1 }}<span v-if="person.contact_no2.length != 0"> / {{ person.contact_no2 }}</span></div>
+            <!-- <div class="col col-2 bordered">{{ person.contact_no2 }}</div> -->
             <div class="col col-2 bordered">{{ person.email }}</div>
             <div class="col col-2 bordered">{{ person.remarks }}</div>
             <div class="col col-2 bordered actions">

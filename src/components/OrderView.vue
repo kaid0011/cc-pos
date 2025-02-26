@@ -77,9 +77,6 @@
           Order Date:
           <span class="text-summary">{{ formattedOrderDate }}</span>
         </div>
-        <div class="text-slip-row">
-          Ready By: <span class="text-summary">{{ formattedReadyBy }}</span>
-        </div>
       </div>
     </div>
     <div class="row summary-header text-p">
@@ -247,27 +244,6 @@ const formattedOrderDate = computed(() =>
     day: "numeric",
   })
 );
-
-const formattedReadyBy = computed(() => {
-  if (!transactionStore.readyBy) return "N/A"; // Handle missing or undefined `readyBy`
-
-  const date = new Date(transactionStore.readyBy);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-});
-
-// Table columns
-const columns = [
-  { name: "name", align: "left", label: "Item", field: "name" },
-  { name: "process", align: "left", label: "Process", field: "process" },
-  { name: "price", align: "right", label: "Price", field: "price" },
-  { name: "pieces", align: "right", label: "Pcs", field: "pieces" },
-  { name: "quantity", align: "right", label: "Quantity", field: "quantity" },
-  { name: "subtotal", align: "right", label: "Subtotal", field: "subtotal" },
-];
 
 // Fetch data on mount
 onMounted(async () => {

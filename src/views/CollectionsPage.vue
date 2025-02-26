@@ -75,13 +75,13 @@
     <div class="row-col-table">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
-        <div class="col q-py-sm text-weight-bolder">Collection Date</div>
         <div class="col q-py-sm text-weight-bolder">Customer Name</div>
+        <div class="col q-py-sm text-weight-bolder">Collection Date</div>
         <div class="col q-py-sm text-weight-bolder">Address</div>
-        <div class="col q-py-sm text-weight-bolder">Status</div>
-        <div class="col q-py-sm text-weight-bolder">Remarks</div>
         <div class="col q-py-sm text-weight-bolder">Driver Name</div>
-        <div class="col q-py-sm text-weight-bolder text-center">Actions</div>
+        <!-- <div class="col q-py-sm text-weight-bolder">Remarks</div> -->
+        <div class="col q-py-sm text-weight-bolder">Status</div>
+        <!-- <div class="col q-py-sm text-weight-bolder text-center">Actions</div> -->
       </div>
 
       <!-- Table Rows -->
@@ -97,13 +97,24 @@
         :key="collection.id"
         class="row row-col-row q-mx-md"
       >
-        <div class="col">{{ formatDate(collection.collection_date) }}</div>
-        <div class="col">{{ collection.customer?.name || "Unknown" }}</div>
+      <div class="col">{{ collection.customer?.name || "[NOT SELECTED]" }}</div>
+        <div class="col"><div>
+          {{ formatDate(collection.collection_date) }}
+        </div>
+          <q-btn
+          label="View Collection"
+          color="primary"
+          dense
+          unelevated
+          class="q-mt-sm"
+          @click="viewCollection(collection)"
+        />
+        </div>
         <div class="col">{{ collection.address }}</div>
-        <div class="col">{{ collection.status }}</div>
-        <div class="col">{{ collection.remarks }}</div>
-        <div class="col">{{ collection.driver?.name || "Unassigned" }}</div> 
-        <div class="col text-center">
+        <div class="col">{{ collection.driver?.name || "[UNASSIGNED]" }}</div> 
+        <!-- <div class="col">{{ collection.remarks }}</div> -->
+        <div class="col text-uppercase">{{ collection.status }}</div>
+        <!-- <div class="col text-center">
           <q-btn
             label="View"
             color="primary"
@@ -111,7 +122,7 @@
             unelevated
             @click="viewCollection(collection)"
           />
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -208,7 +219,7 @@ const filteredCollections = computed(() => {
 // View Collection Action
 const viewCollection = (collection) => {
   const url = router.resolve({
-    name: "CollectionsDeliveriesView",
+    name: "LogisticsView",
     params: { id: collection.id },
   }).href;
   window.open(url, "_blank");

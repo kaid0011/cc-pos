@@ -1,7 +1,7 @@
 <template>
-  <div class="full-container transactions-history">
+  <div class="full-container orders-history">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
-Order Management
+      Order Management
     </div>
     <!-- Search Bar -->
     <div class="row justify-end q-mb-sm q-gutter-x-sm">
@@ -23,6 +23,11 @@ Order Management
                   <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />
                 </q-popup-proxy>
               </q-icon>
+              <q-icon
+                name="close"
+                class="cursor-pointer q-ml-sm"
+                @click="clearDate('collectionStartDate')"
+              />
             </template>
           </q-input>
         </div>
@@ -43,6 +48,11 @@ Order Management
                   <q-date v-model="collectionEndDate" mask="YYYY-MM-DD" />
                 </q-popup-proxy>
               </q-icon>
+              <q-icon
+                name="close"
+                class="cursor-pointer q-ml-sm"
+                @click="clearDate('collectionEndDate')"
+              />
             </template>
           </q-input>
         </div>
@@ -64,6 +74,11 @@ Order Management
                   <q-date v-model="deliveryStartDate" mask="YYYY-MM-DD" />
                 </q-popup-proxy>
               </q-icon>
+              <q-icon
+                name="close"
+                class="cursor-pointer q-ml-sm"
+                @click="clearDate('deliveryStartDate')"
+              />
             </template>
           </q-input>
         </div>
@@ -84,6 +99,11 @@ Order Management
                   <q-date v-model="deliveryEndDate" mask="YYYY-MM-DD" />
                 </q-popup-proxy>
               </q-icon>
+              <q-icon
+                name="close"
+                class="cursor-pointer q-ml-sm"
+                @click="clearDate('deliveryEndDate')"
+              />
             </template>
           </q-input>
         </div>
@@ -108,13 +128,13 @@ Order Management
     <div class="row-col-table">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
-        <div class="col q-py-sm text-weight-bolder">Order No</div>
-        <div class="col q-py-sm text-weight-bolder">Collection Date</div>
-        <div class="col q-py-sm text-weight-bolder">Delivery Date</div>
-        <div class="col q-py-sm text-weight-bolder">Goods Status</div>
-        <div class="col q-py-sm text-weight-bolder">Logistic Status</div>
-        <div class="col q-py-sm text-weight-bolder">Payment Status</div>
-        <div class="col q-py-sm text-weight-bolder">Customer Name</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Order No</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Collection Date</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Delivery Date</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Goods Status</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Logistic Status</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Payment Status</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Customer Name</div>
         <!-- <div class="col">Actions</div> -->
       </div>
 
@@ -123,7 +143,7 @@ Order Management
         v-if="filteredOrders.length === 0"
         class="text-center text-grey q-pa-lg text-h6"
       >
-        No existing transactions.
+        No existing orders.
       </div>
       <div
         v-else
@@ -131,19 +151,19 @@ Order Management
         :key="order.id"
         class="row row-col-row q-mx-md"
       >
-        <div class="col">
+        <div class="col bordered">
           <a @click="openOrderDialog(order)">{{ order.order_no }}</a>
         </div>
-        <div class="col">{{ formatDate(order.collection_date) }}</div>
-        <div class="col">{{ formatDate(order.delivery_date) }}</div>
-        <div class="col">{{ order.goods_status }}</div>
-        <div class="col">{{ order.logistics_status }}</div>
-        <div class="col">{{ order.payment_status }}</div>
-          <div class="col">
-            <a @click.prevent="openCustomerTab(order.customer_id)">{{
-              order.customer_name
-            }}</a>
-          </div>
+        <div class="col bordered">{{ formatDate(order.collection_date) }}</div>
+        <div class="col bordered">{{ formatDate(order.delivery_date) }}</div>
+        <div class="col bordered text-uppercase">{{ order.goods_status }}</div>
+        <div class="col bordered text-uppercase">{{ order.logistics_status }}</div>
+        <div class="col bordered text-uppercase">{{ order.payment_status }}</div>
+        <div class="col bordered">
+          <a @click.prevent="openCustomerTab(order.customer_id)">{{
+            order.customer_name
+          }}</a>
+        </div>
         <!-- <div class="col">
           <q-btn
             flat
@@ -324,5 +344,24 @@ const openOrderDialog = async (order) => {
   } catch (error) {
     console.error("Error creating transaction:", error);
   }
+};
+
+// Function to Clear Date Input
+const clearDate = (dateType) => {
+  switch (dateType) {
+    case "collectionStartDate":
+      collectionStartDate.value = null;
+      break;
+    case "collectionEndDate":
+      collectionEndDate.value = null;
+      break;
+    case "deliveryStartDate":
+      deliveryStartDate.value = null;
+      break;
+    case "deliveryEndDate":
+      deliveryEndDate.value = null;
+      break;
+  }
+  filterCollections(); // Trigger filtering after clearing the date
 };
 </script>

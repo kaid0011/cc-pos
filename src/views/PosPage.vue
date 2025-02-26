@@ -54,23 +54,12 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { useTransactionStore } from "@/stores/transactionStore";
 import CustomerTab from "@/components/CustomerTab.vue";
 import TransactionTab from "@/components/TransactionTab.vue";
 import InstructionsTab from "@/components/InstructionsTab.vue";
 import ReviewTab from "@/components/ReviewTab.vue";
 
-const transactionStore = useTransactionStore();
 const step = ref(1);
 
-const customerDetails = computed(() => transactionStore.selectedCustomer);
-const orderNo = computed(() => transactionStore.orderNo);
-const readyBy = computed(() => transactionStore.readyBy);
-
-// Method to reset all transactions, can be called when finishing
-const resetTransactions = () => {
-  transactionStore.resetItems();
-  step.value = 1; // Reset to the first step
-};
 
 </script>

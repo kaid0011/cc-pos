@@ -297,16 +297,6 @@ const formattedOrderDate = computed(() =>
     : "N/A"
 );
 
-const formattedReadyBy = computed(() =>
-  order.value?.ready_by
-    ? new Date(order.value.ready_by).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "N/A"
-);
-
 // Method to download orderContainer as a PDF
 async function downloadOrderPDF() {
   const orderContainer = document.querySelector(".order-container"); // Ensure the selector matches your container

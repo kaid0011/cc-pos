@@ -1980,8 +1980,6 @@ function getFiveWorkingDaysFromToday() {
 }
 
 const orderNo = computed(() => transactionStore.orderNo);
-// Initialize readyBy to the value in the store or 5 working days if not set
-const readyBy = ref(transactionStore.readyBy || getFiveWorkingDaysFromToday());
 
 onMounted(async () => {
   try {
@@ -1989,18 +1987,11 @@ onMounted(async () => {
     await transactionStore.generateOrderNo();
     orderNo.value = transactionStore.orderNo; // Set directly for testing
 
-    // Set readyBy only if it hasn't been initialized
-    if (!transactionStore.readyBy) {
-      transactionStore.setReadyBy(readyBy.value);
-    }
   } catch (error) {
     console.error("Error initializing transaction:", error);
   }
 });
 
-watch(readyBy, (newDate) => {
-  transactionStore.setReadyBy(newDate);
-});
 
 // Watch for unit changes to reset incompatible inputs
 watch(unitSize, (newUnit) => {

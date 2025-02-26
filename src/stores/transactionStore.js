@@ -799,7 +799,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedDeliveryContact?.id || null,
               address: this.selectedDeliveryAddress?.label || null,
               delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime.value,
+              delivery_time: this.deliveryTime?.value || '',
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
             },
@@ -817,10 +817,9 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedCollectionContact?.id || null,
               address: this.selectedCollectionAddress?.label || null,
               collection_date: this.collectionDate,
-              collection_time: this.collectionTime.value,
+              collection_time: this.collectionTime?.value || '',
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
-              delivery_id: deliveryData.id,
             },
           ])
           .select("id, collection_date, collection_time, remarks")
@@ -829,12 +828,12 @@ export const useTransactionStore = defineStore("transactionStore", {
         if (collectionError) throw collectionError;
 
         // After inserting into the collections table, update the related deliveries row
-        const { error: updateDeliveryError } = await supabase
-          .from("deliveries")
-          .update({ collection_id: collectionData.id })
-          .eq("id", deliveryData.id);
+        // const { error: updateDeliveryError } = await supabase
+        //   .from("deliveries")
+        //   .update({ collection_id: collectionData.id })
+        //   .eq("id", deliveryData.id);
 
-        if (updateDeliveryError) throw updateDeliveryError;
+        // if (updateDeliveryError) throw updateDeliveryError;
 
         // Insert Order
         const currentTimestamp = new Date().toISOString();
@@ -1980,7 +1979,6 @@ export const useTransactionStore = defineStore("transactionStore", {
             address,
             date_delivered,
             delivery_date,
-            collection_id,
             contact_persons (
               id,
               name,
@@ -2017,7 +2015,6 @@ export const useTransactionStore = defineStore("transactionStore", {
           address: delivery.address,
           date_delivered: delivery.date_delivered,
           delivery_date: delivery.delivery_date,
-          collection_id: delivery.collection_id,
           contact_person: delivery.contact_persons
             ? {
                 id: delivery.contact_persons.id,
@@ -2050,6 +2047,150 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
+    // Map through all collections and return an array
+async fetchCollectionsDeliveries() {
+  try {
+    const { data: collections, error } = await supabase
+      .from("collections")
+      .select(
+        `
+        *,
+        drivers (
+          id,
+          name,
+          contact_no1
+        ),
+        contact_persons (
+          id,
+          name,
+          contact_no1,
+          contact_no2,
+          email,
+          remarks,
+          customer_id,
+          customers (
+            id,
+            name,
+            contact_no1,
+            contact_no2,
+            email,
+            remarks,
+            payment_type
+          )
+        ),
+        deliveries (
+          id,
+          address,
+          area,
+          status,
+          remarks,
+          delivery_date,
+          delivery_time,
+          driver_id,
+          contact_person_id,
+          drivers (
+            id,
+            name,
+            contact_no1
+          ),
+          contact_persons (
+            id,
+            name,
+            contact_no1,
+            contact_no2,
+            email,
+            remarks
+          )
+        )
+      `
+      );
+
+    if (error) {
+      throw new Error(
+        `Error fetching collection details: ${error.message}`
+      );
+    }
+
+    if (!collections) {
+      console.warn("No collections found");
+      return [];
+    }
+
+    // Transform the array of collections
+    return collections.map((collection) => ({
+      id: collection.id,
+      collection_date: collection.collection_date,
+      collection_time: collection.collection_time,
+      address: collection.address,
+      area: collection.area,
+      status: collection.status,
+      remarks: collection.remarks,
+      type: "collection", // Add type to identify in frontend
+      driver: collection.drivers
+        ? {
+            id: collection.drivers.id,
+            name: collection.drivers.name,
+            contact_no1: collection.drivers.contact_no1,
+          }
+        : null,
+      contact_person: collection.contact_persons
+        ? {
+            id: collection.contact_persons.id,
+            name: collection.contact_persons.name,
+            contact_no1: collection.contact_persons.contact_no1,
+            contact_no2: collection.contact_persons.contact_no2,
+            email: collection.contact_persons.email,
+            remarks: collection.contact_persons.remarks,
+          }
+        : null,
+      customer: collection.contact_persons?.customers
+        ? {
+            id: collection.contact_persons.customers.id,
+            name: collection.contact_persons.customers.name,
+            contact_no1: collection.contact_persons.customers.contact_no1,
+            contact_no2: collection.contact_persons.customers.contact_no2,
+            email: collection.contact_persons.customers.email,
+            remarks: collection.contact_persons.customers.remarks,
+            payment_type: collection.contact_persons.customers.payment_type,
+          }
+        : null,
+      delivery: collection.deliveries
+        ? {
+            id: collection.deliveries.id,
+            address: collection.deliveries.address,
+            area: collection.deliveries.area,
+            status: collection.deliveries.status,
+            remarks: collection.deliveries.remarks,
+            delivery_date: collection.deliveries.delivery_date,
+            delivery_time: collection.deliveries.delivery_time,
+            driver: collection.deliveries.drivers
+              ? {
+                  id: collection.deliveries.drivers.id,
+                  name: collection.deliveries.drivers.name,
+                  contact_no1: collection.deliveries.drivers.contact_no1,
+                }
+              : null,
+            contact_person: collection.deliveries.contact_persons
+              ? {
+                  id: collection.deliveries.contact_persons.id,
+                  name: collection.deliveries.contact_persons.name,
+                  contact_no1:
+                    collection.deliveries.contact_persons.contact_no1,
+                  contact_no2:
+                    collection.deliveries.contact_persons.contact_no2,
+                  email: collection.deliveries.contact_persons.email,
+                  remarks: collection.deliveries.contact_persons.remarks,
+                }
+              : null,
+          }
+        : null,
+    }));
+  } catch (error) {
+    console.error("Unexpected error fetching collections:", error);
+    return [];
+  }
+},
+
     async fetchCollectionsDeliveriesById(collectionId) {
       try {
         // Query collections with related tables, including drivers and contact_persons for deliveries
@@ -2213,6 +2354,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time: this.deliveryTime?.value || null,
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
+              status: '-'
             },
           ])
           .select("id, delivery_date, delivery_time, remarks")
@@ -2232,6 +2374,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
               delivery_id: deliveryData.id,
+              status: 'collection arranged'
             },
           ])
           .select("id, collection_date, collection_time, remarks")
@@ -2240,12 +2383,12 @@ export const useTransactionStore = defineStore("transactionStore", {
         if (collectionError) throw collectionError;
 
          // After inserting into the collections table, update the related deliveries row
-         const { error: updateDeliveryError } = await supabase
-         .from("deliveries")
-         .update({ collection_id: collectionData.id })
-         .eq("id", deliveryData.id);
+      //    const { error: updateDeliveryError } = await supabase
+      //    .from("deliveries")
+      //    .update({ collection_id: collectionData.id })
+      //    .eq("id", deliveryData.id);
 
-       if (updateDeliveryError) throw updateDeliveryError;
+      //  if (updateDeliveryError) throw updateDeliveryError;
 
       } catch (error) {
         console.error("Error in create collection:", error);

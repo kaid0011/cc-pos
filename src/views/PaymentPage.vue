@@ -53,10 +53,6 @@
               Order Date:
               <span class="text-summary">{{ formattedOrderDate }}</span>
             </div>
-            <div class="text-slip-row">
-              Ready By:
-              <span class="text-summary">{{ formattedReadyBy }}</span>
-            </div>
           </div>
         </div>
 
@@ -316,12 +312,6 @@ const totalSubtotal = computed(() => {
 const formattedOrderDate = computed(() =>
   order.value?.order_date_time
     ? new Date(order.value.order_date_time).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-    : "N/A"
-);
-
-const formattedReadyBy = computed(() =>
-  order.value?.ready_by
-    ? new Date(order.value.ready_by).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "N/A"
 );
 

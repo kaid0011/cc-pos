@@ -17,7 +17,7 @@
             clearable
             readonly
           >
-            <template v-slot:append>
+            <template v-slot:append> 
               <q-icon name="event" class="cursor-pointer">
                 <q-popup-proxy>
                   <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />

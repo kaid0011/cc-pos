@@ -390,7 +390,7 @@
           <div class="col-4 text-right q-mr-sm">
             <div>Goods Status:</div>
           </div>
-          <div class="col">
+          <div class="col text-uppercase">
             <q-input
               v-model="order.goods_status"
               filled
@@ -403,7 +403,7 @@
           <div class="col-4 text-right q-mr-sm">
             <div>Logistics Status:</div>
           </div>
-          <div class="col">
+          <div class="col text-uppercase">
             <q-input
               v-model="order.logistics_status"
               filled
@@ -416,7 +416,7 @@
           <div class="col-4 text-right q-mr-sm">
             <div>Payment Status:</div>
           </div>
-          <div class="col">
+          <div class="col text-uppercase">
             <q-input
               v-model="order.payment_status"
               filled

@@ -445,7 +445,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             postal_code: address.postal_code,
             unit_no: address.unit_no,
             additional_info: address.additional_info,
-            remarks: address.remarks
+            remarks: address.remarks,
           })
           .eq("id", address.id);
 
@@ -799,9 +799,10 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: this.selectedDeliveryContact?.id || null,
               address: this.selectedDeliveryAddress?.label || null,
               delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime?.value || '',
+              delivery_time: this.deliveryTime?.value || "",
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
+              status: '-'
             },
           ])
           .select("id, delivery_date, delivery_time, remarks")
@@ -814,12 +815,14 @@ export const useTransactionStore = defineStore("transactionStore", {
           .from("collections")
           .insert([
             {
+              customer_id: this.selectedCustomer?.id || null,
               contact_person_id: this.selectedCollectionContact?.id || null,
               address: this.selectedCollectionAddress?.label || null,
               collection_date: this.collectionDate,
-              collection_time: this.collectionTime?.value || '',
+              collection_time: this.collectionTime?.value || "",
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
+              status: 'collection arranged'
             },
           ])
           .select("id, collection_date, collection_time, remarks")
@@ -861,6 +864,14 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         const orderId = orderData.id;
         const orderNo = orderData.order_no;
+
+                // After inserting into the orders table, update the order no in the collections table
+        const { error: updateCollectionsError } = await supabase
+          .from("collections")
+          .update({ order_no: orderData.order_no })
+          .eq("id", orderData.collection_id);
+
+        if (updateCollectionsError) throw updateCollectionsError;
 
         // Insert Transaction Items
         for (const item of this.transactionItems) {
@@ -1897,11 +1908,9 @@ export const useTransactionStore = defineStore("transactionStore", {
             date_collected,
             collection_date,
             delivery_id,
-            contact_persons (
-              id,
-              name,
-              customer_id,
-              customers (
+            customer_id,
+            order_no,
+            customers (
                 id,
                 name,
                 contact_no1,
@@ -1909,7 +1918,11 @@ export const useTransactionStore = defineStore("transactionStore", {
                 email,
                 type,
                 sub_type
-              )
+              ),
+            contact_persons (
+              id,
+              name,
+              
             ),
             drivers (
               id,
@@ -1934,21 +1947,23 @@ export const useTransactionStore = defineStore("transactionStore", {
           date_collected: collection.date_collected,
           collection_date: collection.collection_date,
           delivery_id: collection.delivery_id,
+          customer_id: collection.customer_id,
+          order_no: collection.order_no,
+          customer: collection.customers
+            ? {
+                id: collection.customers.id,
+                name: collection.customers.name,
+                contact_no1: collection.customers.contact_no1,
+                contact_no2: collection.customers.contact_no2,
+                email: collection.customers.email,
+                type: collection.customers.type,
+                sub_type: collection.customers.sub_type,
+              }
+            : null,
           contact_person: collection.contact_persons
             ? {
                 id: collection.contact_persons.id,
                 name: collection.contact_persons.name,
-              }
-            : null,
-          customer: collection.contact_persons?.customers
-            ? {
-                id: collection.contact_persons.customers.id,
-                name: collection.contact_persons.customers.name,
-                contact_no1: collection.contact_persons.customers.contact_no1,
-                contact_no2: collection.contact_persons.customers.contact_no2,
-                email: collection.contact_persons.customers.email,
-                type: collection.contact_persons.customers.type,
-                sub_type: collection.contact_persons.customers.sub_type,
               }
             : null,
           driver: collection.drivers
@@ -2048,13 +2063,34 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
     // Map through all collections and return an array
-async fetchCollectionsDeliveries() {
-  try {
-    const { data: collections, error } = await supabase
-      .from("collections")
-      .select(
-        `
-        *,
+    async fetchCollectionsDeliveries() {
+      try {
+        const { data: collections, error } = await supabase
+          .from("collections")
+          .select(
+            `
+            id,
+            created_at,
+            driver_id,
+            status,
+            area,
+            remarks,
+            contact_person_id,
+            address,
+            date_collected,
+            collection_date,
+            delivery_id,
+            customer_id,
+            order_no,
+            customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                type,
+                sub_type
+              ),
         drivers (
           id,
           name,
@@ -2066,17 +2102,7 @@ async fetchCollectionsDeliveries() {
           contact_no1,
           contact_no2,
           email,
-          remarks,
-          customer_id,
-          customers (
-            id,
-            name,
-            contact_no1,
-            contact_no2,
-            email,
-            remarks,
-            payment_type
-          )
+          remarks
         ),
         deliveries (
           id,
@@ -2103,93 +2129,97 @@ async fetchCollectionsDeliveries() {
           )
         )
       `
-      );
+          );
 
-    if (error) {
-      throw new Error(
-        `Error fetching collection details: ${error.message}`
-      );
-    }
+        if (error) {
+          throw new Error(
+            `Error fetching collection details: ${error.message}`
+          );
+        }
 
-    if (!collections) {
-      console.warn("No collections found");
-      return [];
-    }
+        if (!collections) {
+          console.warn("No collections found");
+          return [];
+        }
 
-    // Transform the array of collections
-    return collections.map((collection) => ({
-      id: collection.id,
-      collection_date: collection.collection_date,
-      collection_time: collection.collection_time,
-      address: collection.address,
-      area: collection.area,
-      status: collection.status,
-      remarks: collection.remarks,
-      type: "collection", // Add type to identify in frontend
-      driver: collection.drivers
-        ? {
-            id: collection.drivers.id,
-            name: collection.drivers.name,
-            contact_no1: collection.drivers.contact_no1,
-          }
-        : null,
-      contact_person: collection.contact_persons
-        ? {
-            id: collection.contact_persons.id,
-            name: collection.contact_persons.name,
-            contact_no1: collection.contact_persons.contact_no1,
-            contact_no2: collection.contact_persons.contact_no2,
-            email: collection.contact_persons.email,
-            remarks: collection.contact_persons.remarks,
-          }
-        : null,
-      customer: collection.contact_persons?.customers
-        ? {
-            id: collection.contact_persons.customers.id,
-            name: collection.contact_persons.customers.name,
-            contact_no1: collection.contact_persons.customers.contact_no1,
-            contact_no2: collection.contact_persons.customers.contact_no2,
-            email: collection.contact_persons.customers.email,
-            remarks: collection.contact_persons.customers.remarks,
-            payment_type: collection.contact_persons.customers.payment_type,
-          }
-        : null,
-      delivery: collection.deliveries
-        ? {
-            id: collection.deliveries.id,
-            address: collection.deliveries.address,
-            area: collection.deliveries.area,
-            status: collection.deliveries.status,
-            remarks: collection.deliveries.remarks,
-            delivery_date: collection.deliveries.delivery_date,
-            delivery_time: collection.deliveries.delivery_time,
-            driver: collection.deliveries.drivers
-              ? {
-                  id: collection.deliveries.drivers.id,
-                  name: collection.deliveries.drivers.name,
-                  contact_no1: collection.deliveries.drivers.contact_no1,
-                }
-              : null,
-            contact_person: collection.deliveries.contact_persons
-              ? {
-                  id: collection.deliveries.contact_persons.id,
-                  name: collection.deliveries.contact_persons.name,
-                  contact_no1:
-                    collection.deliveries.contact_persons.contact_no1,
-                  contact_no2:
-                    collection.deliveries.contact_persons.contact_no2,
-                  email: collection.deliveries.contact_persons.email,
-                  remarks: collection.deliveries.contact_persons.remarks,
-                }
-              : null,
-          }
-        : null,
-    }));
-  } catch (error) {
-    console.error("Unexpected error fetching collections:", error);
-    return [];
-  }
-},
+        // Transform the array of collections
+        return collections.map((collection) => ({
+          id: collection.id,
+          created_at: collection.created_at,
+          driver_id: collection.driver_id,
+          status: collection.status,
+          remarks: collection.remarks,
+          contact_person_id: collection.contact_person_id,
+          address: collection.address,
+          date_collected: collection.date_collected,
+          collection_date: collection.collection_date,
+          delivery_id: collection.delivery_id,
+          customer_id: collection.customer_id,
+          order_no: collection.order_no,
+          customer: collection.customers
+            ? {
+                id: collection.customers.id,
+                name: collection.customers.name,
+                contact_no1: collection.customers.contact_no1,
+                contact_no2: collection.customers.contact_no2,
+                email: collection.customers.email,
+                type: collection.customers.type,
+                sub_type: collection.customers.sub_type,
+              }
+            : null,
+          driver: collection.drivers
+            ? {
+                id: collection.drivers.id,
+                name: collection.drivers.name,
+                contact_no1: collection.drivers.contact_no1,
+              }
+            : null,
+          contact_person: collection.contact_persons
+            ? {
+                id: collection.contact_persons.id,
+                name: collection.contact_persons.name,
+                contact_no1: collection.contact_persons.contact_no1,
+                contact_no2: collection.contact_persons.contact_no2,
+                email: collection.contact_persons.email,
+                remarks: collection.contact_persons.remarks,
+              }
+            : null,
+          delivery: collection.deliveries
+            ? {
+                id: collection.deliveries.id,
+                address: collection.deliveries.address,
+                area: collection.deliveries.area,
+                status: collection.deliveries.status,
+                remarks: collection.deliveries.remarks,
+                delivery_date: collection.deliveries.delivery_date,
+                delivery_time: collection.deliveries.delivery_time,
+                driver: collection.deliveries.drivers
+                  ? {
+                      id: collection.deliveries.drivers.id,
+                      name: collection.deliveries.drivers.name,
+                      contact_no1: collection.deliveries.drivers.contact_no1,
+                    }
+                  : null,
+                contact_person: collection.deliveries.contact_persons
+                  ? {
+                      id: collection.deliveries.contact_persons.id,
+                      name: collection.deliveries.contact_persons.name,
+                      contact_no1:
+                        collection.deliveries.contact_persons.contact_no1,
+                      contact_no2:
+                        collection.deliveries.contact_persons.contact_no2,
+                      email: collection.deliveries.contact_persons.email,
+                      remarks: collection.deliveries.contact_persons.remarks,
+                    }
+                  : null,
+              }
+            : null,
+        }));
+      } catch (error) {
+        console.error("Unexpected error fetching collections:", error);
+        return [];
+      }
+    },
 
     async fetchCollectionsDeliveriesById(collectionId) {
       try {
@@ -2354,7 +2384,7 @@ async fetchCollectionsDeliveries() {
               delivery_time: this.deliveryTime?.value || null,
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
-              status: '-'
+              status: "-",
             },
           ])
           .select("id, delivery_date, delivery_time, remarks")
@@ -2367,6 +2397,7 @@ async fetchCollectionsDeliveries() {
           .from("collections")
           .insert([
             {
+              customer_id: this.selectedCustomer?.id || null,
               contact_person_id: this.selectedCollectionContact?.id || null,
               address: this.selectedCollectionAddress?.label || null,
               collection_date: this.collectionDate,
@@ -2374,7 +2405,7 @@ async fetchCollectionsDeliveries() {
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
               delivery_id: deliveryData.id,
-              status: 'collection arranged'
+              status: "collection arranged",
             },
           ])
           .select("id, collection_date, collection_time, remarks")
@@ -2382,14 +2413,13 @@ async fetchCollectionsDeliveries() {
 
         if (collectionError) throw collectionError;
 
-         // After inserting into the collections table, update the related deliveries row
-      //    const { error: updateDeliveryError } = await supabase
-      //    .from("deliveries")
-      //    .update({ collection_id: collectionData.id })
-      //    .eq("id", deliveryData.id);
+        // After inserting into the collections table, update the related deliveries row
+        //    const { error: updateDeliveryError } = await supabase
+        //    .from("deliveries")
+        //    .update({ collection_id: collectionData.id })
+        //    .eq("id", deliveryData.id);
 
-      //  if (updateDeliveryError) throw updateDeliveryError;
-
+        //  if (updateDeliveryError) throw updateDeliveryError;
       } catch (error) {
         console.error("Error in create collection:", error);
       }

@@ -259,6 +259,16 @@ mark {
   color: black;
 }
 
+mark-pink {
+  background-color: #ffa9d5;
+  color: black;
+}
+
+mark-blue {
+  background-color: #a9caff;
+  color: black;
+}
+
 /* instruction card */
 .card1, .card2 {
   background-color: #fff2e9;

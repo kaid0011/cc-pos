@@ -103,8 +103,8 @@ const selectedSubType = ref(null);
 
 // Ensure customer.type & sub_type match selected dropdowns
 watch([selectedType, selectedSubType], ([newType, newSubType]) => {
-  customer.value.type = newType ? newType.value : ""; // Update customer type
-  customer.value.sub_type = newSubType ? newSubType.value : ""; // Update customer sub-type
+  customer.value.type = newType && newType.value ? newType.value : ""; // Update customer type
+  customer.value.sub_type = newSubType && newSubType.value ? newSubType.value : ""; // Update customer sub-type
 });
 
 // Sync `isOpen` with `modelValue` from parent
@@ -198,9 +198,10 @@ const fetchCustomerTypes = async () => {
 };
 
 watch(selectedType, (newType) => {
-  console.log("DEBUG: Selected Type (Fixed) ->", newType.value);
+  console.log("DEBUG: Selected Type (Fixed) ->", newType);
 
-  if (newType.value) {
+  // Check if newType is not null before accessing .value
+  if (newType && newType.value) {
     filteredSubTypes.value = subTypeMapping.value[newType.value] || [];
     console.log(
       `DEBUG: Filtered Sub-Types for '${newType.value}' ->`,

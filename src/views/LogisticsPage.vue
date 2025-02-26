@@ -12,6 +12,13 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
 
 <template>
   <div class="full-container logistics-history">
+    <q-btn
+      dense
+      label="Create Collection"
+      color="primary"
+      class="main-button q-ma-xs q-px-sm float-right"
+      @click="openCollectionDialog()"
+    />
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
       Collections and Deliveries
     </div>
@@ -140,16 +147,15 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
     <div class="row-col-table">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
-        <div class="col bordered q-py-sm text-weight-bolder">Customer Name</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Customer</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Dates</div>
         <div class="col bordered q-py-sm text-weight-bolder">
-          Collection Date
+          Contact Person
         </div>
-        <div class="col bordered q-py-sm text-weight-bolder">Delivery Date</div>
         <div class="col bordered q-py-sm text-weight-bolder">Address</div>
         <div class="col bordered q-py-sm text-weight-bolder">Driver Name</div>
-        <!-- <div class="col q-py-sm text-weight-bolder">Remarks</div> -->
+        <div class="col q-py-sm text-weight-bolder">Remarks</div>
         <div class="col bordered q-py-sm text-weight-bolder">Status</div>
-        <!-- <div class="col q-py-sm text-weight-bolder text-center">Actions</div> -->
       </div>
 
       <!-- Table Rows -->
@@ -166,35 +172,88 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
         class="row row-col-row q-mx-md"
       >
         <div class="col bordered">
-          {{ collection.customer?.name || "[NOT SELECTED]" }}
-        </div>
-        <div class="col bordered">
-          <div>
-            {{ formatDate(collection.collection_date) }}
+          <div class="text-weight-bold">
+            {{ collection.customer?.name || "[NOT SELECTED]" }}
           </div>
           <div>
-            <span class="text-weight-bold q-mr-sm">Time:</span
-            >{{ collection?.collection_time || "-" }}
+            {{ collection.customer?.contact_no1 || "-" }}<span v-if="collection.customer?.contact_no2"> / {{ collection.customer?.contact_no2 || "-" }}</span>
           </div>
         </div>
         <div class="col bordered">
           <div>
-            {{ formatDate(collection.delivery.delivery_date) }}
+            <div class="text-weight-bolder text-uppercase">
+              <mark-pink>Collection:</mark-pink>
+            </div>
+            <div>
+              <div>
+                {{ formatDate(collection.collection_date) || "[NOT SET]" }}
+              </div>
+              <div>
+                <span class="text-weight-bold q-mr-sm">Time:</span
+                >{{ collection?.collection_time || "-" }}
+              </div>
+            </div>
           </div>
-          <div>
-            <span class="text-weight-bold q-mr-sm">Time:</span
-            >{{ collection.delivery?.delivery_time || "-" }}
+          <div class="q-mt-sm">
+            <div class="text-weight-bolder text-uppercase">
+              <mark-blue>Delivery:</mark-blue>
+            </div>
+            <div>
+              <div>
+                {{
+                  formatDate(collection.delivery?.delivery_date) || "[NOT SET]"
+                }}
+              </div>
+              <div>
+                <span class="text-weight-bold q-mr-sm">Time:</span
+                >{{ collection.delivery?.delivery_time || "-" }}
+              </div>
+            </div>
           </div>
         </div>
         <div class="col bordered">
           <div>
-            <div class="text-weight-bolder text-uppercase">Collection:</div>
+            <div class="text-weight-bolder text-uppercase">
+              <mark-pink>Collection:</mark-pink>
+            </div>
+            <div>
+              {{ collection?.contact_person?.name || "[NOT SET]" }}
+            </div>
+            <div v-if="collection.contact_person">
+              {{ collection.contact_person?.contact_no1
+              }}<span v-if="collection.contact_person?.contact_no2">
+                / {{ collection.contact_person?.contact_no2 }}</span
+              >
+            </div>
+          </div>
+          <div class="q-mt-sm">
+            <div class="text-weight-bolder text-uppercase">
+              <mark-blue>Delivery:</mark-blue>
+            </div>
+            <div>
+              {{ collection?.delivery?.contact_person?.name || "[NOT SET]" }}
+            </div>
+            <div v-if="collection.delivery?.contact_person">
+              {{ collection.delivery?.contact_person?.contact_no1
+              }}<span v-if="collection.delivery?.contact_person?.contact_no2">
+                / {{ collection.delivery?.contact_person?.contact_no2 }}</span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="col bordered">
+          <div>
+            <div class="text-weight-bolder text-uppercase">
+              <mark-pink>Collection:</mark-pink>
+            </div>
             <div>
               {{ collection?.address || "-" }}
             </div>
           </div>
           <div class="q-mt-sm">
-            <div class="text-weight-bolder text-uppercase">Delivery:</div>
+            <div class="text-weight-bolder text-uppercase">
+              <mark-blue>Delivery:</mark-blue>
+            </div>
             <div>
               {{ collection.delivery?.address || "-" }}
             </div>
@@ -202,53 +261,118 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
         </div>
         <div class="col bordered">
           <div>
-            <div class="text-weight-bolder text-uppercase">Collection:</div>
+            <div class="text-weight-bolder text-uppercase">
+              <mark-pink>Collection:</mark-pink>
+            </div>
             <div>
               {{ collection.driver?.name || "[UNASSIGNED]" }}
             </div>
           </div>
           <div class="q-mt-sm">
-            <div class="text-weight-bolder text-uppercase">Delivery:</div>
+            <div class="text-weight-bolder text-uppercase">
+              <mark-blue>Delivery:</mark-blue>
+            </div>
             <div>
-              {{ collection.delivery.driver?.name || "[UNASSIGNED]" }}
+              {{ collection.delivery?.driver?.name || "[UNASSIGNED]" }}
             </div>
           </div>
         </div>
-        <!-- <div class="col">{{ collection.remarks }}</div> -->
+        <div class="col bordered">
+          <div>
+            <div class="text-weight-bolder text-uppercase">
+              <mark-pink>Collection:</mark-pink>
+            </div>
+            <div>
+              {{ collection?.remarks || "-" }}
+            </div>
+          </div>
+          <div class="q-mt-sm">
+            <div class="text-weight-bolder text-uppercase">
+              <mark-blue>Delivery:</mark-blue>
+            </div>
+            <div>
+              {{ collection.delivery?.remarks || "-" }}
+            </div>
+          </div>
+        </div>
         <div class="col bordered">
           <div class="text-uppercase">{{ collection.status }}</div>
-          <q-btn
-            label="View Details"
-            color="primary"
-            unelevated
-            class="q-mt-sm"
-            @click="viewCollection(collection)"
-          />
-        </div>
-        <!-- <div class="col text-center">
+          <div v-if="collection.order_no" class="q-mt-sm text-">
+            <q-btn outline color="blue-8" dense @click="openOrderDialog(collection)" class="text-weight-bold bg-blue-1">{{
+              collection.order_no
+            }}</q-btn>
+          </div>
+          <div v-else>
             <q-btn
-              label="View"
+              label="Create Order"
               color="primary"
-              dense
               unelevated
+              class="q-mt-sm"
+              @click="createOrder(collection)"
+            />
+          </div>
+          <!-- <div>
+            <q-btn
+              label="View Details"
+              color="primary"
+              unelevated
+              class="q-mt-sm"
               @click="viewCollection(collection)"
             />
           </div> -->
+        </div>
       </div>
     </div>
+    <q-dialog
+      v-model="showCreateCollectionDialog"
+      persistent
+      transition-show="slide-down"
+      transition-hide="slide-up"
+    >
+      <q-card style="min-width: 90vw">
+        <q-card-section class="dialog-header">
+          <div class="text-body1 text-uppercase text-weight-bold">
+            Create Collection
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <!-- Inject the CreateCollectionTab Component Here -->
+          <CreateCollectionTab />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            class="negative-button"
+            @click="showCreateCollectionDialog = false"
+            label="Close"
+          />
+          <q-btn
+            flat
+            class=""
+            @click="createCollection()"
+            label="Create Collection"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useQuasar } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
+import CreateCollectionTab from "@/components/CustomerTab.vue";
 
+const $q = useQuasar();
 const transactionStore = useTransactionStore();
 const router = useRouter();
 const collections = ref([]);
 const searchQuery = ref("");
 const filteredCollections = ref([]);
+
+const showCreateCollectionDialog = ref(false);
 
 // Date Filters
 const collectionStartDate = ref(null);
@@ -398,4 +522,63 @@ const clearDate = (dateType) => {
   filterCollections(); // Trigger filtering after clearing the date
 };
 
+const openCollectionDialog = () => {
+  showCreateCollectionDialog.value = true;
+};
+
+async function createCollection() {
+  try {
+    // Call the store function to create the collection
+    await transactionStore.createCollection();
+
+    // Show success dialog
+    $q.dialog({
+      title: "Success",
+      message: "Collection created successfully!",
+      ok: "OK",
+      color: "positive",
+    });
+
+    // Reset the fields
+    transactionStore.selectedCustomer = null;
+    transactionStore.selectedCollectionContact = null;
+    transactionStore.selectedDeliveryContact = null;
+    transactionStore.selectedCollectionAddress = null;
+    transactionStore.selectedDeliveryAddress = null;
+    transactionStore.selectedCollectionDriver = null;
+    transactionStore.selectedDeliveryDriver = null;
+    transactionStore.collectionRemarks = "";
+    transactionStore.deliveryRemarks = "";
+
+    // Close the dialog
+    showCreateCollectionDialog.value = false;
+  } catch (error) {
+    console.error("Error submitting collection:", error.message);
+
+    // Show error dialog
+    $q.dialog({
+      title: "Error",
+      message: "Failed to create collection. Please try again.",
+      ok: "Close",
+      color: "negative",
+    });
+  }
+}
+
+const openOrderDialog = async (collection) => {
+  try {
+    // Pre-fill the transaction store with customer details
+    // transactionStore.setSelectedCustomer({
+    //   id: collection.customer_id,
+    // });
+
+    // Set order number
+    transactionStore.setOrderNo(collection.order_no);
+
+    // Open a new tab for the ReviewTab with the order_no as a parameter
+    window.open(`/orders/${collection.order_no}`, "_blank");
+  } catch (error) {
+    console.error("Error creating transaction:", error);
+  }
+};
 </script>

@@ -54,7 +54,7 @@
       >
         <div class="col-4">{{ customer.name }}</div>
         <div class="col-4">
-          {{ customer.contact_no1 }}<span v-if="customer.contact_no2.length  != 0"> / {{ customer.contact_no2 || "-" }}</span>
+          {{ customer.contact_no1 }}<span v-if="customer.contact_no2"> / {{ customer.contact_no2 || "-" }}</span>
         </div>
         <div class="col-4">{{ customer.email }}</div>
       </div>

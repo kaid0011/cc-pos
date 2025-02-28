@@ -1,7 +1,6 @@
 <template>
   <div class="full-container customers-management">
     <div class="row items-center justify-between q-mb-sm">
-      <!-- Search Field and Button -->
       <div class="search-container">
         <q-input
           v-model="searchQuery"
@@ -23,7 +22,7 @@
           </template>
         </q-input>
       </div>
-      <!-- Add Customer Button -->
+
       <q-btn
         class="main-button"
         color="primary"
@@ -33,115 +32,220 @@
       />
     </div>
 
-    <!-- Customers Data -->
-    <div class="row-col-table">
-      <!-- Table Header -->
-      <div class="row row-col-header q-px-md">
-        <div class="col bordered">Name</div>
-        <div class="col bordered">Address</div>
-        <div class="col bordered">Contact Nos</div>
-        <div class="col bordered">Email</div>
-        <div class="col bordered">Payment Type</div>
-        <div class="col bordered">Remarks</div>
-        <div class="col bordered">Actions</div>
-      </div>
+    <!-- Tab Panels for Customers -->
+    <q-tabs v-model="activeTab" class="text-primary q-mb-md">
+      <q-tab name="all" class="text-subtitle1 text-weight-bolder">All Customers</q-tab>
+      <q-tab name="contract" class="text-subtitle1 text-weight-bolder">Contract Customers</q-tab>
+      <q-tab name="non-contract" class="text-subtitle1 text-weight-bolder">Non-Contract Customers</q-tab>
+    </q-tabs>
 
-      <!-- Table Rows -->
-      <div
-        v-for="customer in filteredCustomersWithAddress"
-        :key="customer.id"
-        class="row row-col-row q-mx-md"
-      >
-        <div class="col bordered">{{ customer.name }}</div>
-        <div class="col bordered">
-          <ul v-if="customer.addresses?.length" class="q-pl-md">
-            <li v-for="address in customer.addresses" :key="address.id">
-              {{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
-            </li>
-          </ul>
-          <span v-else>No Address Available</span>
+    <q-tab-panels v-model="activeTab" animated>
+      <!-- All Customers -->
+      <q-tab-panel name="all" class="q-pa-none">
+        <div class="row-col-table">
+          <div class="row row-col-header q-px-md">
+            <div class="col bordered">Name</div>
+            <div class="col bordered">Address</div>
+            <div class="col bordered">Contact Nos</div>
+            <div class="col bordered">Email</div>
+            <div class="col bordered">Payment Type</div>
+            <div class="col bordered">Remarks</div>
+            <div class="col bordered">Actions</div>
+          </div>
+          <div
+            v-for="customer in filteredCustomersWithAddress"
+            :key="customer.id"
+            class="row row-col-row q-mx-md"
+          >
+            <div class="col bordered">
+              <div>
+                <a @click.prevent="openCustomerTab(customer.id)" class="text-weight-bold text-subtitle1">{{
+            customer.name
+          }}</a>
+              </div>
+              <div>
+                {{ customer.type }}
+              </div>
+            </div>
+            <div class="col bordered">
+              <ul v-if="customer.addresses?.length" class="q-mt-none q-pl-md">
+                <li v-for="address in customer.addresses" :key="address.id">
+                  {{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
+                </li>
+              </ul>
+              <span v-else>No Address Available</span>
+            </div>
+            <div class="col bordered">{{ customer.contact_no1 || "N/A" }}</div>
+            <div class="col bordered">{{ customer.email }}</div>
+            <div class="col bordered">{{ customer.payment_type }}</div>
+            <div class="col bordered">{{ customer.remarks }}</div>
+            <div class="col bordered actions">
+              <q-btn
+                dense
+                label="Create Collection"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="openCollectionDialog(customer)"
+              />
+              <q-btn
+                dense
+                label="Create Transaction"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="navigateToPOS(customer)"
+              />
+              <!-- <q-btn
+                dense
+                label="View Customer"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="viewCustomer(customer)"
+              /> -->
+            </div>
+          </div>
         </div>
+      </q-tab-panel>
 
-        <div class="col bordered">
-          <ul class="q-pl-md q-mb-none">
-            <li>
-              {{ customer.contact_no1 || "N/A" }}
-            </li>
-          </ul>
-          <ul class="q-pl-md q-mt-none">
-            <li>
-              {{ customer.contact_no2 || "N/A" }}
-            </li>
-          </ul>
+      <!-- Contract Customers -->
+      <q-tab-panel name="contract" class="q-pa-none">
+        <div class="row-col-table">
+          <div class="row row-col-header q-px-md">
+            <div class="col bordered">Name</div>
+            <div class="col bordered">Address</div>
+            <div class="col bordered">Contact Nos</div>
+            <div class="col bordered">Email</div>
+            <div class="col bordered">Payment Type</div>
+            <div class="col bordered">Remarks</div>
+            <div class="col bordered">Actions</div>
+          </div>
+          <div
+          v-for="customer in contractCustomers"
+          :key="customer.id"
+          class="row row-col-row q-mx-md"
+          >
+            <div class="col bordered">
+              <div>
+                  <a @click.prevent="openCustomerTab(customer.id)" class="text-weight-bold text-subtitle1">{{
+              customer.name
+            }}</a>
+              </div>
+              <div>
+                {{ customer.type }}
+              </div>
+            </div>
+            <div class="col bordered">
+              <ul v-if="customer.addresses?.length" class="q-mt-none q-pl-md">
+                <li v-for="address in customer.addresses" :key="address.id">
+                  {{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
+                </li>
+              </ul>
+              <span v-else>No Address Available</span>
+            </div>
+            <div class="col bordered">{{ customer.contact_no1 || "N/A" }}</div>
+            <div class="col bordered">{{ customer.email }}</div>
+            <div class="col bordered">{{ customer.payment_type }}</div>
+            <div class="col bordered">{{ customer.remarks }}</div>
+            <div class="col bordered actions">
+              <q-btn
+                dense
+                label="Create Collection"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="openCollectionDialog(customer)"
+              />
+              <q-btn
+                dense
+                label="Create Transaction"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="navigateToPOS(customer)"
+              />
+              <!-- <q-btn
+                dense
+                label="View Customer"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="viewCustomer(customer)"
+              /> -->
+            </div>
+          </div>
         </div>
-        <div class="col bordered">{{ customer.email }}</div>
-        <div class="col bordered">{{ customer.payment_type }}</div>
-        <div class="col bordered">{{ customer.remarks }}</div>
-        <div class="col bordered actions">
+      </q-tab-panel>
 
-          <q-btn
-            dense
-            label="Create Collection"
-            color="primary"
-            class="main-button q-ma-xs q-px-sm"
-            @click="openCollectionDialog(customer)"
-          />
-          <q-btn
-            dense
-            label="Create Transaction"
-            color="primary"
-            class="main-button q-ma-xs q-px-sm"
-            @click="navigateToPOS(customer)"
-          />
-          <q-btn
-            dense
-            label="View Customer"
-            color="primary"
-            class="main-button q-ma-xs q-px-sm"
-            @click="viewCustomer(customer)"
-          />
+      <!-- Non-Contract Customers -->
+      <q-tab-panel name="non-contract" class="q-pa-none">
+        <div class="row-col-table">
+          <div class="row row-col-header q-px-md">
+            <div class="col bordered">Name</div>
+            <div class="col bordered">Address</div>
+            <div class="col bordered">Contact Nos</div>
+            <div class="col bordered">Email</div>
+            <div class="col bordered">Payment Type</div>
+            <div class="col bordered">Remarks</div>
+            <div class="col bordered">Actions</div>
+          </div>
+          <div
+          v-for="customer in nonContractCustomers"
+          :key="customer.id"
+          class="row row-col-row q-mx-md"
+          >
+            <div class="col bordered">
+              <div>
+                  <a @click.prevent="openCustomerTab(customer.id)" class="text-weight-bold text-subtitle1">{{
+              customer.name
+            }}</a>
+              </div>
+              <div>
+                {{ customer.type }}
+              </div>
+            </div>
+            <div class="col bordered">
+              <ul v-if="customer.addresses?.length" class="q-mt-none q-pl-md">
+                <li v-for="address in customer.addresses" :key="address.id">
+                  {{ address.block_no }} {{ address.road_name }} {{ address.unit_no }} {{ address.building_name }} {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
+                </li>
+              </ul>
+              <span v-else>No Address Available</span>
+            </div>
+            <div class="col bordered">{{ customer.contact_no1 || "N/A" }}</div>
+            <div class="col bordered">{{ customer.email }}</div>
+            <div class="col bordered">{{ customer.payment_type }}</div>
+            <div class="col bordered">{{ customer.remarks }}</div>
+            <div class="col bordered actions">
+              <q-btn
+                dense
+                label="Create Collection"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="openCollectionDialog(customer)"
+              />
+              <q-btn
+                dense
+                label="Create Transaction"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="navigateToPOS(customer)"
+              />
+              <!-- <q-btn
+                dense
+                label="View Customer"
+                color="primary"
+                class="main-button q-ma-xs q-px-sm"
+                @click="viewCustomer(customer)"
+              /> -->
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </q-tab-panel>
+    </q-tab-panels>
+
     <AddCustomerDialog
-    v-model="showAddCustomerDialog"
-    @customer-added="handleCustomerAdded"
-  />
-
-  <q-dialog
-  v-model="showCreateCollectionDialog"
-  persistent
-  transition-show="slide-down"
-  transition-hide="slide-up"
->
-  <q-card class="dialog" style="width: 600px">
-    <q-card-section class="dialog-header">
-      <div class="text-body1 text-uppercase text-weight-bold">
-        Create Collection
-      </div>
-    </q-card-section>
-    <q-card-section>
-      <!-- Inject the CreateCollectionTab Component Here -->
-      <CreateCollectionTab/>
-    </q-card-section>
-    <q-card-actions align="right">
-      <q-btn
-        flat
-        class="negative-button"
-        @click="showCreateCollectionDialog = false"
-        label="Close"
-      />
-      <q-btn
-        flat
-        class=""
-        @click="createCollection()"
-        label="Create Collection"
-      />
-    </q-card-actions>
-  </q-card>
-</q-dialog>
+      v-model="showAddCustomerDialog"
+      @customer-added="handleCustomerAdded"
+    />
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
@@ -207,6 +311,7 @@ const filteredCustomersWithAddress = computed(() => {
       customer.contact_no1?.toLowerCase().includes(query) ||
       customer.contact_no2?.toLowerCase().includes(query) ||
       customer.email?.toLowerCase().includes(query) ||
+      customer.type?.toLowerCase().includes(query) ||
       inAddresses
     );
   });
@@ -290,5 +395,23 @@ async function createCollection() {
     });
   }
 }
+const activeTab = ref("all");
+
+const contractCustomers = computed(() => {
+  return filteredCustomersWithAddress.value.filter(
+    (customer) => customer.type === "Contract"
+  );
+});
+
+const nonContractCustomers = computed(() => {
+  return filteredCustomersWithAddress.value.filter(
+    (customer) => customer.type !== "Contract"
+  );
+});
+
+const openCustomerTab = (customerId) => {
+  const url = `/customers/${customerId}`;
+  window.open(url, "_blank"); // Open in a new tab
+};
 
 </script>

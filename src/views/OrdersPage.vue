@@ -152,16 +152,16 @@
         class="row row-col-row q-mx-md"
       >
         <div class="col bordered">
-          <a @click="openOrderDialog(order)">{{ order.order_no }}</a>
+          <a @click="openOrderDialog(order)" class="text-weight-bold text-subtitle1">{{ order.order_no }}</a>
         </div>
-        <div class="col bordered">{{ formatDate(order.collection_date) }}</div>
-        <div class="col bordered">{{ formatDate(order.delivery_date) }}</div>
+        <div class="col bordered">{{ formatDate(order.collection.collection_date) }}</div>
+        <div class="col bordered">{{ formatDate(order.delivery.delivery_date) }}</div>
         <div class="col bordered text-uppercase">{{ order.goods_status }}</div>
         <div class="col bordered text-uppercase">{{ order.logistics_status }}</div>
         <div class="col bordered text-uppercase">{{ order.payment_status }}</div>
         <div class="col bordered">
-          <a @click.prevent="openCustomerTab(order.customer_id)">{{
-            order.customer_name
+          <a @click.prevent="openCustomerTab(order.customer)" class="text-weight-bold text-subtitle1">{{
+            order.customer.name
           }}</a>
         </div>
         <!-- <div class="col">
@@ -181,7 +181,6 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
-import { fetchAllOrders } from "@/../supabase/api/orders";
 const transactionStore = useTransactionStore();
 const orders = ref([]);
 const searchQuery = ref("");
@@ -221,37 +220,9 @@ const formatDate = (dateString) => {
 
 onMounted(async () => {
   try {
-    const rawOrders = await fetchAllOrders();
-    console.log("Fetched Orders:", rawOrders); // Debug orders
-
-    orders.value = await Promise.all(
-      rawOrders.map(async (order) => {
-        const customerDetails = await transactionStore.fetchCustomerDetailsById(
-          order.customer_id
-        );
-
-        // Fetch collection and delivery dates
-        const { collectionDate, deliveryDate } =
-          await transactionStore.fetchDatesByOrderId(order.id);
-
-        console.log("Fetched Dates:", {
-          orderId: order.id,
-          collectionDate,
-          deliveryDate,
-        });
-
-        return {
-          ...order,
-          customer_name: customerDetails?.name || "Unknown",
-          collection_date: collectionDate,
-          delivery_date: deliveryDate,
-        };
-      })
-    );
-
-    console.log("Orders with Customer Details & Dates:", orders.value);
+    orders.value = await transactionStore.fetchAllOrdersSimple();
   } catch (error) {
-    console.error("Error initializing orders:", error);
+    console.error("Error fetching orders:", error);
   }
 });
 
@@ -259,8 +230,8 @@ const filteredOrders = computed(() => {
   return orders.value.filter((order) => {
     // Ensure all fields exist before applying `.toLowerCase()`
     const orderNo = order.order_no ? order.order_no.toLowerCase() : "";
-    const customerName = order.customer_name
-      ? order.customer_name.toLowerCase()
+    const customerName = order.customer.customer_name
+      ? order.customer.customer_name.toLowerCase()
       : "";
     const goodsStatus = order.goods_status
       ? order.goods_status.toLowerCase()
@@ -284,11 +255,11 @@ const filteredOrders = computed(() => {
       paymentStatus.includes(query);
 
     // Ensure valid dates
-    const collectionDate = order.collection_date
-      ? new Date(order.collection_date).setHours(0, 0, 0, 0)
+    const collectionDate = order.collection.collection_date
+      ? new Date(order.collection.collection_date).setHours(0, 0, 0, 0)
       : null;
-    const deliveryDate = order.delivery_date
-      ? new Date(order.delivery_date).setHours(0, 0, 0, 0)
+    const deliveryDate = order.delivery.delivery_date
+      ? new Date(order.delivery.delivery_date).setHours(0, 0, 0, 0)
       : null;
 
     const collectionStart = collectionStartDate.value

@@ -398,10 +398,12 @@ async function printCard() {
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
     const category = item.tag_category?.toLowerCase() || "others";
-    counts[category] = (counts[category] || 0) + 1;
+    const quantity = parseInt(item.quantity) || 0; // Get the quantity, default to 0 if invalid
+    counts[category] = (counts[category] || 0) + quantity;
     return counts;
   }, {});
 });
+
 
 function formatDate(date) {
   if (!date) return "N/A";

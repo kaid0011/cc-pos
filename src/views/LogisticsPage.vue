@@ -49,11 +49,8 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               />
             </template>
           </q-input>
-        </div>
-
-        <div class="col">
           <q-input
-            class="date-input"
+            class="date-input q-mt-xs"
             v-model="formattedCollectionEndDate"
             outlined
             dense
@@ -75,6 +72,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
             </template>
           </q-input>
         </div>
+
 
         <!-- Delivery Date Filters -->
         <div class="col">
@@ -100,11 +98,8 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               />
             </template>
           </q-input>
-        </div>
-
-        <div class="col">
           <q-input
-            class="date-input"
+            class="date-input q-mt-xs"
             v-model="formattedDeliveryEndDate"
             outlined
             dense
@@ -173,7 +168,8 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
       >
         <div class="col bordered">
           <div class="text-weight-bold">
-            {{ collection.customer?.name || "[NOT SELECTED]" }}
+            <a @click.prevent="openCustomerTab(collection.customer?.id)" class="text-weight-bold text-subtitle1">{{ collection.customer?.name || "[NOT SELECTED]" }}</a>
+            
           </div>
           <div>
             {{ collection.customer?.contact_no1 || "-" }}<span v-if="collection.customer?.contact_no2"> / {{ collection.customer?.contact_no2 || "-" }}</span>
@@ -581,4 +577,10 @@ const openOrderDialog = async (collection) => {
     console.error("Error creating transaction:", error);
   }
 };
+
+const openCustomerTab = (customerId) => {
+  const url = `/customers/${customerId}`;
+  window.open(url, "_blank"); // Open in a new tab
+};
+
 </script>

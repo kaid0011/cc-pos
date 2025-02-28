@@ -16,7 +16,7 @@
             <div class="text-summary">{{ selectedCustomer.name }}</div>
             <div class="text-summary">
               {{ selectedCustomer.contact_no1
-              }}<span v-if="selectedCustomer.contact_no2.length != 0">
+              }}<span v-if="selectedCustomer.contact_no2">
                 / {{ selectedCustomer.contact_no2 || "-" }}</span
               >
             </div>

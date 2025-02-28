@@ -384,8 +384,11 @@ textarea {
 }
 
 .transaction-summary {
-  padding: 1em;
+  /* padding: 1em; */
   max-width: 100vw !important;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #ab823c;
 }
 
 .summary-row {
@@ -411,9 +414,8 @@ textarea {
 }
 
 .slip-card {
-  background-color: #f3f3f3;
+  background-color: #fff2e9;
   padding: 1em;
-  margin: 0 1em 1em 1em;
   min-height: 100%;
 }
 
@@ -424,9 +426,6 @@ textarea {
   border-radius: 2em;
 }
 
-.text-slip-row {
-  margin-left: 1em !important;
-}
 
 .slip-table thead th {
   background-color: #f1e5db;
@@ -439,7 +438,7 @@ padding: 0.7em !important;
 }
 
 .order-row {
-  background-color: #fff4ed !important;
+  background-color: #fffbf4 !important;
 }
 
 .order-header {
@@ -448,12 +447,12 @@ padding: 0.7em !important;
 }
 
 .order-footer {
-  background-color: #eff4f9 !important;
+  background-color: #e3f1ff !important;
 }
 
 .order-container {
-  max-width: 800px;
-  margin: 0 auto;
+  background-color: #fff2e9;
+  margin-bottom: 1em;
 }
 
 .slip-container {
@@ -475,7 +474,7 @@ padding: 0.7em !important;
 .preview-card {
   background-color: #fff2e9;
   padding: 1em;
-  margin: 1em;
+  /* margin: 1em; */
 }
 
 .preview {
@@ -669,4 +668,8 @@ font-weight: bold;
 
 .window-height {
   height: auto !important;
+}
+
+.order-banner {
+  margin-bottom: 1em !important;
 }

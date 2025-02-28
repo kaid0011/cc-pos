@@ -802,7 +802,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time: this.deliveryTime?.value || "",
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
-              status: '-'
+              status: "-",
             },
           ])
           .select("id, delivery_date, delivery_time, remarks")
@@ -822,7 +822,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time: this.collectionTime?.value || "",
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
-              status: 'collection arranged'
+              status: "collection arranged",
             },
           ])
           .select("id, collection_date, collection_time, remarks")
@@ -865,7 +865,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         const orderId = orderData.id;
         const orderNo = orderData.order_no;
 
-                // After inserting into the orders table, update the order no in the collections table
+        // After inserting into the orders table, update the order no in the collections table
         const { error: updateCollectionsError } = await supabase
           .from("collections")
           .update({ order_no: orderData.order_no })
@@ -1370,11 +1370,13 @@ export const useTransactionStore = defineStore("transactionStore", {
             ),
             collections (
               *,
-              contact_persons (*)
+              contact_persons (*),
+              drivers (*)
             ),
             deliveries (
               *,
-              contact_persons (*)
+              contact_persons (*),
+              drivers (*)
             )
           `
           )
@@ -1407,6 +1409,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             id: orderDetails.customers.id,
             name: orderDetails.customers.name,
             type: orderDetails.customers.type,
+            sub_type: orderDetails.customers.sub_type,
             contact_no1: orderDetails.customers.contact_no1,
             contact_no2: orderDetails.customers.contact_no2,
             email: orderDetails.customers.email,
@@ -1421,7 +1424,11 @@ export const useTransactionStore = defineStore("transactionStore", {
             status: orderDetails.collections?.status,
             remarks: orderDetails.collections?.remarks,
             collection_date: orderDetails.collections?.collection_date || null,
+            collection_time: orderDetails.collections?.collection_time || null,
             contactPerson: orderDetails.collections?.contact_persons || null,
+            driver_id: orderDetails.collections?.driver_id || null,
+            driver: orderDetails.collections?.drivers || null,
+            remarks: orderDetails.collections?.remarks || null,
           },
           delivery: {
             id: orderDetails.deliveries?.id,
@@ -1430,7 +1437,11 @@ export const useTransactionStore = defineStore("transactionStore", {
             status: orderDetails.deliveries?.status,
             remarks: orderDetails.deliveries?.remarks,
             delivery_date: orderDetails.deliveries?.delivery_date || null,
+            delivery_time: orderDetails.deliveries?.delivery_time || null,
             contactPerson: orderDetails.deliveries?.contact_persons || null,
+            driver_id: orderDetails.deliveries?.driver_id || null,
+            driver: orderDetails.deliveries?.drivers || null,
+            remarks: orderDetails.deliveries?.remarks || null,
           },
         };
       } catch (error) {
@@ -1509,7 +1520,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 defaultAddress.unit_no
               } ${defaultAddress.building_name}, ${
                 defaultAddress.postal_code
-              } (${defaultAddress?.additional_info || ""})`,
+              } ${defaultAddress?.additional_info || ""}`,
             }
           : null;
 
@@ -1564,7 +1575,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 defaultAddress.unit_no
               } ${defaultAddress.building_name}, ${
                 defaultAddress.postal_code
-              } (${defaultAddress?.additional_info || ""})`,
+              } ${defaultAddress?.additional_info || ""}`,
             }
           : null;
 
@@ -1580,16 +1591,12 @@ export const useTransactionStore = defineStore("transactionStore", {
         console.log("Self-pickup disabled. Values reset.");
       }
     },
-    async updateCollectionAndDelivery(
-      orderNo,
-      collectionPayload,
-      deliveryPayload
-    ) {
+    async updateCollection(orderNo, collectionPayload) {
       try {
         // Fetch the order details to get collection and delivery IDs
         const { data: orderDetails, error: fetchError } = await supabase
           .from("orders")
-          .select("id, collection_id, delivery_id")
+          .select("id, collection_id")
           .eq("order_no", orderNo)
           .single();
 
@@ -1597,7 +1604,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           throw new Error("Order not found or failed to fetch order details.");
         }
 
-        const { id: orderId, collection_id, delivery_id } = orderDetails;
+        const { id: orderId, collection_id } = orderDetails;
 
         // Update collection details if collection ID exists
         if (collection_id) {
@@ -1607,6 +1614,9 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: collectionPayload.contact_person_id,
               address: collectionPayload.address,
               collection_date: collectionPayload.collection_date,
+              collection_time: collectionPayload.collection_time,
+              driver_id: collectionPayload.driver_id,
+              remarks: collectionPayload.remarks,
             })
             .eq("id", collection_id);
 
@@ -1614,6 +1624,29 @@ export const useTransactionStore = defineStore("transactionStore", {
             throw new Error("Failed to update collection details.");
           }
         }
+
+        console.log("Collection details updated successfully.");
+        return true; // Indicate success
+      } catch (error) {
+        console.error("Error updating details:", error);
+        throw error; // Re-throw for higher-level handling
+      }
+    },
+
+    async updateDelivery(orderNo, deliveryPayload) {
+      try {
+        // Fetch the order details to get collection and delivery IDs
+        const { data: orderDetails, error: fetchError } = await supabase
+          .from("orders")
+          .select("id, delivery_id")
+          .eq("order_no", orderNo)
+          .single();
+
+        if (fetchError || !orderDetails) {
+          throw new Error("Order not found or failed to fetch order details.");
+        }
+
+        const { id: orderId, delivery_id } = orderDetails;
 
         // Update delivery details if delivery ID exists
         if (delivery_id) {
@@ -1623,6 +1656,9 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_person_id: deliveryPayload.contact_person_id,
               address: deliveryPayload.address,
               delivery_date: deliveryPayload.delivery_date,
+              delivery_time: deliveryPayload.delivery_time,
+              driver_id: deliveryPayload.driver_id,
+              remarks: deliveryPayload.remarks,
             })
             .eq("id", delivery_id);
 
@@ -1631,13 +1667,14 @@ export const useTransactionStore = defineStore("transactionStore", {
           }
         }
 
-        console.log("Collection, and Delivery details updated successfully.");
+        console.log("Delivery details updated successfully.");
         return true; // Indicate success
       } catch (error) {
         console.error("Error updating details:", error);
         throw error; // Re-throw for higher-level handling
       }
     },
+
     async updateOrder(orderNo, payload) {
       try {
         const { error } = await supabase
@@ -1869,14 +1906,265 @@ export const useTransactionStore = defineStore("transactionStore", {
         return { customerTypes: [], subTypeMapping: {} }; // Return empty structure on error
       }
     },
-    async fetchDatesByOrderId(orderId) {
+    async fetchAllOrdersSimple() {
+      try {
+        const { data, error } = await supabase.from("orders").select(
+          `
+            id,
+            order_no,
+            collection_id,
+            delivery_id,
+            customer_id,
+            goods_status,
+            logistics_status,
+            payment_status,
+            customers (
+              id,
+              name
+            ),
+            collections (
+              id,
+              collection_date
+            ),
+            deliveries (
+              id,
+              delivery_date
+            )
+          `
+        );
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          console.warn("No orders found.");
+          return [];
+        }
+
+        return data.map((order) => ({
+          id: order.id,
+          order_no: order.order_no,
+          collection_id: order.collection_id,
+            delivery_id: order.delivery_id,
+            customer_id: order.customer_id,
+            goods_status: order.goods_status,
+            logistics_status: order.logistics_status,
+            payment_status: order.payment_status,
+            customer: order.customers
+            ? {
+                id: order.customers?.id,
+                name: order.customers?.name,
+              }
+            : null,
+          collection: order.collections
+            ? {
+                id: order.collections?.id,
+                collection_date: order.collections?.collection_date,
+              }
+            : null,
+          delivery: order.deliveries
+            ? {
+                id: order.deliveries?.id,
+                delivery_date: order.deliveries?.delivery_date,
+              }
+            : null
+        }));
+      } catch (error) {
+        console.error("Error fetching all orders:", error);
+        return [];
+      }
+    },
+    async fetchAllOrders() {
+      try {
+        const { data, error } = await supabase.from("orders").select(
+          `
+            id,
+            order_no,
+            collection_id,
+            delivery_id,
+            tag_timestamp,
+            tag_changes,
+            tag_status,
+            customer_id,
+            customers (
+              id,
+              name,
+              contact_no1,
+              contact_no2
+            ),
+            collections (
+              id,
+              collection_date,
+              collection_time,
+              contact_person_id,
+              driver_id,
+              drivers (
+                id,
+                name,
+                contact_no1
+              ),
+              contact_persons (
+                id,
+                name
+              )
+            ),
+            deliveries (
+              id,
+              delivery_date,
+              delivery_time,
+              driver_id,
+              contact_person_id,
+              drivers (
+                id,
+                name,
+                contact_no1
+              ),
+              contact_persons (
+                id,
+                name
+              )
+            )
+          `
+        );
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          console.warn("No orders found.");
+          return [];
+        }
+
+        return data.map((order) => ({
+          id: order.id,
+          order_no: order.order_no,
+          collection_id: order.collection_id,
+            delivery_id: order.delivery_id,
+          tag_timestamp: order.tag_timestamp,
+          tag_changes: order.tag_changes,
+          tag_status: order.tag_status,
+            customer_id: order.customer_id,
+            customer: order.customers
+            ? {
+                id: order.customers?.id,
+                name: order.customers?.name,
+                contact_no1: order.customers?.contact_no1,
+                contact_no2: order.customers?.contact_no2,
+              }
+            : null,
+          collection: order.collections
+            ? {
+                id: order.collections?.id,
+                collection_date: order.collections?.collection_date,
+                collection_time: order.collections?.collection_time,
+                driver: order.collections?.drivers
+                  ? {
+                      id: order.collections?.drivers?.id,
+                      name: order.collections?.drivers?.name,
+                      contact_no1: order.collections?.drivers?.contact_no1,
+                    }
+                  : null,
+                contact_person: order.collections?.contact_persons
+                  ? {
+                      id: order.collections?.contact_persons?.id,
+                      name: order.collections?.contact_persons?.name,
+                    }
+                  : null,
+              }
+            : null,
+          delivery: order.deliveries
+            ? {
+                id: order.deliveries?.id,
+                delivery_date: order.deliveries?.delivery_date,
+                delivery_time: order.deliveries?.delivery_time,
+                driver: order.deliveries?.drivers
+                  ? {
+                      id: order.deliveries?.drivers?.id,
+                      name: order.deliveries?.drivers?.name,
+                      contact_no1: order.deliveries?.drivers?.contact_no1,
+                    }
+                  : null,
+                contact_person: order.deliveries?.contact_persons
+                  ? {
+                      id: order.deliveries?.contact_persons?.id,
+                      name: order.deliveries?.contact_persons?.name,
+                    }
+                  : null,
+              }
+            : null
+        }));
+      } catch (error) {
+        console.error("Error fetching all orders:", error);
+        return [];
+      }
+    },
+
+    async fetchLogisticsByOrderId(orderId) {
       try {
         const { data, error } = await supabase
-          .from("orders") // Start from the 'orders' table
+          .from("orders")
           .select(
             `
-            collections(collection_date), 
-            deliveries(delivery_date)
+            id,
+            collection_id,
+            delivery_id,
+            collections (
+              id,
+              collection_date,
+              area,
+              status,
+              remarks,
+              contact_person_id,
+              address,
+              date_collected,
+              delivery_id,
+              customer_id,
+              order_no,
+              customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                type,
+                sub_type
+              ),
+              drivers (
+                id,
+                name,
+                contact_no1
+              ),
+              contact_persons (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                remarks
+              )
+            ),
+            deliveries (
+              id,
+              address,
+              area,
+              status,
+              remarks,
+              delivery_date,
+              delivery_time,
+              driver_id,
+              contact_person_id,
+              drivers (
+                id,
+                name,
+                contact_no1
+              ),
+              contact_persons (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                remarks
+              )
+            )
           `
           )
           .eq("id", orderId)
@@ -1884,16 +2172,90 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         if (error) throw error;
 
-        // Extract collection_date and delivery_date safely
+        if (!data) {
+          console.warn("No logistics data found for this order.");
+          return { collectionDate: "N/A", deliveryDate: "N/A" };
+        }
+
         return {
-          collectionDate: data.collections?.collection_date || "N/A",
-          deliveryDate: data.deliveries?.delivery_date || "N/A",
+          collection: data.collections
+            ? {
+                id: data.collections.id,
+                collectionDate: data.collections.collection_date,
+                area: data.collections.area,
+                status: data.collections.status,
+                remarks: data.collections.remarks,
+                contactPersonId: data.collections.contact_person_id,
+                address: data.collections.address,
+                dateCollected: data.collections.date_collected,
+                deliveryId: data.collections.delivery_id,
+                customerId: data.collections.customer_id,
+                orderNo: data.collections.order_no,
+                customer: data.collections.customers
+                  ? {
+                      id: data.collections.customers.id,
+                      name: data.collections.customers.name,
+                      contactNo1: data.collections.customers.contact_no1,
+                      contactNo2: data.collections.customers.contact_no2,
+                      email: data.collections.customers.email,
+                      type: data.collections.customers.type,
+                      subType: data.collections.customers.sub_type,
+                    }
+                  : null,
+                driver: data.collections.drivers
+                  ? {
+                      id: data.collections.drivers.id,
+                      name: data.collections.drivers.name,
+                      contactNo1: data.collections.drivers.contact_no1,
+                    }
+                  : null,
+                contactPerson: data.collections.contact_persons
+                  ? {
+                      id: data.collections.contact_persons.id,
+                      name: data.collections.contact_persons.name,
+                      contactNo1: data.collections.contact_persons.contact_no1,
+                      contactNo2: data.collections.contact_persons.contact_no2,
+                      email: data.collections.contact_persons.email,
+                      remarks: data.collections.contact_persons.remarks,
+                    }
+                  : null,
+              }
+            : null,
+          delivery: data.deliveries
+            ? {
+                id: data.deliveries.id,
+                address: data.deliveries.address,
+                area: data.deliveries.area,
+                status: data.deliveries.status,
+                remarks: data.deliveries.remarks,
+                deliveryDate: data.deliveries.delivery_date,
+                deliveryTime: data.deliveries.delivery_time,
+                driver: data.deliveries.drivers
+                  ? {
+                      id: data.deliveries.drivers.id,
+                      name: data.deliveries.drivers.name,
+                      contactNo1: data.deliveries.drivers.contact_no1,
+                    }
+                  : null,
+                contactPerson: data.deliveries.contact_persons
+                  ? {
+                      id: data.deliveries.contact_persons.id,
+                      name: data.deliveries.contact_persons.name,
+                      contactNo1: data.deliveries.contact_persons.contact_no1,
+                      contactNo2: data.deliveries.contact_persons.contact_no2,
+                      email: data.deliveries.contact_persons.email,
+                      remarks: data.deliveries.contact_persons.remarks,
+                    }
+                  : null,
+              }
+            : null,
         };
       } catch (error) {
-        console.error("Error fetching dates:", error);
-        return { collectionDate: "N/A", deliveryDate: "N/A" };
+        console.error("Error fetching logistics by orderId:", error);
+        return { collection: null, delivery: null };
       }
     },
+
     async fetchAllCollections() {
       try {
         const { data, error } = await supabase.from("collections").select(`

@@ -24,13 +24,6 @@
                 <strong>Customer Name:</strong> {{ customerDetails.name }}
               </div>
               <div>
-                <strong>Customer Type:</strong> {{ customerDetails.type }}
-              </div>
-              <div>
-                <strong>Customer Sub Type:</strong>
-                {{ customerDetails.sub_type }}
-              </div>
-              <div>
                 <strong>Contact No 1:</strong> {{ customerDetails.contact_no1 }}<span v-if="customerDetails.contact_no2 && customerDetails.contact_no2.length"> / {{ customerDetails.contact_no2 }}</span>
 
               </div>
@@ -38,15 +31,25 @@
                 <strong>Contact No 2:</strong> {{ customerDetails.contact_no2 }}
               </div> -->
               <div><strong>Email:</strong> {{ customerDetails.email }}</div>
+              
               <div>
-                <strong>Customer Since:</strong>
-                {{ formatDate(customerDetails.created_at) }}
+                <strong>Customer Type:</strong> {{ customerDetails.type }}
               </div>
+              <div>
+                <strong>Customer Sub Type:</strong>
+                {{ customerDetails.sub_type }}
+              </div>
+              <div><strong>Payment Type:</strong> {{ customerDetails.payment_type }}</div>
+
               <div>
                 <strong>Recommended By:</strong>
                 {{ customerDetails.recommended_by }}
               </div>
               <div><strong>Remarks:</strong> {{ customerDetails.remarks }}</div>
+              <div>
+                <strong>Customer Since:</strong>
+                {{ formatDate(customerDetails.created_at) }}
+              </div>
             </div>
           </div>
         </q-card-section>
@@ -174,7 +177,7 @@
             class="row row-col-row q-mx-md"
           >
             <div class="col col-2 bordered">{{ person.name }}</div>
-            <div class="col col-2 bordered">{{ person.contact_no1 }}<span v-if="person.contact_no2.length != 0"> / {{ person.contact_no2 }}</span></div>
+            <div class="col col-2 bordered">{{ person.contact_no1 }}<span v-if="person.contact_no2?.length != 0"> / {{ person.contact_no2 }}</span></div>
             <!-- <div class="col col-2 bordered">{{ person.contact_no2 }}</div> -->
             <div class="col col-2 bordered">{{ person.email }}</div>
             <div class="col col-2 bordered">{{ person.remarks }}</div>

@@ -18,24 +18,31 @@
             <!-- Address Fields -->
             <div class="row q-col-gutter-x-sm">
               <div class="col-4">
+                <div class="dialog-label">Block No:</div>
                 <q-input v-model="address.block_no" label="Block Number" outlined class="dialog-inputs" />
               </div>
               <div class="col-8">
+                <div class="dialog-label">Road Name:</div>
                 <q-input v-model="address.road_name" label="Road Name" outlined class="dialog-inputs" />
               </div>
               <div class="col-8">
+                <div class="dialog-label">Building Name:</div>
                 <q-input v-model="address.building_name" label="Building Name" outlined class="dialog-inputs" />
               </div>
               <div class="col-4">
+                <div class="dialog-label">Unit No:</div>
                 <q-input v-model="address.unit_no" label="Unit No" outlined class="dialog-inputs" />
               </div>
               <div class="col-3">
+                <div class="dialog-label">Postal Code:</div>
                 <q-input v-model="address.postal_code" label="Postal Code" outlined class="dialog-inputs" />
               </div>
               <div class="col-9">
+                <div class="dialog-label">Additional Information:</div>
                 <q-input v-model="address.additional_info" label="Additional Info" outlined class="dialog-inputs" />
               </div>
               <div class="col-12">
+                <div class="dialog-label">Remarks:</div>
                 <q-input v-model="address.remarks" label="Remarks" outlined class="dialog-inputs" />
               </div>
             </div>

@@ -111,7 +111,12 @@ export const useTransactionStore = defineStore("transactionStore", {
               // remarks: newCustomer.remarks || null,
               type: newCustomer.type || null,
               sub_type: newCustomer.sub_type || null,
-              remarks: newCustomer.remarks || null,
+              payment_type: newCustomer.payment_type || null,
+              recommended_by: newCustomer.recommended_by || null,
+              schedule_remarks: newCustomer.schedule_remarks || null,
+              price_remarks: newCustomer.price_remarks || null,
+              accounting_remarks: newCustomer.accounting_remarks || null,
+              other_remarks: newCustomer.other_remarks || null,
             },
           ])
           .select();
@@ -1422,7 +1427,12 @@ export const useTransactionStore = defineStore("transactionStore", {
           email: customer.email,
           type: customer.type,
           sub_type: customer.sub_type,
-          remarks: customer.remarks,
+          payment_type: customer.payment_type,
+          recommended_by: customer.recommended_by,
+          schedule_remarks: customer.schedule_remarks,
+          price_remarks: customer.price_remarks,
+          accounting_remarks: customer.accounting_remarks,
+          other_remarks: customer.other_remarks,
         })
         .eq("id", customer.id);
 

@@ -6,7 +6,8 @@
         </q-card-section>
         <q-card-section class="dialog-body">
           <q-form @submit.prevent="handleAddContact">
-            <q-input
+              <div class="dialog-label">Name:</div>
+              <q-input
               v-model="contact.name"
               label="Name"
               outlined
@@ -15,7 +16,8 @@
             />
             <div class="row q-col-gutter-x-sm">
               <div class="col">
-                <q-input
+              <div class="dialog-label">Contact No:</div>
+              <q-input
                   v-model="contact.contact_no1"
                   label="Contact No 1"
                   outlined
@@ -24,7 +26,8 @@
                 />
               </div>
               <div class="col">
-                <q-input
+              <div class="dialog-label">Alternative Contact No:</div>
+              <q-input
                   v-model="contact.contact_no2"
                   label="Contact No 2"
                   outlined
@@ -32,16 +35,19 @@
                 />
               </div>
             </div>
-            <q-input
+              <div class="dialog-label">Email Address:</div>
+              <q-input
               v-model="contact.email"
               label="Email"
               outlined
               class="dialog-inputs"
             />
-            <q-input
+              <div class="dialog-label">Remarks:</div>
+              <q-input
               v-model="contact.remarks"
               label="Remarks"
               outlined
+              type="textarea"
               class="dialog-inputs"
             />
             <q-card-actions align="right">

@@ -75,7 +75,14 @@
               </ul>
               <span v-else>No Address Available</span>
             </div>
-            <div class="col bordered">{{ customer.contact_no1 || "N/A" }}</div>
+            <div class="col bordered">
+              <div>
+                {{ customer.contact_no1 || "N/A" }}
+              </div>
+              <div v-if="customer.contact_no2">
+                {{ customer.contact_no2 || "-" }}
+              </div>
+            </div>
             <div class="col bordered">{{ customer.email }}</div>
             <div class="col bordered">{{ customer.payment_type }}</div>
             <div class="col bordered">{{ customer.remarks }}</div>

@@ -13,6 +13,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     reports: [],
     items: [],
     customers: [],
+    ready_by: null,
     contactOptions: [],
     addressOptions: [],
     driverOptions: [],
@@ -196,52 +197,58 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
 
     async loadAddressOptions(customerId = null) {
-      try {
-        let customerAddresses = [];
-        let defaultAddress = null;
+  try {
+    let customerAddresses = [];
+    let defaultAddress = null;
 
-        // Fetch customer-specific addresses
-        if (customerId) {
-          const { data, error } = await supabase
-            .from("customer_address")
-            .select(
-              "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
-            )
-            .eq("customer_id", customerId);
+    // Fetch customer-specific addresses
+    if (customerId) {
+      const { data, error } = await supabase
+        .from("customer_address")
+        .select(
+          "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
+        )
+        .eq("customer_id", customerId);
 
-          if (error) throw error;
-          customerAddresses = data || [];
-        }
+      if (error) throw error;
+      customerAddresses = data || [];
+    }
 
-        // Fetch the default address (id=1)
-        const { data: defaultData, error: defaultError } = await supabase
-          .from("customer_address")
-          .select(
-            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
-          )
-          .eq("id", 1)
-          .single();
+    // Fetch the default address (id=1)
+    const { data: defaultData, error: defaultError } = await supabase
+      .from("customer_address")
+      .select(
+        "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
+      )
+      .eq("id", 1)
+      .single();
 
-        if (!defaultError) {
-          defaultAddress = defaultData; // Use default address if found
-        }
+    if (!defaultError) {
+      defaultAddress = defaultData; // Use default address if found
+    }
 
-        // Merge and deduplicate addresses
-        const addresses = defaultAddress
-          ? [defaultAddress, ...customerAddresses]
-          : customerAddresses;
+    // Merge and deduplicate addresses
+    const addresses = defaultAddress
+      ? [defaultAddress, ...customerAddresses]
+      : customerAddresses;
 
-        this.addressOptions = addresses.filter(
-          (address, index, self) =>
-            index === self.findIndex((c) => c.id === address.id)
-        );
+    this.addressOptions = addresses
+      .filter(
+        (address, index, self) =>
+          index === self.findIndex((c) => c.id === address.id)
+      )
+      .map(
+        ({ block_no, road_name, unit_no, building_name, postal_code, additional_info }) =>
+          `${block_no} ${road_name} ${unit_no} ${building_name}, ${postal_code} ${additional_info || ""}`.trim()
+      );
 
-        console.log("Address options loaded:", this.addressOptions);
-      } catch (error) {
-        console.error("Error loading address options:", error);
-        this.addressOptions = [];
-      }
-    },
+    console.log("Address options loaded:", this.addressOptions);
+  } catch (error) {
+    console.error("Error loading address options:", error);
+    this.addressOptions = [];
+  }
+},
+
 
     async loadDrivers() {
       try {
@@ -257,6 +264,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         this.driverOptions = data.map((driver) => ({
           id: driver.id,
           name: driver.name,
+          contact_no1: driver.contact_no1,
           label: `${driver.name} - ${driver.contact_no1 || ""}`,
         }));
 
@@ -278,12 +286,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         }
 
         // Map and sort time options alphabetically
-        this.timeOptions = data
-          .map((option) => ({
-            label: option.time,
-            value: option.time,
-          }))
-          .sort((a, b) => a.label.localeCompare(b.label));
+        this.timeOptions = data.map((option) => `${option.time}`);
 
         console.log("Sorted Time Options:", this.timeOptions);
       } catch (error) {
@@ -612,17 +615,17 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.instructions = [];
       this.reports = [];
       this.orderNo = "";
-      this.selectedCustomer = "";
-      this.selectedDeliveryContact = "";
-      this.selectedCollectionContact = "";
-      this.selectedDeliveryAddress = "";
-      this.selectedCollectionAddress = "";
-      this.selectedCollectionDriver = "";
-      this.selectedDeliveryDriver = "";
-      this.collectionTime = "";
-      this.deliveryTime = "";
-      this.collectionDate = "";
-      this.deliveryDate = "";
+      this.selectedCustomer = null;
+      this.selectedDeliveryContact = null;
+      this.selectedCollectionContact = null;
+      this.selectedDeliveryAddress = null;
+      this.selectedCollectionAddress = null;
+      this.selectedCollectionDriver = null;
+      this.selectedDeliveryDriver = null;
+      this.collectionTime =null;
+      this.deliveryTime = null;
+      this.collectionDate = null;
+      this.deliveryDate = null;
       this.useCcCollection = false;
       this.useCcDelivery = false;
     },
@@ -784,6 +787,214 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
+    async createOrderTransaction() {
+      try {
+    
+        // Generate timestamp
+        const currentTimestamp = new Date().toISOString();
+    
+        // Insert Order
+        const { data: orderData, error: orderError } = await supabase
+          .from("orders")
+          .insert([
+            {
+              order_no: this.orderNo,
+              collection_id: this.selectedCollection.id,
+              delivery_id: this.selectedCollection.delivery_id,
+              customer_id: this.selectedCustomer?.id || null,
+              ready_by: this.ready_by || null,
+              order_date_time: currentTimestamp,
+              goods_status: "none",
+              logistics_status: "collection arranged",
+              payment_status: "unpaid",
+              job_type: "-",
+              job_subtype: "-",
+              no_packets_hangers: "-",
+            },
+          ])
+          .select("id, order_no, ready_by, collection_id, delivery_id")
+          .single();
+    
+        if (orderError) throw orderError;
+
+        const orderId = orderData.id;
+        const orderNo = orderData.order_no;
+
+        // After inserting into the orders table, update the order no in the collections table
+        const { error: updateCollectionsError } = await supabase
+          .from("collections")
+          .update({ order_no: orderData.order_no })
+          .eq("id", orderData.collection_id);
+
+        if (updateCollectionsError) throw updateCollectionsError;
+
+        // Insert Transaction Items
+        for (const item of this.transactionItems) {
+          const itemData = {
+            item_name: item.name,
+            order_id: orderId,
+            price: item.price,
+            process: item.process,
+            pieces: item.pieces,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+            category: item.category,
+            tag_category: item.tag_category,
+          };
+          const { error: itemError } = await supabase
+            .from("transactions")
+            .insert(itemData);
+          if (itemError) throw itemError;
+        }
+
+        // Insert Instructions
+        for (const instruction of this.instructions) {
+          const instructionData = {
+            description: instruction.description,
+            admin: instruction.to.includes("admin"),
+            cleaning: instruction.to.includes("cleaning"),
+            packing: instruction.to.includes("packing"),
+            picking_sending: instruction.to.includes("pickingsending"),
+          };
+
+          const table =
+            instruction.type === "onetime"
+              ? "instructions_onetime"
+              : "instructions_recurring";
+
+          if (instruction.type === "onetime") {
+            instructionData.order_id = orderId;
+          } else {
+            instructionData.customer_id = this.selectedCustomer?.id || null;
+          }
+
+          const { error: instructionError } = await supabase
+            .from(table)
+            .insert(instructionData);
+          if (instructionError) throw instructionError;
+        }
+
+        // Insert Error Reports with File Upload
+        for (const report of this.reports) {
+          let uploadedFileUrl = null;
+
+          if (report.image) {
+            try {
+              // Extract MIME type and Base64 data
+              const [meta, base64Data] = report.image.split(",");
+              const mimeType = meta.match(/:(.*?);/)[1]; // Extract MIME type dynamically
+
+              // Validate allowed MIME types
+              const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg"];
+              if (!allowedMimeTypes.includes(mimeType)) {
+                console.error(`Unsupported file type: ${mimeType}`);
+                continue;
+              }
+
+              // Convert Base64 to Blob
+              const byteCharacters = atob(base64Data);
+              const byteArray = new Uint8Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteArray[i] = byteCharacters.charCodeAt(i);
+              }
+              const blob = new Blob([byteArray], { type: mimeType });
+
+              // Generate a unique file name with the correct extension
+              const fileExtension = mimeType.split("/")[1]; // e.g., "jpeg" or "png"
+              const now = new Date();
+
+              // Extract components
+              const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+              const day = String(now.getDate()).padStart(2, "0");
+              const year = String(now.getFullYear()).slice(-2); // Get last two digits of the year
+              const hours = String(now.getHours()).padStart(2, "0"); // Military time
+              const minutes = String(now.getMinutes()).padStart(2, "0");
+
+              // Concatenate to MMDDYYHHMM format
+              const timestamp = `${month}${day}${year}${hours}${minutes}`;
+
+              // Use the formatted timestamp in the file name
+              const fileName = `error-report-${timestamp}.${fileExtension}`;
+
+              // Upload the file to Supabase storage
+              const { data: uploadData, error: uploadError } =
+                await supabase.storage
+                  .from("error_report_images") // Replace with your bucket name
+                  .upload(fileName, blob, {
+                    cacheControl: "3600", // Cache for 1 hour
+                    upsert: false, // Avoid overwriting existing files
+                  });
+
+              if (uploadError)
+                throw new Error(`File upload failed: ${uploadError.message}`);
+
+              // Check if the file was uploaded successfully
+              if (!uploadData || !uploadData.path) {
+                throw new Error(
+                  "File upload succeeded but no path was returned."
+                );
+              }
+
+              // Get the public URL of the uploaded file
+              const { data: publicUrlData, error: urlError } = supabase.storage
+                .from("error_report_images")
+                .getPublicUrl(uploadData.path);
+
+              if (urlError)
+                throw new Error(
+                  `Public URL retrieval failed: ${urlError.message}`
+                );
+
+              // Check if the public URL is valid
+              if (!publicUrlData || !publicUrlData.publicUrl) {
+                throw new Error(
+                  "Public URL retrieval succeeded but no URL was returned."
+                );
+              }
+
+              uploadedFileUrl = publicUrlData.publicUrl;
+            } catch (uploadError) {
+              console.error("Error during file upload:", uploadError);
+              continue; // Skip this report if upload fails
+            }
+          }
+
+          // Insert the report into the error_reports table
+          try {
+            const reportData = {
+              description: report.description,
+              category: report.category,
+              sub_category: report.sub_category,
+              // order_id: orderId,
+              image: uploadedFileUrl, // Insert the uploaded image URL here
+            };
+
+            reportData.order_id = orderId;
+
+            const { error: reportError } = await supabase
+              .from("error_reports")
+              .insert(reportData);
+            if (reportError)
+              throw new Error(
+                `Failed to insert report into error_reports: ${reportError.message}`
+              );
+          } catch (insertError) {
+            console.error(
+              "Error inserting report into error_reports:",
+              insertError
+            );
+          }
+        }
+
+        // Reset transaction data after successful save
+        this.resetTransactionItems();
+
+        return orderNo; // Return the order ID for further use
+      } catch (error) {
+        console.error("Error in saveTransaction:", error);
+      }
+    },
+
     async saveTransaction(
       collectionDateFrom,
       collectionDateTo,
@@ -797,7 +1008,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           .insert([
             {
               contact_person_id: this.selectedDeliveryContact?.id || null,
-              address: this.selectedDeliveryAddress?.label || null,
+              address: this.selectedDeliveryAddress || null,
               delivery_date: this.deliveryDate,
               delivery_time: this.deliveryTime?.value || "",
               remarks: this.deliveryRemarks,
@@ -817,7 +1028,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             {
               customer_id: this.selectedCustomer?.id || null,
               contact_person_id: this.selectedCollectionContact?.id || null,
-              address: this.selectedCollectionAddress?.label || null,
+              address: this.selectedCollectionAddress || null,
               collection_date: this.collectionDate,
               collection_time: this.collectionTime?.value || "",
               remarks: this.collectionRemarks,
@@ -849,6 +1060,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_id: deliveryData.id,
               customer_id: this.selectedCustomer?.id || null,
               order_date_time: currentTimestamp,
+              ready_by: this.ready_by || null,
               goods_status: "none",
               logistics_status: "collection arranged",
               payment_status: "unpaid",
@@ -2441,6 +2653,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             address,
             date_collected,
             collection_date,
+            collection_time,
             delivery_id,
             customer_id,
             order_no,
@@ -2515,6 +2728,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           address: collection.address,
           date_collected: collection.date_collected,
           collection_date: collection.collection_date,
+          collection_time: collection.collection_time,
           delivery_id: collection.delivery_id,
           customer_id: collection.customer_id,
           order_no: collection.order_no,
@@ -2741,9 +2955,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           .insert([
             {
               contact_person_id: this.selectedDeliveryContact?.id || null,
-              address: this.selectedDeliveryAddress?.label || null,
+              address: this.selectedDeliveryAddress || null,
               delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime?.value || null,
+              delivery_time: this.deliveryTime || null,
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
               status: "-",
@@ -2761,9 +2975,9 @@ export const useTransactionStore = defineStore("transactionStore", {
             {
               customer_id: this.selectedCustomer?.id || null,
               contact_person_id: this.selectedCollectionContact?.id || null,
-              address: this.selectedCollectionAddress?.label || null,
+              address: this.selectedCollectionAddress || null,
               collection_date: this.collectionDate,
-              collection_time: this.collectionTime?.value || null,
+              collection_time: this.collectionTime || null,
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
               delivery_id: deliveryData.id,

@@ -186,7 +186,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               </div>
               <div>
                 <span class="text-weight-bold q-mr-sm">Time:</span
-                >{{ collection?.collection_time || "-" }}
+                >{{ collection.collection_time || "-" }}
               </div>
             </div>
           </div>
@@ -351,6 +351,33 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <!-- Create Order Dialog -->
+    <q-dialog
+      v-model="showCreateOrderDialog"
+      persistent
+      transition-show="slide-down"
+      transition-hide="slide-up"
+    >
+      <q-card style="min-width: 90vw">
+        <q-card-section class="dialog-header">
+          <div class="text-body1 text-uppercase text-weight-bold">
+            Create Order
+          </div>
+        </q-card-section>
+        <q-card-section>
+          <!-- Inject CreateOrder Component Here -->
+          <CreateOrder :collectionData="selectedCollection" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            class="negative-button"
+            @click="handleClose"
+            label="Close"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -360,6 +387,7 @@ import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 import CreateCollectionTab from "@/components/CustomerTab.vue";
+import CreateOrder from "@/views/CreateOrder.vue";
 
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
@@ -375,6 +403,9 @@ const collectionStartDate = ref(null);
 const collectionEndDate = ref(null);
 const deliveryStartDate = ref(null);
 const deliveryEndDate = ref(null);
+
+const showCreateOrderDialog = ref(false);
+const selectedCollection = ref(null);
 
 // Computed properties to format the date display
 const formattedCollectionStartDate = computed(() =>
@@ -536,15 +567,7 @@ async function createCollection() {
     });
 
     // Reset the fields
-    transactionStore.selectedCustomer = null;
-    transactionStore.selectedCollectionContact = null;
-    transactionStore.selectedDeliveryContact = null;
-    transactionStore.selectedCollectionAddress = null;
-    transactionStore.selectedDeliveryAddress = null;
-    transactionStore.selectedCollectionDriver = null;
-    transactionStore.selectedDeliveryDriver = null;
-    transactionStore.collectionRemarks = "";
-    transactionStore.deliveryRemarks = "";
+    transactionStore.resetTransactionItems();
 
     // Close the dialog
     showCreateCollectionDialog.value = false;
@@ -582,5 +605,33 @@ const openCustomerTab = (customerId) => {
   const url = `/customers/${customerId}`;
   window.open(url, "_blank"); // Open in a new tab
 };
+
+const createOrder = (collection) => {
+  if (!collection) return;
+
+  transactionStore.resetTransactionItems(); 
+ // Set the transaction store properties
+ transactionStore.selectedCustomer = collection.customer;
+  transactionStore.selectedDeliveryContact = collection.delivery?.contact_person || null;
+  transactionStore.selectedCollectionContact = collection.contact_person || null;
+  transactionStore.selectedDeliveryAddress = collection.delivery?.address || null;
+  transactionStore.selectedCollectionAddress = collection.address || null;
+  transactionStore.selectedCollectionDriver = collection.driver || null;
+  transactionStore.selectedDeliveryDriver = collection.delivery?.driver || null;
+  transactionStore.collectionDate = collection.collection_date || null;
+  transactionStore.deliveryDate = collection.delivery?.delivery_date || null;
+  transactionStore.collectionTime = collection.collection_time || null;
+  transactionStore.deliveryTime = collection.delivery?.delivery_time || null;
+
+  // Store selected collection data
+  transactionStore.selectedCollection = collection;
+  showCreateOrderDialog.value = true; // Open the order dialog
+};
+
+
+function handleClose() {
+    transactionStore.resetTransactionItems(); 
+    showCreateOrderDialog.value = false ;
+}
 
 </script>

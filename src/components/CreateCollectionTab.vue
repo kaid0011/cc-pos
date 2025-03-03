@@ -69,7 +69,7 @@
         />
         <q-select
           v-model="transactionStore.selectedCollectionAddress"
-          :options="addressOptions || []"
+          :options="transactionStore.addressOptions"
           option-label="label"
           option-value="id"
           label="Select Collection Address"
@@ -187,16 +187,18 @@
           class="q-mb-xs bg-white"
         />
         <q-select
-          v-model="transactionStore.selectedDeliveryAddress"
-          :options="addressOptions || []"
-          option-label="label"
-          option-value="id"
-          label="Select Delivery Address"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
+        v-model="transactionStore.selectedDeliveryAddress"
+        :options="transactionStore.addressOptions"
+        option-label="label"
+        option-value="id"
+        label="Select Delivery Address"
+        outlined
+        dense
+        clearable
+        class="q-mb-xs bg-white"
+      />
+
+      
 
         <!-- Delivery Dates -->
         <div class="row q-col-gutter-sm">
@@ -309,7 +311,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watchEffect, watch } from "vue";
+import { ref, onMounted, computed, watchEffect } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import AddContactPersonDialog from "@/components/dialogs/AddContactDialog.vue";
 import AddAddressDialog from "@/components/dialogs/AddAddressDialog.vue";
@@ -398,9 +400,13 @@ const updateOptions = async () => {
 
     transactionStore.collectionDate = new Date().toISOString().split("T")[0];
     transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
+    transactionStore.ready_by = addWorkingDays(new Date(), 7);
 
     contactOptions.value = transactionStore.contactOptions.map((contact) => ({
       id: contact.id,
+      name: contact.name,
+      contact_no1: contact.contact_no1,
+      contact_no2: contact.contact_no2,
       label: `${contact.name} - ${contact.contact_no1 || ""} / ${
         contact.contact_no2 || "-"
       }`,
@@ -448,6 +454,7 @@ const resetCollection = () => {
   transactionStore.collectionTime = null;
   transactionStore.selectedCollectionDriver = null;
   transactionStore.collectionRemarks = "";
+  transactionStore.ready_by = addWorkingDays(new Date(), 7);
 };    
 
 
@@ -480,4 +487,5 @@ const confirmAction = () => {
   }
   showConfirmation.value = false;
 };
+
 </script>

@@ -23,8 +23,7 @@
           <div class="text-summary-row">
             Contact Nos:
             <span class="text-summary"
-              >{{ transactionStore.selectedCustomer?.contact_no1 || "N/A" }} /
-              {{ transactionStore.selectedCustomer?.contact_no2 || "-" }}</span
+              >{{ transactionStore.selectedCustomer?.contact_no1 || "N/A" }}<span v-if="transactionStore.selectedCustomer?.contact_no2"> / {{ transactionStore.selectedCustomer?.contact_no2 || "-" }}</span></span
             >
           </div>
           <div class="text-summary-row">
@@ -42,20 +41,16 @@
           <q-separator class="q-my-sm" />
           <div class="text-summary-row">
             Contact Person:
-            <span class="text-summary">{{
-              collectionContact?.name || "-"
-            }}</span>
+            <span class="text-summary">{{ collectionContact?.name || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Contact Nos:
             <span class="text-summary"
-              >{{ collectionContact?.contact_no1 || "N/A" }} /
-              {{ collectionContact?.contact_no2 || "-" }}</span
-            >
+              >{{ collectionContact?.contact_no1 || "N/A" }}<span v-if="collectionContact?.contact_no2"> / {{ collectionContact?.contact_no2 || "-" }}</span></span>
           </div>
           <div class="text-summary-row">
             Address: 
-            <span class="text-summary">{{ collectionAddress?.label || '-'}} </span>
+            <span class="text-summary">{{ collectionAddress || '-'}} </span>
           </div>
           <div class="text-summary-row">
             Collection Date:
@@ -63,11 +58,11 @@
           </div>
           <div class="text-summary-row">
             Collection Time:
-            <span class="text-summary">{{ transactionStore.collectionTime?.label || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.collectionTime || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Collection Driver:
-            <span class="text-summary">{{ transactionStore.selectedCollectionDriver?.label || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.selectedCollectionDriver?.name || "-" }}</span>
           </div>
         </div>
 
@@ -86,13 +81,12 @@
           <div class="text-summary-row">
             Contact Nos:
             <span class="text-summary"
-              >{{ deliveryContact?.contact_no1 || "N/A" }} /
-              {{ deliveryContact?.contact_no2 || "-" }}</span
+              >{{ deliveryContact?.contact_no1 || "N/A" }}<span v-if="deliveryContact?.contact_no2"> / {{ deliveryContact?.contact_no2 || "-" }}</span></span
             >
           </div>
           <div class="text-summary-row">
             Address:
-            <span class="text-summary">{{ deliveryAddress?.label || '-' }}</span>
+            <span class="text-summary">{{ deliveryAddress || '-' }}</span>
           </div>
           <div class="text-summary-row">
             Delivery Date:
@@ -100,11 +94,11 @@
           </div>
           <div class="text-summary-row">
             Delivery Time:
-            <span class="text-summary">{{ transactionStore.deliveryTime?.label || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.deliveryTime || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Delivery Driver:
-            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver?.label || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver?.name || "-" }}</span>
           </div>
         </div>
       </div>
@@ -340,11 +334,7 @@
       <!-- Stepper Navigation -->
       <q-stepper-navigation>
         <div class="row justify-end q-mx-md q-my-sm">
-          <q-btn
-            @click="handleSubmit"
-            color="primary"
-            label="Submit Transaction"
-          />
+
         </div>
       </q-stepper-navigation>
     </div>
@@ -443,56 +433,6 @@ const formattedDeliveryDate = computed(() => {
 
     : "--/--/----";
 });
-
-const transactionSuccess = ref(false); // Tracks if transaction was successful
-let submittedOrderId = null; // Store the submitted order ID for invoice generation
-
-// Handle transaction submission
-async function handleSubmit() {
-  try {
-    const orderNo = await transactionStore.saveTransaction(); // Save transaction and get orderNo
-    if (!orderNo) {
-      throw new Error("Order number could not be retrieved.");
-    }
-
-    dialogMessage.value = `Transaction for Order No: ${orderNo} submitted successfully!`;
-    transactionStore.orderNo = orderNo; // Save the orderNo in the store
-    transactionSuccess.value = true;
-    isDialogOpen.value = true;
-  } catch (error) {
-    dialogMessage.value = `Error submitting transaction: ${error.message}`;
-    transactionSuccess.value = false;
-    isDialogOpen.value = true;
-    console.error("Error submitting transaction:", error.message);
-  }
-}
-
-async function handleGenerateInvoice() {
-  try {
-    const orderNo = transactionStore.orderNo; // Retrieve the orderNo from the store
-    if (!orderNo) {
-      throw new Error(
-        "Order number is missing. Please submit the transaction first."
-      );
-    }
-
-    const result = await transactionStore.generateInvoice(orderNo);
-    if (result) {
-      dialogMessage.value = `Invoice generated successfully for Order No: ${orderNo}!`;
-      transactionSuccess.value = true;
-
-      // Open the payment page in a new tab
-      window.open(`/payment/${orderNo}`, "_blank");
-    } else {
-      dialogMessage.value = "Failed to generate invoice.";
-      transactionSuccess.value = false;
-    }
-  } catch (error) {
-    console.error("Error generating invoice:", error.message);
-    dialogMessage.value = `Error: ${error.message}`;
-    transactionSuccess.value = false;
-  }
-}
 
 const computedPcs = (item) => {
   return (item.pieces || 1) * (item.quantity || 1);

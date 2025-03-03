@@ -621,6 +621,8 @@ font-weight: bold;
 .tag-borders {
   border-style: solid; 
   border-width: 1px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .tags-view-container {
@@ -630,25 +632,31 @@ font-weight: bold;
   padding: 0 !important;
 }
 
-.tags-left-container{
-  padding: 1em !important;
-  background-color: #ffe0cd;
-}
-
-.tags-right-container {
-  padding: 0 !important;
-  background-color: #edd0bd;
-}
-
-.tag-card {
+/* .tag-card {
   width: 100%;
   padding: 10px;
+} */
+
+.tag-card {
+  width: 210mm;
+  height: 297mm;
+  min-width: 210mm;
+  min-height: 297mm;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5in;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.tag-card-header {
+background-color: #e9e9e9;
 }
 
 .tag-card-cell {
   border-style: solid; 
-  border-width: 0.5px;
-  padding: 5px;
+  border-width: 1px 0 1px 0;
+  padding: 8px;
 }
 
 .bottom-border {

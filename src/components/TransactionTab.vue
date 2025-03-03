@@ -127,11 +127,8 @@
         <!-- Contact No -->
         <div class="col">
           <div>
-            <span class="text-summary">{{
-              transactionStore.selectedCustomer?.contact_no1 || "N/A"
-            }} / {{
-              transactionStore.selectedCustomer?.contact_no2 || "-"
-            }}</span>
+            <span class="text-summary">
+              {{ transactionStore.selectedCustomer?.contact_no1 || "N/A" }}<span v-if="transactionStore.selectedCustomer?.contact_no2"> / {{ transactionStore.selectedCustomer?.contact_no2 || "-" }}</span></span>
           </div>
         </div>
 

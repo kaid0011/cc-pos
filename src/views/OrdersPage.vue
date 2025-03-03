@@ -308,7 +308,7 @@ const openOrderDialog = async (order) => {
     transactionStore.setOrderNo(order.order_no);
 
     // Set other transaction details
-    transactionStore.resetItems(); // Reset previous transaction items
+    transactionStore.resetTransactionItems(); // Reset previous transaction items
 
     // Open a new tab for the ReviewTab with the order_no as a parameter
     window.open(`/orders/${order.order_no}`, "_blank");

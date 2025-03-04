@@ -1,37 +1,53 @@
 <template>
   <div class="full-container contact-persons-management">
-    <div class="customer-details-container q-pb-md">
-      <q-btn
-        dense
-        label="Create Collection"
-        color="primary"
-        class="secondary-button q-ma-xs q-px-sm"
-        @click="openCollectionDialog(customerDetails)"
-      />
-      <q-card flat bordered>
-        <q-btn
-          dense
-          label="Update"
-          color="primary"
-          class="secondary-button q-ma-xs q-px-sm"
-          @click="openUpdateCustomerDialog(customerDetails)"
-        />
-        <q-card-section>
-          <div class="row items-start q-gutter-md">
-            <div class="col">
+
+    <div class="preview row">
+      <div class="col-6 preview-left-container">
+        <div class="customer-details-container q-pb-md">
+          <q-btn
+            dense
+            flat
+            label="Create Collection"
+            class="bg-primary text-white full-width q-ma-xs q-px-sm"
+            @click="openCollectionDialog(customerDetails)"
+          />
+        </div>
+        <q-card class="preview-card">
+          <div class="row justify-between items-center">
+            <div class="text-h6 text-uppercase text-weight-bolder q-ml-lg q-mt-md">
+              Customer Details
+              <q-separator />
+            </div>
+            <q-btn
+              dense
+              label="Update Customer Details"
+              color="primary"
+              class="float-right q-ma-sm q-px-sm"
+              @click="openUpdateCustomerDialog(customerDetails)"
+            />
+          </div>
+          <q-card-section>
+            <div class="text-subtitle1 q-ml-md">
               <!-- <div><strong>ID:</strong> {{ customerDetails.id }}</div> -->
               <div>
                 <strong>Customer Name:</strong> {{ customerDetails.name }}
               </div>
               <div>
-                <strong>Contact No 1:</strong> {{ customerDetails.contact_no1 }}<span v-if="customerDetails.contact_no2 && customerDetails.contact_no2.length"> / {{ customerDetails.contact_no2 }}</span>
-
+                <strong>Contact Nos:</strong> {{ customerDetails.contact_no1
+                }}<span
+                  v-if="
+                    customerDetails.contact_no2 &&
+                    customerDetails.contact_no2.length
+                  "
+                >
+                  / {{ customerDetails.contact_no2 }}</span
+                >
               </div>
               <!-- <div>
-                <strong>Contact No 2:</strong> {{ customerDetails.contact_no2 }}
-              </div> -->
+            <strong>Contact No 2:</strong> {{ customerDetails.contact_no2 }}
+          </div> -->
               <div><strong>Email:</strong> {{ customerDetails.email }}</div>
-              
+
               <div>
                 <strong>Customer Type:</strong> {{ customerDetails.type }}
               </div>
@@ -39,189 +55,233 @@
                 <strong>Customer Sub Type:</strong>
                 {{ customerDetails.sub_type }}
               </div>
-              <div><strong>Payment Type:</strong> {{ customerDetails.payment_type }}</div>
+              <div>
+                <strong>Payment Type:</strong>
+                {{ customerDetails.payment_type }}
+              </div>
 
               <div>
                 <strong>Recommended By:</strong>
                 {{ customerDetails.recommended_by }}
               </div>
-              <div><strong>Remarks:</strong> {{ customerDetails.remarks }}</div>
               <div>
                 <strong>Customer Since:</strong>
                 {{ formatDate(customerDetails.created_at) }}
               </div>
             </div>
-          </div>
-        </q-card-section>
-      </q-card>
-    </div>
-    <div class="show-addresses q-py-sm">
-      <q-btn
-        flat
-        :icon="showAddresses ? 'arrow_drop_up' : 'arrow_drop_down'"
-        label="Show Addresses"
-        class="full-width text-primary show-list-tab"
-        @click="toggleAddresses"
-      />
-      <div v-if="showAddresses" class="q-pa-md addresses-container">
-        <div class="row items-center justify-between">
+            <q-separator class="q-my-md" />
+            <div class="row">
+              <div class="col all-border">
+                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Schedule Remarks:</div>
+                <div class="q-pa-sm">
+                  {{ customerDetails.schedule_remarks }}
+                </div>
+              </div>
+              <div class="col all-border">
+                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Price Remarks:</div>
+                <div class="q-pa-sm">{{ customerDetails.price_remarks }}</div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col all-border">
+                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Accounting Remarks:</div>
+                <div class="q-pa-sm">{{ customerDetails.accounting_remarks }}</div>
+              </div>
+              <div class="col all-border">
+                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Other Remarks:</div>
+                <div class="q-pa-sm">{{ customerDetails.other_remarks }}</div>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+        <div class="show-addresses q-pt-md">
           <q-btn
-            color="primary"
-            class="main-button"
-            @click="showAddAddressDialog = true"
-            label="Add Address"
+            
+            :icon="showAddresses ? 'arrow_drop_up' : 'arrow_drop_down'"
+            label="Show Addresses"
+            class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
+            @click="toggleAddresses"
           />
+          <div v-if="showAddresses" class="q-pa-md addresses-container">
+            <div class="row items-center justify-end">
+              <q-btn
+                flat
+                dense
+                icon="add"
+                color="primary"
+                class="q-mb-sm text-weight-bold"
+                @click="showAddAddressDialog = true"
+                label="Add Address"
+              />
+            </div>
+
+            <!-- Addresses Data -->
+            <div class="row-col-table">
+              <!-- Table Header -->
+              <div class="row row-col-header q-px-xs text-center">
+                <div class="col col-6 bordered text-weight-bolder">Address</div>
+                <div class="col col-3 bordered text-weight-bolder">Remarks</div>
+                <div class="col col-3 bordered text-weight-bolder">Actions</div>
+              </div>
+
+              <!-- Table Rows -->
+              <div
+                v-for="address in addresses"
+                :key="address.id"
+                class="row row-col-row q-mx-md"
+              >
+                <div class="col col-6 bordered">
+                  {{ address.block_no }} {{ address.road_name }}
+                  {{ address.unit_no }} {{ address.building_name }}
+                  {{ address.postal_code
+                  }}<span v-if="address.additional_info.length != 0"
+                    >, ({{ address.additional_info }})</span
+                  >
+                </div>
+                <div class="col col-3 bordered">
+                  {{ address.remarks || "-" }}
+                </div>
+                <div class="col col-3 bordered actions">
+                  <q-btn
+                    dense
+                    label="Update"
+                    color="primary"
+                    class="main-button q-ma-xs q-px-sm"
+                    @click="openUpdateDialog(address, 'address')"
+                  />
+
+                  <q-btn
+                    dense
+                    label="Delete"
+                    color="negative"
+                    class="negative-button q-ma-xs q-px-sm"
+                    @click="openDeleteDialog(address, 'address')"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Addresses Data -->
-        <div class="row-col-table q-mt-md">
-          <!-- Table Header -->
-          <div class="row row-col-header q-px-md">
-            <div class="col col-6 bordered">Address</div>
-            <div class="col col-3 bordered">Remarks</div>
-            <div class="col col-3 bordered">Actions</div>
-          </div>
-
-          <!-- Table Rows -->
+        <div class="show-contact-person q-pt-md">
+          <q-btn
+            :icon="showContactPersons ? 'arrow_drop_up' : 'arrow_drop_down'"
+            label="Show Contact Persons"
+            class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
+            @click="toggleContactPersons"
+          />
           <div
-            v-for="address in addresses"
-            :key="address.id"
-            class="row row-col-row q-mx-md"
+            v-if="showContactPersons"
+            class="q-pa-md contact-persons-container"
           >
-            <div class="col col-6 bordered">
-              {{ address.block_no }} {{ address.road_name }}
-              {{ address.unit_no }} {{ address.building_name }}
-              {{ address.postal_code }}<span v-if="address.additional_info.length != 0">, ({{ address.additional_info }})</span>
-            </div>
-            <div class="col col-3 bordered">{{ address.remarks || "-" }}</div>
-            <div class="col col-3 bordered actions">
+            <div class="row items-bottom justify-between">
+              <!-- Search Field -->
+              <div class="search-container q-pt-none">
+                <q-input
+                  v-model="searchQuery"
+                  placeholder="Search contact person..."
+                  square
+                  dense
+                  outlined
+                  class="search-input"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="search" />
+                  </template>
+
+                  <template v-slot:append>
+                    <q-icon
+                      name="close"
+                      @click="searchQuery = ''"
+                      class="cursor-pointer"
+                    />
+                  </template>
+                </q-input>
+              </div>
+              <!-- Add Contact Person Button -->
               <q-btn
-              dense
-              label="Update"
-              color="primary"
-              class="main-button q-ma-xs q-px-sm"
-              @click="openUpdateDialog(address, 'address')"
-            />
-            
-              <q-btn
+                flat
                 dense
-                label="Delete"
-                color="negative"
-                class="negative-button q-ma-xs q-px-sm"
-                @click="openDeleteDialog(address, 'address')"
+                icon="add"
+                color="primary"
+                class="text-weight-bold"
+                @click="showAddContactPersonDialog = true"
+                label="Add Contact Person"
               />
+            </div>
+
+            <!-- Contact Persons Data -->
+            <div class="row-col-table q-mt-sm">
+              <!-- Table Header -->
+              <div class="row row-col-header q-px-xs text-center">
+                <div class="col bordered text-weight-bolder">Name</div>
+                <div class="col bordered text-weight-bolder">Contact No</div>
+                <!-- <div class="col col-2 bordered">Contact No 2</div> -->
+                <div class="col bordered text-weight-bolder">Email</div>
+                <div class="col bordered text-weight-bolder">Remarks</div>
+                <div class="col bordered text-weight-bolder">Actions</div>
+              </div>
+
+              <!-- Table Rows -->
+              <div
+                v-for="person in filteredContactPersons"
+                :key="person.id"
+                class="row row-col-row q-mx-md"
+              >
+                <div class="col bordered">{{ person.name }}</div>
+                <div class="col bordered">
+                  <div>{{ person.contact_no1 }}</div>
+                  <div v-if="person.contact_no2?.length != 0">
+                    {{ person.contact_no2 }}
+                  </div>
+                </div>
+                <!-- <div class="col col-2 bordered">{{ person.contact_no2 }}</div> -->
+                <div class="col bordered">{{ person.email }}</div>
+                <div class="col bordered">{{ person.remarks }}</div>
+                <div class="col bordered actions">
+                  <q-btn
+                    dense
+                    label="Update"
+                    color="primary"
+                    class="main-button q-ma-xs q-px-sm"
+                    @click="openUpdateDialog(person, 'contact')"
+                  />
+
+                  <q-btn
+                    dense
+                    label="Delete"
+                    color="negative"
+                    class="negative-button q-ma-xs q-px-sm"
+                    @click="openDeleteDialog(person, 'contact')"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="show-contact-person q-py-sm">
-      <q-btn
-        flat
-        :icon="showContactPersons ? 'arrow_drop_up' : 'arrow_drop_down'"
-        label="Show Contact Persons"
-        class="full-width text-primary show-list-tab"
-        @click="toggleContactPersons"
-      />
-      <div v-if="showContactPersons" class="q-pa-md contact-persons-container">
-        <div class="row items-center justify-between">
-          <!-- Add Contact Person Button -->
-          <q-btn
-            color="primary"
-            class="main-button"
-            @click="showAddContactPersonDialog = true"
-            label="Add Contact Person"
-          />
-          <!-- Search Field -->
-          <div class="search-container q-pt-none">
-            <q-input
-              v-model="searchQuery"
-              placeholder="Search contact person..."
-              square
-              dense
-              outlined
-              class="search-input"
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" />
-              </template>
-
-              <template v-slot:append>
-                <q-icon
-                  name="close"
-                  @click="searchQuery = ''"
-                  class="cursor-pointer"
-                />
-              </template>
-            </q-input>
-          </div>
-        </div>
-
-        <!-- Contact Persons Data -->
-        <div class="row-col-table">
-          <!-- Table Header -->
-          <div class="row row-col-header q-px-md">
-            <div class="col col-2 bordered">Name</div>
-            <div class="col col-2 bordered">Contact No</div>
-            <!-- <div class="col col-2 bordered">Contact No 2</div> -->
-            <div class="col col-2 bordered">Email</div>
-            <div class="col col-2 bordered">Remarks</div>
-            <div class="col col-2 bordered">Actions</div>
-          </div>
-
-          <!-- Table Rows -->
-          <div
-            v-for="person in filteredContactPersons"
-            :key="person.id"
-            class="row row-col-row q-mx-md"
-          >
-            <div class="col col-2 bordered">{{ person.name }}</div>
-            <div class="col col-2 bordered">{{ person.contact_no1 }}<span v-if="person.contact_no2?.length != 0"> / {{ person.contact_no2 }}</span></div>
-            <!-- <div class="col col-2 bordered">{{ person.contact_no2 }}</div> -->
-            <div class="col col-2 bordered">{{ person.email }}</div>
-            <div class="col col-2 bordered">{{ person.remarks }}</div>
-            <div class="col col-2 bordered actions">
-              <q-btn
-              dense
-              label="Update"
-              color="primary"
-              class="main-button q-ma-xs q-px-sm"
-              @click="openUpdateDialog(person, 'contact')"
-            />
-            
-              <q-btn
-                dense
-                label="Delete"
-                color="negative"
-                class="negative-button q-ma-xs q-px-sm"
-                @click="openDeleteDialog(person, 'contact')"
-              />
-            </div>
-          </div>
-        </div>
+      <div class="col-6 preview-right-container">
+        <q-card class="preview-card q-ma-md text-subtitle1">
+          <div>Customer Description / Rating</div>
+        <div>Total / Average Usage</div>
+        <div>Credits</div>
+        <div>Outstanding Amount</div>
+        <div>Invoice History</div>
+        <div>Error Reports History (with view image)</div>
+        <div>Outstanding Complaints History (with view image)</div>
+        <div>Compensation History</div>
+        </q-card>
       </div>
     </div>
 
-    <div>
-      <div>Customer Description / Rating</div>
-      <div>Total / Average Usage</div>
-      <div>Credits</div>
-      <div>Outstanding Amount</div>
-      <div>Invoice History</div>
-      <div>Error Reports History (with view image)</div>
-      <div>Outstanding Complaints History (with view image)</div>
-      <div>Compensation History</div>
-    </div>
     <AddContactPersonDialog
       v-model="showAddContactPersonDialog"
       @contact-added="handleContactAdded"
     />
     <UpdateContactDialog
-    v-model="showUpdateContactPersonDialog"
-    @contact-updated="handleUpdated"
-  />
-  
+      v-model="showUpdateContactPersonDialog"
+      @contact-updated="handleUpdated"
+    />
 
     <q-dialog
       v-model="showCreateCollectionDialog"
@@ -262,11 +322,11 @@
       @address-added="handleAddressAdded"
     />
     <UpdateAddressDialog
-    v-model="showUpdateAddressDialog"
-    :initialAddress="selectedAddress"
-    @address-updated="handleUpdated"
-  />
-  
+      v-model="showUpdateAddressDialog"
+      :initialAddress="selectedAddress"
+      @address-updated="handleUpdated"
+    />
+
     <DeleteConfirmationDialog
       :isOpen="showDeleteDialog"
       :title="deleteDialogTitle"

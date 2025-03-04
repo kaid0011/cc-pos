@@ -156,7 +156,7 @@
               Address:
               <q-select
                 v-model="collection.address"
-                :options="addressOptions"
+                :options="transactionStore.addressOptions"
                 option-label="label"
                 option-value="id"
                 outlined
@@ -269,7 +269,7 @@
               Address:
               <q-select
                 v-model="delivery.address"
-                :options="addressOptions"
+                :options="transactionStore.addressOptions"
                 option-label="label"
                 option-value="id"
                 outlined

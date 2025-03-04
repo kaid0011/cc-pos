@@ -1,5 +1,5 @@
 <template>
-  <div class="full-container transactions-history">
+  <div class="full-container tags-management">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
       Tags Management
     </div>

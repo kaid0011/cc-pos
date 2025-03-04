@@ -815,6 +815,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               job_type: "-",
               job_subtype: "-",
               no_packets_hangers: "-",
+              tag_status: "to print"
             },
           ])
           .select("id, order_no, ready_by, collection_id, delivery_id")
@@ -1072,6 +1073,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               job_type: "-",
               job_subtype: "-",
               no_packets_hangers: "-",
+              tag_status: "to print"
             },
           ])
           .select("id, order_no, ready_by, collection_id, delivery_id")
@@ -1621,6 +1623,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             job_type: orderDetails.job_type,
             job_subtype: orderDetails.job_subtype,
             no_packets_hangers: orderDetails.no_packets_hangers,
+            tag_status: orderDetails.tag_status
           },
           transactions: orderDetails.transactions || [],
           errorReports: orderDetails.error_reports || [],

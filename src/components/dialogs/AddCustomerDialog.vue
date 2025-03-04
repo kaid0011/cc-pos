@@ -1,48 +1,50 @@
 <template>
   <q-dialog v-model="isOpen" persistent>
-    <q-card style="min-width: 70em;">
+    <q-card style="min-width: 70em">
       <q-card-section class="dialog-header">
         <div class="text-weight-bold text-h6">Add Customer</div>
       </q-card-section>
       <q-card-section class="dialog-body">
         <q-form @submit.prevent="handleAddCustomer">
-          <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-md">Customer Details</div>
+          <div
+            class="text-center text-h6 text-weight-bold text-uppercase q-mb-md"
+          >
+            Customer Details
+          </div>
 
           <div class="row q-col-gutter-x-sm">
             <div class="col">
               <div class="dialog-label">Name:</div>
               <q-input
-              v-model="customer.name"
-              label="Name"
-              outlined
-              required
-              class="dialog-inputs"
-            />
+                v-model="customer.name"
+                label="Name"
+                outlined
+                required
+                class="dialog-inputs"
+              />
             </div>
             <div class="col-3">
               <div class="dialog-label">Customer Type:</div>
               <q-select
-          v-model="selectedType"
-          :options="typeOptions"
-          option-value="value"
-          option-label="label"
-          label="Select Customer Type"
-          outlined
-          class="dialog-inputs"
-        />
-
-        
+                v-model="selectedType"
+                :options="typeOptions"
+                option-value="value"
+                option-label="label"
+                label="Select Customer Type"
+                outlined
+                class="dialog-inputs"
+              />
             </div>
             <div class="col-3">
               <div class="dialog-label">Customer Sub-Type:</div>
               <q-select
-          v-model="selectedSubType"
-          :options="filteredSubTypes"
-          label="Select Customer Sub-Type"
-          outlined
-          class="dialog-inputs"
-          :disable="!selectedType"
-        />
+                v-model="selectedSubType"
+                :options="filteredSubTypes"
+                label="Select Customer Sub-Type"
+                outlined
+                class="dialog-inputs"
+                :disable="!selectedType"
+              />
             </div>
           </div>
           <div class="row q-col-gutter-x-sm">
@@ -68,36 +70,40 @@
             <div class="col">
               <div class="dialog-label">E-mail Address:</div>
               <q-input
-              v-model="customer.email"
-              label="Email"
-              outlined
-              class="dialog-inputs"
-            />
+                v-model="customer.email"
+                label="Email"
+                outlined
+                class="dialog-inputs"
+              />
             </div>
           </div>
           <div class="row q-col-gutter-x-sm">
             <div class="col">
               <div class="dialog-label">Payment Type:</div>
               <q-select
-              v-model="customer.payment_type"
-              :options="paymentTypeOptions"
-              label="Payment Type"
-              outlined
-              class="dialog-inputs"
-            />
+                v-model="customer.payment_type"
+                :options="paymentTypeOptions"
+                label="Payment Type"
+                outlined
+                class="dialog-inputs"
+              />
             </div>
             <div class="col">
               <div class="dialog-label">Recommended By:</div>
               <q-input
-              v-model="customer.recommended_by"
-              label="Recommended By"
-              outlined
-              class="dialog-inputs"
-            />
+                v-model="customer.recommended_by"
+                label="Recommended By"
+                outlined
+                class="dialog-inputs"
+              />
             </div>
           </div>
-          <q-separator class="q-my-md"/>
-          <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-sm">Remarks</div>
+          <q-separator class="q-my-md" />
+          <div
+            class="text-center text-h6 text-weight-bold text-uppercase q-mb-sm"
+          >
+            Remarks
+          </div>
           <div class="row q-col-gutter-x-sm">
             <div class="col">
               <q-input
@@ -110,37 +116,35 @@
             </div>
             <div class="col">
               <q-input
-          v-model="customer.price_remarks"
-          label="Price Remarks"
-          outlined
-          type="textarea"
-          class="dialog-inputs"
-        />
+                v-model="customer.price_remarks"
+                label="Price Remarks"
+                outlined
+                type="textarea"
+                class="dialog-inputs"
+              />
             </div>
           </div>
           <div class="row q-col-gutter-x-sm">
             <div class="col">
               <q-input
-        v-model="customer.accounting_remarks"
-        label="Accounting Remarks"
-        outlined
-        type="textarea"
-        class="dialog-inputs"
-      />
+                v-model="customer.accounting_remarks"
+                label="Accounting Remarks"
+                outlined
+                type="textarea"
+                class="dialog-inputs"
+              />
             </div>
             <div class="col">
               <q-input
-      v-model="customer.other_remarks"
-      label="Other Remarks"
-      outlined
-      type="textarea"
-      class="dialog-inputs"
-    />
+                v-model="customer.other_remarks"
+                label="Other Remarks"
+                outlined
+                type="textarea"
+                class="dialog-inputs"
+              />
             </div>
           </div>
-          
-       
-      
+
           <q-card-actions align="right">
             <q-btn label="Cancel" color="negative" @click="closeDialog" />
             <q-btn label="Add" color="primary" type="submit" />
@@ -161,18 +165,17 @@ const emit = defineEmits(["update:modelValue", "customer-added"]);
 const transactionStore = useTransactionStore();
 const isOpen = ref(props.modelValue);
 
-
 // Selected Values
 const selectedType = ref(null);
 const selectedSubType = ref(null);
 
 const paymentTypeOptions = ref(["Cash", "Paid Online", "Pay Now"]);
 
-
 // Ensure customer.type & sub_type match selected dropdowns
 watch([selectedType, selectedSubType], ([newType, newSubType]) => {
   customer.value.type = newType && newType.value ? newType.value : ""; // Update customer type
-  customer.value.sub_type = newSubType && newSubType.value ? newSubType.value : ""; // Update customer sub-type
+  customer.value.sub_type =
+    newSubType && newSubType.value ? newSubType.value : ""; // Update customer sub-type
 });
 
 // Sync `isOpen` with `modelValue` from parent
@@ -185,7 +188,6 @@ watch(
     }
   }
 );
-
 
 const customer = ref({
   name: "",
@@ -210,7 +212,9 @@ const setCreatedAt = () => {
 const handleAddCustomer = async () => {
   try {
     customer.value.type = selectedType.value ? selectedType.value.value : "";
-    customer.value.sub_type = selectedSubType.value ? selectedSubType.value.value : "";
+    customer.value.sub_type = selectedSubType.value
+      ? selectedSubType.value.value
+      : "";
 
     await transactionStore.createCustomer(customer.value);
     emit("customer-added"); // Notify parent
@@ -235,10 +239,10 @@ const resetCustomerForm = () => {
     sub_type: "",
     payment_type: "",
     recommended_by: "",
-  schedule_remarks: "",
-  price_remarks: "",
-  accounting_remarks: "",
-  other_remarks: "",
+    schedule_remarks: "",
+    price_remarks: "",
+    accounting_remarks: "",
+    other_remarks: "",
   };
   selectedType.value = null;
   selectedSubType.value = null;
@@ -249,7 +253,6 @@ const resetCustomerForm = () => {
 const typeOptions = ref([]);
 const subTypeMapping = ref({});
 const filteredSubTypes = ref([]);
-
 
 const fetchCustomerTypes = async () => {
   try {

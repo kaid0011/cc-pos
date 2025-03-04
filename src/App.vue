@@ -48,7 +48,7 @@
             class="q-pa-md"
           >
             <q-item-section avatar>
-              <q-icon name="receipt_long" />
+              <q-icon name="list_alt" />
             </q-item-section>
             <q-item-section> Order Management </q-item-section>
           </q-item>
@@ -127,6 +127,19 @@
           </q-item>
         </q-expansion-item> -->
 
+                  <!-- Invoices Management -->
+                  <q-item
+                  clickable
+                  @click="goToInvoicesPage"
+                  :active="isInvoicesPageActive"
+                  class="q-pa-md"
+                >
+                  <q-item-section avatar>
+                    <q-icon name="receipt_long" />
+                  </q-item-section>
+                  <q-item-section> Invoice Management </q-item-section>
+                </q-item>
+
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
             <q-item-section avatar>
@@ -173,8 +186,11 @@ const isCustomersPageActive = computed(() => route.path === "/customers");
 // Check if the current route is Tags Page
 const isTagsPageActive = computed(() => route.path === "/tags");
 
-// Check if the current route is Tags Page
+// Check if the current route is Logistics Page
 const isLogisticsPageActive = computed(() => route.path === "/logistics");
+
+// Check if the current route is Invoices Page
+const isInvoicesPageActive = computed(() => route.path === "/invoices");
 
 // Check if the current route is Collections
 // const isCollectionsActive = computed(() => route.path === "/collections");
@@ -192,6 +208,7 @@ const requiresAuth = computed(() => {
     "/customers",
     "/tags",
     "/logistics",
+    "/invoices",
     // "/collections",
     // "/deliveries",
   ];
@@ -241,4 +258,8 @@ const goToLogisticsPage = () => {
 // const goToDeliveries = () => {
 //   router.push("/deliveries");
 // };
+
+const goToInvoicesPage = () => {
+  router.push("/invoices");
+};
 </script>

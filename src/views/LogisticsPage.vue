@@ -11,7 +11,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
 </script> -->
 
 <template>
-  <div class="full-container logistics-history">
+  <div class="full-container logistics-management">
     <q-btn
       dense
       label="Create Collection"

@@ -1,272 +1,280 @@
 <template>
   <div class="tags-view-container">
-<div class="row justify-center q-col-gutter-md q-pa-md">
-<div class="col-auto">
-  <q-btn color="primary" @click="downloadTagPDF">
-    Download Tag Slip PDF
-  </q-btn>
-</div>
-<div class="col-auto">
-  <q-btn color="primary" @click="PrintTagPDF">
-    Print Tag Slip PDF
-  </q-btn>
-</div>
-<div class="col-auto">
-  <q-btn color="primary" @click="PrintTag">
-    Print Tags
-  </q-btn>
-</div>
-</div>
-<div class="row justify-center">
-  <q-card class="tag-card" ref="printableCard">
-    <div class="row tag-card-header justify-between items-center">
-      <!-- QR Code Section -->
+    <div class="row justify-center q-col-gutter-md q-pa-md">
       <div class="col-auto">
-        <qrcode-vue
-          v-if="order?.order_no"
-          :value="order.order_no"
-          :size="70"
-          level="H"
-          class="q-mt-sm q-ml-sm"
-        />
-        <div v-else>No QR Code</div>
+        <q-btn color="primary" @click="downloadTagPDF">
+          Download Tag Slip PDF
+        </q-btn>
       </div>
-      <div class="col text-subtitle1 q-ma-md">
-        <div class="">
-          Order No:
-          <span class="text-summary">{{ order?.order_no || "N/A" }}</span>
-        </div>
-        <div class="">
-          Order Date:
-          <span class="text-summary">{{ formattedOrderDate }}</span>
-        </div>
+      <div class="col-auto">
+        <q-btn color="primary" @click="PrintTagPDF"> Print Tag Slip PDF </q-btn>
       </div>
-      <div class="col-auto text-h6 q-pa-md">
-        <div class="text-uppercase bg-grey-3 text-weight-bolder order-box">
-          <div class="q-px-sm">Tag Slip</div>
-        </div>
+      <div class="col-auto">
+        <q-btn color="primary" @click="PrintTag"> Print Tags </q-btn>
       </div>
-       
     </div>
+    <div class="row justify-center q-mb-lg">
+      <q-card class="tag-card-container">
+        <q-card flat class="tag-card" ref="printableCard">
+          <div class="row tag-card-header justify-between items-center">
+            <!-- QR Code Section -->
+            <div class="col-auto">
+              <qrcode-vue
+                v-if="order?.order_no"
+                :value="order.order_no"
+                :size="70"
+                level="H"
+                class="q-mt-sm q-ml-sm"
+              />
+              <div v-else>No QR Code</div>
+            </div>
+            <div class="col text-h6 q-ma-md">
+              <div class="">
+                Order No:
+                <span class="text-summary text-h5">{{
+                  order?.order_no || "N/A"
+                }}</span>
+              </div>
+              <div class="">
+                Order Date:
+                <span class="text-summary text-h5">{{
+                  formattedOrderDate
+                }}</span>
+              </div>
+            </div>
+            <div class="col-auto text-h6 q-pa-md">
+              <div
+                class="text-uppercase bg-grey-3 text-weight-bolder order-box"
+              >
+                <div class="q-px-sm">Tag Slip</div>
+              </div>
+            </div>
+          </div>
 
-    <div class="row justify-between q-pa-md">
-      <div class="col">
-        <div class="">
-          Customer Name:
-          <span class="text-summary">{{ customer?.name || "N/A" }}</span>
-        </div>
-        <div class="">
-          Contact Nos:
-          <span class="text-summary"
-            >{{ customer?.contact_no1 || "N/A"
-            }}<span v-if="customer?.contact_no2">
-              / {{ customer?.contact_no2 || "-" }}</span
-            ></span
-          >
-        </div>
-        <div class="">
-          Ready By:
-          <span class="text-summary">{{ order?.ready_by || "N/A" }}</span>
-        </div>
-        <div class="">
-          No. of Bags:
-          <span class="text-summary">{{ "N/A" }}</span>
-        </div>
-        <div class="">
-          Notes:
-          <span class="text-summary">{{ "N/A" }}</span>
-        </div>
-      </div>
-      <div class="col-auto">
-        <q-card style="width: 100mm; height: 0.5in; border: solid; border-width: 1px; box-shadow: none;">
-          <!-- Right Card Content -->
-          <div class="text-center row q-pa-xs">
+          <div class="row justify-between q-pa-md">
+            <div class="col text-subtitle1">
+              <div class="">
+                Customer Name:
+                <span class="text-summary">{{ customer?.name || "N/A" }}</span>
+              </div>
+              <div class="">
+                Contact Nos:
+                <span class="text-summary"
+                  >{{ customer?.contact_no1 || "N/A"
+                  }}<span v-if="customer?.contact_no2">
+                    / {{ customer?.contact_no2 || "-" }}</span
+                  ></span
+                >
+              </div>
+              <div class="">
+                Ready By:
+                <span class="text-summary">{{ order?.ready_by || "N/A" }}</span>
+              </div>
+              <div class="">
+                No. of Bags:
+                <span class="text-summary">{{ "N/A" }}</span>
+              </div>
+              <div class="">
+                Notes:
+                <span class="text-summary">{{ "N/A" }}</span>
+              </div>
+            </div>
+            <div class="col-auto">
+              <q-card
+                flat
+                style="border: solid; border-width: 1px; border-radius: 0"
+              >
+                <q-card flat class="tags">
+                  <div class="text-center row q-pa-xs">
+                    <div class="col">
+                      <div>{{ tagCategoryCounts.clothing || 0 }}</div>
+                      <div>A</div>
+                    </div>
+                    <div class="col">
+                      <div>{{ tagCategoryCounts.bedding || 0 }}</div>
+                      <div>B</div>
+                    </div>
+                    <div class="col">
+                      <div>{{ tagCategoryCounts.curtain || 0 }}</div>
+                      <div>C</div>
+                    </div>
+                    <div class="col">
+                      <div>{{ tagCategoryCounts.sofa || 0 }}</div>
+                      <div>D</div>
+                    </div>
+                    <div class="col">
+                      <div>{{ tagCategoryCounts.stuffed_toy || 0 }}</div>
+                      <div>E</div>
+                    </div>
+                    <div class="col">
+                      <div>{{ tagCategoryCounts.carpet || 0 }}</div>
+                      <div>F</div>
+                    </div>
+                    <div class="col q-mr-sm">
+                      <div>{{ tagCategoryCounts.others || 0 }}</div>
+                      <div>G</div>
+                    </div>
+                    <div class="col-6 tag-details">
+                      {{ formattedTagDetails }}
+                    </div>
+                  </div>
+                </q-card>
+              </q-card>
+            </div>
+          </div>
+          <!-- Transaction Table -->
+          <div class="row tag-card-header text-subtitle1">
+            <div class="col col-3 text-weight-bold tag-card-cell text-center">
+              Item
+            </div>
+            <div class="col col-2 text-weight-bold tag-card-cell text-center">
+              Method
+            </div>
+            <div class="col col-2 text-weight-bold tag-card-cell text-center">
+              Price
+            </div>
+            <div class="col col-1 text-weight-bold tag-card-cell text-center">
+              Pcs
+            </div>
+            <div class="col col-1 text-weight-bold tag-card-cell text-center">
+              Qty
+            </div>
+            <div class="col col-3 text-weight-bold tag-card-cell text-center">
+              Remarks
+            </div>
+          </div>
+
+          <div v-if="transactions.length > 0" class="text-subtitle1">
+            <div v-for="item in transactions" :key="item.name" class="row">
+              <div class="col col-3 tag-card-cell">{{ item.item_name }}</div>
+              <div class="col col-2 tag-card-cell text-center">
+                {{ item.process }}
+              </div>
+              <div class="col col-2 tag-card-cell text-center">
+                {{ `$${item.price.toFixed(2)}` }}
+              </div>
+              <div class="col col-1 tag-card-cell text-center">
+                {{ item.pieces }}
+              </div>
+              <div class="col col-1 tag-card-cell text-center">
+                {{ item.quantity }}
+              </div>
+              <div class="col col-3 tag-card-cell"></div>
+            </div>
+          </div>
+
+          <div v-else class="text-center text-grey q-my-md text-subtitle1">
+            No items added to the list.
+          </div>
+          <div class="row tag-card-header q-py-sm text-subtitle1">
+            <div class="col col-5 text-weight-bold text-uppercase"></div>
+            <div
+              class="col col-2 text-weight-bold text-uppercase text-right q-pr-md"
+            >
+              Total :
+            </div>
+            <div class="col col-1 text-weight-bold text-center">
+              {{ totalPcs }}
+            </div>
+            <div class="col col-1 text-weight-bold text-center">
+              {{ totalQty }}
+            </div>
+            <div class="col col-3 text-weight-bold"></div>
+          </div>
+          <div class="q-mt-md text-subtitle1 text-weight-bold">
+            Other Remarks:
+          </div>
+          <div>
+            <div class="bottom-border"></div>
+            <div class="bottom-border"></div>
+            <div class="bottom-border"></div>
+          </div>
+          <div class="row text-center q-mb-xs text-weight-bold">
+            <div class="col">A. Clothing</div>
+            <div class="col">B. Bedding</div>
+            <div class="col">C. Curtain</div>
+            <div class="col">D. Sofa</div>
+            <div class="col">E. Stuffed Toy</div>
+            <div class="col">F. Carpet</div>
+            <div class="col">G. Others</div>
+          </div>
+          <div class="row text-center q-col-gutter-x-sm text-subtitle1">
             <div class="col">
-              <div>{{ tagCategoryCounts.clothing || 0 }}</div>
-              <div>A</div>
+              <div class="tag-borders">
+                {{ tagCategoryCounts.clothing || 0 }}
+              </div>
             </div>
             <div class="col">
-              <div>{{ tagCategoryCounts.bedding || 0 }}</div>
-              <div>B</div>
+              <div class="tag-borders">
+                {{ tagCategoryCounts.bedding || 0 }}
+              </div>
             </div>
             <div class="col">
-              <div>{{ tagCategoryCounts.curtain || 0 }}</div>
-              <div>C</div>
+              <div class="tag-borders">
+                {{ tagCategoryCounts.curtain || 0 }}
+              </div>
             </div>
             <div class="col">
-              <div>{{ tagCategoryCounts.sofa || 0 }}</div>
-              <div>D</div>
+              <div class="tag-borders">
+                {{ tagCategoryCounts.sofa || 0 }}
+              </div>
             </div>
             <div class="col">
-              <div>{{ tagCategoryCounts.stuffed_toy || 0 }}</div>
-              <div>E</div>
+              <div class="tag-borders">
+                {{ tagCategoryCounts.stuffed_toy || 0 }}
+              </div>
             </div>
             <div class="col">
-              <div>{{ tagCategoryCounts.carpet || 0 }}</div>
-              <div>F</div>
+              <div class="tag-borders">
+                {{ tagCategoryCounts.carpet || 0 }}
+              </div>
             </div>
-            <div class="col q-mr-sm">
-              <div>{{ tagCategoryCounts.others || 0 }}</div>
-              <div>G</div>
-            </div>
-            <div class="col-6 tag-details q-mb-xs">
-              {{ formattedTagDetails }}
+            <div class="col">
+              <div class="tag-borders">
+                {{ tagCategoryCounts.others || 0 }}
+              </div>
             </div>
           </div>
         </q-card>
-      </div>
-     
+      </q-card>
     </div>
-    <!-- Transaction Table -->
-    <div class="row tag-card-header">
-      <div class="col col-3 text-weight-bold tag-card-cell text-center">
-        Item
-      </div>
-      <div class="col col-2 text-weight-bold tag-card-cell text-center">
-        Method
-      </div>
-      <div class="col col-2 text-weight-bold tag-card-cell text-center">
-        Price
-      </div>
-      <div class="col col-1 text-weight-bold tag-card-cell text-center">
-        Pcs
-      </div>
-      <div class="col col-1 text-weight-bold tag-card-cell text-center">
-        Qty
-      </div>
-      <div class="col col-3 text-weight-bold tag-card-cell text-center">
-        Remarks
-      </div>
+    <div class="row justify-center">
+      <!-- <q-card class="tags" style="width: 100mm; height: 0.5in">
+        <div class="text-center row q-pa-xs">
+          <div class="col">
+            <div>{{ tagCategoryCounts.clothing || 0 }}</div>
+            <div>A</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.bedding || 0 }}</div>
+            <div>B</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.curtain || 0 }}</div>
+            <div>C</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.sofa || 0 }}</div>
+            <div>D</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.stuffed_toy || 0 }}</div>
+            <div>E</div>
+          </div>
+          <div class="col">
+            <div>{{ tagCategoryCounts.carpet || 0 }}</div>
+            <div>F</div>
+          </div>
+          <div class="col q-mr-sm">
+            <div>{{ tagCategoryCounts.others || 0 }}</div>
+            <div>G</div>
+          </div>
+          <div class="col-6 tag-details">
+            {{ formattedTagDetails }}
+          </div>
+        </div>
+      </q-card> -->
     </div>
-
-    <div v-if="transactions.length > 0">
-      <div v-for="item in transactions" :key="item.name" class="row">
-        <div class="col col-3 tag-card-cell">{{ item.item_name }}</div>
-        <div class="col col-2 tag-card-cell text-center">
-          {{ item.process }}
-        </div>
-        <div class="col col-2 tag-card-cell text-center">
-          {{ `$${item.price.toFixed(2)}` }}
-        </div>
-        <div class="col col-1 tag-card-cell text-center">
-          {{ item.pieces }}
-        </div>
-        <div class="col col-1 tag-card-cell text-center">
-          {{ item.quantity }}
-        </div>
-        <div class="col col-3 tag-card-cell"></div>
-      </div>
-    </div>
-    <div v-else class="text-center text-grey q-my-md">
-      No items added to the list.
-    </div>
-    <div class="row tag-card-header q-py-sm">
-      <div class="col col-5 text-weight-bold text-uppercase"></div>
-      <div
-        class="col col-2 text-weight-bold text-uppercase text-right q-pr-md"
-      >
-        Total :
-      </div>
-      <div class="col col-1 text-weight-bold text-center">
-        {{ totalPcs }}
-      </div>
-      <div class="col col-1 text-weight-bold text-center">
-        {{ totalQty }}
-      </div>
-      <div class="col col-3 text-weight-bold"></div>
-    </div>
-    <div class="q-mt-md text-subtitle1 text-weight-bold">Other Remarks:</div>
-    <div>
-      <div class="bottom-border"></div>
-      <div class="bottom-border"></div>
-      <div class="bottom-border"></div>
-    </div>
-    <div class="row text-center q-mb-xs">
-      <div class="col">A. Clothing</div>
-      <div class="col">B. Bedding</div>
-      <div class="col">C. Curtain</div>
-      <div class="col">D. Sofa</div>
-      <div class="col">E. Stuffed Toy</div>
-      <div class="col">F. Carpet</div>
-      <div class="col">G. Others</div>
-    </div>
-    <div class="row text-center q-col-gutter-x-sm">
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.clothing || 0 }}
-        </div>
-      </div>
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.bedding || 0 }}
-        </div>
-      </div>
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.curtain || 0 }}
-        </div>
-      </div>
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.sofa || 0 }}
-        </div>
-      </div>
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.stuffed_toy || 0 }}
-        </div>
-      </div>
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.carpet || 0 }}
-        </div>
-      </div>
-      <div class="col">
-        <div class="tag-borders">
-          {{ tagCategoryCounts.others || 0 }}
-        </div>
-      </div>
-    </div>
-  </q-card>
-</div>
-<div class="row justify-center">
-  <q-card class="tags" style="width: 100mm; height: 0.5in">
-    <!-- Right Card Content -->
-    <div class="text-center row q-pa-xs">
-      <div class="col">
-        <div>{{ tagCategoryCounts.clothing || 0 }}</div>
-        <div>A</div>
-      </div>
-      <div class="col">
-        <div>{{ tagCategoryCounts.bedding || 0 }}</div>
-        <div>B</div>
-      </div>
-      <div class="col">
-        <div>{{ tagCategoryCounts.curtain || 0 }}</div>
-        <div>C</div>
-      </div>
-      <div class="col">
-        <div>{{ tagCategoryCounts.sofa || 0 }}</div>
-        <div>D</div>
-      </div>
-      <div class="col">
-        <div>{{ tagCategoryCounts.stuffed_toy || 0 }}</div>
-        <div>E</div>
-      </div>
-      <div class="col">
-        <div>{{ tagCategoryCounts.carpet || 0 }}</div>
-        <div>F</div>
-      </div>
-      <div class="col q-mr-sm">
-        <div>{{ tagCategoryCounts.others || 0 }}</div>
-        <div>G</div>
-      </div>
-      <div class="col-6 tag-details">
-        {{ formattedTagDetails }}
-      </div>
-    </div>
-  </q-card>
-</div>
   </div>
 </template>
 
@@ -274,9 +282,8 @@
 import { onMounted, ref, computed } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { useRoute } from "vue-router";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import QrcodeVue from "qrcode.vue";
+import html2pdf from "html2pdf.js"; // Import html2pdf for PDF generation
 
 const transactionStore = useTransactionStore();
 const route = useRoute();
@@ -289,6 +296,8 @@ const transactions = ref([]);
 const instructionsRecurring = ref([]);
 const instructionsOnetime = ref([]);
 const reports = ref([]);
+
+const printableCard = ref(null);
 
 onMounted(async () => {
   try {
@@ -396,35 +405,6 @@ const formattedOrderDate = computed(() =>
     : "N/A"
 );
 
-// Method to download tagContainer as a PDF
-async function downloadTagPDF() {
-  const tagContainer = document.querySelector(".tag-card");
-  if (!tagContainer) return console.error("Order container not found.");
-
-  try {
-    const [width, height] = [210, 297].map((mm) => mm * 3.779528); // Convert A4 dimensions to pixels
-    Object.assign(tagContainer.style, {
-      minHeight: `${height}px`,
-      minWidth: `${width}px`,
-    });
-
-    const canvas = await html2canvas(tagContainer, { scale: 2 });
-    const pdf = new jsPDF("portrait", "mm", "a4");
-
-    pdf.addImage(
-      canvas.toDataURL("image/png"),
-      "PNG",
-      0,
-      0,
-      width / 3.779528,
-      height / 3.779528
-    );
-    pdf.save(`TagSlip_${order.value?.order_no || "Slip"}.pdf`);
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-  }
-}
-
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
     const category = item.tag_category?.toLowerCase() || "others";
@@ -433,7 +413,6 @@ const tagCategoryCounts = computed(() => {
     return counts;
   }, {});
 });
-
 
 function formatDate(date) {
   if (!date) return "N/A";
@@ -452,66 +431,171 @@ const formattedTagDetails = computed(() => {
   return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
 });
 
-async function PrintTagPDF() {
-  const tagContainer = document.querySelector(".tag-card");
-  if (!tagContainer) return console.error("Order container not found.");
-  try {
-    const canvas = await html2canvas(tagContainer, { scale: 2 });
-    const pdf = new jsPDF("portrait", "mm", "a4");
-    const imgData = canvas.toDataURL("image/png");
-    pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
-    
-    const pdfBlob = pdf.output("blob");
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    const newWindow = window.open(pdfUrl, "_blank");
-    if (newWindow) {
-      setTimeout(() => {
-        newWindow.print();
-        newWindow.onafterprint = () => {
-          newWindow.close();
-        };
-      }, 100);
-    } else {
-      console.error("Pop-up blocked. Please allow pop-ups for this site.");
-    }
-  } catch (error) {
-    console.error("Error generating printable PDF:", error);
+const downloadTagPDF = () => {
+  if (!printableCard.value) {
+    console.error("Printable tag-card not found");
+    return;
   }
-}
+
+  setTimeout(() => {
+    const element = printableCard.value.$el || printableCard.value;
+
+    const options = {
+      margin: [13, 13, 13, 13], // 0.5-inch margins
+      filename: `Tag_Slip_${order.value?.order_no || "N/A"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: null,
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+      },
+      pagebreak: { avoid: [".tag-card"] }, // Prevents breaking important elements
+    };
+
+    html2pdf()
+      .set(options)
+      .from(element)
+      .toPdf()
+      .save() // Directly triggers download
+      .catch((err) => console.error("Error generating PDF:", err));
+  }, 500);
+};
+
+const PrintTagPDF = () => {
+  if (!printableCard.value) {
+    console.error("Printable tag-card not found");
+    return;
+  }
+
+  setTimeout(() => {
+    const element = printableCard.value.$el || printableCard.value;
+
+    const options = {
+      margin: [13, 13, 13, 13], // 0.5-inch margins
+      filename: `Tag_Slip_${order.value?.order_no || "N/A"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: null,
+      },
+      jsPDF: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+      },
+      pagebreak: { avoid: [".tag-card"] }, // Prevents breaking important elements
+    };
+
+    html2pdf()
+      .set(options)
+      .from(element)
+      .toPdf()
+      .output("blob") // Convert to a Blob
+      .then((blob) => {
+        const pdfUrl = URL.createObjectURL(blob);
+        const newWindow = window.open(pdfUrl, "_blank");
+
+        if (newWindow) {
+          setTimeout(() => {
+            newWindow.print(); // Open print dialog
+            newWindow.onafterprint = () => {
+              newWindow.close(); // Close tab after printing
+            };
+          }, 300); // Small delay to ensure PDF loads
+        } else {
+          console.error("Pop-up blocked. Please allow pop-ups for this site.");
+        }
+      })
+      .catch((err) => console.error("Error generating PDF:", err));
+  }, 500);
+};
 
 async function PrintTag() {
-  const tagContainer = document.querySelector(".tags");
-  if (!tagContainer) return console.error("Tag container not found.");
+  const tagElement = document.querySelector(".tags");
+
+  if (!tagElement) {
+    console.error("Tag element not found.");
+    return;
+  }
+
   try {
-    const canvas = await html2canvas(tagContainer, { scale: 2 });
-    const pdf = new jsPDF("landscape", "mm", [100, 12.7]); // 100mm x 0.5in (12.7mm)
-    const imgData = canvas.toDataURL("image/png");
-    
-    // Calculate total number of pages based on counter total
-    const totalTags = Object.values(tagCategoryCounts.value).reduce((a, b) => a + b, 0);
-    
+    // Get the total number of tags to print
+    const totalTags = Object.values(tagCategoryCounts.value).reduce((a, b) => a + b, 0) || 1;
+
+    // Create a container to hold multiple cloned tags
+    const clonedContainer = document.createElement("div");
+    clonedContainer.style.display = "flex";
+    clonedContainer.style.flexWrap = "wrap";
+    clonedContainer.style.gap = "0px"; // Ensures no space between elements
+
     for (let i = 0; i < totalTags; i++) {
-      if (i > 0) pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, 0, 100, 12.7);
+      const clonedTag = tagElement.cloneNode(true);
+      clonedTag.style.pageBreakBefore = "always"; // Ensures each tag starts on a new page
+      clonedContainer.appendChild(clonedTag);
     }
-    
-    const pdfBlob = pdf.output("blob");
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    const newWindow = window.open(pdfUrl, "_blank");
-    if (newWindow) {
-      setTimeout(() => {
-        newWindow.print();
-        newWindow.onafterprint = () => {
-          newWindow.close();
-        };
-      }, 500);
-    } else {
-      console.error("Pop-up blocked. Please allow pop-ups for this site.");
-    }
+
+    const options = {
+      margin: 0, // Remove all margins
+      filename: `Tags_Print_${order.value?.order_no || "N/A"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: null,
+      },
+      jsPDF: {
+        unit: "mm",
+        format: [100, 12.7], // 100mm × 12.7mm per page
+        orientation: "landscape",
+      },
+      pagebreak: { mode: ["avoid-all", "css"] }, // Fixes extra blank pages
+    };
+
+    // Generate the PDF
+    html2pdf()
+      .set(options)
+      .from(clonedContainer)
+      .toPdf()
+      .output("blob")
+      .then((blob) => {
+        const pdfUrl = URL.createObjectURL(blob);
+        const newWindow = window.open(pdfUrl, "_blank");
+
+        if (newWindow) {
+          setTimeout(() => {
+            newWindow.print();
+            newWindow.onafterprint = () => newWindow.close();
+          }, 500);
+        } else {
+          console.error("Pop-up blocked. Please allow pop-ups for this site.");
+        }
+      })
+      .catch((err) => console.error("Error generating Tag PDF:", err));
   } catch (error) {
     console.error("Error generating printable tag PDF:", error);
   }
 }
+
+
 </script>
+
+<style scoped>
+.tags {
+  width: 100mm; 
+  height: 0.5in;
+  page-break-before: avoid; /* Prevents empty pages */
+  page-break-inside: avoid; /* Avoids content breaking */
+}
+</style>

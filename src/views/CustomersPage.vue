@@ -250,6 +250,38 @@
       v-model="showAddCustomerDialog"
       @customer-added="handleCustomerAdded"
     />
+
+    <q-dialog
+    v-model="showCreateCollectionDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
+    <q-card class="dialog" style="width: 600px">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Create Collection
+        </div>
+      </q-card-section>
+      <q-card-section>
+        <CreateCollectionTab/>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn
+          flat
+          class="negative-button"
+          @click="showCreateCollectionDialog = false"
+          label="Close"
+        />
+        <q-btn
+          flat
+          class=""
+          @click="createCollection()"
+          label="Create Collection"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
   </div>
 </template>
 

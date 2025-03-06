@@ -132,6 +132,13 @@
           class="q-mb-xs bg-white"
         />
         <q-input
+          v-model="transactionStore.collectionPackType"
+          label="Pack Type"
+          outlined
+          dense
+          class="q-mb-xs bg-white"
+        />
+        <q-input
           v-model="transactionStore.collectionRemarks"
           label="Remarks"
           outlined
@@ -253,6 +260,13 @@
           class="q-mb-xs bg-white"
         />
 
+        <q-input
+          v-model="transactionStore.deliveryPackType"
+          label="Pack Type"
+          outlined
+          dense
+          class="q-mb-xs bg-white"
+        />
         <q-input
           v-model="transactionStore.deliveryRemarks"
           label="Remarks"

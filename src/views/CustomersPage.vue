@@ -33,10 +33,10 @@
     </div>
 
     <!-- Tab Panels for Customers -->
-    <q-tabs v-model="activeTab" class="text-primary q-mb-md">
-      <q-tab name="all" class="text-subtitle1 text-weight-bolder">All Customers</q-tab>
-      <q-tab name="contract" class="text-subtitle1 text-weight-bolder">Contract Customers</q-tab>
-      <q-tab name="non-contract" class="text-subtitle1 text-weight-bolder">Non-Contract Customers</q-tab>
+    <q-tabs v-model="activeTab" align="justify" class="tab-header">
+      <q-tab name="all" class="text-weight-bold text-subtitle1 tab-divider">All Customers</q-tab>
+      <q-tab name="contract" class="text-weight-bold text-subtitle1 tab-divider">Contract Customers</q-tab>
+      <q-tab name="non-contract" class="text-weight-bold text-subtitle1 tab-divider">Non-Contract Customers</q-tab>
     </q-tabs>
 
     <q-tab-panels v-model="activeTab" animated>

@@ -68,7 +68,7 @@
               </div>
               <div class="">
                 Ready By:
-                <span class="text-summary">{{ order?.ready_by || "N/A" }}</span>
+                <span class="text-summary">{{ readyByFormatted }}</span>
               </div>
               <div class="">
                 No. of Bags:
@@ -166,7 +166,7 @@
           <div v-else class="text-center text-grey q-my-md text-subtitle1">
             No items added to the list.
           </div>
-          <div class="row tag-card-header q-py-sm text-subtitle1">
+          <div class="row tag-card-footer q-py-sm text-subtitle1">
             <div class="col col-5 text-weight-bold text-uppercase"></div>
             <div
               class="col col-2 text-weight-bold text-uppercase text-right q-pr-md"
@@ -405,6 +405,21 @@ const formattedOrderDate = computed(() =>
     : "N/A"
 );
 
+const readyByFormatted = computed(() => {
+  if (!order.value?.ready_by) return "N/A";
+  const date = new Date(order.value.ready_by);
+  
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayOfWeek = daysOfWeek[date.getDay()];
+  
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+
+  return `${dayOfWeek}, ${day}/${month}/${year}`;
+});
+
+
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
     const category = item.tag_category?.toLowerCase() || "others";
@@ -590,12 +605,3 @@ async function PrintTag() {
 
 
 </script>
-
-<style scoped>
-.tags {
-  width: 100mm; 
-  height: 0.5in;
-  page-break-before: avoid; /* Prevents empty pages */
-  page-break-inside: avoid; /* Avoids content breaking */
-}
-</style>

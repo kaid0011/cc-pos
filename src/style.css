@@ -15,11 +15,13 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #0043fd;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #ff3bb1;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 body {
@@ -254,6 +256,31 @@ body {
   border-right: none; /* Remove border for the last column */
 }
 
+.tab-header {
+  background-color: #fff1e6;
+ border-color: #3a879c !important;
+ /* border: solid;
+  border-width: 2px; */
+  color: #126278;
+  margin-bottom: 5px;
+}
+
+.active-tab{
+  color: #fff;
+  background-color: #3a879c !important;
+}
+
+.tab-divider {
+ border: solid;
+ border-width: 0 4px 0 0; 
+ border-color: #f6d4bf;
+}
+
+.tab-divider:last-child {
+  border: solid;
+  border-width: 0 0 0 0; 
+ }
+
 mark {
   background-color: #c58d6b;
   color: black;
@@ -267,6 +294,14 @@ mark-pink {
 mark-blue {
   background-color: #a9caff;
   color: black;
+}
+
+.mark-bg-pink {
+  background-color: #ffa9d5;
+}
+
+.mark-bg-blue {
+  background-color: #a9caff;
 }
 
 /* instruction card */
@@ -661,10 +696,15 @@ font-weight: bold;
 background-color: #e9e9e9;
 }
 
+.tag-card-footer {
+  background-color: #e9e9e9;
+  padding: 5px;
+  }
+
 .tag-card-cell {
   border-style: solid; 
   border-width: 1px 0 1px 0;
-  padding: 8px;
+  padding: 5px;
 }
 
 .bottom-border {
@@ -709,4 +749,11 @@ background-color: #e9e9e9;
 
 .transactions-history, .customers-management, .orders-history, .tags-management, .logistics-management, .invoices-page {
   padding: 2em !important;
+}
+
+.tags {
+  width: 100mm; 
+  height: 0.5in;
+  page-break-before: avoid; /* Prevents empty pages */
+  page-break-inside: avoid; /* Avoids content breaking */
 }

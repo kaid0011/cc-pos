@@ -33,10 +33,13 @@ export const useTransactionStore = defineStore("transactionStore", {
     collectionTime: null,
     deliveryTime: null,
     collectionRemarks: null,
+    collectionPackType: null,
+    deliveryPackType: null,
     deliveryRemarks: null,
     useCcCollection: false, // New: Self-collect checkbox state
     useCcDelivery: false, // New: Self-pickup checkbox state
     transactions: [],
+    nextLogisticsNo: null
   }),
   actions: {
     async loadItems() {
@@ -834,6 +837,13 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         if (updateCollectionsError) throw updateCollectionsError;
 
+        const { error: updateDeliveriesError } = await supabase
+        .from("deliveries")
+        .update({ order_no: orderData.order_no })
+        .eq("id", orderData.delivery_id);
+
+      if (updateDeliveriesError) throw updateDeliveriesError;
+
         // Insert Transaction Items
         for (const item of this.transactionItems) {
           const itemData = {
@@ -1001,60 +1011,9 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    async saveTransaction(
-      collectionDateFrom,
-      collectionDateTo,
-      deliveryDateFrom,
-      deliveryDateTo
-    ) {
+    async saveTransaction() {
       try {
-        // Insert Delivery Details
-        const { data: deliveryData, error: deliveryError } = await supabase
-          .from("deliveries")
-          .insert([
-            {
-              contact_person_id: this.selectedDeliveryContact?.id || null,
-              address: this.selectedDeliveryAddress || null,
-              delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime?.value || "",
-              remarks: this.deliveryRemarks,
-              driver_id: this.selectedDeliveryDriver?.id || null,
-              status: "-",
-            },
-          ])
-          .select("id, delivery_date, delivery_time, remarks")
-          .single();
-
-        if (deliveryError) throw deliveryError;
-
-        // Insert Collection Details
-        const { data: collectionData, error: collectionError } = await supabase
-          .from("collections")
-          .insert([
-            {
-              customer_id: this.selectedCustomer?.id || null,
-              contact_person_id: this.selectedCollectionContact?.id || null,
-              address: this.selectedCollectionAddress || null,
-              collection_date: this.collectionDate,
-              collection_time: this.collectionTime?.value || "",
-              remarks: this.collectionRemarks,
-              driver_id: this.selectedCollectionDriver?.id || null,
-              status: "collection arranged",
-            },
-          ])
-          .select("id, collection_date, collection_time, remarks")
-          .single();
-
-        if (collectionError) throw collectionError;
-
-        // After inserting into the collections table, update the related deliveries row
-        // const { error: updateDeliveryError } = await supabase
-        //   .from("deliveries")
-        //   .update({ collection_id: collectionData.id })
-        //   .eq("id", deliveryData.id);
-
-        // if (updateDeliveryError) throw updateDeliveryError;
-
+        this.createCollection();
         // Insert Order
         const currentTimestamp = new Date().toISOString();
         const { data: orderData, error: orderError } = await supabase
@@ -1073,7 +1032,8 @@ export const useTransactionStore = defineStore("transactionStore", {
               job_type: "-",
               job_subtype: "-",
               no_packets_hangers: "-",
-              tag_status: "to print"
+              tag_status: "to print",
+              logistics_no: this.nextLogisticsNo
             },
           ])
           .select("id, order_no, ready_by, collection_id, delivery_id")
@@ -1091,6 +1051,13 @@ export const useTransactionStore = defineStore("transactionStore", {
           .eq("id", orderData.collection_id);
 
         if (updateCollectionsError) throw updateCollectionsError;
+
+        const { error: updateDeliveriesError } = await supabase
+        .from("deliveries")
+        .update({ order_no: orderData.order_no })
+        .eq("id", orderData.delivery_id);
+
+      if (updateDeliveriesError) throw updateDeliveriesError;
 
         // Insert Transaction Items
         for (const item of this.transactionItems) {
@@ -1654,6 +1621,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             driver_id: orderDetails.collections?.driver_id || null,
             driver: orderDetails.collections?.drivers || null,
             remarks: orderDetails.collections?.remarks || null,
+            pack_type: orderDetails.collections?.pack_type
           },
           delivery: {
             id: orderDetails.deliveries?.id,
@@ -1667,6 +1635,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             driver_id: orderDetails.deliveries?.driver_id || null,
             driver: orderDetails.deliveries?.drivers || null,
             remarks: orderDetails.deliveries?.remarks || null,
+            pack_type: orderDetails.deliveries?.pack_type
           },
         };
       } catch (error) {
@@ -1842,6 +1811,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time: collectionPayload.collection_time,
               driver_id: collectionPayload.driver_id,
               remarks: collectionPayload.remarks,
+              pack_type: collectionPayload.pack_type
             })
             .eq("id", collection_id);
 
@@ -1884,6 +1854,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time: deliveryPayload.delivery_time,
               driver_id: deliveryPayload.driver_id,
               remarks: deliveryPayload.remarks,
+              pack_type: deliveryPayload.pack_type
             })
             .eq("id", delivery_id);
 
@@ -2222,6 +2193,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time,
               contact_person_id,
               driver_id,
+              pack_type,
               drivers (
                 id,
                 name,
@@ -2238,6 +2210,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time,
               driver_id,
               contact_person_id,
+              pack_type,
               drivers (
                 id,
                 name,
@@ -2280,6 +2253,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 id: order.collections?.id,
                 collection_date: order.collections?.collection_date,
                 collection_time: order.collections?.collection_time,
+                pack_type: order.collections?.pack_type,
                 driver: order.collections?.drivers
                   ? {
                       id: order.collections?.drivers?.id,
@@ -2300,6 +2274,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 id: order.deliveries?.id,
                 delivery_date: order.deliveries?.delivery_date,
                 delivery_time: order.deliveries?.delivery_time,
+                pack_type: order.deliveries?.pack_type,
                 driver: order.deliveries?.drivers
                   ? {
                       id: order.deliveries?.drivers?.id,
@@ -2343,6 +2318,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_id,
               customer_id,
               order_no,
+              pack_type,
               customers (
                 id,
                 name,
@@ -2376,6 +2352,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time,
               driver_id,
               contact_person_id,
+              pack_type,
               drivers (
                 id,
                 name,
@@ -2416,6 +2393,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 deliveryId: data.collections.delivery_id,
                 customerId: data.collections.customer_id,
                 orderNo: data.collections.order_no,
+                pack_type: data.collections.pack_type,
                 customer: data.collections.customers
                   ? {
                       id: data.collections.customers.id,
@@ -2455,6 +2433,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 remarks: data.deliveries.remarks,
                 deliveryDate: data.deliveries.delivery_date,
                 deliveryTime: data.deliveries.delivery_time,
+                pack_type: data.deliveries.pack_type,
                 driver: data.deliveries.drivers
                   ? {
                       id: data.deliveries.drivers.id,
@@ -2483,8 +2462,10 @@ export const useTransactionStore = defineStore("transactionStore", {
 
     async fetchAllCollections() {
       try {
-        const { data, error } = await supabase.from("collections").select(`
-            id,
+        const { data, error } = await supabase
+          .from("collections")
+          .select(`
+             id,
             created_at,
             driver_id,
             status,
@@ -2494,9 +2475,10 @@ export const useTransactionStore = defineStore("transactionStore", {
             address,
             date_collected,
             collection_date,
-            delivery_id,
+            collection_time,
             customer_id,
-            order_no,
+            pack_type,
+            logistics_no,
             customers (
                 id,
                 name,
@@ -2509,21 +2491,33 @@ export const useTransactionStore = defineStore("transactionStore", {
             contact_persons (
               id,
               name,
-              
+              contact_no1,
+              contact_no2
             ),
             drivers (
               id,
               name,
               contact_no1
             )
-          `);
+          `)
+          .order("created_at", { ascending: false }); // Sort by latest created_at first
 
         if (error) {
           throw error;
         }
 
+        // Filter to keep only the latest row per logistics_no
+        const uniqueCollections = Object.values(
+          data.reduce((acc, collection) => {
+            if (!acc[collection.logistics_no] || acc[collection.logistics_no].created_at < collection.created_at) {
+              acc[collection.logistics_no] = collection;
+            }
+            return acc;
+          }, {})
+        );
+
         // Transform data to include related customer and driver details
-        const formattedData = data.map((collection) => ({
+        const formattedData = uniqueCollections.map((collection) => ({
           id: collection.id,
           created_at: collection.created_at,
           driver_id: collection.driver_id,
@@ -2533,9 +2527,10 @@ export const useTransactionStore = defineStore("transactionStore", {
           address: collection.address,
           date_collected: collection.date_collected,
           collection_date: collection.collection_date,
-          delivery_id: collection.delivery_id,
+          collection_time: collection.collection_time,
           customer_id: collection.customer_id,
-          order_no: collection.order_no,
+          pack_type: collection.pack_type,
+          logistics_no: collection.logistics_no,
           customer: collection.customers
             ? {
                 id: collection.customers.id,
@@ -2551,12 +2546,15 @@ export const useTransactionStore = defineStore("transactionStore", {
             ? {
                 id: collection.contact_persons.id,
                 name: collection.contact_persons.name,
+                contact_no1: collection.contact_persons.contact_no1,
+                contact_no2: collection.contact_persons.contact_no2,
               }
             : null,
           driver: collection.drivers
             ? {
                 id: collection.drivers.id,
                 name: collection.drivers.name,
+                contact_no1: collection.drivers.contact_no1,
               }
             : null,
         }));
@@ -2568,10 +2566,13 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
+
     async fetchAllDeliveries() {
       try {
-        const { data, error } = await supabase.from("deliveries").select(`
-            id,
+        const { data, error } = await supabase
+          .from("deliveries")
+          .select(`
+             id,
             created_at,
             driver_id,
             status,
@@ -2581,11 +2582,11 @@ export const useTransactionStore = defineStore("transactionStore", {
             address,
             date_delivered,
             delivery_date,
-            contact_persons (
-              id,
-              name,
-              customer_id,
-              customers (
+            delivery_time,
+            customer_id,
+            pack_type,
+            logistics_no,
+            customers (
                 id,
                 name,
                 contact_no1,
@@ -2593,21 +2594,37 @@ export const useTransactionStore = defineStore("transactionStore", {
                 email,
                 type,
                 sub_type
-              )
+              ),
+            contact_persons (
+              id,
+              name,
+              contact_no1,
+              contact_no2
             ),
             drivers (
               id,
               name,
               contact_no1
             )
-          `);
+          `)
+          .order("created_at", { ascending: false }); // Sort by latest created_at first
 
         if (error) {
           throw error;
         }
 
+        // Filter to keep only the latest row per logistics_no
+        const uniqueDeliveries = Object.values(
+          data.reduce((acc, delivery) => {
+            if (!acc[delivery.logistics_no] || acc[delivery.logistics_no].created_at < delivery.created_at) {
+              acc[delivery.logistics_no] = delivery;
+            }
+            return acc;
+          }, {})
+        );
+
         // Transform data to include related customer and driver details
-        const formattedData = data.map((delivery) => ({
+        const formattedData = uniqueDeliveries.map((delivery) => ({
           id: delivery.id,
           created_at: delivery.created_at,
           driver_id: delivery.driver_id,
@@ -2617,27 +2634,34 @@ export const useTransactionStore = defineStore("transactionStore", {
           address: delivery.address,
           date_delivered: delivery.date_delivered,
           delivery_date: delivery.delivery_date,
+          delivery_time: delivery.delivery_time,
+          customer_id: delivery.customer_id,
+          pack_type: delivery.pack_type,
+          logistics_no: delivery.logistics_no,
+          customer: delivery.customers
+            ? {
+                id: delivery.customers.id,
+                name: delivery.customers.name,
+                contact_no1: delivery.customers.contact_no1,
+                contact_no2: delivery.customers.contact_no2,
+                email: delivery.customers.email,
+                type: delivery.customers.type,
+                sub_type: delivery.customers.sub_type,
+              }
+            : null,
           contact_person: delivery.contact_persons
             ? {
                 id: delivery.contact_persons.id,
                 name: delivery.contact_persons.name,
-              }
-            : null,
-          customer: delivery.contact_persons?.customers
-            ? {
-                id: delivery.contact_persons.customers.id,
-                name: delivery.contact_persons.customers.name,
-                contact_no1: delivery.contact_persons.customers.contact_no1,
-                contact_no2: delivery.contact_persons.customers.contact_no2,
-                email: delivery.contact_persons.customers.email,
-                type: delivery.contact_persons.customers.type,
-                sub_type: delivery.contact_persons.customers.sub_type,
+                contact_no1: delivery.contact_persons.contact_no1,
+                contact_no2: delivery.contact_persons.contact_no2,
               }
             : null,
           driver: delivery.drivers
             ? {
                 id: delivery.drivers.id,
                 name: delivery.drivers.name,
+                contact_no1: delivery.drivers.contact_no1,
               }
             : null,
         }));
@@ -2649,6 +2673,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
+
     // Map through all collections and return an array
     async fetchCollectionsDeliveries() {
       try {
@@ -2670,6 +2695,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             delivery_id,
             customer_id,
             order_no,
+            pack_type,
             customers (
                 id,
                 name,
@@ -2702,6 +2728,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           delivery_time,
           driver_id,
           contact_person_id,
+          pack_type,
           drivers (
             id,
             name,
@@ -2745,6 +2772,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           delivery_id: collection.delivery_id,
           customer_id: collection.customer_id,
           order_no: collection.order_no,
+          pack_type: collection.pack_type,
           customer: collection.customers
             ? {
                 id: collection.customers.id,
@@ -2782,7 +2810,8 @@ export const useTransactionStore = defineStore("transactionStore", {
                 remarks: collection.deliveries.remarks,
                 delivery_date: collection.deliveries.delivery_date,
                 delivery_time: collection.deliveries.delivery_time,
-                driver: collection.deliveries.drivers
+          pack_type: collection.deliveries.pack_type,
+          driver: collection.deliveries.drivers
                   ? {
                       id: collection.deliveries.drivers.id,
                       name: collection.deliveries.drivers.name,
@@ -2889,7 +2918,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           address: collection.address,
           area: collection.area,
           status: collection.status,
-          remarks: collection.remarks,
+          remarks: collection.remarks,          
+          pack_type: collection.pack_type,
+
           driver: collection.drivers
             ? {
                 id: collection.drivers.id,
@@ -2927,6 +2958,8 @@ export const useTransactionStore = defineStore("transactionStore", {
                 remarks: collection.deliveries.remarks,
                 delivery_date: collection.deliveries.delivery_date,
                 delivery_time: collection.deliveries.delivery_time,
+                pack_type: collection.deliveries.pack_type,
+
                 driver: collection.deliveries.drivers
                   ? {
                       id: collection.deliveries.drivers.id,
@@ -2955,32 +2988,20 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    async createCollection(
-      collectionDateFrom,
-      collectionDateTo,
-      deliveryDateFrom,
-      deliveryDateTo
-    ) {
+    async createCollection() {
       try {
-        // Insert Delivery Details
-        const { data: deliveryData, error: deliveryError } = await supabase
-          .from("deliveries")
-          .insert([
-            {
-              contact_person_id: this.selectedDeliveryContact?.id || null,
-              address: this.selectedDeliveryAddress || null,
-              delivery_date: this.deliveryDate,
-              delivery_time: this.deliveryTime || null,
-              remarks: this.deliveryRemarks,
-              driver_id: this.selectedDeliveryDriver?.id || null,
-              status: "-",
-            },
-          ])
-          .select("id, delivery_date, delivery_time, remarks")
-          .single();
-
-        if (deliveryError) throw deliveryError;
-
+        // Fetch the highest logistics_no
+        const { data: logisticsData, error: logisticsError } = await supabase
+          .from("collections")
+          .select("logistics_no")
+          .order("logistics_no", { ascending: false })
+          .limit(1);
+    
+        if (logisticsError) throw logisticsError;
+    
+        // Determine the next logistics_no
+        this.nextLogisticsNo = (logisticsData.length > 0 ? logisticsData[0].logistics_no : 0) + 1;
+    
         // Insert Collection Details
         const { data: collectionData, error: collectionError } = await supabase
           .from("collections")
@@ -2993,25 +3014,38 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time: this.collectionTime || null,
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
-              delivery_id: deliveryData.id,
               status: "collection arranged",
+              pack_type: this.CollectionPackType,
+              logistics_no: this.nextLogisticsNo,
             },
-          ])
-          .select("id, collection_date, collection_time, remarks")
-          .single();
-
+          ]);
+    
         if (collectionError) throw collectionError;
-
-        // After inserting into the collections table, update the related deliveries row
-        //    const { error: updateDeliveryError } = await supabase
-        //    .from("deliveries")
-        //    .update({ collection_id: collectionData.id })
-        //    .eq("id", deliveryData.id);
-
-        //  if (updateDeliveryError) throw updateDeliveryError;
+    
+        // Insert Delivery Details
+        const { data: deliveryData, error: deliveryError } = await supabase
+          .from("deliveries")
+          .insert([
+            {
+              customer_id: this.selectedCustomer?.id || null,
+              contact_person_id: this.selectedDeliveryContact?.id || null,
+              address: this.selectedDeliveryAddress || null,
+              delivery_date: this.deliveryDate,
+              delivery_time: this.deliveryTime || null,
+              remarks: this.deliveryRemarks,
+              driver_id: this.selectedDeliveryDriver?.id || null,
+              pack_type: this.DeliveryPackType,
+              status: "-",
+              logistics_no: this.nextLogisticsNo,
+            },
+          ]);
+    
+        if (deliveryError) throw deliveryError;
+    
       } catch (error) {
         console.error("Error in create collection:", error);
       }
     },
+    
   },
 });

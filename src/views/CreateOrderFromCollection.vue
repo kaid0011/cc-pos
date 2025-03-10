@@ -62,7 +62,8 @@ const transactionSuccess = ref(false);
 // Submit Transaction function (moved from ReviewTab.vue)
 async function handleSubmit() {
   try {
-    const orderNo = await transactionStore.createOrderTransaction(); // Save transaction and get order number
+    const logisticsId = transactionStore.logisticsId;
+    const orderNo = await transactionStore.createOrderFromCollection(logisticsId); // Save transaction and get order number
     if (!orderNo) {
       throw new Error("Order number could not be retrieved.");
     }

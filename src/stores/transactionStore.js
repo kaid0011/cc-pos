@@ -18,6 +18,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     addressOptions: [],
     driverOptions: [],
     timeOptions: [],
+    jobOptions: [],
     selectedCustomer: null,
     selectedDeliveryContact: null,
     selectedCollectionContact: null,
@@ -39,7 +40,10 @@ export const useTransactionStore = defineStore("transactionStore", {
     useCcCollection: false, // New: Self-collect checkbox state
     useCcDelivery: false, // New: Self-pickup checkbox state
     transactions: [],
-    nextLogisticsNo: null
+    nextLogisticsNo: null,
+    selectedGenerateDriver: null,
+    jobType: null,
+    logisticsId: null
   }),
   actions: {
     async loadItems() {
@@ -205,58 +209,66 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
 
     async loadAddressOptions(customerId = null) {
-  try {
-    let customerAddresses = [];
-    let defaultAddress = null;
+      try {
+        let customerAddresses = [];
+        let defaultAddress = null;
 
-    // Fetch customer-specific addresses
-    if (customerId) {
-      const { data, error } = await supabase
-        .from("customer_address")
-        .select(
-          "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
-        )
-        .eq("customer_id", customerId);
+        // Fetch customer-specific addresses
+        if (customerId) {
+          const { data, error } = await supabase
+            .from("customer_address")
+            .select(
+              "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
+            )
+            .eq("customer_id", customerId);
 
-      if (error) throw error;
-      customerAddresses = data || [];
-    }
+          if (error) throw error;
+          customerAddresses = data || [];
+        }
 
-    // Fetch the default address (id=1)
-    const { data: defaultData, error: defaultError } = await supabase
-      .from("customer_address")
-      .select(
-        "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
-      )
-      .eq("id", 1)
-      .single();
+        // Fetch the default address (id=1)
+        const { data: defaultData, error: defaultError } = await supabase
+          .from("customer_address")
+          .select(
+            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
+          )
+          .eq("id", 1)
+          .single();
 
-    if (!defaultError) {
-      defaultAddress = defaultData; // Use default address if found
-    }
+        if (!defaultError) {
+          defaultAddress = defaultData; // Use default address if found
+        }
 
-    // Merge and deduplicate addresses
-    const addresses = defaultAddress
-      ? [defaultAddress, ...customerAddresses]
-      : customerAddresses;
+        // Merge and deduplicate addresses
+        const addresses = defaultAddress
+          ? [defaultAddress, ...customerAddresses]
+          : customerAddresses;
 
-    this.addressOptions = addresses
-      .filter(
-        (address, index, self) =>
-          index === self.findIndex((c) => c.id === address.id)
-      )
-      .map(
-        ({ block_no, road_name, unit_no, building_name, postal_code, additional_info }) =>
-          `${block_no} ${road_name} ${unit_no} ${building_name}, ${postal_code} ${additional_info || ""}`.trim()
-      );
+        this.addressOptions = addresses
+          .filter(
+            (address, index, self) =>
+              index === self.findIndex((c) => c.id === address.id)
+          )
+          .map(
+            ({
+              block_no,
+              road_name,
+              unit_no,
+              building_name,
+              postal_code,
+              additional_info,
+            }) =>
+              `${block_no} ${road_name} ${unit_no} ${building_name}, ${postal_code} ${
+                additional_info || ""
+              }`.trim()
+          );
 
-    console.log("Address options loaded:", this.addressOptions);
-  } catch (error) {
-    console.error("Error loading address options:", error);
-    this.addressOptions = [];
-  }
-},
-
+        console.log("Address options loaded:", this.addressOptions);
+      } catch (error) {
+        console.error("Error loading address options:", error);
+        this.addressOptions = [];
+      }
+    },
 
     async loadDrivers() {
       try {
@@ -299,6 +311,23 @@ export const useTransactionStore = defineStore("transactionStore", {
         console.log("Sorted Time Options:", this.timeOptions);
       } catch (error) {
         console.error("Unexpected error fetching time options:", error);
+      }
+    },
+    async loadJobOptions() {
+      try {
+        const { data, error } = await supabase.from("job_types").select("type");
+
+        if (error) {
+          console.error("Error fetching time options:", error);
+          return;
+        }
+
+        // Map and sort time options alphabetically
+        this.jobOptions = data.map((option) => `${option.type}`);
+
+        console.log("Sorted Job Type Options:", this.jobOptions);
+      } catch (error) {
+        console.error("Unexpected error fetching job type options:", error);
       }
     },
     // Load recurring instructions for a specific customer
@@ -630,10 +659,11 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.selectedCollectionAddress = null;
       this.selectedCollectionDriver = null;
       this.selectedDeliveryDriver = null;
-      this.collectionTime =null;
+      this.collectionTime = null;
       this.deliveryTime = null;
       this.collectionDate = null;
       this.deliveryDate = null;
+      this.jobType = null;
       this.useCcCollection = false;
       this.useCcDelivery = false;
     },
@@ -792,437 +822,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       } catch (error) {
         console.error("Error deleting report:", error);
         throw error; // Re-throw for higher-level handling
-      }
-    },
-
-    async createOrderTransaction() {
-      try {
-    
-        // Generate timestamp
-        const currentTimestamp = new Date().toISOString();
-    
-        // Insert Order
-        const { data: orderData, error: orderError } = await supabase
-          .from("orders")
-          .insert([
-            {
-              order_no: this.orderNo,
-              collection_id: this.selectedCollection.id,
-              delivery_id: this.selectedCollection.delivery_id,
-              customer_id: this.selectedCustomer?.id || null,
-              ready_by: this.ready_by || null,
-              order_date_time: currentTimestamp,
-              goods_status: "none",
-              logistics_status: "collection arranged",
-              payment_status: "unpaid",
-              job_type: "-",
-              job_subtype: "-",
-              no_packets_hangers: "-",
-              tag_status: "to print"
-            },
-          ])
-          .select("id, order_no, ready_by, collection_id, delivery_id")
-          .single();
-    
-        if (orderError) throw orderError;
-
-        const orderId = orderData.id;
-        const orderNo = orderData.order_no;
-
-        // After inserting into the orders table, update the order no in the collections table
-        const { error: updateCollectionsError } = await supabase
-          .from("collections")
-          .update({ order_no: orderData.order_no })
-          .eq("id", orderData.collection_id);
-
-        if (updateCollectionsError) throw updateCollectionsError;
-
-        const { error: updateDeliveriesError } = await supabase
-        .from("deliveries")
-        .update({ order_no: orderData.order_no })
-        .eq("id", orderData.delivery_id);
-
-      if (updateDeliveriesError) throw updateDeliveriesError;
-
-        // Insert Transaction Items
-        for (const item of this.transactionItems) {
-          const itemData = {
-            item_name: item.name,
-            order_id: orderId,
-            price: item.price,
-            process: item.process,
-            pieces: item.pieces,
-            quantity: item.quantity,
-            subtotal: item.subtotal,
-            category: item.category,
-            tag_category: item.tag_category,
-          };
-          const { error: itemError } = await supabase
-            .from("transactions")
-            .insert(itemData);
-          if (itemError) throw itemError;
-        }
-
-        // Insert Instructions
-        for (const instruction of this.instructions) {
-          const instructionData = {
-            description: instruction.description,
-            admin: instruction.to.includes("admin"),
-            cleaning: instruction.to.includes("cleaning"),
-            packing: instruction.to.includes("packing"),
-            picking_sending: instruction.to.includes("pickingsending"),
-          };
-
-          const table =
-            instruction.type === "onetime"
-              ? "instructions_onetime"
-              : "instructions_recurring";
-
-          if (instruction.type === "onetime") {
-            instructionData.order_id = orderId;
-          } else {
-            instructionData.customer_id = this.selectedCustomer?.id || null;
-          }
-
-          const { error: instructionError } = await supabase
-            .from(table)
-            .insert(instructionData);
-          if (instructionError) throw instructionError;
-        }
-
-        // Insert Error Reports with File Upload
-        for (const report of this.reports) {
-          let uploadedFileUrl = null;
-
-          if (report.image) {
-            try {
-              // Extract MIME type and Base64 data
-              const [meta, base64Data] = report.image.split(",");
-              const mimeType = meta.match(/:(.*?);/)[1]; // Extract MIME type dynamically
-
-              // Validate allowed MIME types
-              const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg"];
-              if (!allowedMimeTypes.includes(mimeType)) {
-                console.error(`Unsupported file type: ${mimeType}`);
-                continue;
-              }
-
-              // Convert Base64 to Blob
-              const byteCharacters = atob(base64Data);
-              const byteArray = new Uint8Array(byteCharacters.length);
-              for (let i = 0; i < byteCharacters.length; i++) {
-                byteArray[i] = byteCharacters.charCodeAt(i);
-              }
-              const blob = new Blob([byteArray], { type: mimeType });
-
-              // Generate a unique file name with the correct extension
-              const fileExtension = mimeType.split("/")[1]; // e.g., "jpeg" or "png"
-              const now = new Date();
-
-              // Extract components
-              const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
-              const day = String(now.getDate()).padStart(2, "0");
-              const year = String(now.getFullYear()).slice(-2); // Get last two digits of the year
-              const hours = String(now.getHours()).padStart(2, "0"); // Military time
-              const minutes = String(now.getMinutes()).padStart(2, "0");
-
-              // Concatenate to MMDDYYHHMM format
-              const timestamp = `${month}${day}${year}${hours}${minutes}`;
-
-              // Use the formatted timestamp in the file name
-              const fileName = `error-report-${timestamp}.${fileExtension}`;
-
-              // Upload the file to Supabase storage
-              const { data: uploadData, error: uploadError } =
-                await supabase.storage
-                  .from("error_report_images") // Replace with your bucket name
-                  .upload(fileName, blob, {
-                    cacheControl: "3600", // Cache for 1 hour
-                    upsert: false, // Avoid overwriting existing files
-                  });
-
-              if (uploadError)
-                throw new Error(`File upload failed: ${uploadError.message}`);
-
-              // Check if the file was uploaded successfully
-              if (!uploadData || !uploadData.path) {
-                throw new Error(
-                  "File upload succeeded but no path was returned."
-                );
-              }
-
-              // Get the public URL of the uploaded file
-              const { data: publicUrlData, error: urlError } = supabase.storage
-                .from("error_report_images")
-                .getPublicUrl(uploadData.path);
-
-              if (urlError)
-                throw new Error(
-                  `Public URL retrieval failed: ${urlError.message}`
-                );
-
-              // Check if the public URL is valid
-              if (!publicUrlData || !publicUrlData.publicUrl) {
-                throw new Error(
-                  "Public URL retrieval succeeded but no URL was returned."
-                );
-              }
-
-              uploadedFileUrl = publicUrlData.publicUrl;
-            } catch (uploadError) {
-              console.error("Error during file upload:", uploadError);
-              continue; // Skip this report if upload fails
-            }
-          }
-
-          // Insert the report into the error_reports table
-          try {
-            const reportData = {
-              description: report.description,
-              category: report.category,
-              sub_category: report.sub_category,
-              // order_id: orderId,
-              image: uploadedFileUrl, // Insert the uploaded image URL here
-            };
-
-            reportData.order_id = orderId;
-
-            const { error: reportError } = await supabase
-              .from("error_reports")
-              .insert(reportData);
-            if (reportError)
-              throw new Error(
-                `Failed to insert report into error_reports: ${reportError.message}`
-              );
-          } catch (insertError) {
-            console.error(
-              "Error inserting report into error_reports:",
-              insertError
-            );
-          }
-        }
-
-        // Reset transaction data after successful save
-        this.resetTransactionItems();
-
-        return orderNo; // Return the order ID for further use
-      } catch (error) {
-        console.error("Error in saveTransaction:", error);
-      }
-    },
-
-    async saveTransaction() {
-      try {
-        this.createCollection();
-        // Insert Order
-        const currentTimestamp = new Date().toISOString();
-        const { data: orderData, error: orderError } = await supabase
-          .from("orders")
-          .insert([
-            {
-              order_no: this.orderNo,
-              collection_id: collectionData.id,
-              delivery_id: deliveryData.id,
-              customer_id: this.selectedCustomer?.id || null,
-              order_date_time: currentTimestamp,
-              ready_by: this.ready_by || null,
-              goods_status: "none",
-              logistics_status: "collection arranged",
-              payment_status: "unpaid",
-              job_type: "-",
-              job_subtype: "-",
-              no_packets_hangers: "-",
-              tag_status: "to print",
-              logistics_no: this.nextLogisticsNo
-            },
-          ])
-          .select("id, order_no, ready_by, collection_id, delivery_id")
-          .single();
-
-        if (orderError) throw orderError;
-
-        const orderId = orderData.id;
-        const orderNo = orderData.order_no;
-
-        // After inserting into the orders table, update the order no in the collections table
-        const { error: updateCollectionsError } = await supabase
-          .from("collections")
-          .update({ order_no: orderData.order_no })
-          .eq("id", orderData.collection_id);
-
-        if (updateCollectionsError) throw updateCollectionsError;
-
-        const { error: updateDeliveriesError } = await supabase
-        .from("deliveries")
-        .update({ order_no: orderData.order_no })
-        .eq("id", orderData.delivery_id);
-
-      if (updateDeliveriesError) throw updateDeliveriesError;
-
-        // Insert Transaction Items
-        for (const item of this.transactionItems) {
-          const itemData = {
-            item_name: item.name,
-            order_id: orderId,
-            price: item.price,
-            process: item.process,
-            pieces: item.pieces,
-            quantity: item.quantity,
-            subtotal: item.subtotal,
-            category: item.category,
-            tag_category: item.tag_category,
-          };
-          const { error: itemError } = await supabase
-            .from("transactions")
-            .insert(itemData);
-          if (itemError) throw itemError;
-        }
-
-        // Insert Instructions
-        for (const instruction of this.instructions) {
-          const instructionData = {
-            description: instruction.description,
-            admin: instruction.to.includes("admin"),
-            cleaning: instruction.to.includes("cleaning"),
-            packing: instruction.to.includes("packing"),
-            picking_sending: instruction.to.includes("pickingsending"),
-          };
-
-          const table =
-            instruction.type === "onetime"
-              ? "instructions_onetime"
-              : "instructions_recurring";
-
-          if (instruction.type === "onetime") {
-            instructionData.order_id = orderId;
-          } else {
-            instructionData.customer_id = this.selectedCustomer?.id || null;
-          }
-
-          const { error: instructionError } = await supabase
-            .from(table)
-            .insert(instructionData);
-          if (instructionError) throw instructionError;
-        }
-
-        // Insert Error Reports with File Upload
-        for (const report of this.reports) {
-          let uploadedFileUrl = null;
-
-          if (report.image) {
-            try {
-              // Extract MIME type and Base64 data
-              const [meta, base64Data] = report.image.split(",");
-              const mimeType = meta.match(/:(.*?);/)[1]; // Extract MIME type dynamically
-
-              // Validate allowed MIME types
-              const allowedMimeTypes = ["image/png", "image/jpeg", "image/jpg"];
-              if (!allowedMimeTypes.includes(mimeType)) {
-                console.error(`Unsupported file type: ${mimeType}`);
-                continue;
-              }
-
-              // Convert Base64 to Blob
-              const byteCharacters = atob(base64Data);
-              const byteArray = new Uint8Array(byteCharacters.length);
-              for (let i = 0; i < byteCharacters.length; i++) {
-                byteArray[i] = byteCharacters.charCodeAt(i);
-              }
-              const blob = new Blob([byteArray], { type: mimeType });
-
-              // Generate a unique file name with the correct extension
-              const fileExtension = mimeType.split("/")[1]; // e.g., "jpeg" or "png"
-              const now = new Date();
-
-              // Extract components
-              const month = String(now.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
-              const day = String(now.getDate()).padStart(2, "0");
-              const year = String(now.getFullYear()).slice(-2); // Get last two digits of the year
-              const hours = String(now.getHours()).padStart(2, "0"); // Military time
-              const minutes = String(now.getMinutes()).padStart(2, "0");
-
-              // Concatenate to MMDDYYHHMM format
-              const timestamp = `${month}${day}${year}${hours}${minutes}`;
-
-              // Use the formatted timestamp in the file name
-              const fileName = `error-report-${timestamp}.${fileExtension}`;
-
-              // Upload the file to Supabase storage
-              const { data: uploadData, error: uploadError } =
-                await supabase.storage
-                  .from("error_report_images") // Replace with your bucket name
-                  .upload(fileName, blob, {
-                    cacheControl: "3600", // Cache for 1 hour
-                    upsert: false, // Avoid overwriting existing files
-                  });
-
-              if (uploadError)
-                throw new Error(`File upload failed: ${uploadError.message}`);
-
-              // Check if the file was uploaded successfully
-              if (!uploadData || !uploadData.path) {
-                throw new Error(
-                  "File upload succeeded but no path was returned."
-                );
-              }
-
-              // Get the public URL of the uploaded file
-              const { data: publicUrlData, error: urlError } = supabase.storage
-                .from("error_report_images")
-                .getPublicUrl(uploadData.path);
-
-              if (urlError)
-                throw new Error(
-                  `Public URL retrieval failed: ${urlError.message}`
-                );
-
-              // Check if the public URL is valid
-              if (!publicUrlData || !publicUrlData.publicUrl) {
-                throw new Error(
-                  "Public URL retrieval succeeded but no URL was returned."
-                );
-              }
-
-              uploadedFileUrl = publicUrlData.publicUrl;
-            } catch (uploadError) {
-              console.error("Error during file upload:", uploadError);
-              continue; // Skip this report if upload fails
-            }
-          }
-
-          // Insert the report into the error_reports table
-          try {
-            const reportData = {
-              description: report.description,
-              category: report.category,
-              sub_category: report.sub_category,
-              // order_id: orderId,
-              image: uploadedFileUrl, // Insert the uploaded image URL here
-            };
-
-            reportData.order_id = orderId;
-
-            const { error: reportError } = await supabase
-              .from("error_reports")
-              .insert(reportData);
-            if (reportError)
-              throw new Error(
-                `Failed to insert report into error_reports: ${reportError.message}`
-              );
-          } catch (insertError) {
-            console.error(
-              "Error inserting report into error_reports:",
-              insertError
-            );
-          }
-        }
-
-        // Reset transaction data after successful save
-        this.resetTransactionItems();
-
-        return orderNo; // Return the order ID for further use
-      } catch (error) {
-        console.error("Error in saveTransaction:", error);
       }
     },
 
@@ -1537,112 +1136,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    async fetchOrderDetailsByOrderNo(orderNo) {
-      try {
-        // Query orders with related tables
-        const { data: orderDetails, error } = await supabase
-          .from("orders")
-          .select(
-            `
-            *,
-            transactions (
-              *
-            ),
-            error_reports (
-              *
-            ),
-            instructions_onetime (
-              *
-            ),
-            customers (
-              *,
-              customer_address (*),
-              instructions_recurring (*)
-            ),
-            collections (
-              *,
-              contact_persons (*),
-              drivers (*)
-            ),
-            deliveries (
-              *,
-              contact_persons (*),
-              drivers (*)
-            )
-          `
-          )
-          .eq("order_no", orderNo) // Filter by order_no
-          .single(); // Expecting only one result
-
-        // Handle potential errors
-        if (error) throw error;
-
-        // Return transformed data
-        return {
-          order: {
-            id: orderDetails.id,
-            order_no: orderDetails.order_no,
-            ready_by: orderDetails.ready_by,
-            order_date_time: orderDetails.order_date_time,
-            payment_status: orderDetails.payment_status,
-            goods_status: orderDetails.goods_status,
-            logistics_status: orderDetails.logistics_status,
-            job_type: orderDetails.job_type,
-            job_subtype: orderDetails.job_subtype,
-            no_packets_hangers: orderDetails.no_packets_hangers,
-            tag_status: orderDetails.tag_status
-          },
-          transactions: orderDetails.transactions || [],
-          errorReports: orderDetails.error_reports || [],
-          instructionsOneTime: orderDetails.instructions_onetime || [],
-          instructionsRecurring:
-            orderDetails.customers?.instructions_recurring || [],
-          customer: {
-            id: orderDetails.customers.id,
-            name: orderDetails.customers.name,
-            type: orderDetails.customers.type,
-            sub_type: orderDetails.customers.sub_type,
-            contact_no1: orderDetails.customers.contact_no1,
-            contact_no2: orderDetails.customers.contact_no2,
-            email: orderDetails.customers.email,
-            remarks: orderDetails.customers.remarks,
-            payment_type: orderDetails.customers.payment_type,
-            addresses: orderDetails.customers.customer_address || [],
-          },
-          collection: {
-            id: orderDetails.collections?.id,
-            address: orderDetails.collections?.address,
-            area: orderDetails.collections?.area,
-            status: orderDetails.collections?.status,
-            remarks: orderDetails.collections?.remarks,
-            collection_date: orderDetails.collections?.collection_date || null,
-            collection_time: orderDetails.collections?.collection_time || null,
-            contactPerson: orderDetails.collections?.contact_persons || null,
-            driver_id: orderDetails.collections?.driver_id || null,
-            driver: orderDetails.collections?.drivers || null,
-            remarks: orderDetails.collections?.remarks || null,
-            pack_type: orderDetails.collections?.pack_type
-          },
-          delivery: {
-            id: orderDetails.deliveries?.id,
-            address: orderDetails.deliveries?.address,
-            area: orderDetails.deliveries?.area,
-            status: orderDetails.deliveries?.status,
-            remarks: orderDetails.deliveries?.remarks,
-            delivery_date: orderDetails.deliveries?.delivery_date || null,
-            delivery_time: orderDetails.deliveries?.delivery_time || null,
-            contactPerson: orderDetails.deliveries?.contact_persons || null,
-            driver_id: orderDetails.deliveries?.driver_id || null,
-            driver: orderDetails.deliveries?.drivers || null,
-            remarks: orderDetails.deliveries?.remarks || null,
-            pack_type: orderDetails.deliveries?.pack_type
-          },
-        };
-      } catch (error) {
-        console.error("Error fetching order details by order_no:", error);
-        throw error;
-      }
-    },
     setCollectionDates({ from, to }) {
       this.collectionDateFrom = from;
       this.collectionDateTo = to;
@@ -1811,7 +1304,8 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time: collectionPayload.collection_time,
               driver_id: collectionPayload.driver_id,
               remarks: collectionPayload.remarks,
-              pack_type: collectionPayload.pack_type
+              pack_type: collectionPayload.pack_type,
+              job_type: collectionPayload.job_type,
             })
             .eq("id", collection_id);
 
@@ -1854,7 +1348,8 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time: deliveryPayload.delivery_time,
               driver_id: deliveryPayload.driver_id,
               remarks: deliveryPayload.remarks,
-              pack_type: deliveryPayload.pack_type
+              pack_type: deliveryPayload.pack_type,
+              job_type: deliveryPayload.job_type,
             })
             .eq("id", delivery_id);
 
@@ -2102,370 +1597,15 @@ export const useTransactionStore = defineStore("transactionStore", {
         return { customerTypes: [], subTypeMapping: {} }; // Return empty structure on error
       }
     },
-    async fetchAllOrdersSimple() {
-      try {
-        const { data, error } = await supabase.from("orders").select(
-          `
-            id,
-            order_no,
-            collection_id,
-            delivery_id,
-            customer_id,
-            goods_status,
-            logistics_status,
-            payment_status,
-            customers (
-              id,
-              name
-            ),
-            collections (
-              id,
-              collection_date
-            ),
-            deliveries (
-              id,
-              delivery_date
-            )
-          `
-        );
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          console.warn("No orders found.");
-          return [];
-        }
-
-        return data.map((order) => ({
-          id: order.id,
-          order_no: order.order_no,
-          collection_id: order.collection_id,
-            delivery_id: order.delivery_id,
-            customer_id: order.customer_id,
-            goods_status: order.goods_status,
-            logistics_status: order.logistics_status,
-            payment_status: order.payment_status,
-            customer: order.customers
-            ? {
-                id: order.customers?.id,
-                name: order.customers?.name,
-              }
-            : null,
-          collection: order.collections
-            ? {
-                id: order.collections?.id,
-                collection_date: order.collections?.collection_date,
-              }
-            : null,
-          delivery: order.deliveries
-            ? {
-                id: order.deliveries?.id,
-                delivery_date: order.deliveries?.delivery_date,
-              }
-            : null
-        }));
-      } catch (error) {
-        console.error("Error fetching all orders:", error);
-        return [];
-      }
-    },
-    async fetchAllOrders() {
-      try {
-        const { data, error } = await supabase.from("orders").select(
-          `
-            id,
-            order_no,
-            collection_id,
-            delivery_id,
-            tag_timestamp,
-            tag_changes,
-            tag_status,
-            customer_id,
-            customers (
-              id,
-              name,
-              contact_no1,
-              contact_no2
-            ),
-            collections (
-              id,
-              collection_date,
-              collection_time,
-              contact_person_id,
-              driver_id,
-              pack_type,
-              drivers (
-                id,
-                name,
-                contact_no1
-              ),
-              contact_persons (
-                id,
-                name
-              )
-            ),
-            deliveries (
-              id,
-              delivery_date,
-              delivery_time,
-              driver_id,
-              contact_person_id,
-              pack_type,
-              drivers (
-                id,
-                name,
-                contact_no1
-              ),
-              contact_persons (
-                id,
-                name
-              )
-            )
-          `
-        );
-
-        if (error) throw error;
-
-        if (!data || data.length === 0) {
-          console.warn("No orders found.");
-          return [];
-        }
-
-        return data.map((order) => ({
-          id: order.id,
-          order_no: order.order_no,
-          collection_id: order.collection_id,
-            delivery_id: order.delivery_id,
-          tag_timestamp: order.tag_timestamp,
-          tag_changes: order.tag_changes,
-          tag_status: order.tag_status,
-            customer_id: order.customer_id,
-            customer: order.customers
-            ? {
-                id: order.customers?.id,
-                name: order.customers?.name,
-                contact_no1: order.customers?.contact_no1,
-                contact_no2: order.customers?.contact_no2,
-              }
-            : null,
-          collection: order.collections
-            ? {
-                id: order.collections?.id,
-                collection_date: order.collections?.collection_date,
-                collection_time: order.collections?.collection_time,
-                pack_type: order.collections?.pack_type,
-                driver: order.collections?.drivers
-                  ? {
-                      id: order.collections?.drivers?.id,
-                      name: order.collections?.drivers?.name,
-                      contact_no1: order.collections?.drivers?.contact_no1,
-                    }
-                  : null,
-                contact_person: order.collections?.contact_persons
-                  ? {
-                      id: order.collections?.contact_persons?.id,
-                      name: order.collections?.contact_persons?.name,
-                    }
-                  : null,
-              }
-            : null,
-          delivery: order.deliveries
-            ? {
-                id: order.deliveries?.id,
-                delivery_date: order.deliveries?.delivery_date,
-                delivery_time: order.deliveries?.delivery_time,
-                pack_type: order.deliveries?.pack_type,
-                driver: order.deliveries?.drivers
-                  ? {
-                      id: order.deliveries?.drivers?.id,
-                      name: order.deliveries?.drivers?.name,
-                      contact_no1: order.deliveries?.drivers?.contact_no1,
-                    }
-                  : null,
-                contact_person: order.deliveries?.contact_persons
-                  ? {
-                      id: order.deliveries?.contact_persons?.id,
-                      name: order.deliveries?.contact_persons?.name,
-                    }
-                  : null,
-              }
-            : null
-        }));
-      } catch (error) {
-        console.error("Error fetching all orders:", error);
-        return [];
-      }
-    },
-
-    async fetchLogisticsByOrderId(orderId) {
-      try {
-        const { data, error } = await supabase
-          .from("orders")
-          .select(
-            `
-            id,
-            collection_id,
-            delivery_id,
-            collections (
-              id,
-              collection_date,
-              area,
-              status,
-              remarks,
-              contact_person_id,
-              address,
-              date_collected,
-              delivery_id,
-              customer_id,
-              order_no,
-              pack_type,
-              customers (
-                id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                type,
-                sub_type
-              ),
-              drivers (
-                id,
-                name,
-                contact_no1
-              ),
-              contact_persons (
-                id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                remarks
-              )
-            ),
-            deliveries (
-              id,
-              address,
-              area,
-              status,
-              remarks,
-              delivery_date,
-              delivery_time,
-              driver_id,
-              contact_person_id,
-              pack_type,
-              drivers (
-                id,
-                name,
-                contact_no1
-              ),
-              contact_persons (
-                id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                remarks
-              )
-            )
-          `
-          )
-          .eq("id", orderId)
-          .single();
-
-        if (error) throw error;
-
-        if (!data) {
-          console.warn("No logistics data found for this order.");
-          return { collectionDate: "N/A", deliveryDate: "N/A" };
-        }
-
-        return {
-          collection: data.collections
-            ? {
-                id: data.collections.id,
-                collectionDate: data.collections.collection_date,
-                area: data.collections.area,
-                status: data.collections.status,
-                remarks: data.collections.remarks,
-                contactPersonId: data.collections.contact_person_id,
-                address: data.collections.address,
-                dateCollected: data.collections.date_collected,
-                deliveryId: data.collections.delivery_id,
-                customerId: data.collections.customer_id,
-                orderNo: data.collections.order_no,
-                pack_type: data.collections.pack_type,
-                customer: data.collections.customers
-                  ? {
-                      id: data.collections.customers.id,
-                      name: data.collections.customers.name,
-                      contactNo1: data.collections.customers.contact_no1,
-                      contactNo2: data.collections.customers.contact_no2,
-                      email: data.collections.customers.email,
-                      type: data.collections.customers.type,
-                      subType: data.collections.customers.sub_type,
-                    }
-                  : null,
-                driver: data.collections.drivers
-                  ? {
-                      id: data.collections.drivers.id,
-                      name: data.collections.drivers.name,
-                      contactNo1: data.collections.drivers.contact_no1,
-                    }
-                  : null,
-                contactPerson: data.collections.contact_persons
-                  ? {
-                      id: data.collections.contact_persons.id,
-                      name: data.collections.contact_persons.name,
-                      contactNo1: data.collections.contact_persons.contact_no1,
-                      contactNo2: data.collections.contact_persons.contact_no2,
-                      email: data.collections.contact_persons.email,
-                      remarks: data.collections.contact_persons.remarks,
-                    }
-                  : null,
-              }
-            : null,
-          delivery: data.deliveries
-            ? {
-                id: data.deliveries.id,
-                address: data.deliveries.address,
-                area: data.deliveries.area,
-                status: data.deliveries.status,
-                remarks: data.deliveries.remarks,
-                deliveryDate: data.deliveries.delivery_date,
-                deliveryTime: data.deliveries.delivery_time,
-                pack_type: data.deliveries.pack_type,
-                driver: data.deliveries.drivers
-                  ? {
-                      id: data.deliveries.drivers.id,
-                      name: data.deliveries.drivers.name,
-                      contactNo1: data.deliveries.drivers.contact_no1,
-                    }
-                  : null,
-                contactPerson: data.deliveries.contact_persons
-                  ? {
-                      id: data.deliveries.contact_persons.id,
-                      name: data.deliveries.contact_persons.name,
-                      contactNo1: data.deliveries.contact_persons.contact_no1,
-                      contactNo2: data.deliveries.contact_persons.contact_no2,
-                      email: data.deliveries.contact_persons.email,
-                      remarks: data.deliveries.contact_persons.remarks,
-                    }
-                  : null,
-              }
-            : null,
-        };
-      } catch (error) {
-        console.error("Error fetching logistics by orderId:", error);
-        return { collection: null, delivery: null };
-      }
-    },
-
+// updated functions (new)
+    // start of fetching
     async fetchAllCollections() {
       try {
         const { data, error } = await supabase
           .from("collections")
-          .select(`
-             id,
+          .select(
+            `
+            id,
             created_at,
             driver_id,
             status,
@@ -2476,18 +1616,8 @@ export const useTransactionStore = defineStore("transactionStore", {
             date_collected,
             collection_date,
             collection_time,
-            customer_id,
             pack_type,
-            logistics_no,
-            customers (
-                id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                type,
-                sub_type
-              ),
+            logistics_id,
             contact_persons (
               id,
               name,
@@ -2498,48 +1628,71 @@ export const useTransactionStore = defineStore("transactionStore", {
               id,
               name,
               contact_no1
+            ),
+            logistics (
+              customer_id,
+              job_type,
+              logistics_status,
+              customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                type,
+                sub_type
+              )
             )
-          `)
-          .order("created_at", { ascending: false }); // Sort by latest created_at first
+          `
+          )
+          .eq("status", "active") // Fetch only active collections
+          .order("logistics_id", { ascending: true })
+          .order("created_at", { ascending: false }); // Ensure latest version comes first
 
         if (error) {
           throw error;
         }
 
-        // Filter to keep only the latest row per logistics_no
+        // Deduplicate by logistics_id (keeping the latest created_at version)
         const uniqueCollections = Object.values(
           data.reduce((acc, collection) => {
-            if (!acc[collection.logistics_no] || acc[collection.logistics_no].created_at < collection.created_at) {
-              acc[collection.logistics_no] = collection;
+            if (!acc[collection.logistics_id]) {
+              acc[collection.logistics_id] = collection;
             }
             return acc;
           }, {})
         );
+
+        for (const collection of uniqueCollections) {
+          collection.order_no = await this.fetchOrderNoIfExists(collection.logistics_id);
+        }    
 
         // Transform data to include related customer and driver details
         const formattedData = uniqueCollections.map((collection) => ({
           id: collection.id,
           created_at: collection.created_at,
           driver_id: collection.driver_id,
-          status: collection.status,
+          logistics_status: collection.logistics?.logistics_status,
           remarks: collection.remarks,
           contact_person_id: collection.contact_person_id,
           address: collection.address,
           date_collected: collection.date_collected,
           collection_date: collection.collection_date,
           collection_time: collection.collection_time,
-          customer_id: collection.customer_id,
           pack_type: collection.pack_type,
-          logistics_no: collection.logistics_no,
-          customer: collection.customers
+          logistics_id: collection.logistics_id,
+          job_type: collection.logistics?.job_type,
+          order_no: collection.order_no, 
+          customer_id: collection.logistics?.customer_id,
+          customer: collection.logistics?.customers
             ? {
-                id: collection.customers.id,
-                name: collection.customers.name,
-                contact_no1: collection.customers.contact_no1,
-                contact_no2: collection.customers.contact_no2,
-                email: collection.customers.email,
-                type: collection.customers.type,
-                sub_type: collection.customers.sub_type,
+                id: collection.logistics?.customers.id,
+                name: collection.logistics?.customers.name,
+                contact_no1: collection.logistics?.customers.contact_no1,
+                contact_no2: collection.logistics?.customers.contact_no2,
+                email: collection.logistics?.customers.email,
+                type: collection.logistics?.customers.type,
+                sub_type: collection.logistics?.customers.sub_type,
               }
             : null,
           contact_person: collection.contact_persons
@@ -2559,7 +1712,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             : null,
         }));
 
-        console.log("Fetched Collections with Drivers:", formattedData);
+        console.log("Fetched Collections with Logistics:", formattedData);
         return formattedData || [];
       } catch (error) {
         console.error("Error fetching collections:", error);
@@ -2571,8 +1724,9 @@ export const useTransactionStore = defineStore("transactionStore", {
       try {
         const { data, error } = await supabase
           .from("deliveries")
-          .select(`
-             id,
+          .select(
+            `
+            id,
             created_at,
             driver_id,
             status,
@@ -2583,18 +1737,8 @@ export const useTransactionStore = defineStore("transactionStore", {
             date_delivered,
             delivery_date,
             delivery_time,
-            customer_id,
             pack_type,
-            logistics_no,
-            customers (
-                id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                type,
-                sub_type
-              ),
+            logistics_id,
             contact_persons (
               id,
               name,
@@ -2605,48 +1749,73 @@ export const useTransactionStore = defineStore("transactionStore", {
               id,
               name,
               contact_no1
+            ),
+            logistics (
+            id
+              customer_id,
+              job_type,
+              logistics_status,
+              customers (
+                id,
+                name,
+                contact_no1,
+                contact_no2,
+                email,
+                type,
+                sub_type
+              )
             )
-          `)
-          .order("created_at", { ascending: false }); // Sort by latest created_at first
+          `
+          )
+          .eq("status", "active") // Fetch only active deliveries
+          .order("logistics_id", { ascending: true })
+          .order("created_at", { ascending: false }); // Ensure latest version comes first
 
         if (error) {
           throw error;
         }
 
-        // Filter to keep only the latest row per logistics_no
+        // Deduplicate by logistics_id (keeping the latest created_at version)
         const uniqueDeliveries = Object.values(
           data.reduce((acc, delivery) => {
-            if (!acc[delivery.logistics_no] || acc[delivery.logistics_no].created_at < delivery.created_at) {
-              acc[delivery.logistics_no] = delivery;
+            if (!acc[delivery.logistics_id]) {
+              acc[delivery.logistics_id] = delivery;
             }
             return acc;
           }, {})
         );
+
+        // Inside fetchAllDeliveries()
+for (const delivery of uniqueDeliveries) {
+  delivery.order_no = await this.fetchOrderNoIfExists(delivery.logistics_id);
+}
 
         // Transform data to include related customer and driver details
         const formattedData = uniqueDeliveries.map((delivery) => ({
           id: delivery.id,
           created_at: delivery.created_at,
           driver_id: delivery.driver_id,
-          status: delivery.status,
+          logistics_status: delivery.logistics?.logistics_status,
           remarks: delivery.remarks,
           contact_person_id: delivery.contact_person_id,
           address: delivery.address,
           date_delivered: delivery.date_delivered,
           delivery_date: delivery.delivery_date,
           delivery_time: delivery.delivery_time,
-          customer_id: delivery.customer_id,
           pack_type: delivery.pack_type,
-          logistics_no: delivery.logistics_no,
-          customer: delivery.customers
+          logistics_id: delivery.logistics_id,
+          job_type: delivery.logistics?.job_type,
+          order_no: delivery.order_no,
+          customer_id: delivery.logistics?.customer_id,
+          customer: delivery.logistics?.customers
             ? {
-                id: delivery.customers.id,
-                name: delivery.customers.name,
-                contact_no1: delivery.customers.contact_no1,
-                contact_no2: delivery.customers.contact_no2,
-                email: delivery.customers.email,
-                type: delivery.customers.type,
-                sub_type: delivery.customers.sub_type,
+                id: delivery.logistics?.customers.id,
+                name: delivery.logistics?.customers.name,
+                contact_no1: delivery.logistics?.customers.contact_no1,
+                contact_no2: delivery.logistics?.customers.contact_no2,
+                email: delivery.logistics?.customers.email,
+                type: delivery.logistics?.customers.type,
+                sub_type: delivery.logistics?.customers.sub_type,
               }
             : null,
           contact_person: delivery.contact_persons
@@ -2666,7 +1835,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             : null,
         }));
 
-        console.log("Fetched Deliveries with Drivers:", formattedData);
+        console.log("Fetched Deliveries with Logistics:", formattedData);
         return formattedData || [];
       } catch (error) {
         console.error("Error fetching deliveries:", error);
@@ -2674,360 +1843,531 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    // Map through all collections and return an array
-    async fetchCollectionsDeliveries() {
+    async fetchOrderNoIfExists(logisticsId) {
       try {
-        const { data: collections, error } = await supabase
-          .from("collections")
+        const { data, error } = await supabase
+          .from("orders")
+          .select("order_no")
+          .eq("logistics_id", logisticsId)
+          .eq("status", "active") // ✅ Only fetch orders where status is 'active'
+          .maybeSingle(); // Fetch only one record if it exists
+    
+        if (error) throw error;
+    
+        return data ? data.order_no : null;
+      } catch (error) {
+        console.error(`Error fetching active order_no for logistics_id ${logisticsId}:`, error);
+        return null; // Return null on error
+      }
+    },
+    
+    async fetchAllOrders() {
+      try {
+        const { data, error } = await supabase
+          .from("logistics") // ✅ Fetch from logistics as the central table
           .select(
             `
-            id,
-            created_at,
-            driver_id,
-            status,
-            area,
-            remarks,
-            contact_person_id,
-            address,
-            date_collected,
-            collection_date,
-            collection_time,
-            delivery_id,
-            customer_id,
-            order_no,
-            pack_type,
-            customers (
+              id,
+              job_type,
+              logistics_status,
+              orders (
                 id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                type,
-                sub_type
+                order_no,
+                logistics_id,
+                tag_timestamp,
+                tag_changes,
+                tag_status,
+              goods_status,
+              payment_status,
+                customer_id,
+                customers (
+                  id,
+                  name,
+                  contact_no1,
+                  contact_no2
+                )
               ),
-        drivers (
-          id,
-          name,
-          contact_no1
-        ),
-        contact_persons (
-          id,
-          name,
-          contact_no1,
-          contact_no2,
-          email,
-          remarks
-        ),
-        deliveries (
-          id,
-          address,
-          area,
-          status,
-          remarks,
-          delivery_date,
-          delivery_time,
-          driver_id,
-          contact_person_id,
-          pack_type,
-          drivers (
-            id,
-            name,
-            contact_no1
-          ),
-          contact_persons (
-            id,
-            name,
-            contact_no1,
-            contact_no2,
-            email,
-            remarks
+              collections (
+                id,
+                logistics_id,
+                collection_date,
+                collection_time,
+                contact_person_id,
+                driver_id,
+                pack_type,
+                drivers (
+                  id,
+                  name,
+                  contact_no1
+                ),
+                contact_persons (
+                  id,
+                  name
+                )
+              ),
+              deliveries (
+                id,
+                logistics_id,
+                delivery_date,
+                delivery_time,
+                driver_id,
+                contact_person_id,
+                pack_type,
+                drivers (
+                  id,
+                  name,
+                  contact_no1
+                ),
+                contact_persons (
+                  id,
+                  name
+                )
+              )
+            `
           )
-        )
-      `
-          );
+          .order("id", { ascending: true }); // ✅ Order by logistics.id to maintain structure
 
-        if (error) {
-          throw new Error(
-            `Error fetching collection details: ${error.message}`
-          );
-        }
+        if (error) throw error;
 
-        if (!collections) {
-          console.warn("No collections found");
+        if (!data || data.length === 0) {
+          console.warn("No orders found.");
           return [];
         }
 
-        // Transform the array of collections
-        return collections.map((collection) => ({
-          id: collection.id,
-          created_at: collection.created_at,
-          driver_id: collection.driver_id,
-          status: collection.status,
-          remarks: collection.remarks,
-          contact_person_id: collection.contact_person_id,
-          address: collection.address,
-          date_collected: collection.date_collected,
-          collection_date: collection.collection_date,
-          collection_time: collection.collection_time,
-          delivery_id: collection.delivery_id,
-          customer_id: collection.customer_id,
-          order_no: collection.order_no,
-          pack_type: collection.pack_type,
-          customer: collection.customers
-            ? {
-                id: collection.customers.id,
-                name: collection.customers.name,
-                contact_no1: collection.customers.contact_no1,
-                contact_no2: collection.customers.contact_no2,
-                email: collection.customers.email,
-                type: collection.customers.type,
-                sub_type: collection.customers.sub_type,
-              }
-            : null,
-          driver: collection.drivers
-            ? {
-                id: collection.drivers.id,
-                name: collection.drivers.name,
-                contact_no1: collection.drivers.contact_no1,
-              }
-            : null,
-          contact_person: collection.contact_persons
-            ? {
-                id: collection.contact_persons.id,
-                name: collection.contact_persons.name,
-                contact_no1: collection.contact_persons.contact_no1,
-                contact_no2: collection.contact_persons.contact_no2,
-                email: collection.contact_persons.email,
-                remarks: collection.contact_persons.remarks,
-              }
-            : null,
-          delivery: collection.deliveries
-            ? {
-                id: collection.deliveries.id,
-                address: collection.deliveries.address,
-                area: collection.deliveries.area,
-                status: collection.deliveries.status,
-                remarks: collection.deliveries.remarks,
-                delivery_date: collection.deliveries.delivery_date,
-                delivery_time: collection.deliveries.delivery_time,
-          pack_type: collection.deliveries.pack_type,
-          driver: collection.deliveries.drivers
-                  ? {
-                      id: collection.deliveries.drivers.id,
-                      name: collection.deliveries.drivers.name,
-                      contact_no1: collection.deliveries.drivers.contact_no1,
-                    }
-                  : null,
-                contact_person: collection.deliveries.contact_persons
-                  ? {
-                      id: collection.deliveries.contact_persons.id,
-                      name: collection.deliveries.contact_persons.name,
-                      contact_no1:
-                        collection.deliveries.contact_persons.contact_no1,
-                      contact_no2:
-                        collection.deliveries.contact_persons.contact_no2,
-                      email: collection.deliveries.contact_persons.email,
-                      remarks: collection.deliveries.contact_persons.remarks,
-                    }
-                  : null,
-              }
-            : null,
+        return data.map((logistics) => ({
+          logistics_id: logistics.id,
+          job_type: logistics.job_type,
+          logistics_status: logistics.logistics_status,
+          orders:
+            logistics.orders?.map((order) => ({
+              id: order.id,
+              order_no: order.order_no,
+              tag_timestamp: order.tag_timestamp,
+              tag_changes: order.tag_changes,
+              tag_status: order.tag_status,
+              goods_status: order.goods_status,
+              payment_status: order.payment_status,
+              customer_id: order.customer_id,
+              customer: order.customers
+                ? {
+                    id: order.customers.id,
+                    name: order.customers.name,
+                    contact_no1: order.customers.contact_no1,
+                    contact_no2: order.customers.contact_no2,
+                  }
+                : null,
+            })) || [], // ✅ Ensure it's always an array
+          collections:
+            logistics.collections?.map((collection) => ({
+              id: collection.id,
+              collection_date: collection.collection_date,
+              collection_time: collection.collection_time,
+              pack_type: collection.pack_type,
+              driver: collection.drivers
+                ? {
+                    id: collection.drivers.id,
+                    name: collection.drivers.name,
+                    contact_no1: collection.drivers.contact_no1,
+                  }
+                : null,
+              contact_person: collection.contact_persons
+                ? {
+                    id: collection.contact_persons.id,
+                    name: collection.contact_persons.name,
+                  }
+                : null,
+            })) || [], // ✅ Ensure collections is always an array
+          deliveries:
+            logistics.deliveries?.map((delivery) => ({
+              id: delivery.id,
+              delivery_date: delivery.delivery_date,
+              delivery_time: delivery.delivery_time,
+              pack_type: delivery.pack_type,
+              driver: delivery.drivers
+                ? {
+                    id: delivery.drivers.id,
+                    name: delivery.drivers.name,
+                    contact_no1: delivery.drivers.contact_no1,
+                  }
+                : null,
+              contact_person: delivery.contact_persons
+                ? {
+                    id: delivery.contact_persons.id,
+                    name: delivery.contact_persons.name,
+                  }
+                : null,
+            })) || [], // ✅ Ensure deliveries is always an array
         }));
       } catch (error) {
-        console.error("Unexpected error fetching collections:", error);
+        console.error("Error fetching all orders:", error);
         return [];
       }
     },
-
-    async fetchCollectionsDeliveriesById(collectionId) {
+    async fetchAllOrdersSimple() {
       try {
-        // Query collections with related tables, including drivers and contact_persons for deliveries
-        const { data: collection, error } = await supabase
-          .from("collections")
+        const { data, error } = await supabase
+          .from("logistics") // ✅ Fetch from logistics as the central table
           .select(
             `
-            *,
-            drivers (
               id,
-              name,
-              contact_no1
-            ),
-            contact_persons (
-              id,
-              name,
-              contact_no1,
-              contact_no2,
-              email,
-              remarks,
-              customer_id,
-              customers (
+              logistics_status,
+              orders (
                 id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                remarks,
-                payment_type
-              )
-            ),
-            deliveries (
-              id,
-              address,
-              area,
-              status,
-              remarks,
-              delivery_date,
-              delivery_time,
-              driver_id,
-              contact_person_id,
-              drivers (
-                id,
-                name,
-                contact_no1
+                order_no,
+            goods_status,
+            payment_status,
+                tag_timestamp,
+                tag_changes,
+                tag_status,
+                logistics_id,
+                customer_id,
+                customers (
+                  id,
+                  name,
+                  contact_no1,
+                  contact_no2
+                )
               ),
-              contact_persons (
+              collections (
                 id,
-                name,
-                contact_no1,
-                contact_no2,
-                email,
-                remarks
+                logistics_id,
+                collection_date,
+                collection_time
+              ),
+              deliveries (
+                id,
+                logistics_id,
+                delivery_date,
+                delivery_time
               )
-            )
-          `
+            `
           )
-          .eq("id", collectionId)
-          .single(); // Fetch a single collection
+          .order("id", { ascending: true }); // ✅ Order by logistics.id to maintain structure
 
-        if (error) {
-          throw new Error(
-            `Error fetching collection details: ${error.message}`
-          );
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          console.warn("No orders found.");
+          return [];
         }
 
-        if (!collection) {
-          console.warn(`No collection found with ID: ${collectionId}`);
+        return data.map((logistics) => ({
+          logistics_id: logistics.id,
+          logistics_status: logistics.logistics_status,
+          orders:
+            logistics.orders?.map((order) => ({
+              id: order.id,
+              order_no: order.order_no,
+              goods_status: order.goods_status,
+              payment_status: order.payment_status,
+              tag_timestamp: order.tag_timestamp,
+              tag_changes: order.tag_changes,
+              tag_status: order.tag_status,
+              customer_id: order.customer_id,
+              customer: order.customers
+                ? {
+                    id: order.customers.id,
+                    name: order.customers.name,
+                    contact_no1: order.customers.contact_no1,
+                    contact_no2: order.customers.contact_no2,
+                  }
+                : null,
+            })) || [], // ✅ Ensure it's always an array
+          collections:
+            logistics.collections?.map((collection) => ({
+              id: collection.id,
+              collection_date: collection.collection_date,
+              collection_time: collection.collection_time,
+            })) || [], // ✅ Ensure collections is always an array
+          deliveries:
+            logistics.deliveries?.map((delivery) => ({
+              id: delivery.id,
+              delivery_date: delivery.delivery_date,
+              delivery_time: delivery.delivery_time,
+            })) || [], // ✅ Ensure deliveries is always an array
+        }));
+      } catch (error) {
+        console.error("Error fetching all orders:", error);
+        return [];
+      }
+    },
+    // Fetch Transactions
+    async fetchTransactionsByOrderId(orderId) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, order_id, item_name, price, process, quantity, pieces, subtotal, category, tag_category")
+        .eq("order_id", orderId);
+    
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        return [];
+      }
+      return data;
+    },
+    
+    // Fetch One-Time Instructions
+    async fetchOnetimeInstructionsByOrderId(orderId) {
+      const { data, error } = await supabase
+        .from("instructions_onetime")
+        .select("id, order_id, description, admin, packing, cleaning, picking_sending")
+        .eq("order_id", orderId);
+    
+      if (error) {
+        console.error("Error fetching one-time instructions:", error);
+        return [];
+      }
+      return data;
+    },
+    
+    // Fetch Recurring Instructions
+    async fetchRecurringInstructionsByCustomerId(customerId) {
+      const { data, error } = await supabase
+        .from("instructions_recurring")
+        .select("id, customer_id, description, admin, packing, cleaning, picking_sending")
+        .eq("customer_id", customerId);
+    
+      if (error) {
+        console.error("Error fetching recurring instructions:", error);
+        return [];
+      }
+      return data;
+    },
+    
+    // Fetch Error Reports
+    async fetchErrorReportsByOrderId(orderId) {
+      const { data, error } = await supabase
+        .from("error_reports")
+        .select("id, order_id, description, category, sub_category, image")
+        .eq("order_id", orderId);
+    
+      if (error) {
+        console.error("Error fetching error reports:", error);
+        return [];
+      }
+      return data;
+    },
+    
+    // Fetch Collection
+    async fetchCollectionByLogisticsId(logisticsId) {
+      const { data, error } = await supabase
+        .from("collections")
+        .select(`
+          id, logistics_id, collection_date, collection_time, remarks, address, date_collected, status,
+          drivers ( id, name, contact_no1 ),
+          contact_persons ( id, name, contact_no1, contact_no2 )
+        `)
+        .eq("logistics_id", logisticsId)
+        .eq("status", "active");
+    
+      if (error) {
+        console.error("Error fetching collections:", error);
+        return [];
+      }
+    
+      return data;
+    },
+    
+    // Fetch Deliveries
+    async fetchDeliveryByLogisticsId(logisticsId) {
+      const { data, error } = await supabase
+        .from("deliveries")
+        .select(`
+          id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status,
+          drivers ( id, name, contact_no1 ),
+          contact_persons ( id, name, contact_no1, contact_no2 )
+        `)
+        .eq("logistics_id", logisticsId)
+        .eq("status", "active");
+    
+      if (error) {
+        console.error("Error fetching deliveries:", error);
+        return [];
+      }
+    
+      return data;
+    },
+    
+    // Fetch Whole Order (Main Function)
+    async fetchWholeOrderByOrderNo(orderNo) {
+      try {
+        // Step 1: Fetch main order and logistics details
+        const { data, error } = await supabase
+          .from("orders") // ✅ Directly fetch from orders
+          .select(`
+            id, order_no, logistics_id, tag_timestamp, tag_changes, tag_status, goods_status, payment_status, customer_id,
+            customers (
+              id, name, contact_no1, contact_no2, email, type, sub_type, payment_type,
+              schedule_remarks, price_remarks, accounting_remarks, other_remarks
+            )
+          `)
+          .eq("order_no", orderNo)
+          .single();
+    
+        if (error) throw error;
+        if (!data) {
+          console.warn(`No order found with order_no: ${orderNo}`);
           return null;
         }
-
-        // Transform data for easy use in the frontend
+    
+        // Step 2: Fetch logistics details using logistics_id
+        const { data: logisticsData, error: logisticsError } = await supabase
+          .from("logistics")
+          .select("id, job_type, urgency, logistics_status")
+          .eq("id", data.logistics_id)
+          .single();
+    
+        if (logisticsError) throw logisticsError;
+    
+        // Step 3: Fetch related data
+        const [transactions, onetimeInstructions, errorReports, recurringInstructions, collection, delivery] = await Promise.all([
+          this.fetchTransactionsByOrderId(data.id),
+          this.fetchOnetimeInstructionsByOrderId(data.id),
+          this.fetchErrorReportsByOrderId(data.id),
+          this.fetchRecurringInstructionsByCustomerId(data.customer_id),
+          this.fetchCollectionByLogisticsId(data.logistics_id),
+          this.fetchDeliveryByLogisticsId(data.logistics_id)
+        ]);
+    
+        // Step 4: Return formatted data
         return {
-          id: collection.id,
-          collection_date: collection.collection_date,
-          collection_time: collection.collection_time,
-          address: collection.address,
-          area: collection.area,
-          status: collection.status,
-          remarks: collection.remarks,          
-          pack_type: collection.pack_type,
-
-          driver: collection.drivers
-            ? {
-                id: collection.drivers.id,
-                name: collection.drivers.name,
-                contact_no1: collection.drivers.contact_no1,
-              }
-            : null,
-          contact_person: collection.contact_persons
-            ? {
-                id: collection.contact_persons.id,
-                name: collection.contact_persons.name,
-                contact_no1: collection.contact_persons.contact_no1,
-                contact_no2: collection.contact_persons.contact_no2,
-                email: collection.contact_persons.email,
-                remarks: collection.contact_persons.remarks,
-              }
-            : null,
-          customer: collection.contact_persons?.customers
-            ? {
-                id: collection.contact_persons.customers.id,
-                name: collection.contact_persons.customers.name,
-                contact_no1: collection.contact_persons.customers.contact_no1,
-                contact_no2: collection.contact_persons.customers.contact_no2,
-                email: collection.contact_persons.customers.email,
-                remarks: collection.contact_persons.customers.remarks,
-                payment_type: collection.contact_persons.customers.payment_type,
-              }
-            : null,
-          delivery: collection.deliveries
-            ? {
-                id: collection.deliveries.id,
-                address: collection.deliveries.address,
-                area: collection.deliveries.area,
-                status: collection.deliveries.status,
-                remarks: collection.deliveries.remarks,
-                delivery_date: collection.deliveries.delivery_date,
-                delivery_time: collection.deliveries.delivery_time,
-                pack_type: collection.deliveries.pack_type,
-
-                driver: collection.deliveries.drivers
-                  ? {
-                      id: collection.deliveries.drivers.id,
-                      name: collection.deliveries.drivers.name,
-                      contact_no1: collection.deliveries.drivers.contact_no1,
-                    }
-                  : null,
-                contact_person: collection.deliveries.contact_persons
-                  ? {
-                      id: collection.deliveries.contact_persons.id,
-                      name: collection.deliveries.contact_persons.name,
-                      contact_no1:
-                        collection.deliveries.contact_persons.contact_no1,
-                      contact_no2:
-                        collection.deliveries.contact_persons.contact_no2,
-                      email: collection.deliveries.contact_persons.email,
-                      remarks: collection.deliveries.contact_persons.remarks,
-                    }
-                  : null,
-              }
-            : null,
+          logistics_id: logisticsData.id,
+          job_type: logisticsData.job_type,
+          urgency: logisticsData.urgency,
+          logistics_status: logisticsData.logistics_status,
+          order: {
+            id: data.id,
+            order_no: data.order_no,
+            tag_timestamp: data.tag_timestamp,
+            tag_changes: data.tag_changes,
+            tag_status: data.tag_status,
+            goods_status: data.goods_status,
+            payment_status: data.payment_status,
+            customer_id: data.customer_id,
+            customer: data.customers || null,
+            transactions,
+            instructions_onetime: onetimeInstructions,
+            error_reports: errorReports,
+          },
+          instructions_recurring: recurringInstructions,
+          collection,
+          delivery,
         };
       } catch (error) {
-        console.error("Unexpected error fetching collection by ID:", error);
+        console.error("Error fetching whole order:", error);
+        return null;
+      }
+    },
+    
+    // end of fetching
+
+    async createOrderFromCollection(logisticsId) {
+      try {
+        // Step 3: Create Order with logisticsId and get orderId
+        const { orderId, orderNo } = await this.createOrder(logisticsId);
+        if (!orderId) throw new Error("Failed to create order");
+
+        // Step 4: Create Transaction, Instructions, and Error Reports with orderId
+        await this.createTransaction(orderId);
+        await this.createInstructions(orderId);
+        await this.createErrorReports(orderId);
+
+
+        // Reset transaction data after successful save
+        this.resetTransactionItems();
+
+        return orderNo;
+
+      } catch (error) {
+        console.error("Error in create order from collection:", error);
+      }
+    },
+
+    // start of order creation
+    async createWholeTransaction() {
+      try {
+        // Step 1: Create Logistics and get logisticsId
+        const logisticsId = await this.createLogistics();
+        if (!logisticsId) throw new Error("Failed to create logistics");
+
+        // Step 2: Create Collections & Delivery with logisticsId
+        await this.createCollection(logisticsId);
+        await this.createDelivery(logisticsId);
+
+        // Step 3: Create Order with logisticsId and get orderId
+        const { orderId, orderNo } = await this.createOrder(logisticsId);
+        if (!orderId) throw new Error("Failed to create order");
+
+        // Step 4: Create Transaction, Instructions, and Error Reports with orderId
+        await this.createTransaction(orderId);
+        await this.createInstructions(orderId);
+        await this.createErrorReports(orderId);
+
+        // Reset transaction data after successful save
+        this.resetTransactionItems();
+      } catch (error) {
+        console.error("Error in createWholeTransaction:", error);
+      }
+    },
+
+    async createLogistics() {
+      try {
+        const { data: logisticsData, error: logisticsError } = await supabase
+          .from("logistics")
+          .insert([
+            {
+              customer_id: this.selectedCustomer?.id || null,
+              logistics_status: "collection arranged",
+              job_type: this.jobType,
+            },
+          ])
+          .select("id")
+          .single();
+
+        if (logisticsError) throw logisticsError;
+        if (!logisticsData?.id)
+          throw new Error("Logistics entry was not created successfully.");
+
+        return logisticsData.id; // ✅ Return the logisticsId
+      } catch (error) {
+        console.error("Error in create logistics:", error);
         return null;
       }
     },
 
-    async createCollection() {
+    async createCollection(logisticsId) {
+      // ✅ Pass logisticsId as an argument
       try {
-        // Fetch the highest logistics_no
-        const { data: logisticsData, error: logisticsError } = await supabase
-          .from("collections")
-          .select("logistics_no")
-          .order("logistics_no", { ascending: false })
-          .limit(1);
-    
-        if (logisticsError) throw logisticsError;
-    
-        // Determine the next logistics_no
-        this.nextLogisticsNo = (logisticsData.length > 0 ? logisticsData[0].logistics_no : 0) + 1;
-    
-        // Insert Collection Details
-        const { data: collectionData, error: collectionError } = await supabase
+        const { error: collectionError } = await supabase
           .from("collections")
           .insert([
             {
-              customer_id: this.selectedCustomer?.id || null,
               contact_person_id: this.selectedCollectionContact?.id || null,
               address: this.selectedCollectionAddress || null,
               collection_date: this.collectionDate,
               collection_time: this.collectionTime || null,
               remarks: this.collectionRemarks,
               driver_id: this.selectedCollectionDriver?.id || null,
-              status: "collection arranged",
               pack_type: this.CollectionPackType,
-              logistics_no: this.nextLogisticsNo,
+              status: "active",
+              logistics_id: logisticsId, // ✅ Now correctly passed as an argument
             },
           ]);
-    
+
         if (collectionError) throw collectionError;
-    
-        // Insert Delivery Details
-        const { data: deliveryData, error: deliveryError } = await supabase
+
+        console.log("Collection successfully created!");
+      } catch (error) {
+        console.error("Error in create collection:", error);
+      }
+    },
+
+    async createDelivery(logisticsId) {
+      // ✅ Pass logisticsId as an argument
+      try {
+        const { error: deliveryError } = await supabase
           .from("deliveries")
           .insert([
             {
-              customer_id: this.selectedCustomer?.id || null,
               contact_person_id: this.selectedDeliveryContact?.id || null,
               address: this.selectedDeliveryAddress || null,
               delivery_date: this.deliveryDate,
@@ -3035,17 +2375,132 @@ export const useTransactionStore = defineStore("transactionStore", {
               remarks: this.deliveryRemarks,
               driver_id: this.selectedDeliveryDriver?.id || null,
               pack_type: this.DeliveryPackType,
-              status: "-",
-              logistics_no: this.nextLogisticsNo,
+              status: "active",
+              logistics_id: logisticsId, // ✅ Now correctly passed as an argument
             },
           ]);
-    
+
         if (deliveryError) throw deliveryError;
-    
+
+        console.log("Delivery successfully created!");
       } catch (error) {
-        console.error("Error in create collection:", error);
+        console.error("Error in create delivery:", error);
       }
     },
-    
+
+    async createOrder(logisticsId) {
+      // ✅ Pass logisticsId as an argument
+      try {
+        const currentTimestamp = new Date().toISOString();
+        const { data: orderData, error: orderError } = await supabase
+          .from("orders")
+          .insert([
+            {
+              order_no: this.orderNo,
+              logistics_id: logisticsId,
+              customer_id: this.selectedCustomer?.id || null,
+              order_date_time: currentTimestamp,
+              ready_by: this.ready_by || null,
+              goods_status: "none",
+              payment_status: "unpaid",
+              no_packets_hangers: "-",
+              tag_status: "to print",
+            },
+          ])
+          .select("id, order_no")
+          .single();
+
+        if (orderError) throw orderError;
+        if (!orderData?.id)
+          throw new Error("Order was not created successfully.");
+
+        return { orderId: orderData.id, orderNo: orderData.order_no }; // ✅ Return both values properly
+      } catch (error) {
+        console.error("Error in create order:", error);
+        return null;
+      }
+    },
+
+    async createTransaction(orderId) {
+      // ✅ Pass orderId as an argument
+      try {
+        for (const item of this.transactionItems) {
+          const itemData = {
+            item_name: item.name,
+            order_id: orderId,
+            price: item.price,
+            process: item.process,
+            pieces: item.pieces,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+            category: item.category,
+            tag_category: item.tag_category,
+          };
+
+          const { error: itemError } = await supabase
+            .from("transactions")
+            .insert(itemData);
+          if (itemError) throw itemError;
+        }
+      } catch (error) {
+        console.error("Error in create transaction:", error);
+      }
+    },
+
+    async createInstructions(orderId) {
+      // ✅ Pass orderId as an argument
+      try {
+        for (const instruction of this.instructions) {
+          const instructionData = {
+            description: instruction.description,
+            admin: instruction.to.includes("admin"),
+            cleaning: instruction.to.includes("cleaning"),
+            packing: instruction.to.includes("packing"),
+            picking_sending: instruction.to.includes("pickingsending"),
+          };
+
+          const table =
+            instruction.type === "onetime"
+              ? "instructions_onetime"
+              : "instructions_recurring";
+
+          if (instruction.type === "onetime") {
+            instructionData.order_id = orderId;
+          } else {
+            instructionData.customer_id = this.selectedCustomer?.id || null;
+          }
+
+          const { error: instructionError } = await supabase
+            .from(table)
+            .insert(instructionData);
+          if (instructionError) throw instructionError;
+        }
+      } catch (error) {
+        console.error("Error in create instructions:", error);
+      }
+    },
+
+    async createErrorReports(orderId) {
+      // ✅ Pass orderId as an argument
+      try {
+        for (const report of this.reports) {
+          const reportData = {
+            description: report.description,
+            category: report.category,
+            sub_category: report.sub_category,
+            order_id: orderId, // ✅ Now correctly assigned
+            image: report.image || null,
+          };
+
+          const { error: reportError } = await supabase
+            .from("error_reports")
+            .insert(reportData);
+          if (reportError) throw reportError;
+        }
+      } catch (error) {
+        console.error("Error in create error reports:", error);
+      }
+    },
+    // end of order creation
   },
 });

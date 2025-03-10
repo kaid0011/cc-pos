@@ -154,7 +154,7 @@
                 {{ `$${item.price.toFixed(2)}` }}
               </div>
               <div class="col col-1 tag-card-cell text-center">
-                {{ item.pieces }}
+                {{ item.pieces * item.quantity }}
               </div>
               <div class="col col-1 tag-card-cell text-center">
                 {{ item.quantity }}
@@ -292,6 +292,7 @@ const order = ref(null);
 const customer = ref(null);
 const collection = ref({});
 const delivery = ref({});
+const logistics = ref({});
 const transactions = ref([]);
 const instructionsRecurring = ref([]);
 const instructionsOnetime = ref([]);
@@ -305,17 +306,17 @@ onMounted(async () => {
     const orderNo = route.params.order_no;
 
     // Fetch the order details
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
     console.log("Order Details:", orderDetails);
 
     // Assign fetched data directly
-    order.value = orderDetails.order;
-    customer.value = orderDetails.customer;
-    collection.value = orderDetails.collection;
-    delivery.value = orderDetails.delivery;
-    transactions.value = orderDetails.transactions || [];
+    logistics.value = orderDetails || {};
+    order.value = orderDetails.order || {};
+    customer.value = orderDetails.order.customer || {};
+    collection.value = orderDetails.collection?.[0] || {}; 
+    delivery.value = orderDetails.delivery?.[0] || {}; 
+    transactions.value = orderDetails.order.transactions || [];
+    reports.value = orderDetails.order.error_reports || [];
 
     // Prepare instructionsOnetime with dynamically created `to` field
     instructionsOnetime.value = (orderDetails.instructionsOneTime || []).map(
@@ -343,7 +344,6 @@ onMounted(async () => {
       ],
     }));
 
-    reports.value = orderDetails.errorReports || [];
   } catch (error) {
     console.error("Error loading order details:", error);
   }
@@ -373,8 +373,9 @@ function formatSectionLabel(section) {
 // Computed properties for totals
 const totalPcs = computed(() => {
   return transactions.value.reduce((acc, item) => {
-    const pcs = parseFloat(item.pieces) || 0; // Ensure a numeric value
-    return acc + pcs;
+    const pcs = parseFloat(item.pieces) || 1; // Ensure a numeric value
+    const qty = parseFloat(item.quantity) || 1; // Ensure a numeric value
+    return acc + (pcs*qty);
   }, 0);
 });
 
@@ -423,7 +424,7 @@ const readyByFormatted = computed(() => {
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
     const category = item.tag_category?.toLowerCase() || "others";
-    const pieces = parseInt(item.pieces) || 0; // Use pieces instead of quantity
+    const pieces = parseInt(item.pieces*item.quantity) || 0; // Use pieces instead of quantity
     counts[category] = (counts[category] || 0) + pieces;
     return counts;
   }, {});

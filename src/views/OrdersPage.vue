@@ -3,177 +3,160 @@
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
       Order Management
     </div>
-    <!-- Search Bar -->
+
+    <!-- Search & Date Filters -->
     <div class="row justify-end q-mb-sm q-gutter-x-sm">
-      <!-- Collection Date Filters -->
-      <div class="row q-gutter-x-sm">
-        <div class="col">
-          <q-input
-            class="date-input"
-            v-model="formattedCollectionStartDate"
-            outlined
-            dense
-            label="Collection Start Date"
-            clearable
-            readonly
-          >
-            <template v-slot:append> 
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy>
-                  <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />
-                </q-popup-proxy>
-              </q-icon>
-              <q-icon
-                name="close"
-                class="cursor-pointer q-ml-sm"
-                @click="clearDate('collectionStartDate')"
-              />
-            </template>
-          </q-input>
-        </div>
+      <!-- Collection Start Date -->
+      <div class="col">
+        <q-input v-model="formattedCollectionStartDate" outlined dense label="Collection Start Date" readonly class="bg-white">
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy>
+                <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />
+              </q-popup-proxy>
+            </q-icon>
+            <q-icon name="close" class="cursor-pointer q-ml-sm" @click="clearDate('collectionStartDate')" />
+          </template>
+        </q-input>
+      </div>
 
-        <div class="col">
-          <q-input
-            class="date-input"
-            v-model="formattedCollectionEndDate"
-            outlined
-            dense
-            label="Collection End Date"
-            clearable
-            readonly
-          >
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy>
-                  <q-date v-model="collectionEndDate" mask="YYYY-MM-DD" />
-                </q-popup-proxy>
-              </q-icon>
-              <q-icon
-                name="close"
-                class="cursor-pointer q-ml-sm"
-                @click="clearDate('collectionEndDate')"
-              />
-            </template>
-          </q-input>
-        </div>
+      <!-- Collection End Date -->
+      <div class="col">
+        <q-input v-model="formattedCollectionEndDate" outlined dense label="Collection End Date" readonly class="bg-white">
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy>
+                <q-date v-model="collectionEndDate" mask="YYYY-MM-DD" />
+              </q-popup-proxy>
+            </q-icon>
+            <q-icon name="close" class="cursor-pointer q-ml-sm" @click="clearDate('collectionEndDate')" />
+          </template>
+        </q-input>
+      </div>
 
-        <!-- Delivery Date Filters -->
-        <div class="col">
-          <q-input
-            class="date-input"
-            v-model="formattedDeliveryStartDate"
-            outlined
-            dense
-            label="Delivery Start Date"
-            clearable
-            readonly
-          >
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy>
-                  <q-date v-model="deliveryStartDate" mask="YYYY-MM-DD" />
-                </q-popup-proxy>
-              </q-icon>
-              <q-icon
-                name="close"
-                class="cursor-pointer q-ml-sm"
-                @click="clearDate('deliveryStartDate')"
-              />
-            </template>
-          </q-input>
-        </div>
+      <!-- Delivery Start Date -->
+      <div class="col">
+        <q-input v-model="formattedDeliveryStartDate" outlined dense label="Delivery Start Date" readonly class="bg-white">
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy>
+                <q-date v-model="deliveryStartDate" mask="YYYY-MM-DD" />
+              </q-popup-proxy>
+            </q-icon>
+            <q-icon name="close" class="cursor-pointer q-ml-sm" @click="clearDate('deliveryStartDate')" />
+          </template>
+        </q-input>
+      </div>
 
-        <div class="col">
-          <q-input
-            class="date-input"
-            v-model="formattedDeliveryEndDate"
-            outlined
-            dense
-            label="Delivery End Date"
-            clearable
-            readonly
-          >
-            <template v-slot:append>
-              <q-icon name="event" class="cursor-pointer">
-                <q-popup-proxy>
-                  <q-date v-model="deliveryEndDate" mask="YYYY-MM-DD" />
-                </q-popup-proxy>
-              </q-icon>
-              <q-icon
-                name="close"
-                class="cursor-pointer q-ml-sm"
-                @click="clearDate('deliveryEndDate')"
-              />
-            </template>
-          </q-input>
-        </div>
+      <!-- Delivery End Date -->
+      <div class="col">
+        <q-input v-model="formattedDeliveryEndDate" outlined dense label="Delivery End Date" readonly class="bg-white">
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy>
+                <q-date v-model="deliveryEndDate" mask="YYYY-MM-DD" />
+              </q-popup-proxy>
+            </q-icon>
+            <q-icon name="close" class="cursor-pointer q-ml-sm" @click="clearDate('deliveryEndDate')" />
+          </template>
+        </q-input>
+      </div>
 
-        <div class="col">
-          <q-input
-            class="search-transactions search-input"
-            v-model="searchQuery"
-            outlined
-            dense
-            placeholder="Search by Order No, Customer Name, or Status"
-            @input="filterOrders"
-          >
-            <template v-slot:prepend>
-              <q-icon name="search" />
-            </template>
-          </q-input>
-        </div>
+      <!-- Search Input -->
+      <div class="col">
+        <q-input
+          class="search-transactions search-input"
+          v-model="searchQuery"
+          outlined
+          dense
+          placeholder="Search Order No, Customer Name, Goods Status, Logistics Status, or Payment Status"
+          debounce="300"
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
       </div>
     </div>
 
+    <!-- Table Display -->
     <div class="row-col-table">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
         <div class="col bordered q-py-sm text-weight-bolder">Order No</div>
-        <div class="col bordered q-py-sm text-weight-bolder">Collection Date</div>
+        <div class="col bordered q-py-sm text-weight-bolder">
+          Collection Date
+        </div>
         <div class="col bordered q-py-sm text-weight-bolder">Delivery Date</div>
         <div class="col bordered q-py-sm text-weight-bolder">Goods Status</div>
-        <div class="col bordered q-py-sm text-weight-bolder">Logistic Status</div>
-        <div class="col bordered q-py-sm text-weight-bolder">Payment Status</div>
+        <div class="col bordered q-py-sm text-weight-bolder">
+          Logistic Status
+        </div>
+        <div class="col bordered q-py-sm text-weight-bolder">
+          Payment Status
+        </div>
         <div class="col bordered q-py-sm text-weight-bolder">Customer Name</div>
-        <!-- <div class="col">Actions</div> -->
       </div>
 
       <!-- Table Rows -->
       <div
-        v-if="filteredOrders.length === 0"
+        v-if="paginatedOrders.length === 0"
         class="text-center text-grey q-pa-lg text-h6"
       >
-        No existing orders.
+        No orders found.
       </div>
-      <div
-        v-else
-        v-for="order in filteredOrders"
-        :key="order.id"
-        class="row row-col-row q-mx-md"
-      >
-        <div class="col bordered">
-          <a @click="openOrderDialog(order)" class="text-weight-bold text-subtitle1">{{ order.order_no }}</a>
+
+      <div v-else v-for="(logistics, index) in paginatedOrders" :key="index">
+        <div
+          v-for="(order, idx) in logistics.orders"
+          :key="idx"
+          class="row row-col-row q-px-md"
+        >
+          <div class="col bordered">
+            <a
+              @click="openOrderDialog(order)"
+              class="text-weight-bold text-subtitle1"
+            >
+              {{ order.order_no }}
+            </a>
+          </div>
+          <div class="col bordered">
+            {{ getCollectionDate(logistics.collections) }}
+          </div>
+          <div class="col bordered">
+            {{ getDeliveryDate(logistics.deliveries) }}
+          </div>
+          <div class="col bordered text-uppercase">
+            {{ order.goods_status || "N/A" }}
+          </div>
+          <div class="col bordered text-uppercase">
+            {{ logistics.logistics_status || "N/A" }}
+          </div>
+          <div class="col bordered text-uppercase">
+            {{ order.payment_status || "N/A" }}
+          </div>
+          <div class="col bordered">
+            <a
+              v-if="order.customer?.id"
+              @click.prevent="openCustomerTab(order.customer.id)"
+              class="text-weight-bold text-subtitle1"
+            >
+              {{ order.customer?.name || "Unknown" }}
+            </a>
+            <span v-else>N/A</span>
+          </div>
         </div>
-        <div class="col bordered">{{ formatDate(order.collection.collection_date) }}</div>
-        <div class="col bordered">{{ formatDate(order.delivery.delivery_date) }}</div>
-        <div class="col bordered text-uppercase">{{ order.goods_status }}</div>
-        <div class="col bordered text-uppercase">{{ order.logistics_status }}</div>
-        <div class="col bordered text-uppercase">{{ order.payment_status }}</div>
-        <div class="col bordered">
-          <a @click.prevent="openCustomerTab(order.customer)" class="text-weight-bold text-subtitle1">{{
-            order.customer.name
-          }}</a>
-        </div>
-        <!-- <div class="col">
-          <q-btn
-            flat
-            dense
-            label="Create transa..."
-            color="primary"
-            @click="createTransaction(order)"
-          />
-        </div> -->
       </div>
+    </div>
+    <!-- Pagination Controls -->
+    <div class="row justify-center q-mt-md">
+      <q-pagination
+        v-model="currentPage"
+        :max="totalPages"
+        :max-pages="10"
+        boundary-numbers
+        direction-links
+      />
     </div>
   </div>
 </template>
@@ -181,43 +164,21 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
+
 const transactionStore = useTransactionStore();
-const orders = ref([]);
-const searchQuery = ref("");
+const orders = ref([]); // Stores fetched orders
+const currentPage = ref(1); // Current page for pagination
+const pageSize = ref(10); // Number of records per page
+
+const searchQuery = ref(""); // Search input
+// Date Filters
 const collectionStartDate = ref(null);
 const collectionEndDate = ref(null);
 const deliveryStartDate = ref(null);
 const deliveryEndDate = ref(null);
 
-// Computed properties to format the date display
-const formattedCollectionStartDate = computed(() =>
-  formatDate(collectionStartDate.value)
-);
-const formattedCollectionEndDate = computed(() =>
-  formatDate(collectionEndDate.value)
-);
-const formattedDeliveryStartDate = computed(() =>
-  formatDate(deliveryStartDate.value)
-);
-const formattedDeliveryEndDate = computed(() =>
-  formatDate(deliveryEndDate.value)
-);
 
-// Function to format dates in "Thu, 30/01/2025" format
-const formatDate = (dateString) => {
-  if (!dateString) return ""; // Show empty input if no date is selected
-
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return ""; // Prevent invalid date errors
-
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short", // "Thu"
-    day: "2-digit", // "30"
-    month: "2-digit", // "01"
-    year: "numeric", // "2025"
-  });
-};
-
+// Fetch orders on mount
 onMounted(async () => {
   try {
     orders.value = await transactionStore.fetchAllOrdersSimple();
@@ -226,79 +187,97 @@ onMounted(async () => {
   }
 });
 
+// Format date display
+const formattedCollectionStartDate = computed(() => formatDate(collectionStartDate.value));
+const formattedCollectionEndDate = computed(() => formatDate(collectionEndDate.value));
+const formattedDeliveryStartDate = computed(() => formatDate(deliveryStartDate.value));
+const formattedDeliveryEndDate = computed(() => formatDate(deliveryEndDate.value));
+
+// Clear Date Input
+const clearDate = (type) => {
+  if (type === "collectionStartDate") collectionStartDate.value = null;
+  if (type === "collectionEndDate") collectionEndDate.value = null;
+  if (type === "deliveryStartDate") deliveryStartDate.value = null;
+  if (type === "deliveryEndDate") deliveryEndDate.value = null;
+};
+
+// Filter Orders Based on Search & Date Range
 const filteredOrders = computed(() => {
-  return orders.value.filter((order) => {
-    // Ensure all fields exist before applying `.toLowerCase()`
-    const orderNo = order.order_no ? order.order_no.toLowerCase() : "";
-    const customerName = order.customer.customer_name
-      ? order.customer.customer_name.toLowerCase()
-      : "";
-    const goodsStatus = order.goods_status
-      ? order.goods_status.toLowerCase()
-      : "";
-    const logisticsStatus = order.logistics_status
-      ? order.logistics_status.toLowerCase()
-      : "";
-    const paymentStatus = order.payment_status
-      ? order.payment_status.toLowerCase()
-      : "";
+  const query = searchQuery.value.toLowerCase();
 
-    // Convert search query to lowercase
-    const query = searchQuery.value ? searchQuery.value.toLowerCase() : "";
+  return orders.value.map(logistics => ({
+    ...logistics,
+    orders: logistics.orders?.filter(order => {
+      const collectionDate = logistics.collections?.[0]?.collection_date || null;
+      const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
 
-    // Check if search query matches any field
-    const matchesSearch =
-      orderNo.includes(query) ||
-      customerName.includes(query) ||
-      goodsStatus.includes(query) ||
-      logisticsStatus.includes(query) ||
-      paymentStatus.includes(query);
+      const collectionMatch =
+        (!collectionStartDate.value || collectionDate >= collectionStartDate.value) &&
+        (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
 
-    // Ensure valid dates
-    const collectionDate = order.collection.collection_date
-      ? new Date(order.collection.collection_date).setHours(0, 0, 0, 0)
-      : null;
-    const deliveryDate = order.delivery.delivery_date
-      ? new Date(order.delivery.delivery_date).setHours(0, 0, 0, 0)
-      : null;
+      const deliveryMatch =
+        (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
+        (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
 
-    const collectionStart = collectionStartDate.value
-      ? new Date(collectionStartDate.value).setHours(0, 0, 0, 0)
-      : null;
-    const collectionEnd = collectionEndDate.value
-      ? new Date(collectionEndDate.value).setHours(0, 0, 0, 0)
-      : null;
+      const searchMatch =
+        (order.order_no && order.order_no.toLowerCase().includes(query)) ||
+        (order.customer?.name && order.customer.name.toLowerCase().includes(query)) ||
+        (order.goods_status && order.goods_status.toLowerCase().includes(query)) ||
+        (order.payment_status && order.payment_status.toLowerCase().includes(query)) ||
+        (logistics.logistics_status && logistics.logistics_status.toLowerCase().includes(query));
 
-    const deliveryStart = deliveryStartDate.value
-      ? new Date(deliveryStartDate.value).setHours(0, 0, 0, 0)
-      : null;
-    const deliveryEnd = deliveryEndDate.value
-      ? new Date(deliveryEndDate.value).setHours(0, 0, 0, 0)
-      : null;
-
-    // Check if collection date is within the selected range
-    const matchesCollectionDate =
-      (!collectionStart ||
-        (collectionDate && collectionDate >= collectionStart)) &&
-      (!collectionEnd || (collectionDate && collectionDate <= collectionEnd));
-
-    // Check if delivery date is within the selected range
-    const matchesDeliveryDate =
-      (!deliveryStart || (deliveryDate && deliveryDate >= deliveryStart)) &&
-      (!deliveryEnd || (deliveryDate && deliveryDate <= deliveryEnd));
-
-    return matchesSearch && matchesCollectionDate && matchesDeliveryDate;
-  });
+      return collectionMatch && deliveryMatch && searchMatch;
+    }) || []
+  })).filter(logistics => logistics.orders.length > 0);
 });
 
+// Pagination: Get the paginated slice of orders
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredOrders.value.slice(start, end);
+});
+
+// Total number of pages
+const totalPages = computed(() =>
+  Math.ceil(filteredOrders.value.length / pageSize.value)
+);
+
+// Function to format dates
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+// Get collection date from collections array
+const getCollectionDate = (collections) => {
+  if (!collections || collections.length === 0) return "N/A";
+  return formatDate(collections[0]?.collection_date);
+};
+
+// Get delivery date from deliveries array
+const getDeliveryDate = (deliveries) => {
+  if (!deliveries || deliveries.length === 0) return "N/A";
+  return formatDate(deliveries[0]?.delivery_date);
+};
+
+// Open Customer Tab
 const openCustomerTab = (customerId) => {
-  const url = `/customers/${customerId}`;
-  window.open(url, "_blank"); // Open in a new tab
+  if (!customerId) return;
+  window.open(`/customers/${customerId}`, "_blank");
 };
 
 // Open Order Dialog and fetch transaction items
 const openOrderDialog = async (order) => {
   try {
+    if (!order) return;
+
     // Pre-fill the transaction store with customer details
     transactionStore.setSelectedCustomer({
       id: order.customer_id,
@@ -307,32 +286,13 @@ const openOrderDialog = async (order) => {
     // Set order number
     transactionStore.setOrderNo(order.order_no);
 
-    // Set other transaction details
-    transactionStore.resetTransactionItems(); // Reset previous transaction items
+    // Reset previous transaction items
+    transactionStore.resetTransactionItems();
 
-    // Open a new tab for the ReviewTab with the order_no as a parameter
+    // Open order details in a new tab
     window.open(`/orders/${order.order_no}`, "_blank");
   } catch (error) {
-    console.error("Error creating transaction:", error);
+    console.error("Error opening order dialog:", error);
   }
-};
-
-// Function to Clear Date Input
-const clearDate = (dateType) => {
-  switch (dateType) {
-    case "collectionStartDate":
-      collectionStartDate.value = null;
-      break;
-    case "collectionEndDate":
-      collectionEndDate.value = null;
-      break;
-    case "deliveryStartDate":
-      deliveryStartDate.value = null;
-      break;
-    case "deliveryEndDate":
-      deliveryEndDate.value = null;
-      break;
-  }
-  filterCollections(); // Trigger filtering after clearing the date
 };
 </script>

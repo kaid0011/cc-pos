@@ -281,6 +281,11 @@ body {
   border-width: 0 0 0 0; 
  }
 
+ .generate-card {
+  background-color: #dcbeab;
+  padding: 1em;
+ }
+ 
 mark {
   background-color: #c58d6b;
   color: black;
@@ -294,6 +299,30 @@ mark-pink {
 mark-blue {
   background-color: #a9caff;
   color: black;
+}
+
+.mark-yellow {
+  background-color: #ffdc12;
+  color: black;
+  font-weight: 800;
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.mark-green {
+  background-color: #34f086;
+  color: black;
+  font-weight: 800;
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.mark-red {
+  background-color: #ff8b8b;
+  color: black;
+  font-weight: 800;
+  padding-right: 5px;
+  padding-left: 5px;
 }
 
 .mark-bg-pink {

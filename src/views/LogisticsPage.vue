@@ -12,52 +12,217 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
 
 <template>
   <div class="full-container logistics-management">
-<div class="row justify-between items-center q-mb-md">
-  <q-input
-  class="date-input"
-  v-model="formattedDate"
-  outlined
-  dense
-  label="Search Date Here"
-  clearable
-  readonly
-  >
-  <template v-slot:append> 
-    <q-icon name="event" class="cursor-pointer">
-      <q-popup-proxy>
-        <q-date v-model="selectedDate" mask="YYYY-MM-DD" />
-      </q-popup-proxy>
-    </q-icon>
-    <q-icon
-      name="close"
-      class="cursor-pointer q-ml-sm"
-      @click="selectedDate = null;"
-    />
-  </template>
-  </q-input>
-  <div class="text-h6 text-center text-uppercase text-weight-bolder">
-    Collections & Deliveries
-    <!-- Collections & Deliveries ({{ collectionCount }} : {{ deliveryCount }}) -->
-  </div>
-  <q-btn
-  label="Create Collection"
-  color="primary"
-  class="main-button float-right"
-  icon="add"
-  @click="openCreateCollectionDialog()"
-/>
-</div>
+    <!-- Weekly Summary Section -->
+    <q-card flat class="q-mb-lg q-pa-md">
+      <div class="row justify-between">
+        <div class="col-2 text-center">
+          <div v-if="showWeeklySummary">
+            <div class="mark-green">1+ col/del</div>
+            <div class="mark-yellow">10+ col/del</div>
+            <div class="mark-red">20+ col/del</div>
+          </div>
+        </div>
+        <div class="col row items-center justify-center q-mb-sm">
+          <q-btn
+            icon="fa-regular fa-circle-left"
+            color="teal-6"
+            flat
+            @click="previousWeek"
+          />
+          <div class="text-center">
+            <div class="text-h6 text-weight-bolder text-uppercase">
+              Weekly Summary
+            </div>
+            <div class="text-subtitle1 text-weight-bold">
+              ({{ formattedStartOfWeek }} - {{ formattedEndOfWeek }})
+            </div>
+          </div>
+          <q-btn
+            icon="fa-regular fa-circle-right"
+            color="teal-6"
+            flat
+            @click="nextWeek"
+          />
+        </div>
+        <div class="col-2" align="right">
+          <q-btn outline color="primary" @click="toggleWeeklySummary" class="text-weight-bolder text-subtitle1">
+            {{ showWeeklySummary ? "Hide Summary" : "Show Summary" }}
+          </q-btn>
+        </div>
+      </div>
+
+      <!-- Weekly Summary Table Using <div class="row"> -->
+      <div v-if="showWeeklySummary" class="weekly-summary-container">
+        <!-- Header Row: Weekdays with Dates -->
+        <div
+          class="row text-center text-weight-bold bg-primary text-white items-center all-border q-pa-none"
+        >
+          <div class="col">Driver</div>
+          <div v-for="(day, index) in daysOfWeek" :key="day" class="col">
+            <div>{{ day }}</div>
+            <div class="text-caption">{{ formattedWeekDates[index] }}</div>
+          </div>
+        </div>
+
+        <!-- Driver-Based Rows -->
+        <div
+          v-for="driver in drivers"
+          :key="driver"
+          class="row text-center items-center bg-grey-3 q-pa-sm all-border"
+        >
+          <div class="col text-weight-bold">{{ driver }}</div>
+          <div
+            v-for="(day, index) in daysOfWeek"
+            :key="'cd' + index"
+            class="col"
+          >
+            <template
+              v-if="
+                driverTransactionCounts[driver] &&
+                driverTransactionCounts[driver][day]
+              "
+            >
+              <span
+                :class="
+                  getTransactionClass(
+                    driverTransactionCounts[driver][day].collections
+                  )
+                "
+              >
+                C: {{ driverTransactionCounts[driver][day].collections }}
+              </span>
+              |
+              <span
+                :class="
+                  getTransactionClass(
+                    driverTransactionCounts[driver][day].deliveries
+                  )
+                "
+              >
+                D: {{ driverTransactionCounts[driver][day].deliveries }}
+              </span>
+            </template>
+            <template v-else> C: 0 | D: 0 </template>
+          </div>
+        </div>
+      </div>
+    </q-card>
+
+    <q-card flat class="generate-card q-mb-lg q-pa-sm">
+      <div class="text-subtitle1 text-uppercase text-weight-bolder">
+        Generate Driver Schedule
+      </div>
+      <div class="row q-pa-sm q-col-gutter-x-lg">
+        <div class="col">
+          <q-input
+            class="date-input"
+            v-model="formattedGenerateDate"
+            outlined
+            dense
+            label="Pick a Date Here"
+            clearable
+            readonly
+          >
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy>
+                  <q-date v-model="selectedGenerateDate" mask="YYYY-MM-DD" />
+                </q-popup-proxy>
+              </q-icon>
+              <q-icon
+                name="close"
+                class="cursor-pointer q-ml-sm"
+                @click="selectedGenerateDate = null"
+              />
+            </template>
+          </q-input>
+        </div>
+        <div class="col">
+          <q-select
+            v-model="transactionStore.selectedGenerateDriver"
+            :options="transactionStore.driverOptions"
+            option-label="label"
+            option-value="id"
+            label="Select Driver"
+            outlined
+            dense
+            clearable
+            class="q-mb-xs bg-white"
+          />
+        </div>
+        <div class="col-auto">
+          <q-btn
+            label="Generate Driver Schedule"
+            color="primary"
+            class="main-button float-right"
+            icon="receipt"
+            @click="generateDriverSchedule()"
+          />
+        </div>
+      </div>
+    </q-card>
+
+    <div class="row justify-between items-center q-mb-md">
+      <q-input
+        class="date-input"
+        v-model="formattedFilterDate"
+        outlined
+        dense
+        label="Search Date Here"
+        clearable
+        readonly
+      >
+        <template v-slot:append>
+          <q-icon name="event" class="cursor-pointer">
+            <q-popup-proxy>
+              <q-date v-model="selectedFilterDate" mask="YYYY-MM-DD" />
+            </q-popup-proxy>
+          </q-icon>
+          <q-icon
+            name="close"
+            class="cursor-pointer q-ml-sm"
+            @click="selectedFilterDate = null"
+          />
+        </template>
+      </q-input>
+      <div class="text-h6 text-center text-uppercase text-weight-bolder">
+        Collections & Deliveries
+        <!-- Collections & Deliveries ({{ collectionCount }} : {{ deliveryCount }}) -->
+      </div>
+      <q-btn
+        label="Create Collection"
+        color="primary"
+        class="main-button float-right"
+        icon="add"
+        @click="openCreateCollectionDialog()"
+      />
+    </div>
 
     <div>
-
       <!-- Tab Panels -->
-      <q-tabs v-model="activeDriverTab" align="justify" class="tab-header">
+      <q-tabs v-model="activeDriverTab" align="justify" class="tab-header" dense indicator-color="secondary">
         <!-- Dynamic Driver Tabs -->
-        <q-tab v-for="driver in driverTabs" :key="driver" :name="driver" :class="{'active-tab': activeDriverTab === driver, 'text-weight-bold text-subtitle1 tab-divider': true}">
-          {{ driver }} ({{ getTransactionsByDriver(driver).filter(t => t.type === 'collection').length }} : {{ getTransactionsByDriver(driver).filter(t => t.type === 'delivery').length }})
+        <q-tab
+          v-for="driver in driverTabs"
+          :key="driver"
+          :name="driver"
+          :class="{
+            'active-tab': activeDriverTab === driver,
+            'text-weight-bold text-subtitle1 tab-divider': true,
+          }"
+        >
+          {{ driver }} ({{
+            getTransactionsByDriver(driver).filter(
+              (t) => t.type === "collection"
+            ).length
+          }}
+          :
+          {{
+            getTransactionsByDriver(driver).filter((t) => t.type === "delivery")
+              .length
+          }})
         </q-tab>
       </q-tabs>
-      
 
       <q-tab-panels v-model="activeDriverTab" animated>
         <!-- Dynamic Driver Panels -->
@@ -70,18 +235,27 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           <div class="row-col-table">
             <!-- Table Header -->
             <div class="row row-col-header q-px-md">
-              <div class="col bordered q-py-sm text-weight-bolder">Customer</div>
+              <div class="col bordered q-py-sm text-weight-bolder">
+                Customer
+              </div>
               <div class="col bordered q-py-sm text-weight-bolder">Date</div>
-              <div class="col bordered q-py-sm text-weight-bolder">Contact Person</div>
+              <div class="col bordered q-py-sm text-weight-bolder">
+                Contact Person
+              </div>
               <div class="col bordered q-py-sm text-weight-bolder">Address</div>
               <!-- <div class="col bordered q-py-sm text-weight-bolder">Driver Name</div> -->
-              <div class="col bordered q-py-sm text-weight-bolder">Pack Type</div>
+              <div class="col bordered q-py-sm text-weight-bolder">
+                Pack Type
+              </div>
               <div class="col q-py-sm text-weight-bolder">Remarks</div>
               <div class="col bordered q-py-sm text-weight-bolder">Status</div>
             </div>
 
             <!-- Table Rows -->
-            <div v-if="getTransactionsByDriver(driver).length === 0" class="text-center text-grey q-pa-lg text-h6">
+            <div
+              v-if="getTransactionsByDriver(driver).length === 0"
+              class="text-center text-grey q-pa-lg text-h6"
+            >
               No transactions found for this driver.
             </div>
 
@@ -110,20 +284,30 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                   <div class="text-weight-bolder text-uppercase">
                     <mark-pink>Collection:</mark-pink>
                   </div>
-                  <div>{{ formatDate(transaction.collection_date) || "[NOT SET]" }}</div>
+                  <div>
+                    {{ formatDate(transaction.collection_date) || "[NOT SET]" }}
+                  </div>
                 </div>
                 <div v-if="transaction.type === 'delivery'">
                   <div class="text-weight-bolder text-uppercase">
                     <mark-blue>Delivery:</mark-blue>
                   </div>
-                  <div>{{ formatDate(transaction.delivery_date) || "[NOT SET]" }}</div>
+                  <div>
+                    {{ formatDate(transaction.delivery_date) || "[NOT SET]" }}
+                  </div>
                 </div>
                 <div>
                   <span class="text-weight-bold">Time: </span>
-                  {{ transaction.collection_time || transaction.delivery_time || "-" }}
+                  {{
+                    transaction.collection_time ||
+                    transaction.delivery_time ||
+                    "-"
+                  }}
                 </div>
                 <div>
-                  <span class="text-weight-bold">Driver: </span>{{ transaction.driver?.name || "[NOT SET]" }}</div>
+                  <span class="text-weight-bold">Driver: </span
+                  >{{ transaction.driver?.name || "[NOT SET]" }}
+                </div>
                 <!-- <div v-if="transaction.driver">
                   {{ transaction.driver?.contact_no1 }}
                 </div> -->
@@ -146,8 +330,11 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               </div> -->
               <div class="col bordered">{{ transaction.pack_type || "-" }}</div>
               <div class="col bordered">{{ transaction.remarks || "-" }}</div>
-              <div class="col mark-bg-pink bordered text-uppercase text-weight-bold" v-if="transaction.type === 'collection'">
-                <div class="text-uppercase">{{ transaction.status }}</div>
+              <div
+                class="col mark-bg-pink bordered text-uppercase text-weight-bold"
+                v-if="transaction.type === 'collection'"
+              >
+                <div class="text-uppercase">{{ transaction.logistics_status }}</div>
                 <div v-if="transaction.order_no" class="q-mt-sm text-">
                   <q-btn
                     outline
@@ -170,8 +357,11 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                   />
                 </div>
               </div>
-              <div class="col mark-bg-blue bordered text-uppercase text-weight-bold" v-if="transaction.type === 'delivery'">
-                <div class="text-uppercase">{{ transaction.status }}</div>
+              <div
+                class="col mark-bg-blue bordered text-uppercase text-weight-bold"
+                v-if="transaction.type === 'delivery'"
+              >
+                <div class="text-uppercase">{{ transaction.logistics_status }}</div>
                 <div v-if="transaction.order_no" class="q-mt-sm text-">
                   <q-btn
                     outline
@@ -183,10 +373,8 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                     {{ transaction.order_no }}
                   </q-btn>
                 </div>
-                <div v-else>
-    
-                </div>
-                </div>
+                <div v-else></div>
+              </div>
             </div>
           </div>
         </q-tab-panel>
@@ -207,7 +395,6 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           </div>
         </q-card-section>
         <q-card-section class="q-pa-none">
-          <!-- Inject the CreateCollectionTab Component Here -->
           <CreateCollectionTab />
         </q-card-section>
         <q-card-actions align="right" class="bg-grey-5">
@@ -238,7 +425,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           </div>
         </q-card-section>
         <q-card-section>
-          <CreateOrder />
+          <CreateOrderFromCollection />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn
@@ -259,7 +446,10 @@ import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 import CreateCollectionTab from "@/components/CustomerTab.vue";
-import CreateOrder from "@/views/CreateOrder.vue";
+import CreateOrderFromCollection from "@/views/CreateOrderFromCollection.vue";
+
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
@@ -268,20 +458,32 @@ const allTransactions = ref([]);
 const searchQuery = ref("");
 const filteredTransactions = ref([]);
 const activeDriverTab = ref("All");
-const selectedDate = ref(new Date().toISOString().split("T")[0]);
+const selectedFilterDate = ref(new Date().toISOString().split("T")[0]);
+const selectedGenerateDate = ref(new Date().toISOString().split("T")[0]);
+const selectedWeek = ref(new Date().toISOString().split("T")[0]); // Default: today
 
 const showCreateCollectionDialog = ref(false);
-
 
 const showCreateOrderDialog = ref(false);
 const selectedTransaction = ref(null);
 
+const showWeeklySummary = ref(false);
+
+const toggleWeeklySummary = () => {
+  showWeeklySummary.value = !showWeeklySummary.value;
+};
+
 const collectionCount = computed(() => {
-  return filteredTransactions.value.filter(t => t.type === "collection").length;
+  return filteredTransactions.value.filter((t) => t.type === "collection")
+    .length;
 });
 
 const deliveryCount = computed(() => {
-  return filteredTransactions.value.filter(t => t.type === "delivery").length;
+  return filteredTransactions.value.filter((t) => t.type === "delivery").length;
+});
+
+onMounted(async () => {
+  await transactionStore.loadDrivers();
 });
 
 // Function to format dates in "Thu, 30/01/2025" format
@@ -300,16 +502,24 @@ const formatDate = (dateString) => {
 };
 
 const driverTabs = computed(() => {
-  const driverNames = transactionStore.driverOptions.map((driver) => driver.name);
+  const driverNames = transactionStore.driverOptions.map(
+    (driver) => driver.name
+  );
   return ["All", "[NOT SET]", ...new Set(driverNames)];
+});
+
+const drivers = computed(() => {
+  const driverNames = transactionStore.driverOptions.map(
+    (driver) => driver.name
+  );
+  return [...new Set(driverNames)];
 });
 
 onMounted(async () => {
   try {
-    await transactionStore.loadDrivers(); // Load drivers from the database
-
+    await transactionStore.loadDrivers();
     if (driverTabs.value.length > 0) {
-      activeDriverTab.value = driverTabs.value[0]; // Set first tab as default
+      activeDriverTab.value = driverTabs.value[0];
     }
 
     const rawCollections = await transactionStore.fetchAllCollections();
@@ -320,11 +530,13 @@ onMounted(async () => {
       ...rawDeliveries.map((item) => ({ ...item, type: "delivery" })),
     ];
 
-    filterTransactions(); // Initial filter
+    console.log("Loaded Transactions: ", allTransactions.value); // Debugging log
+    filterTransactions();
   } catch (error) {
     console.error("Error initializing transactions:", error);
   }
 });
+
 
 const getTransactionsByDriver = (driverName) => {
   if (driverName === "All") {
@@ -342,23 +554,31 @@ const getTransactionsByDriver = (driverName) => {
 
 const filterTransactions = () => {
   const query = searchQuery.value ? searchQuery.value.toLowerCase() : "";
-  const selectedDateFormatted = selectedDate.value ? formatDate(selectedDate.value) : null;
+  const selectedFilterDateFormatted = selectedFilterDate.value
+    ? formatDate(selectedFilterDate.value)
+    : null;
 
   filteredTransactions.value = allTransactions.value
     .filter((transaction) => {
       const customerName = transaction.customer?.name?.toLowerCase() || "";
       const driverName = transaction.driver?.name?.toLowerCase() || "";
-      const status = transaction.status?.toLowerCase() || "";
-      const transactionDate = formatDate(transaction.collection_date || transaction.delivery_date);
+      const logisticsStatus = transaction.logistics_status?.toLowerCase() || "";
+      const transactionDate = formatDate(
+        transaction.collection_date || transaction.delivery_date
+      );
 
       if (transaction.type === "delivery" && !transaction.delivery_date) {
         return false;
       }
 
       const matchesSearch =
-        customerName.includes(query) || driverName.includes(query) || status.includes(query);
+        customerName.includes(query) ||
+        driverName.includes(query) ||
+        logisticsStatus.includes(query);
 
-      const matchesDate = selectedDateFormatted ? transactionDate === selectedDateFormatted : true;
+      const matchesDate = selectedFilterDateFormatted
+        ? transactionDate === selectedFilterDateFormatted
+        : true;
 
       return matchesSearch && matchesDate;
     })
@@ -369,10 +589,14 @@ const filterTransactions = () => {
     });
 };
 
-watch(selectedDate, filterTransactions);
+watch(selectedFilterDate, filterTransactions);
 
-const formattedDate = computed(() =>
-  formatDate(selectedDate.value)
+const formattedFilterDate = computed(() =>
+  formatDate(selectedFilterDate.value)
+);
+
+const formattedGenerateDate = computed(() =>
+  formatDate(selectedGenerateDate.value)
 );
 
 const openCreateCollectionDialog = () => {
@@ -382,7 +606,9 @@ const openCreateCollectionDialog = () => {
 async function createCollection() {
   try {
     // Call the store function to create the collection
-    await transactionStore.createCollection();
+    const logisticsId = await transactionStore.createLogistics();
+    await transactionStore.createCollection(logisticsId);
+    await transactionStore.createDelivery(logisticsId);
 
     // Show success dialog
     $q.dialog({
@@ -438,12 +664,9 @@ const createOrder = (collection) => {
   transactionStore.resetTransactionItems();
   // Set the transaction store properties
   transactionStore.selectedCustomer = collection.customer;
-  transactionStore.selectedDeliveryContact =
-    collection.delivery?.contact_person || null;
-  transactionStore.selectedCollectionContact =
-    collection.contact_person || null;
-  transactionStore.selectedDeliveryAddress =
-    collection.delivery?.address || null;
+  transactionStore.selectedDeliveryContact = collection.delivery?.contact_person || null;
+  transactionStore.selectedCollectionContact = collection.contact_person || null;
+  transactionStore.selectedDeliveryAddress = collection.delivery?.address || null;
   transactionStore.selectedCollectionAddress = collection.address || null;
   transactionStore.selectedCollectionDriver = collection.driver || null;
   transactionStore.selectedDeliveryDriver = collection.delivery?.driver || null;
@@ -451,6 +674,7 @@ const createOrder = (collection) => {
   transactionStore.deliveryDate = collection.delivery?.delivery_date || null;
   transactionStore.collectionTime = collection.collection_time || null;
   transactionStore.deliveryTime = collection.delivery?.delivery_time || null;
+transactionStore.logisticsId = collection.logistics_id | null;
 
   showCreateOrderDialog.value = true; // Open the order dialog
 };
@@ -459,4 +683,208 @@ function handleClose() {
   transactionStore.resetTransactionItems();
   showCreateOrderDialog.value = false;
 }
+
+const generateDriverSchedule = () => {
+  const doc = new jsPDF({ orientation: "landscape", format: "a4" });
+  const selectedDriver = transactionStore.selectedGenerateDriver;
+  const generatedDate = selectedGenerateDate.value;
+
+  if (!selectedDriver) {
+    alert("Please select a driver before generating the schedule.");
+    return;
+  }
+
+  // Filter transactions based on selectedGenerateDate instead of selectedFilterDate
+  const filteredTransactions = allTransactions.value.filter((transaction) => {
+    const transactionDate =
+      transaction.collection_date || transaction.delivery_date;
+    return (
+      transaction.driver?.name === selectedDriver.name &&
+      transactionDate === selectedGenerateDate.value
+    );
+  });
+
+  const collectionCount = filteredTransactions.filter(
+    (t) => t.type === "collection"
+  ).length;
+  const deliveryCount = filteredTransactions.filter(
+    (t) => t.type === "delivery"
+  ).length;
+
+  const tableData = filteredTransactions.map((transaction) => {
+    let customer = transaction.customer?.name || "[NOT SET]";
+    if (transaction.customer?.contact_no1) {
+      customer += `\n${transaction.customer.contact_no1}`;
+    }
+    if (transaction.customer?.contact_no2) {
+      customer += `\n${transaction.customer.contact_no2}`;
+    }
+
+    let contactPerson = transaction.contact_person?.name || "[NOT SET]";
+    if (transaction.contact_person?.contact_no1) {
+      contactPerson += `\n${transaction.contact_person.contact_no1}`;
+    }
+    if (transaction.contact_person?.contact_no2) {
+      contactPerson += `\n${transaction.contact_person.contact_no2}`;
+    }
+    const transactionDate =
+      transaction.type === "collection"
+        ? transaction.collection_date
+        : transaction.delivery_date;
+    const transactionTime =
+      transaction.type === "collection"
+        ? transaction.collection_time
+        : transaction.delivery_time;
+
+    return [
+      `${
+        transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)
+      }\n${transactionTime || "[NOT SET]"}`,
+      customer,
+      contactPerson,
+      transaction.address || "[NOT SET]",
+      `Pack Type:\n${transaction.pack_type || "-"}`,
+      transaction.remarks || "-",
+    ];
+  });
+
+  doc.setFontSize(14);
+  doc.text(
+    `Driver Schedule for ${selectedDriver.name} on ${formatDate(
+      generatedDate
+    )} (${collectionCount} Collections | ${deliveryCount} Deliveries)`,
+    10,
+    20
+  );
+
+  autoTable(doc, {
+    startY: 25,
+    head: [
+      ["Type", "Customer", "Contact Person", "Address", "Details", "Remarks"],
+    ],
+    body: tableData,
+    columnStyles: {
+      0: { cellWidth: 30 }, // Type
+      1: { cellWidth: 40 }, // Customer
+      2: { cellWidth: 40 }, // Contact Person
+      3: { cellWidth: 50 }, // Address
+      4: { cellWidth: 50 }, // Details
+      5: { cellWidth: 60 }, // Remarks
+    },
+    styles: {
+      fontSize: 12,
+      lineWidth: 0.3,
+      cellPadding: 2,
+      lineColor: [0, 0, 0],
+    },
+    headStyles: { halign: "center", valign: "middle" },
+    theme: "striped", // Ensures borders for all rows and columns
+  });
+
+  const pdfBlob = doc.output("blob");
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  window.open(pdfUrl, "_blank");
+};
+
+const getStartOfWeek = (date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day;
+  return new Date(d.setDate(diff));
+};
+
+const getEndOfWeek = (date) => {
+  const d = new Date(getStartOfWeek(date));
+  return new Date(d.setDate(d.getDate() + 6));
+};
+
+const startOfWeek = computed(() => getStartOfWeek(selectedWeek.value));
+const endOfWeek = computed(() => getEndOfWeek(selectedWeek.value));
+
+const formattedStartOfWeek = computed(() =>
+  startOfWeek.value.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+);
+const formattedEndOfWeek = computed(() =>
+  endOfWeek.value.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+);
+
+const daysOfWeek = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const formattedWeekDates = computed(() => {
+  return daysOfWeek.map((_, index) => {
+    const dayDate = new Date(startOfWeek.value);
+    dayDate.setDate(dayDate.getDate() + index);
+    return dayDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  });
+});
+
+const driverTransactionCounts = computed(() => {
+  const counts = {};
+  drivers.value.forEach((driver) => {
+    counts[driver] = {};
+    daysOfWeek.forEach((day, index) => {
+      const dayDate = new Date(startOfWeek.value);
+      dayDate.setDate(dayDate.getDate() + index);
+
+      const transactions = allTransactions.value.filter((transaction) => {
+        const transactionDate = new Date(
+          transaction.collection_date || transaction.delivery_date
+        );
+        const driverName = transaction.driver?.name || "[NOT SET]";
+        return (
+          transactionDate.toDateString() === dayDate.toDateString() &&
+          driverName === driver
+        );
+      });
+
+      counts[driver][day] = {
+        collections: transactions.filter((t) => t.type === "collection").length,
+        deliveries: transactions.filter((t) => t.type === "delivery").length,
+      };
+    });
+  });
+  return counts;
+});
+
+// Move to the previous week
+const previousWeek = () => {
+  selectedWeek.value = new Date(
+    new Date(selectedWeek.value).setDate(
+      new Date(selectedWeek.value).getDate() - 7
+    )
+  );
+};
+
+// Move to the next week
+const nextWeek = () => {
+  selectedWeek.value = new Date(
+    new Date(selectedWeek.value).setDate(
+      new Date(selectedWeek.value).getDate() + 7
+    )
+  );
+};
+
+const getTransactionClass = (count) => {
+  if (count >= 20) return "mark-red";
+  else if (count >= 10) return "mark-yellow";
+  else if (count >= 1) return "mark-green";
+  else return "";
+};
 </script>

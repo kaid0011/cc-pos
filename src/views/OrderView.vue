@@ -1,28 +1,4 @@
 <template>
-  <!-- Header Section -->
-  <!-- <q-card-section>
-          <div class="banner bg-blue-grey text-white q-pa-md">
-            <div class="flex justify-between">
-              <div class="text-left">
-                <div class="text-h6 text-weight-bolder">COTTON CARE</div>
-                <div class="text-caption">
-                  53 Ubi Ave 1 #01-29 Paya Ubi Ind. Park Singapore 408934
-                </div>
-                <div class="text-caption">9029 6919 / 6747 7844</div>
-                <div class="text-caption">enquire@cottoncare.com.sg</div>
-              </div>
-              <div class="text-right">
-                <div class="text-caption">
-                  <div
-                    class="text-h6 text-uppercase text-weight-bolder order-box"
-                  >
-                    Order Slip
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </q-card-section> -->
   <div class="preview row">
     <!-- Left Container -->
     <div class="col-6 preview-left-container">
@@ -131,7 +107,7 @@
             <div class="text-slip-row">
               Contact Person:
               <q-select
-                v-model="collection.contactPerson"
+                v-model="collection.contact_persons"
                 :options="contactOptions"
                 option-label="name"
                 option-value="id"
@@ -204,7 +180,7 @@
             <div class="text-slip-row">
               Collection Driver:
               <q-select
-                v-model="collection.driver"
+                v-model="collection.drivers"
                 :options="driverOptions"
                 option-label="name"
                 option-value="id"
@@ -245,7 +221,7 @@
             <div class="text-slip-row">
               Contact Person:
               <q-select
-                v-model="delivery.contactPerson"
+                v-model="delivery.contact_persons"
                 :options="contactOptions"
                 option-label="name"
                 option-value="id"
@@ -317,7 +293,7 @@
             <div class="text-slip-row">
               Delivery Driver:
               <q-select
-                v-model="delivery.driver"
+                v-model="delivery.drivers"
                 :options="driverOptions"
                 option-label="name"
                 option-value="id"
@@ -364,7 +340,7 @@
             </div>
             <div class="col">
               <q-input
-                v-model="order.job_type"
+                v-model="logistics.job_type"
                 filled
                 placeholder="Enter Job Type / Urgency"
                 dense
@@ -373,11 +349,11 @@
           </div>
           <div class="row q-mb-sm items-center">
             <div class="col-4 text-right q-mr-sm">
-              <div>Job Sub-Type:</div>
+              <div>Urgency:</div>
             </div>
             <div class="col">
               <q-input
-                v-model="order.job_subtype"
+                v-model="logistics.urgency"
                 filled
                 placeholder="Enter Job Sub-Type"
                 dense
@@ -403,7 +379,7 @@
             </div>
             <div class="col text-uppercase">
               <q-input
-                v-model="order.logistics_status"
+                v-model="logistics.logistics_status"
                 filled
                 placeholder="Enter Logistics Status"
                 dense
@@ -1420,6 +1396,7 @@ const route = useRoute();
 // Initialize objects to prevent null errors
 const order = ref({}); // Changed from null to an empty object
 const customer = ref({});
+const logistics = ref({});
 const collection = ref({});
 const delivery = ref({});
 const transactions = ref([]);
@@ -1447,6 +1424,53 @@ onMounted(async () => {
   }
 });
 
+
+onMounted(async () => {
+  try {
+    const orderNo = route.params.order_no;
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+    if (!orderDetails) {
+      console.warn("No order details found for:", orderNo);
+      return;
+    }
+    logistics.value = orderDetails || {};
+    order.value = orderDetails.order || {};
+    customer.value = orderDetails.order.customer || {};
+    collection.value = orderDetails.collection?.[0] || {}; 
+    delivery.value = orderDetails.delivery?.[0] || {}; 
+    transactions.value = orderDetails.order.transactions || [];
+    reports.value = orderDetails.order.error_reports || [];
+    
+    // Combine onetime and recurring instructions into a single array
+    instructions.value = [
+      ...(orderDetails.order.instructions_onetime || []).map((instruction) => ({
+        ...instruction,
+        type: "onetime",
+        to: [
+          ...(instruction.admin ? ["admin"] : []),
+          ...(instruction.cleaning ? ["cleaning"] : []),
+          ...(instruction.packing ? ["packing"] : []),
+          ...(instruction.picking_sending ? ["pickingsending"] : []),
+        ],
+      })),
+      ...(orderDetails.order.instructions_recurring || []).map((instruction) => ({
+        ...instruction,
+        type: "recurring",
+        to: [
+          ...(instruction.admin ? ["admin"] : []),
+          ...(instruction.cleaning ? ["cleaning"] : []),
+          ...(instruction.packing ? ["packing"] : []),
+          ...(instruction.picking_sending ? ["pickingsending"] : []),
+        ],
+      })),
+    ];
+    
+    console.log("Loaded order data:", order.value);
+  } catch (error) {
+    console.error("Error loading order details:", error);
+  }
+});
+
 // Watcher for transactions to dynamically calculate subtotals
 watch(
   transactions,
@@ -1459,83 +1483,6 @@ watch(
   },
   { deep: true }
 );
-onMounted(async () => {
-  try {
-    const orderNo = route.params.order_no;
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
-
-    collection.value = {
-      ...orderDetails.collection,
-      address: orderDetails.collection?.address || null,
-      collection_date: orderDetails.collection?.collection_date || "",
-    };
-
-    delivery.value = {
-      ...orderDetails.delivery,
-      address: orderDetails.delivery?.address || null,
-      delivery_date: orderDetails.delivery?.delivery_date || "",
-    };
-
-    customer.value = orderDetails.customer || {};
-    transactions.value = orderDetails.transactions || [];
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
-});
-
-onMounted(async () => {
-  try {
-    // Get order_no from route params
-    const orderNo = route.params.order_no;
-
-    // Fetch the order details
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
-    console.log("Order Details:", orderDetails);
-
-    // Assign fetched data directly
-    order.value = orderDetails.order || {}; // Ensure it's an object
-    customer.value = orderDetails.customer || {};
-    collection.value = orderDetails.collection || {};
-    delivery.value = orderDetails.delivery || {};
-    transactions.value = orderDetails.transactions || [];
-
-    // Combine onetime and recurring instructions into a single array
-    instructions.value = [
-      ...(orderDetails.instructionsOneTime || []).map((instruction) => ({
-        ...instruction,
-        type: "onetime",
-        to: [
-          ...(instruction.admin ? ["admin"] : []),
-          ...(instruction.cleaning ? ["cleaning"] : []),
-          ...(instruction.packing ? ["packing"] : []),
-          ...(instruction.picking_sending ? ["pickingsending"] : []),
-        ],
-      })),
-      ...(orderDetails.instructionsRecurring || []).map((instruction) => ({
-        ...instruction,
-        type: "recurring",
-        to: [
-          ...(instruction.admin ? ["admin"] : []),
-          ...(instruction.cleaning ? ["cleaning"] : []),
-          ...(instruction.packing ? ["packing"] : []),
-          ...(instruction.picking_sending ? ["pickingsending"] : []),
-        ],
-      })),
-    ];
-
-    reports.value = orderDetails.errorReports || [];
-    // Set the selected customer in the store
-    if (customer.value.id) {
-      transactionStore.setSelectedCustomer(customer.value);
-    }
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
-});
 
 onMounted(async () => {
   try {
@@ -1801,44 +1748,7 @@ const formatDate = (dateString) => {
   });
 };
 
-onMounted(async () => {
-  try {
-    // Get order_no from route params
-    const orderNo = route.params.order_no;
 
-    // Fetch the order details
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
-
-    // Populate collection and delivery data
-    collection.value = {
-      ...orderDetails.collection,
-      address: orderDetails.collection?.address || null, // Set address directly from database
-      collection_date: orderDetails.collection?.collection_date
-        ? new Date(orderDetails.collection.collection_date)
-            .toISOString()
-            .slice(0, 10) // Format date
-        : "",
-    };
-
-    delivery.value = {
-      ...orderDetails.delivery,
-      address: orderDetails.delivery?.address || null, // Set address directly from database
-      delivery_date: orderDetails.delivery?.delivery_date
-        ? new Date(orderDetails.delivery.delivery_date)
-            .toISOString()
-            .slice(0, 10)
-        : "",
-    };
-
-    // Set customer and transactions data
-    customer.value = orderDetails.customer || {};
-    transactions.value = orderDetails.transactions || [];
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
-});
 
 function getContactNumber(contactPersonId) {
   if (!contactOptions.value || contactOptions.value.length === 0) return "-"; // Ensure options are loaded
@@ -1853,27 +1763,33 @@ function getContactNumber(contactPersonId) {
 
 const formattedCollectionContactNos = computed({
   get() {
-    const contact1 = collection.value.contactPerson?.contact_no1 || "-";
-    const contact2 = collection.value.contactPerson?.contact_no2 || "-";
-    return `${contact1} / ${contact2}`;
+    const contact1 = collection.value.contact_persons?.contact_no1 || "-";
+    const contact2 = collection.value.contact_persons?.contact_no2;
+
+    // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
+    return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    collection.value.contactPerson.contact_no1 = contact1 || "";
-    collection.value.contactPerson.contact_no2 = contact2 || "";
+    collection.value.contact_persons.contact_no1 = contact1 || "";
+    
+    // Only set contact_no2 if it was provided
+    collection.value.contact_persons.contact_no2 = contact2 || null;
   },
 });
 
+
 const formattedDeliveryContactNos = computed({
   get() {
-    const contact1 = delivery.value.contactPerson?.contact_no1 || "-";
-    const contact2 = delivery.value.contactPerson?.contact_no2 || "-";
-    return `${contact1} / ${contact2}`;
+    const contact1 = delivery.value.contact_persons?.contact_no1 || "-";
+    const contact2 = delivery.value.contact_persons?.contact_no2;
+    // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
+    return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    delivery.value.contactPerson.contact_no1 = contact1 || "";
-    delivery.value.contactPerson.contact_no2 = contact2 || "";
+    delivery.value.contact_persons.contact_no1 = contact1 || "";
+    delivery.value.contact_persons.contact_no2 = contact2 || "";
   },
 });
 
@@ -2700,7 +2616,7 @@ const addAddress = async () => {
 // End of add address
 
 const computedPcs = (item) => {
-  return (item.pieces || 1) * (item.quantity || 1);
+  return (item.pieces || 1) * (item.quantity);
 };
 
 const isAddInstructionDialogOpen = ref(false);

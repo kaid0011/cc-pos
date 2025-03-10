@@ -400,7 +400,9 @@ const openCollectionDialog = (customer) => {
 async function createCollection() {
   try {
     // Call the store function to create the collection
-    await transactionStore.createCollection();
+    const logisticsId = await transactionStore.createLogistics();
+    await transactionStore.createCollection(logisticsId);
+    await transactionStore.createDelivery(logisticsId);
 
     // Show success dialog
     $q.dialog({
@@ -411,6 +413,8 @@ async function createCollection() {
     });
 
     // Reset the fields
+    transactionStore.collectionTime = null;
+    transactionStore.deliveryTime = null;
     transactionStore.selectedCollectionContact = null;
     transactionStore.selectedDeliveryContact = null;
     transactionStore.selectedCollectionAddress = null;
@@ -419,6 +423,7 @@ async function createCollection() {
     transactionStore.selectedDeliveryDriver = null;
     transactionStore.collectionRemarks = "";
     transactionStore.deliveryRemarks = "";
+    transactionStore.jobType = "";
 
     // Close the dialog
     showCreateCollectionDialog.value = false;

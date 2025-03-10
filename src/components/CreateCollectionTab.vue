@@ -80,8 +80,8 @@
         />
 
         <!-- Collection Dates -->
-        <div class="row q-col-gutter-sm">
-          <div class="col-6">
+        <div class="row q-col-gutter-xs">
+          <div class="col">
             <q-input
               v-model="formattedCollectionDate"
               outlined
@@ -106,7 +106,7 @@
               </template>
             </q-input>
           </div>
-          <div class="col-6">
+          <div class="col">
             <q-select
               v-model="transactionStore.collectionTime"
               :options="transactionStore.timeOptions"
@@ -123,7 +123,7 @@
         <q-select
           v-model="transactionStore.selectedCollectionDriver"
           :options="transactionStore.driverOptions"
-          option-label="label"
+          option-label="name"
           option-value="id"
           label="Select Collection Driver"
           outlined
@@ -131,13 +131,30 @@
           clearable
           class="q-mb-xs bg-white"
         />
-        <q-input
-          v-model="transactionStore.collectionPackType"
-          label="Pack Type"
-          outlined
-          dense
-          class="q-mb-xs bg-white"
-        />
+        <div class="row q-col-gutter-xs">
+          <div class="col">
+            <q-select
+              v-model="transactionStore.jobType"
+              :options="transactionStore.jobOptions"
+              option-label="label"
+              option-value="value"
+              label="Select Job Type"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+          </div>
+          <div class="col">
+            <q-input
+              v-model="transactionStore.collectionPackType"
+              label="Pack Type"
+              outlined
+              dense
+              class="q-mb-xs bg-white"
+            />
+          </div>
+        </div>
         <q-input
           v-model="transactionStore.collectionRemarks"
           label="Remarks"
@@ -194,18 +211,16 @@
           class="q-mb-xs bg-white"
         />
         <q-select
-        v-model="transactionStore.selectedDeliveryAddress"
-        :options="transactionStore.addressOptions"
-        option-label="label"
-        option-value="id"
-        label="Select Delivery Address"
-        outlined
-        dense
-        clearable
-        class="q-mb-xs bg-white"
-      />
-
-      
+          v-model="transactionStore.selectedDeliveryAddress"
+          :options="transactionStore.addressOptions"
+          option-label="label"
+          option-value="id"
+          label="Select Delivery Address"
+          outlined
+          dense
+          clearable
+          class="q-mb-xs bg-white"
+        />
 
         <!-- Delivery Dates -->
         <div class="row q-col-gutter-sm">
@@ -251,7 +266,7 @@
         <q-select
           v-model="transactionStore.selectedDeliveryDriver"
           :options="transactionStore.driverOptions"
-          option-label="label"
+          option-label="name"
           option-value="id"
           label="Select Delivery Driver"
           outlined
@@ -337,6 +352,7 @@ const showAddAddressDialog = ref(false);
 onMounted(async () => {
   await transactionStore.loadDrivers();
   await transactionStore.loadTimeOptions();
+  await transactionStore.loadJobOptions();
 });
 
 const selectedCustomer = computed(() => transactionStore.selectedCustomer);
@@ -469,8 +485,7 @@ const resetCollection = () => {
   transactionStore.selectedCollectionDriver = null;
   transactionStore.collectionRemarks = "";
   transactionStore.ready_by = addWorkingDays(new Date(), 7);
-};    
-
+};
 
 // Reset Delivery Inputs
 const resetDelivery = () => {
@@ -501,5 +516,4 @@ const confirmAction = () => {
   }
   showConfirmation.value = false;
 };
-
 </script>

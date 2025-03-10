@@ -26,6 +26,7 @@
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "jspdf": "^3.0.0",
+    "jspdf-autotable": "^5.0.2",
     "lodash.debounce": "^4.0.8",
     "pinia": "^2.3.0",
     "qrcode.vue": "^3.6.0",

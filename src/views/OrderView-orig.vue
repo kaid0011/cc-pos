@@ -2,35 +2,37 @@
   <div class="preview row">
     <!-- Left Container -->
     <div class="col-6 preview-left-container">
-      <q-card class="order-container" ref="orderContainer">
-        <!-- Header Section -->
-        <q-card-section>
-          <div class="banner bg-blue-grey text-white q-pa-md">
-            <div class="flex justify-between">
-              <div class="text-left">
-                <div class="text-h6 text-weight-bolder">COTTON CARE</div>
-                <div class="text-caption">
-                  53 Ubi Ave 1 #01-29 Paya Ubi Ind. Park Singapore 408934
-                </div>
-                <div class="text-caption">9029 6919 / 6747 7844</div>
-                <div class="text-caption">enquire@cottoncare.com.sg</div>
-              </div>
-              <div class="text-right">
-                <div class="text-caption">
-                  <div
-                    class="text-h6 text-uppercase text-weight-bolder order-box"
-                  >
-                    Order Slip
-                  </div>
-                </div>
+      <q-card flat class="order-banner bg-blue-grey text-white q-pa-md">
+        <div class="flex justify-between items-center">
+          <div class="text-left">
+            <div class="text-caption">
+              <div class="text-h6 text-uppercase text-weight-bolder order-box">
+                Order Slip
               </div>
             </div>
           </div>
-        </q-card-section>
-
+          <div class="text-right">
+            <div class="text-slip-row">
+              Order No:
+              <span class="text-summary">{{ order?.order_no || "N/A" }}</span>
+            </div>
+            <div class="text-slip-row">
+              Order Date:
+              <span class="text-summary">{{
+                formatDate(order?.order_date_time)
+              }}</span>
+            </div>
+          </div>
+        </div>
+      </q-card>
+      <q-card class="preview-card order-container" ref="orderContainer">
         <!-- Customer and Order Details -->
-        <div class="row slip-card justify-between text-p">
-          <div class="col">
+        <div class="text-subtitle1 text-uppercase text-weight-bolder">
+          Customer Details
+        </div>
+        <q-separator class="q-my-xs" />
+        <q-card-section>
+          <div class="text-p">
             <div class="text-slip-row">
               Customer Name:
               <span
@@ -43,31 +45,35 @@
             </div>
             <div class="text-slip-row">
               Customer Type:
-              <span class="text-summary">{{ customer?.type || "N/A" }}</span>
+              <span class="text-summary"
+                >{{ customer?.type || "N/A"
+                }}<span v-if="customer.sub_type && customer.sub_type != '-'">
+                  - {{ customer.sub_type }}</span
+                ></span
+              >
             </div>
             <div class="text-slip-row">
-              Contact Nos:
+              Contact No/s:
               <span class="text-summary"
-                >{{ customer?.contact_no1 || "-" }} /
-                {{ customer?.contact_no2 || "-" }}</span
+                >{{ customer?.contact_no1 || "-"
+                }}<span v-if="customer.contact_no2">
+                  / {{ customer?.contact_no2 || "-" }}</span
+                ></span
               >
             </div>
             <div class="text-slip-row">
               Email Address:
               <span class="text-summary">{{ customer?.email || "N/A" }}</span>
             </div>
-          </div>
-          <div class="col">
+
             <div class="text-slip-row">
-              Order No:
-              <span class="text-summary">{{ order?.order_no || "N/A" }}</span>
-            </div>
-            <div class="text-slip-row">
-              Order Date:
-              <span class="text-summary">{{ formatDate(order?.order_date_time) }}</span>
+              Payment Type:
+              <span class="text-summary">{{
+                customer?.payment_type || "N/A"
+              }}</span>
             </div>
           </div>
-        </div>
+        </q-card-section>
 
         <!-- Add Contact Person Button -->
         <q-btn
@@ -89,17 +95,19 @@
           class="q-ml-sm"
           @click="openAddAddressDialog"
         />
-        <!-- Collection and Delivery Details -->
-        <div class="row summary-header text-p">
-          <div class="col slip-card">
-            <div class="text-p text-center text-weight-bold text-uppercase">
+      </q-card>
+      <!-- Collection and Delivery Details -->
+      <div class="row text-p q-col-gutter-md">
+        <div class="col-6">
+          <q-card class="slip-card">
+            <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Collection Details
             </div>
             <q-separator class="q-my-xs" />
             <div class="text-slip-row">
               Contact Person:
               <q-select
-                v-model="collection.contactPerson"
+                v-model="collection.contact_persons"
                 :options="contactOptions"
                 option-label="name"
                 option-value="id"
@@ -117,14 +125,14 @@
                 disable
                 outlined
                 dense
-                class="q-mb-xs bg-light-grey"
+                class="q-mb-xs bg-white"
               />
             </div>
             <div class="text-slip-row">
               Address:
               <q-select
                 v-model="collection.address"
-                :options="addressOptions"
+                :options="transactionStore.addressOptions"
                 option-label="label"
                 option-value="id"
                 outlined
@@ -147,22 +155,73 @@
                 <template v-slot:append>
                   <q-icon name="event" class="cursor-pointer">
                     <q-popup-proxy>
-                      <q-date v-model="collection.collection_date" mask="YYYY-MM-DD" />
+                      <q-date
+                        v-model="collection.collection_date"
+                        mask="YYYY-MM-DD"
+                      />
                     </q-popup-proxy>
                   </q-icon>
                 </template>
               </q-input>
             </div>
-          </div>
-          <div class="col slip-card">
-            <div class="text-p text-center text-weight-bold text-uppercase">
+            <div class="text-slip-row">
+              Collection Time:
+              <q-select
+                v-model="collection.collection_time"
+                :options="timeOptions"
+                option-label="label"
+                option-value="id"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+                label="Select Collection Time"
+              />
+            </div>
+            <div class="text-slip-row">
+              Collection Driver:
+              <q-select
+                v-model="collection.drivers"
+                :options="driverOptions"
+                option-label="name"
+                option-value="id"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+                label="Select Collection Driver"
+              />
+            </div>
+            <div class="text-slip-row">
+              Remarks:
+              <q-input
+                v-model="collection.remarks"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+              />
+            </div>
+
+            <q-card-actions align="right">
+              <!-- Update Button -->
+              <q-btn
+                label="Update Collection"
+                color="primary"
+                icon="update"
+                class="full-width"
+                @click="updateCollection"
+              />
+            </q-card-actions>
+          </q-card>
+        </div>
+        <div class="col-6">
+          <q-card class="slip-card">
+            <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Delivery Details
             </div>
             <q-separator class="q-my-xs" />
             <div class="text-slip-row">
               Contact Person:
               <q-select
-                v-model="delivery.contactPerson"
+                v-model="delivery.contact_persons"
                 :options="contactOptions"
                 option-label="name"
                 option-value="id"
@@ -179,14 +238,14 @@
                 disable
                 outlined
                 dense
-                class="q-mb-xs bg-light-grey"
+                class="q-mb-xs bg-white"
               />
             </div>
             <div class="text-slip-row">
               Address:
               <q-select
                 v-model="delivery.address"
-                :options="addressOptions"
+                :options="transactionStore.addressOptions"
                 option-label="label"
                 option-value="id"
                 outlined
@@ -208,140 +267,173 @@
                 <template v-slot:append>
                   <q-icon name="event" class="cursor-pointer">
                     <q-popup-proxy>
-                      <q-date v-model="delivery.delivery_date" mask="YYYY-MM-DD" />
+                      <q-date
+                        v-model="delivery.delivery_date"
+                        mask="YYYY-MM-DD"
+                      />
                     </q-popup-proxy>
                   </q-icon>
                 </template>
               </q-input>
             </div>
+
+            <div class="text-slip-row">
+              Delivery Time:
+              <q-select
+                v-model="delivery.delivery_time"
+                :options="timeOptions"
+                option-label="label"
+                option-value="id"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+                label="Select Delivery Time"
+              />
+            </div>
+            <div class="text-slip-row">
+              Delivery Driver:
+              <q-select
+                v-model="delivery.drivers"
+                :options="driverOptions"
+                option-label="name"
+                option-value="id"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+                label="Select Delivery Driver"
+              />
+            </div>
+            <div class="text-slip-row">
+              Remarks:
+              <q-input
+                v-model="delivery.remarks"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+              />
+            </div>
+            <q-card-actions align="right">
+              <!-- Update Button -->
+              <q-btn
+                label="Update Delivery"
+                color="primary"
+                icon="update"
+                class="full-width"
+                @click="updateDelivery"
+              />
+            </q-card-actions>
+          </q-card>
+        </div>
+      </div>
+
+      <q-card class="preview-card q-mt-md">
+        <div class="row justify-start items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Other Information
           </div>
         </div>
-        <!-- Update Button -->
-        <div class="row justify-center q-mb-md">
+        <q-separator class="q-mt-xs" />
+        <q-card-section>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Job Type / Urgency:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="logistics.job_type"
+                filled
+                placeholder="Enter Job Type / Urgency"
+                dense
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Urgency:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="logistics.urgency"
+                filled
+                placeholder="Enter Job Sub-Type"
+                dense
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Goods Status:</div>
+            </div>
+            <div class="col text-uppercase">
+              <q-input
+                v-model="order.goods_status"
+                filled
+                placeholder="Enter Goods Status"
+                dense
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Logistics Status:</div>
+            </div>
+            <div class="col text-uppercase">
+              <q-input
+                v-model="logistics.logistics_status"
+                filled
+                placeholder="Enter Logistics Status"
+                dense
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Payment Status:</div>
+            </div>
+            <div class="col text-uppercase">
+              <q-input
+                v-model="order.payment_status"
+                filled
+                placeholder="Enter Payment Status"
+                dense
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Payment Type:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="customer.payment_type"
+                filled
+                placeholder="Enter Payment Type"
+                dense
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>No. of Packets / Hangers:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="order.no_packets_hangers"
+                filled
+                placeholder="Enter No. of Packets / Hangers"
+                dense
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
           <q-btn
-            label="Update Collection and Delivery Details"
+            label="Update Other Information"
             color="primary"
             icon="update"
-            @click="updateCollectionAndDelivery"
+            @click="updateOtherInformation"
           />
-        </div>
-        <q-separator />
-        <!-- Transaction Table -->
-        <div class="transaction-summary">
-          <!-- Add Row Button Aligned Right -->
-          <div class="add-row-button text-right q-mb-md">
-            <q-btn
-              label="Add Transactions"
-              color="primary"
-              icon="add"
-              @click="openAddTransactionDialog"
-            />
-          </div>
-
-          <div class="row row-col-header order-header">
-            <div class="col col-3 text-weight-bold bordered">Item</div>
-            <div class="col col-2 text-weight-bold bordered">Process</div>
-            <div class="col col-2 text-weight-bold bordered">Price</div>
-            <div class="col col-1 text-weight-bold bordered">Pcs</div>
-            <div class="col col-1 text-weight-bold bordered">Qty</div>
-            <div class="col col-2 text-weight-bold bordered">Subtotal</div>
-            <div class="col col-1 text-weight-bold bordered"></div>
-          </div>
-
-          <div v-if="transactions.length > 0">
-            <div
-              v-for="(item, index) in transactions"
-              :key="index"
-              class="row row-col-row order-row"
-            >
-              <div class="col col-3 bordered">
-                <textarea
-                  type="text"
-                  v-model="transactions[index].item_name"
-                  class="editable-field"
-                  placeholder="Item Name"
-                  @input="autoResize($event)"
-                ></textarea>
-              </div>
-              <div class="col col-2 bordered">
-                <input
-                  type="text"
-                  v-model="transactions[index].process"
-                  class="editable-field"
-                  placeholder="Process"
-                />
-              </div>
-              <div class="col col-2 bordered">
-                <input
-                  type="number"
-                  v-model.number="transactions[index].price"
-                  class="editable-field"
-                  placeholder="Price"
-                />
-              </div>
-              <div class="col col-1 bordered">
-                {{ computedPcs(transactions[index]) }}
-              </div>              
-              <div class="col col-1 bordered">
-                <input
-                  type="number"
-                  v-model.number="transactions[index].quantity"
-                  class="editable-field"
-                  placeholder="Qty"
-                />
-              </div>
-              <div class="col col-2 bordered">
-                <input
-                  type="number"
-                  v-model.number="transactions[index].subtotal"
-                  class="editable-field"
-                  placeholder="Subtotal"
-                  readonly
-                />
-              </div>
-              <!-- Delete Button Column -->
-              <div class="col col-1 text-center bordered">
-                <q-btn
-                  flat
-                  class="trash-icon"
-                  color="negative"
-                  icon="delete"
-                  @click="openDeleteTransactionDialog(index, item.id)"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="text-center text-grey q-my-md">
-            No items added to the list.
-          </div>
-
-          <div class="row row-col-footer order-footer">
-            <div class="col col-5 text-weight-bold text-uppercase"></div>
-            <div class="col col-2 text-weight-bold text-uppercase bordered">
-              Total
-            </div>
-            <div class="col col-1 text-weight-bold bordered">
-              {{ totalPcs }}
-            </div>
-            <div class="col col-1 text-weight-bold bordered">
-              {{ totalQty }}
-            </div>
-            <div class="col col-2 text-weight-bold bordered">
-              ${{ totalSubtotal }}
-            </div>
-            <div class="col col-1 text-weight-bold bordered"></div>
-          </div>
-        </div>
-        <!-- Update Transactions Button -->
-        <div class="row justify-center q-pb-md">
-          <q-btn
-            label="Update Transactions"
-            color="primary"
-            icon="update"
-            @click="updateTransactions"
-          />
-        </div>
+        </q-card-actions>
       </q-card>
     </div>
 
@@ -355,208 +447,155 @@
         @click="downloadOrderPDF"
         label="Download PDF"
       /> -->
-
-      <q-card flat class="preview-card q-mt-md">
-        <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
-          Other Information
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>Job Type / Urgency:</div>
+      <q-card class="transactions-list preview-card q-ma-md">
+        <!-- Add Instruction Button -->
+        <div class="row justify-between items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Transaction Items
           </div>
-          <div class="col">
-            <q-input
-              v-model="order.job_type"
-              filled
-              placeholder="Enter Job Type / Urgency"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>Job Sub-Type:</div>
-          </div>
-          <div class="col">
-            <q-input
-              v-model="order.job_subtype"
-              filled
-              placeholder="Enter Job Sub-Type"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>Goods Status:</div>
-          </div>
-          <div class="col text-uppercase">
-            <q-input
-              v-model="order.goods_status"
-              filled
-              placeholder="Enter Goods Status"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>Logistics Status:</div>
-          </div>
-          <div class="col text-uppercase">
-            <q-input
-              v-model="order.logistics_status"
-              filled
-              placeholder="Enter Logistics Status"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>Payment Status:</div>
-          </div>
-          <div class="col text-uppercase">
-            <q-input
-              v-model="order.payment_status"
-              filled
-              placeholder="Enter Payment Status"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>Payment Type:</div>
-          </div>
-          <div class="col">
-            <q-input
-              v-model="customer.payment_type"
-              filled
-              placeholder="Enter Payment Type"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row q-mb-sm items-center">
-          <div class="col-4 text-right q-mr-sm">
-            <div>No. of Packets / Hangers:</div>
-          </div>
-          <div class="col">
-            <q-input
-              v-model="order.no_packets_hangers"
-              filled
-              placeholder="Enter No. of Packets / Hangers"
-              dense
-            />
-          </div>
-        </div>
-        <div class="row justify-center q-my-md">
+          <!-- Add Row Button Aligned Right -->
           <q-btn
-            label="Update Other Information"
+            label="Add Transactions"
             color="primary"
-            icon="update"
-            @click="updateOtherInformation"
+            icon="add"
+            dense
+            flat
+            class="q-px-sm"
+            @click="openAddTransactionDialog"
           />
         </div>
+        <q-separator class="q-mt-xs" />
+
+        <q-card-section class="q-px-none">
+          <!-- Transaction Table -->
+          <div class="transaction-summary">
+            <div class="row row-col-header order-header">
+              <div class="col col-3 text-weight-bold bordered">Item</div>
+              <div class="col col-2 text-weight-bold bordered">Process</div>
+              <div class="col col-2 text-weight-bold bordered">Price</div>
+              <div class="col col-1 text-weight-bold bordered">Pcs</div>
+              <div class="col col-1 text-weight-bold bordered">Qty</div>
+              <div class="col col-2 text-weight-bold bordered">Subtotal</div>
+              <div class="col col-1 text-weight-bold bordered"></div>
+            </div>
+
+            <div v-if="transactions.length > 0">
+              <div
+                v-for="(item, index) in transactions"
+                :key="index"
+                class="row row-col-row order-row"
+              >
+                <div class="col col-3 bordered">
+                  <textarea
+                    type="text"
+                    v-model="transactions[index].item_name"
+                    class="editable-field"
+                    placeholder="Item Name"
+                    @input="autoResize($event)"
+                  ></textarea>
+                </div>
+                <div class="col col-2 bordered">
+                  <input
+                    type="text"
+                    v-model="transactions[index].process"
+                    class="editable-field"
+                    placeholder="Process"
+                  />
+                </div>
+                <div class="col col-2 bordered">
+                  <input
+                    type="number"
+                    v-model.number="transactions[index].price"
+                    class="editable-field"
+                    placeholder="Price"
+                  />
+                </div>
+                <div class="col col-1 bordered">
+                  {{ computedPcs(transactions[index]) }}
+                </div>
+                <div class="col col-1 bordered">
+                  <input
+                    type="number"
+                    v-model.number="transactions[index].quantity"
+                    class="editable-field"
+                    placeholder="Qty"
+                  />
+                </div>
+                <div class="col col-2 bordered">
+                  <input
+                    type="number"
+                    v-model.number="transactions[index].subtotal"
+                    class="editable-field"
+                    placeholder="Subtotal"
+                    readonly
+                  />
+                </div>
+                <!-- Delete Button Column -->
+                <div class="col col-1 text-center bordered">
+                  <q-btn
+                    flat
+                    class="trash-icon"
+                    color="negative"
+                    icon="delete"
+                    @click="openDeleteTransactionDialog(index, item.id)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="text-center text-grey q-my-md">
+              No items added to the list.
+            </div>
+
+            <div class="row row-col-footer order-footer">
+              <div class="col col-5 text-weight-bold text-uppercase"></div>
+              <div class="col col-2 text-weight-bold text-uppercase bordered">
+                Total
+              </div>
+              <div class="col col-1 text-weight-bold bordered">
+                {{ totalPcs }}
+              </div>
+              <div class="col col-1 text-weight-bold bordered">
+                {{ totalQty }}
+              </div>
+              <div class="col col-2 text-weight-bold bordered">
+                ${{ totalSubtotal }}
+              </div>
+              <div class="col col-1 text-weight-bold bordered"></div>
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <!-- Update Transactions Button -->
+          <q-btn
+            label="Update Transactions"
+            color="primary"
+            icon="update"
+            @click="updateTransactions"
+          />
+        </q-card-actions>
       </q-card>
-      <!-- Collapsible Header -->
-      <div
-        class="row showhidetab text-p text-center text-uppercase text-weight-bold q-mb-sm"
-      >
-        <q-btn
-          dense
-          flat
-          class="q-ml-md full-width"
-          icon="keyboard_arrow_down"
-          :icon="showInstructions ? 'arrow_up' : 'arrow_down'"
-          @click="toggleInstructions"
-          label="List of Instructions"
-        />
-      </div>
-      <div v-show="showInstructions">
-        <!-- Instructions Section -->
-        <q-card flat class="preview-card">
-          <div
-            class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
-          >
+
+      <!-- Instructions Display -->
+      <q-card class="instructions-list preview-card q-ma-md">
+        <!-- Add Instruction Button -->
+        <div class="row justify-between items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
             Instructions
           </div>
-          <div class="row q-gutter-x-md">
-            <div class="col-auto">
-              <div>Enter Instructions:</div>
-              <div class="q-pl-sm q-pt-sm">
-                <div class="text-p">
-                  <span>
-                    <q-radio
-                      v-model="instructionsType"
-                      checked-icon="task_alt"
-                      unchecked-icon="panorama_fish_eye"
-                      val="onetime"
-                      dense
-                    />
-                  </span>
-                  One-time
-                </div>
-                <div class="text-p">
-                  <span>
-                    <q-radio
-                      v-model="instructionsType"
-                      checked-icon="task_alt"
-                      unchecked-icon="panorama_fish_eye"
-                      val="recurring"
-                      dense
-                    />
-                  </span>
-                  Recurring
-                </div>
-              </div>
-            </div>
-            <div class="col">
-              <textarea
-                v-model="instructionsDesc"
-                type="textarea"
-                class="q-pa-sm instructions-desc full-width"
-                placeholder="Enter instruction here..."
-              />
-              <div class="q-gutter-sm">
-                <q-checkbox
-                  v-model="instructionsTo"
-                  val="cleaning"
-                  label="Cleaning"
-                  color="teal"
-                />
-                <q-checkbox
-                  v-model="instructionsTo"
-                  val="packing"
-                  label="Packing"
-                  color="orange"
-                />
-                <q-checkbox
-                  v-model="instructionsTo"
-                  val="pickingsending"
-                  label="Picking/Sending"
-                  color="red"
-                />
-                <q-checkbox
-                  v-model="instructionsTo"
-                  val="admin"
-                  label="Admin"
-                  color="cyan"
-                />
-              </div>
-              <q-btn
-                color="primary"
-                label="Add Instruction"
-                class="float-right q-mt-sm"
-                @click="addInstruction"
-              />
-            </div>
-          </div>
-        </q-card>
+          <q-btn
+            label="Add Instruction"
+            color="primary"
+            icon="add"
+            dense
+            flat
+            class="q-px-sm"
+            @click="openAddInstructionDialog"
+          />
+        </div>
+        <q-separator class="q-mt-xs" />
 
-        <!-- Instructions Display -->
-        <q-card flat class="preview-card q-mt-md">
+        <q-card-section>
           <!-- Check if instructions array exists and has items -->
           <div v-if="instructions && instructions.length > 0">
             <div
@@ -566,7 +605,7 @@
             >
               <div>
                 <!-- Instruction ID and description -->
-                <div class="text-p q-ml-md">
+                <div class="text-p q-ml-sm">
                   <span class="text-weight-bold">#{{ instruction.id }}:</span>
                   {{ instruction.description || "No description provided." }}
                 </div>
@@ -611,151 +650,30 @@
             </div>
           </div>
           <div v-else class="text-center text-grey">No instructions added.</div>
-        </q-card>
-      </div>
-      <div
-        class="row showhidetab text-p text-center text-uppercase text-weight-bold q-mb-sm"
-      >
-        <q-btn
-          dense
-          flat
-          class="q-ml-md full-width"
-          icon="keyboard_arrow_down"
-          :icon="showReports ? 'arrow_up' : 'arrow_down'"
-          @click="toggleReports"
-          label="List of Error Reports"
-        />
-      </div>
+        </q-card-section>
+      </q-card>
+
       <!-- Reports Section -->
-      <div v-show="showReports">
-        <!-- Collapsible Header -->
 
-        <q-card flat class="preview-card">
-          <div
-            class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
-          >
-            Error Reporting
+      <q-card class="report-list preview-card q-ma-md">
+        <!-- Add Report Button in Report List Card -->
+        <div class="row justify-between items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Error Reports
           </div>
-          <div class="q-px-md">
-            <div class="row items-center q-mb-sm">
-              <div class="col-4">Select Category:</div>
-              <div class="col-8">
-                <q-select
-                  square
-                  dense
-                  outlined
-                  class="bg-white"
-                  :options="reportCategories"
-                  v-model="selectedCategory"
-                  label="Select Category"
-                  @update:model-value="updateSubCategories"
-                />
-              </div>
-            </div>
-            <div class="row items-center q-mb-sm">
-              <div class="col-4">Select Sub-category:</div>
-              <div class="col-8">
-                <q-select
-                  square
-                  dense
-                  outlined
-                  class="bg-white"
-                  :options="filteredSubCategories"
-                  v-model="selectedSubCategory"
-                  label="Select Sub-category"
-                />
-              </div>
-            </div>
+          <q-btn
+            label="Add Report"
+            color="primary"
+            icon="add"
+            dense
+            flat
+            class="q-px-sm"
+            @click="openAddReportDialog"
+          />
+        </div>
+        <q-separator class="q-mt-xs" />
 
-            <div class="row items-center q-mb-sm">
-              <div class="col-4">Enter Item Description:</div>
-              <div class="col-8">
-                <textarea
-                  v-model="reportDesc"
-                  type="textarea"
-                  class="q-pa-sm report-desc full-width"
-                  placeholder="Enter item description here..."
-                />
-              </div>
-            </div>
-            <div class="row items-center q-mb-sm">
-              <div class="col-4">Attach Photo (Optional):</div>
-              <div class="col-8">
-                <!-- Capture Photo Button -->
-                <q-btn
-                  outline
-                  color="primary"
-                  label="Capture Photo"
-                  dense
-                  class="outline-btn q-mt-sm"
-                  @click="openCameraDialog"
-                />
-                <!-- Remove Photo Button -->
-                <q-btn
-                  dense
-                  flat
-                  icon="delete"
-                  color="red"
-                  v-if="uploadedPhotoUrl"
-                  @click="clearUploadedPhoto"
-                  label="Remove Photo"
-                  class="q-mt-xs"
-                />
-                <!-- Display Captured Photo -->
-                <q-img
-                  v-if="uploadedPhotoUrl"
-                  :src="uploadedPhotoUrl"
-                  class="q-mt-sm"
-                  style="max-width: 300px; height: auto"
-                />
-              </div>
-            </div>
-
-            <!-- Camera Dialog -->
-            <q-dialog v-model="isCameraDialogOpen" persistent>
-              <q-card style="max-width: 500px">
-                <q-card-section class="dialog-header">
-                  <div class="text-h6">Capture Photo</div>
-                </q-card-section>
-                <q-card-section class="dialog-body">
-                  <!-- Video Element -->
-                  <video
-                    ref="videoElement"
-                    autoplay
-                    playsinline
-                    disablePictureInPicture
-                    class="camera-feed styled-camera"
-                  ></video>
-                  <div align="right" class="q-mt-md">
-                    <q-btn
-                      label="Close"
-                      color="negative"
-                      @click="closeCameraDialog"
-                    />
-                    <q-btn
-                      color="primary"
-                      class="q-ml-sm"
-                      label="Capture"
-                      @click="capturePhoto"
-                    />
-                  </div>
-                </q-card-section>
-              </q-card>
-            </q-dialog>
-          </div>
-          <div class="row">
-            <div class="full-width">
-              <q-btn
-                color="primary"
-                label="Add Report"
-                class="float-right q-mt-sm"
-                @click="addErrorReport"
-              />
-            </div>
-          </div>
-        </q-card>
-
-        <q-card flat class="preview-card q-mt-md">
+        <q-card-section>
           <div v-if="reports.length > 0">
             <div
               v-for="(report, index) in reports"
@@ -800,8 +718,8 @@
           <div v-else class="text-center text-grey">
             No error reports added.
           </div>
-        </q-card>
-      </div>
+        </q-card-section>
+      </q-card>
     </div>
   </div>
 
@@ -1254,6 +1172,215 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+  <q-dialog v-model="isAddInstructionDialogOpen" persistent>
+    <q-card style="min-width: 500px">
+      <q-card-section>
+        <div class="text-h6 text-center">Add Instruction</div>
+      </q-card-section>
+      <q-card-section>
+        <div class="row q-gutter-x-md">
+          <div class="col-auto">
+            <div>Enter Instructions:</div>
+            <div class="q-pl-sm q-pt-sm">
+              <div class="text-p">
+                <span>
+                  <q-radio
+                    v-model="instructionsType"
+                    checked-icon="task_alt"
+                    unchecked-icon="panorama_fish_eye"
+                    val="onetime"
+                    dense
+                  />
+                </span>
+                One-time
+              </div>
+              <div class="text-p">
+                <span>
+                  <q-radio
+                    v-model="instructionsType"
+                    checked-icon="task_alt"
+                    unchecked-icon="panorama_fish_eye"
+                    val="recurring"
+                    dense
+                  />
+                </span>
+                Recurring
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <textarea
+              v-model="instructionsDesc"
+              type="textarea"
+              class="q-pa-sm instructions-desc full-width"
+              placeholder="Enter instruction here..."
+            />
+            <div class="q-gutter-sm">
+              <q-checkbox
+                v-model="instructionsTo"
+                val="cleaning"
+                label="Cleaning"
+                color="teal"
+              />
+              <q-checkbox
+                v-model="instructionsTo"
+                val="packing"
+                label="Packing"
+                color="orange"
+              />
+              <q-checkbox
+                v-model="instructionsTo"
+                val="pickingsending"
+                label="Picking/Sending"
+                color="red"
+              />
+              <q-checkbox
+                v-model="instructionsTo"
+                val="admin"
+                label="Admin"
+                color="cyan"
+              />
+            </div>
+          </div>
+        </div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn
+          flat
+          label="Cancel"
+          color="negative"
+          @click="closeAddInstructionDialog"
+        />
+        <q-btn label="Add" color="primary" @click="addInstruction" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  <!-- Add Report Dialog -->
+  <q-dialog v-model="isAddReportDialogOpen" persistent>
+    <q-card style="min-width: 400px">
+      <q-card-section>
+        <div class="text-h6 text-center">Add Error Report</div>
+      </q-card-section>
+      <q-card-section class="q-px-md">
+        <div class="q-px-md">
+          <div class="row items-center q-mb-sm">
+            <div class="col-4">Select Category:</div>
+            <div class="col-8">
+              <q-select
+                square
+                dense
+                outlined
+                class="bg-white"
+                :options="reportCategories"
+                v-model="selectedCategory"
+                label="Select Category"
+                @update:model-value="updateSubCategories"
+              />
+            </div>
+          </div>
+          <div class="row items-center q-mb-sm">
+            <div class="col-4">Select Sub-category:</div>
+            <div class="col-8">
+              <q-select
+                square
+                dense
+                outlined
+                class="bg-white"
+                :options="filteredSubCategories"
+                v-model="selectedSubCategory"
+                label="Select Sub-category"
+              />
+            </div>
+          </div>
+
+          <div class="row items-center q-mb-sm">
+            <div class="col-4">Enter Item Description:</div>
+            <div class="col-8">
+              <textarea
+                v-model="reportDesc"
+                type="textarea"
+                class="q-pa-sm report-desc full-width"
+                placeholder="Enter item description here..."
+              />
+            </div>
+          </div>
+          <div class="row items-center q-mb-sm">
+            <div class="col-4">Attach Photo (Optional):</div>
+            <div class="col-8">
+              <!-- Capture Photo Button -->
+              <q-btn
+                outline
+                color="primary"
+                label="Capture Photo"
+                dense
+                class="outline-btn q-mt-sm"
+                @click="openCameraDialog"
+              />
+              <!-- Remove Photo Button -->
+              <q-btn
+                dense
+                flat
+                icon="delete"
+                color="red"
+                v-if="uploadedPhotoUrl"
+                @click="clearUploadedPhoto"
+                label="Remove Photo"
+                class="q-mt-xs"
+              />
+              <!-- Display Captured Photo -->
+              <q-img
+                v-if="uploadedPhotoUrl"
+                :src="uploadedPhotoUrl"
+                class="q-mt-sm"
+                style="max-width: 300px; height: auto"
+              />
+            </div>
+          </div>
+
+          <!-- Camera Dialog -->
+          <q-dialog v-model="isCameraDialogOpen" persistent>
+            <q-card style="max-width: 500px">
+              <q-card-section class="dialog-header">
+                <div class="text-h6">Capture Photo</div>
+              </q-card-section>
+              <q-card-section class="dialog-body">
+                <!-- Video Element -->
+                <video
+                  ref="videoElement"
+                  autoplay
+                  playsinline
+                  disablePictureInPicture
+                  class="camera-feed styled-camera"
+                ></video>
+                <div align="right" class="q-mt-md">
+                  <q-btn
+                    label="Close"
+                    color="negative"
+                    @click="closeCameraDialog"
+                  />
+                  <q-btn
+                    color="primary"
+                    class="q-ml-sm"
+                    label="Capture"
+                    @click="capturePhoto"
+                  />
+                </div>
+              </q-card-section>
+            </q-card>
+          </q-dialog>
+        </div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn
+          flat
+          label="Cancel"
+          color="negative"
+          @click="closeAddReportDialog"
+        />
+        <q-btn label="Add Report" color="primary" @click="addErrorReport" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -1269,11 +1396,80 @@ const route = useRoute();
 // Initialize objects to prevent null errors
 const order = ref({}); // Changed from null to an empty object
 const customer = ref({});
+const logistics = ref({});
 const collection = ref({});
 const delivery = ref({});
 const transactions = ref([]);
 const instructions = ref([]);
 const reports = ref([]);
+
+const driverOptions = ref([]); // Initialize as a reactive array
+const timeOptions = ref([]); // Initialize as a reactive array
+
+// Load driverOptions when component is mounted
+onMounted(async () => {
+  try {
+    // Load drivers first
+    await transactionStore.loadDrivers();
+    await transactionStore.loadTimeOptions();
+
+    // Now set the dropdown options to the driverOptions from the store
+    driverOptions.value = transactionStore.driverOptions;
+    timeOptions.value = transactionStore.timeOptions;
+
+    console.log("Driver Options Set:", driverOptions.value);
+  } catch (error) {
+    console.error("Error loading driver options:", error);
+    driverOptions.value = []; // Fallback to an empty array
+  }
+});
+
+
+onMounted(async () => {
+  try {
+    const orderNo = route.params.order_no;
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+    if (!orderDetails) {
+      console.warn("No order details found for:", orderNo);
+      return;
+    }
+    logistics.value = orderDetails || {};
+    order.value = orderDetails.order || {};
+    customer.value = orderDetails.order.customer || {};
+    collection.value = orderDetails.collection?.[0] || {}; 
+    delivery.value = orderDetails.delivery?.[0] || {}; 
+    transactions.value = orderDetails.order.transactions || [];
+    reports.value = orderDetails.order.error_reports || [];
+    
+    // Combine onetime and recurring instructions into a single array
+    instructions.value = [
+      ...(orderDetails.order.instructions_onetime || []).map((instruction) => ({
+        ...instruction,
+        type: "onetime",
+        to: [
+          ...(instruction.admin ? ["admin"] : []),
+          ...(instruction.cleaning ? ["cleaning"] : []),
+          ...(instruction.packing ? ["packing"] : []),
+          ...(instruction.picking_sending ? ["pickingsending"] : []),
+        ],
+      })),
+      ...(orderDetails.order.instructions_recurring || []).map((instruction) => ({
+        ...instruction,
+        type: "recurring",
+        to: [
+          ...(instruction.admin ? ["admin"] : []),
+          ...(instruction.cleaning ? ["cleaning"] : []),
+          ...(instruction.packing ? ["packing"] : []),
+          ...(instruction.picking_sending ? ["pickingsending"] : []),
+        ],
+      })),
+    ];
+    
+    console.log("Loaded order data:", order.value);
+  } catch (error) {
+    console.error("Error loading order details:", error);
+  }
+});
 
 // Watcher for transactions to dynamically calculate subtotals
 watch(
@@ -1287,83 +1483,6 @@ watch(
   },
   { deep: true }
 );
-onMounted(async () => {
-  try {
-    const orderNo = route.params.order_no;
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
-
-    collection.value = {
-      ...orderDetails.collection,
-      address: orderDetails.collection?.address || null,
-      collection_date: orderDetails.collection?.collection_date || "",
-    };
-
-    delivery.value = {
-      ...orderDetails.delivery,
-      address: orderDetails.delivery?.address || null,
-      delivery_date: orderDetails.delivery?.delivery_date || "",
-    };
-
-    customer.value = orderDetails.customer || {};
-    transactions.value = orderDetails.transactions || [];
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
-});
-
-onMounted(async () => {
-  try {
-    // Get order_no from route params
-    const orderNo = route.params.order_no;
-
-    // Fetch the order details
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
-    console.log("Order Details:", orderDetails);
-
-    // Assign fetched data directly
-    order.value = orderDetails.order || {}; // Ensure it's an object
-    customer.value = orderDetails.customer || {};
-    collection.value = orderDetails.collection || {};
-    delivery.value = orderDetails.delivery || {};
-    transactions.value = orderDetails.transactions || [];
-
-    // Combine onetime and recurring instructions into a single array
-    instructions.value = [
-      ...(orderDetails.instructionsOneTime || []).map((instruction) => ({
-        ...instruction,
-        type: "onetime",
-        to: [
-          ...(instruction.admin ? ["admin"] : []),
-          ...(instruction.cleaning ? ["cleaning"] : []),
-          ...(instruction.packing ? ["packing"] : []),
-          ...(instruction.picking_sending ? ["pickingsending"] : []),
-        ],
-      })),
-      ...(orderDetails.instructionsRecurring || []).map((instruction) => ({
-        ...instruction,
-        type: "recurring",
-        to: [
-          ...(instruction.admin ? ["admin"] : []),
-          ...(instruction.cleaning ? ["cleaning"] : []),
-          ...(instruction.packing ? ["packing"] : []),
-          ...(instruction.picking_sending ? ["pickingsending"] : []),
-        ],
-      })),
-    ];
-
-    reports.value = orderDetails.errorReports || [];
-    // Set the selected customer in the store
-    if (customer.value.id) {
-      transactionStore.setSelectedCustomer(customer.value);
-    }
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
-});
 
 onMounted(async () => {
   try {
@@ -1386,45 +1505,6 @@ function autoResize(event) {
   textarea.style.height = "auto"; // Reset the height
   textarea.style.height = `${textarea.scrollHeight}px`; // Adjust based on content
   textarea.style.overflow = "hidden";
-}
-
-async function addInstruction() {
-  try {
-    if (!instructionsDesc.value || !instructionsTo.value.length) {
-      Notify.create({
-        message: "Instruction description and 'To' fields are required.",
-        color: "red",
-      });
-      return;
-    }
-
-    const newInstruction = {
-      description: instructionsDesc.value,
-      type: instructionsType.value,
-      to: [...instructionsTo.value],
-    };
-
-    await transactionStore.addInstruction(
-      newInstruction,
-      order.value.id, // Pass orderId for onetime instructions
-      customer.value.id // Pass customerId for recurring instructions
-    );
-
-    // Reset form
-    instructionsDesc.value = "";
-    instructionsTo.value = [];
-    instructionsType.value = "onetime";
-
-    Notify.create({
-      message: "Instruction added successfully!",
-      color: "green",
-    });
-  } catch (error) {
-    Notify.create({
-      message: "Failed to add instruction. Please try again.",
-      color: "red",
-    });
-  }
 }
 
 // Reactive variables for adding instructions
@@ -1518,7 +1598,10 @@ async function addErrorReport() {
     };
 
     // Call the store action and await the result
-    const addedReport = await transactionStore.addReport(newReport);
+    const addedReport = await transactionStore.addReport(
+      newReport,
+      order.value.id
+    );
 
     // Add the new report to the local state
     reports.value.push(addedReport);
@@ -1529,6 +1612,7 @@ async function addErrorReport() {
     reportDesc.value = "";
     uploadedPhotoUrl.value = null;
 
+    closeAddReportDialog();
     // Notify success
     Notify.create({
       message: "Report added successfully!",
@@ -1664,40 +1748,7 @@ const formatDate = (dateString) => {
   });
 };
 
-onMounted(async () => {
-  try {
-    // Get order_no from route params
-    const orderNo = route.params.order_no;
 
-    // Fetch the order details
-    const orderDetails = await transactionStore.fetchOrderDetailsByOrderNo(
-      orderNo
-    );
-
-    // Populate collection and delivery data
-    collection.value = {
-      ...orderDetails.collection,
-      address: orderDetails.collection?.address || null, // Set address directly from database
-      collection_date: orderDetails.collection?.collection_date
-        ? new Date(orderDetails.collection.collection_date).toISOString().slice(0, 10) // Format date
-        : "",
-    };
-
-    delivery.value = {
-      ...orderDetails.delivery,
-      address: orderDetails.delivery?.address || null, // Set address directly from database
-      delivery_date: orderDetails.delivery?.delivery_date
-        ? new Date(orderDetails.delivery.delivery_date).toISOString().slice(0, 10)
-        : "",
-    };
-
-    // Set customer and transactions data
-    customer.value = orderDetails.customer || {};
-    transactions.value = orderDetails.transactions || [];
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
-});
 
 function getContactNumber(contactPersonId) {
   if (!contactOptions.value || contactOptions.value.length === 0) return "-"; // Ensure options are loaded
@@ -1712,27 +1763,33 @@ function getContactNumber(contactPersonId) {
 
 const formattedCollectionContactNos = computed({
   get() {
-    const contact1 = collection.value.contactPerson?.contact_no1 || "-";
-    const contact2 = collection.value.contactPerson?.contact_no2 || "-";
-    return `${contact1} / ${contact2}`;
+    const contact1 = collection.value.contact_persons?.contact_no1 || "-";
+    const contact2 = collection.value.contact_persons?.contact_no2;
+
+    // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
+    return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    collection.value.contactPerson.contact_no1 = contact1 || "";
-    collection.value.contactPerson.contact_no2 = contact2 || "";
+    collection.value.contact_persons.contact_no1 = contact1 || "";
+    
+    // Only set contact_no2 if it was provided
+    collection.value.contact_persons.contact_no2 = contact2 || null;
   },
 });
 
+
 const formattedDeliveryContactNos = computed({
   get() {
-    const contact1 = delivery.value.contactPerson?.contact_no1 || "-";
-    const contact2 = delivery.value.contactPerson?.contact_no2 || "-";
-    return `${contact1} / ${contact2}`;
+    const contact1 = delivery.value.contact_persons?.contact_no1 || "-";
+    const contact2 = delivery.value.contact_persons?.contact_no2;
+    // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
+    return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    delivery.value.contactPerson.contact_no1 = contact1 || "";
-    delivery.value.contactPerson.contact_no2 = contact2 || "";
+    delivery.value.contact_persons.contact_no1 = contact1 || "";
+    delivery.value.contact_persons.contact_no2 = contact2 || "";
   },
 });
 
@@ -1806,34 +1863,25 @@ const openCustomerTab = (customerId) => {
   window.open(url, "_blank"); // Open in a new tab
 };
 
-async function updateCollectionAndDelivery() {
+async function updateCollection() {
   try {
-    const orderNo = order.value.order_no;
-
     // Prepare payloads
     const collectionPayload = {
+    id: collection.value.id,
       contact_person_id: collection.value.contactPerson?.id || null,
-      address: collection.value.address || collection.address_id, // Retain existing address if not updated
+      address: collection.value.address?.label || collection.address_id, // Retain existing address if not updated
       collection_date: collection.value.collection_date || null,
-    };
-
-    const deliveryPayload = {
-      contact_person_id: delivery.value.contactPerson?.id || null,
-      address: delivery.value.address || delivery.address_id, // Retain existing address if not updated
-      delivery_date: delivery.value.delivery_date || null,
+      collection_time: collection.value.collection_time?.value || null,
+      driver_id: collection.value.driver?.id || null,
+      remarks: collection.value.remarks || null
     };
 
     // Update the collection, delivery, and order "ready by" details in the store
-    await transactionStore.updateCollectionAndDelivery(
-      orderNo,
-      collectionPayload,
-      deliveryPayload,
-    );
+    await transactionStore.updateCollection(collectionPayload);
 
     // Notify success
     Notify.create({
-      message:
-        "Collection and Delivery details updated successfully.",
+      message: "Collection details updated successfully.",
       color: "green",
       icon: "check_circle",
       position: "top",
@@ -1841,7 +1889,43 @@ async function updateCollectionAndDelivery() {
   } catch (error) {
     // Notify error
     Notify.create({
-      message: "Failed to update Collection and Delivery details.",
+      message: "Failed to update Collection details.",
+      color: "red",
+      icon: "error",
+      position: "top",
+    });
+
+    console.error("Error updating details:", error);
+  }
+}
+
+async function updateDelivery() {
+  try {
+
+    const deliveryPayload = {
+    id: delivery.value.id,
+      contact_person_id: delivery.value.contactPerson?.id || null,
+      address: delivery.value.address?.label || delivery.address_id, // Retain existing address if not updated
+      delivery_date: delivery.value.delivery_date || null,
+      delivery_time: delivery.value.delivery_time?.value || null,
+      driver_id: delivery.value.driver?.id || null,
+      remarks: delivery.value.remarks || null
+    };
+
+    // Update the collection, delivery, and order "ready by" details in the store
+    await transactionStore.updateDelivery(deliveryPayload);
+
+    // Notify success
+    Notify.create({
+      message: "Delivery details updated successfully.",
+      color: "green",
+      icon: "check_circle",
+      position: "top",
+    });
+  } catch (error) {
+    // Notify error
+    Notify.create({
+      message: "Failed to update Delivery details.",
       color: "red",
       icon: "error",
       position: "top",
@@ -1855,10 +1939,10 @@ function updateOtherInformation() {
   try {
     // Prepare payload
     const payload = {
-      job_type: order.value.job_type,
-      job_subtype: order.value.job_subtype,
+      job_type: logistics.value.job_type,
+      urgency: logistics.value.urgency,
       goods_status: order.value.goods_status,
-      logistics_status: order.value.logistics_status,
+      logistics_status: logistics.value.logistics_status,
       payment_status: order.value.payment_status,
       payment_type: customer.value.payment_type,
       no_packets_hangers: order.value.no_packets_hangers,
@@ -2254,12 +2338,15 @@ const addTransactionItem = async () => {
   let baseName = searchModeActive.value
     ? selectedSearchItemName.value
     : isNewItemSelected.value
-      ? newItemNameInput.value
-      : selectedItemName.value;
+    ? newItemNameInput.value
+    : selectedItemName.value;
 
   if (!baseName) {
     console.error("❌ No item selected!");
-    Notify.create({ message: "Please select an item before adding.", color: "red" });
+    Notify.create({
+      message: "Please select an item before adding.",
+      color: "red",
+    });
     return;
   }
 
@@ -2301,19 +2388,26 @@ const addTransactionItem = async () => {
   console.log("📤 Sending Transaction:", newTransaction);
 
   try {
-    const addedTransaction = await transactionStore.addTransaction(newTransaction);
+    const addedTransaction = await transactionStore.addTransaction(
+      newTransaction
+    );
     console.log("✅ Transaction added:", addedTransaction);
 
     transactions.value.push(addedTransaction);
-    Notify.create({ message: "Transaction added successfully!", color: "green" });
+    Notify.create({
+      message: "Transaction added successfully!",
+      color: "green",
+    });
 
     closeAddTransactionDialog();
   } catch (error) {
     console.error("❌ Error adding transaction:", error);
-    Notify.create({ message: "Failed to add transaction. Please try again.", color: "red" });
+    Notify.create({
+      message: "Failed to add transaction. Please try again.",
+      color: "red",
+    });
   }
 };
-
 
 watch(searchModeActive, resetInputs);
 watch(
@@ -2521,7 +2615,67 @@ const addAddress = async () => {
 // End of add address
 
 const computedPcs = (item) => {
-  return (item.pieces || 1) * (item.quantity || 1);
+  return (item.pieces || 1) * (item.quantity);
 };
 
+const isAddInstructionDialogOpen = ref(false);
+
+const openAddInstructionDialog = () => {
+  isAddInstructionDialogOpen.value = true;
+};
+
+const closeAddInstructionDialog = () => {
+  isAddInstructionDialogOpen.value = false;
+};
+
+const addInstruction = async () => {
+  try {
+    if (!instructionsDesc.value || !instructionsTo.value.length) {
+      Notify.create({
+        message: "Instruction description and 'To' fields are required.",
+        color: "red",
+      });
+      return;
+    }
+
+    const newInstruction = {
+      description: instructionsDesc.value,
+      type: instructionsType.value,
+      to: [...instructionsTo.value],
+    };
+
+    await transactionStore.addInstruction(
+      newInstruction,
+      order.value.id,
+      customer.value.id
+    );
+
+    instructionsDesc.value = "";
+    instructionsTo.value = [];
+    instructionsType.value = "onetime";
+
+    Notify.create({
+      message: "Instruction added successfully!",
+      color: "green",
+    });
+
+    // Close the dialog
+    closeAddInstructionDialog();
+  } catch (error) {
+    Notify.create({
+      message: "Failed to add instruction. Please try again.",
+      color: "red",
+    });
+  }
+};
+
+const isAddReportDialogOpen = ref(false);
+
+const openAddReportDialog = () => {
+  isAddReportDialogOpen.value = true;
+};
+
+const closeAddReportDialog = () => {
+  isAddReportDialogOpen.value = false;
+};
 </script>

@@ -45,7 +45,12 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           />
         </div>
         <div class="col-2" align="right">
-          <q-btn outline color="primary" @click="toggleWeeklySummary" class="text-weight-bolder text-subtitle1">
+          <q-btn
+            outline
+            color="primary"
+            @click="toggleWeeklySummary"
+            class="text-weight-bolder text-subtitle1"
+          >
             {{ showWeeklySummary ? "Hide Summary" : "Show Summary" }}
           </q-btn>
         </div>
@@ -200,7 +205,13 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
 
     <div>
       <!-- Tab Panels -->
-      <q-tabs v-model="activeDriverTab" align="justify" class="tab-header" dense indicator-color="secondary">
+      <q-tabs
+        v-model="activeDriverTab"
+        align="justify"
+        class="tab-header"
+        dense
+        indicator-color="secondary"
+      >
         <!-- Dynamic Driver Tabs -->
         <q-tab
           v-for="driver in driverTabs"
@@ -334,13 +345,22 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                 class="col mark-bg-pink bordered text-uppercase text-weight-bold"
                 v-if="transaction.type === 'collection'"
               >
-                <div class="text-uppercase">{{ transaction.logistics_status }}</div>
+                <div class="text-weight-bold">
+                  <a
+                    @click.prevent="
+                    openUpdateLogisticsDialog(transaction.logistics_id)
+                    "
+                    class="text-weight-bold"
+                  >
+                    {{ transaction.logistics_status }}
+                  </a>
+                </div>
                 <div v-if="transaction.order_no" class="q-mt-sm text-">
                   <q-btn
                     outline
                     color="blue-8"
                     dense
-                    @click="openOrderDialog(transaction)"
+                    @click="openOrderTab(transaction)"
                     class="text-weight-bold bg-blue-1"
                   >
                     {{ transaction.order_no }}
@@ -361,13 +381,20 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                 class="col mark-bg-blue bordered text-uppercase text-weight-bold"
                 v-if="transaction.type === 'delivery'"
               >
-                <div class="text-uppercase">{{ transaction.logistics_status }}</div>
+                <a
+                  @click.prevent="
+                    openUpdateLogisticsDialog(transaction.logistics_id)
+                  "
+                  class="text-weight-bold"
+                >
+                  {{ transaction.logistics_status }}
+                </a>
                 <div v-if="transaction.order_no" class="q-mt-sm text-">
                   <q-btn
                     outline
                     color="blue-8"
                     dense
-                    @click="openOrderDialog(transaction)"
+                    @click="openOrderTab(transaction)"
                     class="text-weight-bold bg-blue-1"
                   >
                     {{ transaction.order_no }}
@@ -437,6 +464,36 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="showUpdateLogisticsDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+      <q-card style="min-width: 90vw">
+        <q-card-section class="dialog-header">
+          <div class="text-body1 text-uppercase text-weight-bold">Update Collection and Delivery</div>
+        </q-card-section>
+        <q-card-section class="q-pa-none">
+          <div class="full-container">
+            <div class="row q-col-gutter-md q-pa-lg">
+              <div class="col-6">
+                  <UpdateCollectionDialog/>
+              </div>
+              <div class="col-6">
+                  <UpdateDeliveryDialog/>
+              </div>
+            </div>
+            <q-separator class="q-mt-md"/>
+            <div>            
+              <CollectionHistory/>
+            </div>
+            <div>
+              <DeliveryHistory/>
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat color="negative" @click="showUpdateLogisticsDialog = false" label="Close" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+   
   </div>
 </template>
 
@@ -447,6 +504,10 @@ import { useQuasar } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 import CreateCollectionTab from "@/components/CustomerTab.vue";
 import CreateOrderFromCollection from "@/views/CreateOrderFromCollection.vue";
+import UpdateCollectionDialog from "@/components/dialogs/UpdateCollectionDialog.vue";
+import UpdateDeliveryDialog from "@/components/dialogs/UpdateDeliveryDialog.vue";
+import CollectionHistory from "@/components/CollectionHistory.vue";
+import DeliveryHistory from "@/components/DeliveryHistory.vue";
 
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -465,7 +526,8 @@ const selectedWeek = ref(new Date().toISOString().split("T")[0]); // Default: to
 const showCreateCollectionDialog = ref(false);
 
 const showCreateOrderDialog = ref(false);
-const selectedTransaction = ref(null);
+
+const showUpdateLogisticsDialog = ref(false);
 
 const showWeeklySummary = ref(false);
 
@@ -537,7 +599,6 @@ onMounted(async () => {
   }
 });
 
-
 const getTransactionsByDriver = (driverName) => {
   if (driverName === "All") {
     return filteredTransactions.value;
@@ -567,9 +628,9 @@ const filterTransactions = () => {
         transaction.collection_date || transaction.delivery_date
       );
 
-      if (transaction.type === "delivery" && !transaction.delivery_date) {
-        return false;
-      }
+      // if (transaction.type === "delivery" && !transaction.delivery_date) {
+      //   return false;
+      // }
 
       const matchesSearch =
         customerName.includes(query) ||
@@ -636,7 +697,7 @@ async function createCollection() {
   }
 }
 
-const openOrderDialog = async (collection) => {
+const openOrderTab = async (collection) => {
   try {
     // Pre-fill the transaction store with customer details
     // transactionStore.setSelectedCustomer({
@@ -663,7 +724,7 @@ const createOrder = (collection) => {
 
   transactionStore.resetTransactionItems();
   // Set the transaction store properties
-  transactionStore.selectedCustomer = collection.customer;
+  transactionStore.selectedCustomer = transaction.customer;
   transactionStore.selectedDeliveryContact = collection.delivery?.contact_person || null;
   transactionStore.selectedCollectionContact = collection.contact_person || null;
   transactionStore.selectedDeliveryAddress = collection.delivery?.address || null;
@@ -674,7 +735,7 @@ const createOrder = (collection) => {
   transactionStore.deliveryDate = collection.delivery?.delivery_date || null;
   transactionStore.collectionTime = collection.collection_time || null;
   transactionStore.deliveryTime = collection.delivery?.delivery_time || null;
-transactionStore.logisticsId = collection.logistics_id | null;
+  transactionStore.logisticsId = collection.logistics_id | null;
 
   showCreateOrderDialog.value = true; // Open the order dialog
 };
@@ -886,5 +947,73 @@ const getTransactionClass = (count) => {
   else if (count >= 10) return "mark-yellow";
   else if (count >= 1) return "mark-green";
   else return "";
+};
+
+
+const openUpdateLogisticsDialog = async (logisticsId) => {
+  try {
+    await updateCollection(logisticsId);
+    await updateDelivery(logisticsId);
+    showUpdateLogisticsDialog.value = true;
+  } catch (error) {
+    console.error("Error opening logistics update dialog:", error);
+    $q.notify({ type: "negative", message: "Failed to load logistics details" });
+  }
+};
+
+const updateCollection = async (logisticsId) => {
+  try {
+    const collectionData = await transactionStore.fetchCollectionByLogisticsId(logisticsId);
+    if (!collectionData || collectionData.length === 0) {
+      throw new Error("No collection data found!");
+    }
+    const collection = collectionData[0];
+    let contactPerson = collection?.contact_persons;
+    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
+      contactPerson = contactPerson[0];
+    }
+    transactionStore.selectedCollectionId = collection.id || null;
+    transactionStore.selectedCollectionContact = contactPerson || null;
+    transactionStore.selectedCollectionAddress = collection.address || null;
+    transactionStore.selectedCollectionDriver = collection.drivers || null;
+    transactionStore.collectionDate = collection.collection_date || null;
+    transactionStore.collectionTime = collection.collection_time || null;
+    transactionStore.collectionRemarks = collection.remarks || null;
+    transactionStore.collectionPackType = collection.pack_type || null;
+    transactionStore.jobType = collection.job_type || null;
+    transactionStore.readyBy = collection.ready_by || null;
+    transactionStore.logisticsId = collection.logistics_id || null;
+  } catch (error) {
+    console.error("Error fetching collection details:", error);
+    $q.notify({ type: "negative", message: "Failed to load collection details" });
+  }
+};
+
+const updateDelivery = async (logisticsId) => {
+  try {
+    const deliveryData = await transactionStore.fetchDeliveryByLogisticsId(logisticsId);
+    if (!deliveryData || deliveryData.length === 0) {
+      throw new Error("No delivery data found!");
+    }
+    const delivery = deliveryData[0];
+    let contactPerson = delivery?.contact_persons;
+    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
+      contactPerson = contactPerson[0];
+    }
+    transactionStore.selectedDeliveryId = delivery.id || null;
+    transactionStore.selectedDeliveryContact = contactPerson || null;
+    transactionStore.selectedDeliveryAddress = delivery.address || null;
+    transactionStore.selectedDeliveryDriver = delivery.drivers || null;
+    transactionStore.deliveryDate = delivery.delivery_date || null;
+    transactionStore.deliveryTime = delivery.delivery_time || null;
+    transactionStore.deliveryRemarks = delivery.remarks || null;
+    transactionStore.deliveryPackType = delivery.pack_type || null;
+    transactionStore.jobType = delivery.job_type || null;
+    transactionStore.readyBy = delivery.ready_by || null;
+    transactionStore.logisticsId = delivery.logistics_id || null;
+  } catch (error) {
+    console.error("Error fetching delivery details:", error);
+    $q.notify({ type: "negative", message: "Failed to load delivery details" });
+  }
 };
 </script>

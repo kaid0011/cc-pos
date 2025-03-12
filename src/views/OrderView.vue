@@ -32,7 +32,7 @@
         </div>
         <q-separator class="q-my-xs" />
         <q-card-section>
-          <div class="text-p">
+          <div class="">
             <div class="text-slip-row">
               Customer Name:
               <span
@@ -74,27 +74,6 @@
             </div>
           </div>
         </q-card-section>
-
-        <!-- Add Contact Person Button -->
-        <q-btn
-          label="Add Contact Person"
-          color="primary"
-          icon="person_add"
-          size="sm"
-          flat
-          class="q-ml-sm"
-          @click="openAddContactPersonDialog"
-        />
-        <!-- Add Address Button -->
-        <q-btn
-          label="Add Address"
-          color="primary"
-          icon="add_home"
-          size="sm"
-          flat
-          class="q-ml-sm"
-          @click="openAddAddressDialog"
-        />
       </q-card>
       <!-- Collection and Delivery Details -->
       <div class="row text-p q-col-gutter-md">
@@ -103,101 +82,58 @@
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Collection Details
             </div>
+            <div class="text-weight-bold">
+              <a
+                @click.prevent="
+                openCollectionHistoryDialog(collection.logistics_id)
+                "
+              >
+                (View Collection History)
+              </a>
+            </div>
             <q-separator class="q-my-xs" />
-            <div class="text-slip-row">
-              Contact Person:
-              <q-select
-                v-model="collection.contact_persons"
-                :options="contactOptions"
-                option-label="name"
-                option-value="id"
-                outlined
-                dense
-                clearable
-                class="q-mb-xs bg-white"
-                label="Select Collection Contact Person"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Contact Person:</div>
+              <div class="col-6">
+                {{ collection.contact_persons?.name }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Contact Nos:
-              <q-input
-                v-model="formattedCollectionContactNos"
-                disable
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Contact Nos:</div>
+              <div class="col-6">
+                {{ formattedCollectionContactNos }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Address:
-              <q-select
-                v-model="collection.address"
-                :options="transactionStore.addressOptions"
-                option-label="label"
-                option-value="id"
-                outlined
-                dense
-                clearable
-                class="q-mb-xs bg-white"
-                label="Select Collection Address"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Address:</div>
+              <div class="col-6">
+                {{ collection.address }}
+              </div>
             </div>
 
-            <div class="text-slip-row">
-              Collection Date:
-              <q-input
-                v-model="formattedCollectionDate"
-                outlined
-                dense
-                readonly
-                class="q-mb-xs bg-white"
-              >
-                <template v-slot:append>
-                  <q-icon name="event" class="cursor-pointer">
-                    <q-popup-proxy>
-                      <q-date
-                        v-model="collection.collection_date"
-                        mask="YYYY-MM-DD"
-                      />
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Collection Date:</div>
+              <div class="col-6">
+                {{ formattedCollectionDate }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Collection Time:
-              <q-select
-                v-model="collection.collection_time"
-                :options="timeOptions"
-                option-label="label"
-                option-value="id"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-                label="Select Collection Time"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Collection Time:</div>
+              <div class="col-6">
+                {{ collection.collection_time }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Collection Driver:
-              <q-select
-                v-model="collection.drivers"
-                :options="driverOptions"
-                option-label="name"
-                option-value="id"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-                label="Select Collection Driver"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Collection Driver:</div>
+              <div class="col-6">
+                {{ collection.drivers?.name }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Remarks:
-              <q-input
-                v-model="collection.remarks"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Remarks:</div>
+              <div class="col-6">
+                {{ collection.remarks }}
+              </div>
             </div>
 
             <q-card-actions align="right">
@@ -207,7 +143,7 @@
                 color="primary"
                 icon="update"
                 class="full-width"
-                @click="updateCollection"
+                @click="updateCollection(logistics.logistics_id)"
               />
             </q-card-actions>
           </q-card>
@@ -217,100 +153,59 @@
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Delivery Details
             </div>
-            <q-separator class="q-my-xs" />
-            <div class="text-slip-row">
-              Contact Person:
-              <q-select
-                v-model="delivery.contact_persons"
-                :options="contactOptions"
-                option-label="name"
-                option-value="id"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-                label="Select Delivery Contact Person"
-              />
-            </div>
-            <div class="text-slip-row">
-              Contact Nos:
-              <q-input
-                v-model="formattedDeliveryContactNos"
-                disable
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-              />
-            </div>
-            <div class="text-slip-row">
-              Address:
-              <q-select
-                v-model="delivery.address"
-                :options="transactionStore.addressOptions"
-                option-label="label"
-                option-value="id"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-                label="Select Delivery Address"
-              />
-            </div>
-
-            <div class="text-slip-row">
-              Delivery Date:
-              <q-input
-                v-model="formattedDeliveryDate"
-                outlined
-                dense
-                readonly
-                class="q-mb-xs bg-white"
+            <div class="text-weight-bold">
+              <a
+                @click.prevent="
+                openDeliveryHistoryDialog(delivery.logistics_id)
+                "
               >
-                <template v-slot:append>
-                  <q-icon name="event" class="cursor-pointer">
-                    <q-popup-proxy>
-                      <q-date
-                        v-model="delivery.delivery_date"
-                        mask="YYYY-MM-DD"
-                      />
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </q-input>
+                (View Delivery History)
+              </a>
+            </div>
+            <q-separator class="q-my-xs" />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Contact Person:</div>
+              <div class="col-6">
+                {{ delivery.contact_persons?.name }}
+              </div>
+            </div>
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Contact Nos:</div>
+              <div class="col-6">
+                {{ formattedDeliveryContactNos }}
+              </div>
+            </div>
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Address:</div>
+              <div class="col-6">
+                {{ delivery.address }}
+              </div>
             </div>
 
-            <div class="text-slip-row">
-              Delivery Time:
-              <q-select
-                v-model="delivery.delivery_time"
-                :options="timeOptions"
-                option-label="label"
-                option-value="id"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-                label="Select Delivery Time"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Delivery Date:</div>
+              <div class="col-6">
+                {{ formattedDeliveryDate }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Delivery Driver:
-              <q-select
-                v-model="delivery.drivers"
-                :options="driverOptions"
-                option-label="name"
-                option-value="id"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-                label="Select Delivery Driver"
-              />
+
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Delivery Time:</div>
+              <div class="col-6">
+                {{ delivery.delivery_time }}
+              </div>
             </div>
-            <div class="text-slip-row">
-              Remarks:
-              <q-input
-                v-model="delivery.remarks"
-                outlined
-                dense
-                class="q-mb-xs bg-white"
-              />
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Delivery Driver:</div>
+              <div class="col-6">
+                {{ delivery.drivers?.name }}
+              </div>
+            </div>
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">Remarks:</div>
+              <div class="col-6">
+                {{ delivery.remarks }}
+              </div>
             </div>
             <q-card-actions align="right">
               <!-- Update Button -->
@@ -319,7 +214,7 @@
                 color="primary"
                 icon="update"
                 class="full-width"
-                @click="updateDelivery"
+                @click="updateDelivery(logistics.logistics_id)"
               />
             </q-card-actions>
           </q-card>
@@ -571,7 +466,7 @@
             label="Update Transactions"
             color="primary"
             icon="update"
-            @click="updateTransactions"
+            @click="updateTransaction(order.id)"
           />
         </q-card-actions>
       </q-card>
@@ -1381,6 +1276,66 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+  <q-dialog v-model="showUpdateCollectionDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+    <q-card style="min-width: 50em">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">Update Collection</div>
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <UpdateCollectionDialog/>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat color="negative" @click="showUpdateCollectionDialog = false" label="Close" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <q-dialog v-model="showUpdateDeliveryDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+    <q-card style="min-width: 50em">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">Update Delivery</div>
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <UpdateDeliveryDialog/>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat color="negative" @click="showUpdateDeliveryDialog = false" label="Close" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <q-dialog v-model="showCollectionHistoryDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+    <q-card style="min-width: 90vw">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">Collection History</div>
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <div class="full-container">
+            <CollectionHistory/>
+        </div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat color="negative" @click="showCollectionHistoryDialog = false" label="Close" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <q-dialog v-model="showDeliveryHistoryDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+    <q-card style="min-width: 90vw">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">Delivery History</div>
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <div class="full-container">
+            <DeliveryHistory/>
+        </div>
+      </q-card-section>
+      <q-card-actions align="right">
+        <q-btn flat color="negative" @click="showDeliveryHistoryDialog = false" label="Close" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  
 </template>
 
 <script setup>
@@ -1389,6 +1344,10 @@ import { fetchAllErrorItems } from "@/../supabase/api/error_list.js";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { useRoute } from "vue-router";
 import { Notify } from "quasar";
+import UpdateCollectionDialog from '@/components/dialogs/UpdateCollectionDialog.vue';
+import UpdateDeliveryDialog from '@/components/dialogs/UpdateDeliveryDialog.vue';
+import CollectionHistory from '@/components/CollectionHistory.vue';
+import DeliveryHistory from '@/components/DeliveryHistory.vue';
 
 const transactionStore = useTransactionStore();
 const route = useRoute();
@@ -1405,6 +1364,9 @@ const reports = ref([]);
 
 const driverOptions = ref([]); // Initialize as a reactive array
 const timeOptions = ref([]); // Initialize as a reactive array
+
+const showCollectionHistoryDialog = ref(false);
+const showDeliveryHistoryDialog = ref(false);
 
 // Load driverOptions when component is mounted
 onMounted(async () => {
@@ -1424,11 +1386,12 @@ onMounted(async () => {
   }
 });
 
-
 onMounted(async () => {
   try {
     const orderNo = route.params.order_no;
-    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
+      orderNo
+    );
     if (!orderDetails) {
       console.warn("No order details found for:", orderNo);
       return;
@@ -1436,11 +1399,11 @@ onMounted(async () => {
     logistics.value = orderDetails || {};
     order.value = orderDetails.order || {};
     customer.value = orderDetails.order.customer || {};
-    collection.value = orderDetails.collection?.[0] || {}; 
-    delivery.value = orderDetails.delivery?.[0] || {}; 
+    collection.value = orderDetails.collection?.[0] || {};
+    delivery.value = orderDetails.delivery?.[0] || {};
     transactions.value = orderDetails.order.transactions || [];
     reports.value = orderDetails.order.error_reports || [];
-    
+
     // Combine onetime and recurring instructions into a single array
     instructions.value = [
       ...(orderDetails.order.instructions_onetime || []).map((instruction) => ({
@@ -1453,18 +1416,20 @@ onMounted(async () => {
           ...(instruction.picking_sending ? ["pickingsending"] : []),
         ],
       })),
-      ...(orderDetails.order.instructions_recurring || []).map((instruction) => ({
-        ...instruction,
-        type: "recurring",
-        to: [
-          ...(instruction.admin ? ["admin"] : []),
-          ...(instruction.cleaning ? ["cleaning"] : []),
-          ...(instruction.packing ? ["packing"] : []),
-          ...(instruction.picking_sending ? ["pickingsending"] : []),
-        ],
-      })),
+      ...(orderDetails.order.instructions_recurring || []).map(
+        (instruction) => ({
+          ...instruction,
+          type: "recurring",
+          to: [
+            ...(instruction.admin ? ["admin"] : []),
+            ...(instruction.cleaning ? ["cleaning"] : []),
+            ...(instruction.packing ? ["packing"] : []),
+            ...(instruction.picking_sending ? ["pickingsending"] : []),
+          ],
+        })
+      ),
     ];
-    
+
     console.log("Loaded order data:", order.value);
   } catch (error) {
     console.error("Error loading order details:", error);
@@ -1748,8 +1713,6 @@ const formatDate = (dateString) => {
   });
 };
 
-
-
 function getContactNumber(contactPersonId) {
   if (!contactOptions.value || contactOptions.value.length === 0) return "-"; // Ensure options are loaded
   const contact = contactOptions.value.find(
@@ -1772,12 +1735,11 @@ const formattedCollectionContactNos = computed({
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
     collection.value.contact_persons.contact_no1 = contact1 || "";
-    
+
     // Only set contact_no2 if it was provided
     collection.value.contact_persons.contact_no2 = contact2 || null;
   },
 });
-
 
 const formattedDeliveryContactNos = computed({
   get() {
@@ -1863,87 +1825,14 @@ const openCustomerTab = (customerId) => {
   window.open(url, "_blank"); // Open in a new tab
 };
 
-async function updateCollection() {
-  try {
-    const orderNo = order.value.order_no;
-
-    // Prepare payloads
-    const collectionPayload = {
-      contact_person_id: collection.value.contactPerson?.id || null,
-      address: collection.value.address?.label || collection.address_id, // Retain existing address if not updated
-      collection_date: collection.value.collection_date || null,
-      collection_time: collection.value.collection_time?.value || null,
-      driver_id: collection.value.driver?.id || null,
-      remarks: collection.value.remarks || null
-    };
-
-    // Update the collection, delivery, and order "ready by" details in the store
-    await transactionStore.updateCollection(orderNo, collectionPayload);
-
-    // Notify success
-    Notify.create({
-      message: "Collection details updated successfully.",
-      color: "green",
-      icon: "check_circle",
-      position: "top",
-    });
-  } catch (error) {
-    // Notify error
-    Notify.create({
-      message: "Failed to update Collection details.",
-      color: "red",
-      icon: "error",
-      position: "top",
-    });
-
-    console.error("Error updating details:", error);
-  }
-}
-
-async function updateDelivery() {
-  try {
-    const orderNo = order.value.order_no;
-
-    const deliveryPayload = {
-      contact_person_id: delivery.value.contactPerson?.id || null,
-      address: delivery.value.address?.label || delivery.address_id, // Retain existing address if not updated
-      delivery_date: delivery.value.delivery_date || null,
-      delivery_time: delivery.value.delivery_time?.value || null,
-      driver_id: delivery.value.driver?.id || null,
-      remarks: delivery.value.remarks || null
-    };
-
-    // Update the collection, delivery, and order "ready by" details in the store
-    await transactionStore.updateDelivery(orderNo, deliveryPayload);
-
-    // Notify success
-    Notify.create({
-      message: "Delivery details updated successfully.",
-      color: "green",
-      icon: "check_circle",
-      position: "top",
-    });
-  } catch (error) {
-    // Notify error
-    Notify.create({
-      message: "Failed to update Delivery details.",
-      color: "red",
-      icon: "error",
-      position: "top",
-    });
-
-    console.error("Error updating details:", error);
-  }
-}
-
 function updateOtherInformation() {
   try {
     // Prepare payload
     const payload = {
-      job_type: order.value.job_type,
-      job_subtype: order.value.job_subtype,
+      job_type: logistics.value.job_type,
+      urgency: logistics.value.urgency,
       goods_status: order.value.goods_status,
-      logistics_status: order.value.logistics_status,
+      logistics_status: logistics.value.logistics_status,
       payment_status: order.value.payment_status,
       payment_type: customer.value.payment_type,
       no_packets_hangers: order.value.no_packets_hangers,
@@ -2442,14 +2331,25 @@ watch(selectedSearchItemName, (newItemName) => {
 });
 
 // Method to update transactions
-async function updateTransactions() {
+async function updateTransaction(orderId) {
   try {
-    // Loop through each transaction and call the store action
-    for (const transaction of transactions.value) {
-      await transactionStore.updateTransaction(transaction);
-    }
+    // Prepare transaction items and ensure they are properly formatted
+    transactionStore.transactionItems = transactions.value.map(item => ({
+      name: item.item_name,
+      order_id: orderId,
+      price: item.price,
+      process: item.process,
+      pieces: item.pieces || 1, // Default to 1 if undefined
+      quantity: item.quantity,
+      subtotal: item.subtotal,
+      category: item.category,
+      tag_category: item.tag_category,
+      status: "active"
+    }));
 
-    // Notify the user about the success
+    // Call the transactionStore updateTransaction
+    await transactionStore.updateTransaction(orderId);
+
     Notify.create({
       message: "Transactions updated successfully!",
       color: "green",
@@ -2464,6 +2364,7 @@ async function updateTransactions() {
     });
   }
 }
+
 // Start of ass contact person
 const isAddContactPersonDialogOpen = ref(false);
 const newContactPerson = ref({
@@ -2616,7 +2517,7 @@ const addAddress = async () => {
 // End of add address
 
 const computedPcs = (item) => {
-  return (item.pieces || 1) * (item.quantity);
+  return (item.pieces || 1) * item.quantity;
 };
 
 const isAddInstructionDialogOpen = ref(false);
@@ -2678,5 +2579,84 @@ const openAddReportDialog = () => {
 
 const closeAddReportDialog = () => {
   isAddReportDialogOpen.value = false;
+};
+
+const showUpdateCollectionDialog = ref(false);
+const showUpdateDeliveryDialog = ref(false);
+
+const updateCollection = async (logisticsId) => {
+  try {
+    const collectionData = await transactionStore.fetchCollectionByLogisticsId(logisticsId);
+    if (!collectionData || collectionData.length === 0) {
+      throw new Error("No collection data found!");
+    }
+    const collection = collectionData[0];
+    let contactPerson = collection?.contact_persons;
+    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
+      contactPerson = contactPerson[0];
+    }
+    transactionStore.selectedCollectionId = collection.id || null;
+    transactionStore.selectedCollectionContact = contactPerson || null;
+    transactionStore.selectedCollectionAddress = collection.address || null;
+    transactionStore.selectedCollectionDriver = collection.drivers || null;
+    transactionStore.collectionDate = collection.collection_date || null;
+    transactionStore.collectionTime = collection.collection_time || null;
+    transactionStore.collectionRemarks = collection.remarks || null;
+    transactionStore.collectionPackType = collection.pack_type || null;
+    transactionStore.jobType = collection.job_type || null;
+    transactionStore.readyBy = collection.ready_by || null;
+    transactionStore.logisticsId = collection.logistics_id || null;
+    
+    showUpdateCollectionDialog.value = true;
+  } catch (error) {
+    console.error("Error fetching collection details:", error);
+  }
+};
+
+const updateDelivery = async (logisticsId) => {
+  try {
+    const deliveryData = await transactionStore.fetchDeliveryByLogisticsId(logisticsId);
+    if (!deliveryData || deliveryData.length === 0) {
+      throw new Error("No delivery data found!");
+    }
+    const delivery = deliveryData[0];
+    let contactPerson = delivery?.contact_persons;
+    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
+      contactPerson = contactPerson[0];
+    }
+    transactionStore.selectedDeliveryId = delivery.id || null;
+    transactionStore.selectedDeliveryContact = contactPerson || null;
+    transactionStore.selectedDeliveryAddress = delivery.address || null;
+    transactionStore.selectedDeliveryDriver = delivery.drivers || null;
+    transactionStore.deliveryDate = delivery.delivery_date || null;
+    transactionStore.deliveryTime = delivery.delivery_time || null;
+    transactionStore.deliveryRemarks = delivery.remarks || null;
+    transactionStore.deliveryPackType = delivery.pack_type || null;
+    transactionStore.jobType = delivery.job_type || null;
+    transactionStore.readyBy = delivery.ready_by || null;
+    transactionStore.logisticsId = delivery.logistics_id || null;
+
+    showUpdateDeliveryDialog.value = true;
+  } catch (error) {
+    console.error("Error fetching delivery details:", error);
+  }
+};
+
+const openCollectionHistoryDialog = async (logisticsId) => {
+  try {
+    transactionStore.logisticsId = logisticsId
+    showCollectionHistoryDialog.value = true;
+  } catch (error) {
+    console.error("Error opening collection history dialog:", error);
+  }
+};
+
+const openDeliveryHistoryDialog = async (logisticsId) => {
+  try {
+    transactionStore.logisticsId = logisticsId
+    showDeliveryHistoryDialog.value = true;
+  } catch (error) {
+    console.error("Error opening delivery history dialog:", error);
+  }
 };
 </script>

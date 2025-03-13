@@ -146,7 +146,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           <q-select
             v-model="transactionStore.selectedGenerateDriver"
             :options="transactionStore.driverOptions"
-            option-label="label"
+            option-label="name"
             option-value="id"
             label="Select Driver"
             outlined
@@ -724,7 +724,7 @@ const createOrder = (collection) => {
 
   transactionStore.resetTransactionItems();
   // Set the transaction store properties
-  transactionStore.selectedCustomer = transaction.customer;
+  transactionStore.selectedCustomer = collection.customer;
   transactionStore.selectedDeliveryContact = collection.delivery?.contact_person || null;
   transactionStore.selectedCollectionContact = collection.contact_person || null;
   transactionStore.selectedDeliveryAddress = collection.delivery?.address || null;

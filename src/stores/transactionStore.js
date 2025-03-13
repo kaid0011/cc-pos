@@ -2083,7 +2083,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         const { data, error } = await supabase
           .from("orders") // ✅ Directly fetch from orders
           .select(`
-            id, order_no, logistics_id, tag_timestamp, tag_changes, tag_status, goods_status, payment_status, customer_id,
+            id, order_no, logistics_id, tag_timestamp, tag_changes, tag_status, goods_status, payment_status, customer_id, order_date_time,
             customers (
               id, name, contact_no1, contact_no2, email, type, sub_type, payment_type,
               schedule_remarks, price_remarks, accounting_remarks, other_remarks
@@ -2126,6 +2126,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           order: {
             id: data.id,
             order_no: data.order_no,
+            order_date_time: data.order_date_time,
             tag_timestamp: data.tag_timestamp,
             tag_changes: data.tag_changes,
             tag_status: data.tag_status,

@@ -246,13 +246,13 @@ body {
   padding-bottom: 0.5em;
 }
 
-.col.bordered {
+.bordered {
   border-right: 1px solid #ddd;
   border-color: #c09f8b;
   padding: 8px;
 }
 
-.col.bordered:last-child {
+.bordered:last-child {
   border-right: none; /* Remove border for the last column */
 }
 
@@ -776,7 +776,7 @@ background-color: #e9e9e9;
   font-weight: 600
 }
 
-.transactions-history, .customers-management, .orders-history, .tags-management, .logistics-management, .invoices-page {
+.transactions-history, .customers-management, .orders-history, .tags-management, .logistics-management, .invoices-page, .items-management {
   padding: 2em !important;
 }
 

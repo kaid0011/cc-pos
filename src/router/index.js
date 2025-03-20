@@ -13,6 +13,7 @@ import TagView from "@/views/TagView.vue";
 import LogisticsPage from "@/views/LogisticsPage.vue";
 import LogisticsView from "@/views/LogisticsView.vue";
 import InvoicesPage from "@/views/InvoicesPage.vue";
+import ItemsPage from "@/views/ItemsPage.vue";
 
 // import CollectionsPage from "@/views/CollectionsPage.vue";
 // import DeliveriesPage from "@/views/DeliveriesPage.vue";
@@ -137,6 +138,14 @@ const routes = [
     path: "/invoices",
     name: "Invoices",
     component: InvoicesPage,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
+  {
+    path: "/items",
+    name: "Items",
+    component: ItemsPage,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },

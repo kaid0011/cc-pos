@@ -140,6 +140,19 @@
                   <q-item-section> Invoice Management </q-item-section>
                 </q-item>
 
+                                  <!-- Items Management -->
+                                  <q-item
+                                  clickable
+                                  @click="goToItemsPage"
+                                  :active="isItemsPageActive"
+                                  class="q-pa-md"
+                                >
+                                  <q-item-section avatar>
+                                    <q-icon name="receipt_long" />
+                                  </q-item-section>
+                                  <q-item-section> Items Management </q-item-section>
+                                </q-item>
+
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
             <q-item-section avatar>
@@ -192,6 +205,9 @@ const isLogisticsPageActive = computed(() => route.path === "/logistics");
 // Check if the current route is Invoices Page
 const isInvoicesPageActive = computed(() => route.path === "/invoices");
 
+// Check if the current route is Items Page
+const isItemsPageActive = computed(() => route.path === "/items");
+
 // Check if the current route is Collections
 // const isCollectionsActive = computed(() => route.path === "/collections");
 
@@ -209,6 +225,7 @@ const requiresAuth = computed(() => {
     "/tags",
     "/logistics",
     "/invoices",
+    "/items",
     // "/collections",
     // "/deliveries",
   ];
@@ -261,5 +278,9 @@ const goToLogisticsPage = () => {
 
 const goToInvoicesPage = () => {
   router.push("/invoices");
+};
+
+const goToItemsPage = () => {
+  router.push("/items");
 };
 </script>

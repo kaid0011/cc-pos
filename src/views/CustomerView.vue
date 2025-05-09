@@ -1,10 +1,10 @@
 <template>
   <div class="full-container contact-persons-management">
-
     <div class="preview row">
       <div class="col-6 preview-left-container">
         <div class="customer-details-container q-pb-md">
           <q-btn
+          disable
             dense
             flat
             label="Create Collection"
@@ -14,11 +14,14 @@
         </div>
         <q-card class="preview-card">
           <div class="row justify-between items-center">
-            <div class="text-h6 text-uppercase text-weight-bolder q-ml-lg q-mt-md">
+            <div
+              class="text-h6 text-uppercase text-weight-bolder q-ml-lg q-mt-md"
+            >
               Customer Details
               <q-separator />
             </div>
             <q-btn
+            unelevated
               dense
               label="Update Customer Details"
               color="primary"
@@ -56,11 +59,6 @@
                 {{ customerDetails.sub_type }}
               </div>
               <div>
-                <strong>Payment Type:</strong>
-                {{ customerDetails.payment_type }}
-              </div>
-
-              <div>
                 <strong>Recommended By:</strong>
                 {{ customerDetails.recommended_by }}
               </div>
@@ -72,23 +70,41 @@
             <q-separator class="q-my-md" />
             <div class="row">
               <div class="col all-border">
-                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Schedule Remarks:</div>
+                <div
+                  class="text-subtitle1 text-weight-bold text-uppercase text-center"
+                >
+                  Schedule Remarks:
+                </div>
                 <div class="q-pa-sm">
                   {{ customerDetails.schedule_remarks }}
                 </div>
               </div>
               <div class="col all-border">
-                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Price Remarks:</div>
+                <div
+                  class="text-subtitle1 text-weight-bold text-uppercase text-center"
+                >
+                  Price Remarks:
+                </div>
                 <div class="q-pa-sm">{{ customerDetails.price_remarks }}</div>
               </div>
             </div>
             <div class="row">
               <div class="col all-border">
-                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Accounting Remarks:</div>
-                <div class="q-pa-sm">{{ customerDetails.accounting_remarks }}</div>
+                <div
+                  class="text-subtitle1 text-weight-bold text-uppercase text-center"
+                >
+                  Accounting Remarks:
+                </div>
+                <div class="q-pa-sm">
+                  {{ customerDetails.accounting_remarks }}
+                </div>
               </div>
               <div class="col all-border">
-                <div class="text-subtitle1 text-weight-bold text-uppercase text-center">Other Remarks:</div>
+                <div
+                  class="text-subtitle1 text-weight-bold text-uppercase text-center"
+                >
+                  Other Remarks:
+                </div>
                 <div class="q-pa-sm">{{ customerDetails.other_remarks }}</div>
               </div>
             </div>
@@ -96,7 +112,6 @@
         </q-card>
         <div class="show-addresses q-pt-md">
           <q-btn
-            
             :icon="showAddresses ? 'arrow_drop_up' : 'arrow_drop_down'"
             label="Show Addresses"
             class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
@@ -144,6 +159,7 @@
                 <div class="col col-3 bordered actions">
                   <q-btn
                     dense
+                    unelevated
                     label="Update"
                     color="primary"
                     class="main-button q-ma-xs q-px-sm"
@@ -152,6 +168,7 @@
 
                   <q-btn
                     dense
+                    unelevated
                     label="Delete"
                     color="negative"
                     class="negative-button q-ma-xs q-px-sm"
@@ -241,6 +258,7 @@
                 <div class="col bordered actions">
                   <q-btn
                     dense
+                    unelevated
                     label="Update"
                     color="primary"
                     class="main-button q-ma-xs q-px-sm"
@@ -249,6 +267,7 @@
 
                   <q-btn
                     dense
+                    unelevated
                     label="Delete"
                     color="negative"
                     class="negative-button q-ma-xs q-px-sm"
@@ -261,15 +280,73 @@
         </div>
       </div>
       <div class="col-6 preview-right-container">
+        <div class="q-ma-md">
+          <div class="row q-col-gutter-x-md">
+            <div class="col-6">
+              <q-card class="preview-card full-height text-subtitle1">
+                <div class="text-weight-bolder text-uppercase text-h6">
+                  Customer Credits
+                </div>
+                <a
+                  class="text-subtitle1 cursor-pointer"
+                  @click="openCreditsHistoryDialog(customerCredits.id)"
+                >
+                  (View Credit History)</a
+                >
+
+                <q-card-section>
+                  <div>
+                    Online Package Credits: {{ customerCredits.online_package }}
+                  </div>
+                  <div>Other Credits: {{ customerCredits.other_credits }}</div>
+                  <q-separator />
+                  <div>Total Credits: {{ creditsTotal }}</div>
+                </q-card-section>
+                <div class="row">
+                  <q-btn
+                    dense
+                    unelevated
+                    label="Top Up Credits"
+                    color="primary"
+                    class="full-width"
+                    @click="openUpdateCreditsDialog(customerDetails)"
+                  />
+                </div>
+              </q-card>
+            </div>
+            <div class="col-6">
+              <q-card class="preview-card full-height text-subtitle1">
+                <div class="text-weight-bolder text-uppercase text-h6">
+                  Order Payments
+                </div>
+                <a class="text-subtitle1"> (View Order Payments)</a>
+                <q-card-section>
+                  <div>Unpaid Amount: $50.00</div>
+                  <div>Paid Amount: $75.00</div>
+                  <div>Total Amount: $125.00</div>
+                </q-card-section>
+              </q-card>
+            </div>
+          </div>
+        </div>
         <q-card class="preview-card q-ma-md text-subtitle1">
-          <div>Customer Description / Rating</div>
-        <div>Total / Average Usage</div>
-        <div>Credits</div>
-        <div>Outstanding Amount</div>
-        <div>Invoice History</div>
-        <div>Error Reports History (with view image)</div>
-        <div>Outstanding Complaints History (with view image)</div>
-        <div>Compensation History</div>
+          <div class="text-weight-bolder text-uppercase text-h6">
+            Other Information
+          </div>
+          <ul>
+            <li>
+              <a>Customer Description / Rating</a>
+            </li>
+            <li>
+              <a>Error Reports History (with view image)</a>
+            </li>
+            <li>
+              <a>Outstanding Complaints History (with view image)</a>
+            </li>
+            <li>
+              <a>Compensation History</a>
+            </li>
+          </ul>
         </q-card>
       </div>
     </div>
@@ -289,27 +366,29 @@
       transition-show="slide-down"
       transition-hide="slide-up"
     >
-      <q-card class="dialog" style="width: 600px">
+      <q-card class="input-dialog" style="min-width: 300em">
         <q-card-section class="dialog-header">
           <div class="text-body1 text-uppercase text-weight-bold">
             Create Collection
           </div>
+          <q-btn
+            icon="close"
+            flat
+            dense
+            round
+            class="absolute-top-right q-ma-sm"
+            @click="showCreateCollectionDialog = false"
+          />
         </q-card-section>
-        <q-card-section>
+        <q-card-section class="dialog-body">
           <!-- Inject the CreateCollectionTab Component Here -->
           <CreateCollectionTab />
         </q-card-section>
         <q-card-actions align="right">
           <q-btn
-            flat
-            class="negative-button"
-            @click="showCreateCollectionDialog = false"
-            label="Close"
-          />
-
-          <q-btn
-            flat
-            class=""
+            unelevated
+            class="full-width"
+            color="primary"
             @click="createCollection()"
             label="Create Collection"
           />
@@ -339,6 +418,153 @@
       :customerData="selectedCustomer"
       @customer-updated="handleCustomerUpdated"
     />
+
+    <q-dialog v-model="showUpdateCreditsDialog">
+      <q-card style="min-width: 1000px">
+        <q-card-section class="dialog-header">
+          <div class="text-body1 text-uppercase text-weight-bold">Update Credits</div>
+          <q-btn
+            icon="close"
+            flat
+            dense
+            round
+            class="absolute-top-right q-ma-sm"
+            @click="showUpdateCreditsDialog = false"
+          />
+        </q-card-section>
+
+        <q-card-section class="dialog-body text-subtitle1">
+          <div class="row text-center">
+            <div class="col all-border bg-yellow-2">
+              <div>Online Package Credits</div>
+              <div class="text-weight-bold text-uppercase text-h6">
+                {{ customerCredits.online_package }}
+              </div>
+            </div>
+            <div class="col all-border">
+              <div>Other Credits</div>
+              <div class="text-weight-bold text-uppercase text-h6">
+                {{ customerCredits.other_credits }}
+              </div>
+            </div>
+            <div class="col all-border bg-green-2">
+              <div>Total Credits</div>
+              <div class="text-weight-bold text-uppercase text-h6">
+                {{ creditsTotal }}
+              </div>
+            </div>
+          </div>
+
+          <q-separator class="q-my-sm" />
+
+          <div class="row q-col-gutter-x-md">
+            <div class="col-6">
+              <div class="dialog-label">Add credits to<span class="dialog-asterisk">*</span></div>
+              <q-select
+                v-model="selectedCreditType"
+                :options="creditTypes"
+                outlined
+                dense
+                class="dialog-inputs"
+                :rules="[(val) => !!val || 'Credit Type is required']"
+              />
+            </div>
+            <div class="col-6">
+              <div class="dialog-label">Credit Amount<span class="dialog-asterisk">*</span></div>
+              <q-input
+              v-model.number="creditAmount"
+              type="number"
+              outlined
+              dense
+              class="dialog-inputs"
+              :rules="[
+                (val) => !!val || 'Credit Amount is required',
+                (val) => val > 0 || 'Must be greater than 0',
+              ]"
+              />            
+            </div>
+          </div>
+          <div class="q-mb-sm">
+            <div class="dialog-label q-mb-xs">Remarks</div>
+            <q-input
+              v-model="creditRemarks"
+              type="textarea"
+              outlined
+              dense
+              class="dialog-inputs"
+            />
+          </div>
+
+          <q-btn
+          unelevated
+            color="primary"
+            label="Top Up"
+            class="full-width q-my-sm"
+            @click="topUpCredits"
+          />
+
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="showCreditsHistoryDialog" persistent>
+      <q-card style="min-width: 800px">
+        <q-card-section class="dialog-header">
+          <div class="text-body1 text-uppercase text-weight-bold">Credits History</div>
+          <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showCreditsHistoryDialog = false"
+        />
+        </q-card-section>
+
+        <q-card-section class="dialog-body">
+          <q-table
+            :rows="creditHistoryWithNames"
+            :columns="[
+              {
+                name: 'credit_type',
+                label: 'Type',
+                align: 'center',
+                field: 'credit_type',
+              },
+              {
+                name: 'amount',
+                label: 'Amount',
+                align: 'center',
+                field: 'amount',
+                format: val => parseFloat(val).toFixed(2),
+              },               
+              {
+                name: 'remarks',
+                label: 'Remarks',
+                align: 'center',
+                field: 'remarks',
+              },
+              {
+                name: 'created_at',
+                label: 'Date',
+                align: 'center',
+                field: 'created_at',
+                format: (val) => new Date(val).toLocaleString(),
+              },
+              {
+                name: 'created_by_name',
+                label: 'Created By',
+                align: 'center',
+                field: 'created_by_name',
+              },
+            ]"
+            row-key="id"
+            flat
+            bordered
+          />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -379,6 +605,7 @@ const deleteDialogTitle = ref("");
 const deleteDialogMessage = ref("");
 
 const customerDetails = ref({});
+const customerCredits = ref({});
 const addresses = ref([]);
 const contactPersons = ref([]);
 const selectedAddress = ref({});
@@ -386,7 +613,7 @@ const searchQuery = ref("");
 
 onMounted(async () => {
   await loadCustomerData();
-  await transactionStore.setSelectedCustomer(customerDetails);
+  await transactionStore.setSelectedCustomer(customerDetails.value);
 });
 
 // Helper function for formatting
@@ -402,12 +629,9 @@ const formatDate = (timestamp) => {
 
 const loadCustomerData = async () => {
   const customerId = route.params.id;
-  customerDetails.value = await transactionStore.fetchCustomerDetailsById(
-    customerId
-  );
-  addresses.value = await transactionStore.fetchAddressesForCustomer(
-    customerId
-  );
+  customerDetails.value = await transactionStore.fetchCustomerDetailsById(customerId);
+  customerCredits.value = await transactionStore.fetchCustomerCreditsById(customerId);
+  addresses.value = await transactionStore.fetchAddressesForCustomer(customerId);
   contactPersons.value = await transactionStore.fetchContactPersons(customerId);
 };
 
@@ -441,16 +665,24 @@ const deleteItem = async () => {
   try {
     if (deleteType.value === "contact") {
       await transactionStore.deleteContactPerson(deleteTarget.value.id);
-      await loadCustomerData(); // Refresh contact persons
+      await loadCustomerData();
     } else if (deleteType.value === "address") {
       await transactionStore.deleteCustomerAddress(deleteTarget.value.id);
-      await loadCustomerData(); // Refresh addresses
+      await loadCustomerData();
     }
 
-    console.log(`${deleteType.value} deleted successfully.`);
-    showDeleteDialog.value = false; // Close dialog after deletion
+    $q.notify({
+      type: "positive",
+      message: `${deleteType.value === "contact" ? "Contact person" : "Address"} deleted successfully.`,
+    });
+
+    showDeleteDialog.value = false;
   } catch (error) {
     console.error(`Error deleting ${deleteType.value}:`, error);
+    $q.notify({
+      type: "negative",
+      message: `Failed to delete ${deleteType.value}. Please try again.`,
+    });
   }
 };
 
@@ -525,7 +757,7 @@ const handleUpdated = async () => {
     showUpdateAddressDialog.value = false;
     showUpdateContactPersonDialog.value = false;
 
-    console.log("Item updated successfully.");
+    console.log("Customer updated successfully.");
   } catch (error) {
     console.error("Error updating item:", error);
   }
@@ -540,5 +772,102 @@ const handleCustomerUpdated = async () => {
   await loadCustomerData();
   showUpdateCustomerDialog.value = false;
   await transactionStore.loadCustomers();
+};
+
+
+const creditsTotal = computed(() => {
+  const credits = customerCredits.value || {};
+  return (credits.online_package || 0) + (credits.other_credits || 0);
+});
+
+const showUpdateCreditsDialog = ref(false);
+
+const openUpdateCreditsDialog = () => {
+  showUpdateCreditsDialog.value = true;
+};
+
+const selectedCreditType = ref(null);
+const creditAmount = ref(0);
+const creditRemarks = ref("");
+
+const creditTypes = [
+  "Online Package",
+  "Free Wash",
+  "Bank Transfer",
+  "Over Payment",
+  "Other Credits",
+];
+
+const topUpCredits = async () => {
+  if (!selectedCreditType.value || creditAmount.value <= 0) {
+    $q.notify({
+      type: "negative",
+      message: "Please select credit type and enter a valid amount.",
+    });
+    return;
+  }
+
+  try {
+    await transactionStore.topUpCredits({
+      customerId: customerDetails.value.id,
+      type: selectedCreditType.value,
+      amount: creditAmount.value,
+      remarks: creditRemarks.value,
+    });
+
+    await loadCustomerData();
+    showUpdateCreditsDialog.value = false;
+    selectedCreditType.value = null;
+    creditAmount.value = 0;
+    creditRemarks.value = "";
+
+    $q.notify({
+      type: "positive",
+      message: "Credits successfully topped up.",
+    });
+  } catch (error) {
+    console.error("Error topping up credits:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to top up credits. Try again.",
+    });
+  }
+};
+
+const creditHistory = ref([]);
+const showCreditsHistoryDialog = ref(false);
+const userNamesMap = ref({});
+
+const creditHistoryWithNames = computed(() => {
+  return creditHistory.value.map((entry) => ({
+    ...entry,
+    created_by_name: userNamesMap.value[entry.created_by] || entry.created_by,
+  }));
+});
+
+const openCreditsHistoryDialog = async (customerCreditsId) => {
+  try {
+    creditHistory.value =
+      await transactionStore.fetchCustomerCreditsHistoryById(customerCreditsId);
+    await fetchCreatorNames();
+    showCreditsHistoryDialog.value = true;
+  } catch (error) {
+    console.error("Failed to load credit history:", error);
+    $q.notify({ type: "negative", message: "Failed to load credit history." });
+  }
+};
+
+const fetchCreatorNames = async () => {
+  const ids = [...new Set(creditHistory.value.map((h) => h.created_by))];
+  const nameMap = {};
+
+  await Promise.all(
+    ids.map(async (id) => {
+      const name = await transactionStore.getProfileName(id);
+      nameMap[id] = name;
+    })
+  );
+
+  userNamesMap.value = nameMap;
 };
 </script>

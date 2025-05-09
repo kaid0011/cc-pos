@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { fetchAllItems } from "@/../supabase/api/item_list.js";
 import { getLastOrderIdForDate } from "@/../supabase/api/orders.js";
 import { fetchAllCustomers } from "@/../supabase/api/customers.js";
-import { fetchContactPersons } from "@/../supabase/api/contacts.js";
+// import { fetchContactPersons } from "@/../supabase/api/contacts.js";
 import { laThSolid } from "@quasar/extras/line-awesome";
 
 export const useTransactionStore = defineStore("transactionStore", {
@@ -45,7 +45,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     nextLogisticsNo: null,
     selectedGenerateDriver: null,
     jobType: null,
-    logisticsId: null
+    logisticsId: null,
   }),
   actions: {
     async loadItems() {
@@ -117,10 +117,8 @@ export const useTransactionStore = defineStore("transactionStore", {
               contact_no1: newCustomer.contact_no1 || null,
               contact_no2: newCustomer.contact_no2 || null,
               email: newCustomer.email || null,
-              // remarks: newCustomer.remarks || null,
               type: newCustomer.type || null,
               sub_type: newCustomer.sub_type || null,
-              payment_type: newCustomer.payment_type || null,
               recommended_by: newCustomer.recommended_by || null,
               schedule_remarks: newCustomer.schedule_remarks || null,
               price_remarks: newCustomer.price_remarks || null,
@@ -141,23 +139,28 @@ export const useTransactionStore = defineStore("transactionStore", {
           contact_no1: createdCustomer.contact_no1,
           contact_no2: createdCustomer.contact_no2,
           email: createdCustomer.email,
-          remarks: createdCustomer.remarks,
           customer_id: createdCustomer.id, // Link the contact person to the customer
+          remarks: 'Default contact person'
         };
 
         const { error: contactError } = await supabase
-          .from("contact_persons")
+          .from("customer_contact_persons")
           .insert([contactPerson]);
 
         if (contactError) throw contactError;
 
-        // Step 4: Update the store state
-        this.customers.push({
-          ...createdCustomer,
-          addresses: newCustomer.address
-            ? [{ address: newCustomer.address }]
-            : [],
-        });
+        // Step 3
+        const customerCredits = {
+          customer_id: createdCustomer.id, // Link the contact person to the customer
+          online_package: 0,
+          other_credits: 0
+        };
+
+        const { error: creditError } = await supabase
+          .from("customer_credits")
+          .insert([customerCredits]);
+
+        if (creditError) throw creditError;
 
         return createdCustomer; // Return the created customer
       } catch (error) {
@@ -176,7 +179,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         // Fetch customer-specific contact persons
         if (customerId) {
           const { data, error } = await supabase
-            .from("contact_persons")
+            .from("customer_contact_persons")
             .select("id, name, contact_no1, contact_no2, email")
             .eq("customer_id", customerId);
 
@@ -186,7 +189,7 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         // Fetch the default contact person (id=1)
         const { data: defaultData, error: defaultError } = await supabase
-          .from("contact_persons")
+          .from("customer_contact_persons")
           .select("id, name, contact_no1, contact_no2, email")
           .eq("id", 1)
           .single();
@@ -299,7 +302,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     async loadTimeOptions() {
       try {
         const { data, error } = await supabase
-          .from("time_options")
+          .from("options_time")
           .select("time");
 
         if (error) {
@@ -317,7 +320,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
     async loadJobOptions() {
       try {
-        const { data, error } = await supabase.from("job_types").select("type");
+        const { data, error } = await supabase.from("options_job_types").select("type");
 
         if (error) {
           console.error("Error fetching time options:", error);
@@ -456,7 +459,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     async updateContactPerson(contact) {
       try {
         const { error } = await supabase
-          .from("contact_persons")
+          .from("customer_contact_persons")
           .update({
             name: contact.name,
             contact_no1: contact.contact_no1,
@@ -875,7 +878,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     async fetchContactPersonById(contactPersonId) {
       try {
         const { data: contactPerson, error } = await supabase
-          .from("contact_persons")
+          .from("customer_contact_persons")
           .select("*")
           .eq("id", contactPersonId)
           .single();
@@ -919,13 +922,107 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
+    async fetchCustomerCreditsById(customerId) {
+      if (!customerId) {
+        console.error("Customer ID is missing.");
+        return null;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("customer_credits")
+          .select("*")
+          .eq("customer_id", customerId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching customer credits:", error);
+          return null;
+        }
+
+        return data;
+      } catch (err) {
+        console.error("Unexpected error fetching customer credits:", err);
+        return null;
+      }
+    },
+
+    async fetchCustomerCreditsHistoryById(customerCreditsId) {
+      if (!customerCreditsId) {
+        console.error("Customer ID is missing.");
+        return null;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("customer_credits_history")
+          .select("*")
+          .eq("customer_credit_id", customerCreditsId);
+
+        if (error) {
+          console.error("Error fetching customer credits history:", error);
+          return null;
+        }
+
+        return data;
+      } catch (err) {
+        console.error(
+          "Unexpected error fetching customer credits history:",
+          err
+        );
+        return null;
+      }
+    },
+
+    async topUpCredits({ customerId, type, amount, remarks }) {
+      const typeToColumn = {
+        "Online Package": "online_package",
+        "Free Wash": "other_credits",
+        "Bank Transfer": "other_credits",
+        "Over Payment": "other_credits",
+        "Other Credits": "other_credits",
+      };
+
+      const column = typeToColumn[type];
+      if (!column) throw new Error("Invalid credit type");
+
+      const { data: creditData, error: fetchError } = await supabase
+        .from("customer_credits")
+        .select("*")
+        .eq("customer_id", customerId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentCredit = creditData[column] || 0;
+      const newCredit = currentCredit + amount;
+
+      const { error: updateError } = await supabase
+        .from("customer_credits")
+        .update({ [column]: newCredit })
+        .eq("id", creditData.id);
+
+      if (updateError) throw updateError;
+
+      const { error: insertError } = await supabase
+        .from("customer_credits_history")
+        .insert({
+          credit_type: type,
+          amount,
+          remarks,
+          customer_credit_id: creditData.id,
+        });
+
+      if (insertError) throw insertError;
+    },
+
     async setSelectedCustomer(customer) {
       this.selectedCustomer = customer;
 
       // Load addresses and contact persons for the selected customer
       try {
         this.addressOptions = await this.loadAddressOptions(customer.id);
-        this.contactPersons = await fetchContactPersons(customer.id);
+        this.contactPersons = await this.fetchContactPersons(customer.id);
       } catch (error) {
         console.error("Error loading customer details:", error);
         this.addressOptions = [];
@@ -936,6 +1033,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.selectedDeliveryContact = "";
       this.selectedCollectionContact = "";
     },
+
     setSelectedCollectionAddress(address) {
       this.selectedCollectionAddress = address; // Set the selected collection address
     },
@@ -1046,7 +1144,7 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         // Delete from Supabase
         const { error } = await supabase
-          .from("contact_persons")
+          .from("customer_contact_persons")
           .delete()
           .eq("id", contactId);
 
@@ -1103,20 +1201,24 @@ export const useTransactionStore = defineStore("transactionStore", {
     },
 
     async fetchContactPersons(customerId) {
+      if (!customerId) {
+        console.error("fetchContactPersons: customerId is missing.");
+        return [];
+      }
+    
       try {
         const { data, error } = await supabase
-          .from("contact_persons")
+          .from("customer_contact_persons")
           .select("*")
           .eq("customer_id", customerId);
-
+    
         if (error) throw error;
-
         return data || [];
       } catch (error) {
         console.error("Error fetching contact persons:", error);
         return [];
       }
-    },
+    },    
 
     setCollectionDates({ from, to }) {
       this.collectionDateFrom = from;
@@ -1127,6 +1229,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       this.deliveryDateFrom = from;
       this.deliveryDateTo = to;
     },
+
     async addContactPerson(contactPerson) {
       try {
         if (!this.selectedCustomer?.id) {
@@ -1134,7 +1237,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         }
 
         // Insert new contact person into the database
-        const { data, error } = await supabase.from("contact_persons").insert({
+        const { data, error } = await supabase.from("customer_contact_persons").insert({
           ...contactPerson,
           customer_id: this.selectedCustomer.id, // Associate with selected customer
         });
@@ -1145,12 +1248,12 @@ export const useTransactionStore = defineStore("transactionStore", {
         this.contactPersons = await this.fetchContactPersons(
           this.selectedCustomer.id
         );
-        console.log("Contact person added successfully:", data);
       } catch (error) {
         console.error("Error adding contact person:", error);
         throw error; // Re-throw to handle errors in the UI if needed
       }
     },
+
     toggleUseCcCollection(value) {
       this.useCcCollection = value;
 
@@ -1413,7 +1516,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     async fetchCustomerTypes() {
       try {
         const { data, error } = await supabase
-          .from("customer_types")
+          .from("options_customer_types")
           .select("type, sub_type");
 
         if (error) {
@@ -1456,7 +1559,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         return { customerTypes: [], subTypeMapping: {} }; // Return empty structure on error
       }
     },
-// updated functions (new)
+    // updated functions (new)
     // start of fetching
     async fetchAllCollections() {
       try {
@@ -1511,9 +1614,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           .eq("status", "active") // Fetch only active collections
           .order("logistics_id", { ascending: true })
           .order("created_at", { ascending: false }); // Ensure latest version comes first
-    
+
         if (error) throw error;
-    
+
         // Transform data to include related customer, driver, and order details
         const formattedData = data.map((collection) => ({
           id: collection.id,
@@ -1558,14 +1661,17 @@ export const useTransactionStore = defineStore("transactionStore", {
               }
             : null,
         }));
-    
-        console.log("Fetched Collections with Logistics & Orders:", formattedData);
+
+        console.log(
+          "Fetched Collections with Logistics & Orders:",
+          formattedData
+        );
         return formattedData || [];
       } catch (error) {
         console.error("Error fetching collections:", error);
         return [];
       }
-    },    
+    },
 
     async fetchAllDeliveries() {
       try {
@@ -1662,7 +1768,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             ? {
                 id: delivery.drivers?.id,
                 name: delivery.drivers?.name,
-                contact_no1: delivery.drivers?.contact_no1
+                contact_no1: delivery.drivers?.contact_no1,
               }
             : null,
         }));
@@ -1674,7 +1780,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
-    
+
     async fetchAllOrders() {
       try {
         const { data, error } = await supabase
@@ -1829,17 +1935,22 @@ export const useTransactionStore = defineStore("transactionStore", {
                 id,
                 order_no,
             goods_status,
-            payment_status,
                 tag_timestamp,
                 tag_changes,
                 tag_status,
                 logistics_id,
                 customer_id,
+                order_payment_id,
                 customers (
                   id,
                   name,
                   contact_no1,
                   contact_no2
+                ),
+                order_payments (
+                  payment_status,
+                  paid_amount,
+                  remarks
                 )
               ),
               collections (
@@ -1873,17 +1984,24 @@ export const useTransactionStore = defineStore("transactionStore", {
               id: order.id,
               order_no: order.order_no,
               goods_status: order.goods_status,
-              payment_status: order.payment_status,
               tag_timestamp: order.tag_timestamp,
               tag_changes: order.tag_changes,
               tag_status: order.tag_status,
               customer_id: order.customer_id,
+              order_payment_id: order.order_payment_id,
               customer: order.customers
                 ? {
                     id: order.customers.id,
                     name: order.customers.name,
                     contact_no1: order.customers.contact_no1,
                     contact_no2: order.customers.contact_no2,
+                  }
+                : null,
+              order_payment: order.order_payments
+                ? {
+                    payment_status: order.order_payments.payment_status,
+                    paid_amount: order.order_payments.paid_amount,
+                    remarks: order.order_payments.remarks,
                   }
                 : null,
             })) || [], // ✅ Ensure it's always an array
@@ -1909,59 +2027,65 @@ export const useTransactionStore = defineStore("transactionStore", {
     async fetchTransactionsByOrderId(orderId) {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, order_id, item_name, price, process, quantity, pieces, subtotal, category, tag_category")
+        .select(
+          "id, order_id, item_name, price, process, quantity, pieces, subtotal, category, tag_category"
+        )
         .eq("order_id", orderId)
         .eq("status", "active");
-    
+
       if (error) {
         console.error("Error fetching transactions:", error);
         return [];
       }
       return data;
     },
-    
+
     // Fetch One-Time Instructions
     async fetchOnetimeInstructionsByOrderId(orderId) {
       const { data, error } = await supabase
         .from("instructions_onetime")
-        .select("id, order_id, description, admin, packing, cleaning, picking_sending")
+        .select(
+          "id, order_id, description, admin, packing, cleaning, picking_sending"
+        )
         .eq("order_id", orderId);
-    
+
       if (error) {
         console.error("Error fetching one-time instructions:", error);
         return [];
       }
       return data;
     },
-    
+
     // Fetch Recurring Instructions
     async fetchRecurringInstructionsByCustomerId(customerId) {
       const { data, error } = await supabase
         .from("instructions_recurring")
-        .select("id, customer_id, description, admin, packing, cleaning, picking_sending")
+        .select(
+          "id, customer_id, description, admin, packing, cleaning, picking_sending"
+        )
         .eq("customer_id", customerId);
-    
+
       if (error) {
         console.error("Error fetching recurring instructions:", error);
         return [];
       }
       return data;
     },
-    
+
     // Fetch Error Reports
     async fetchErrorReportsByOrderId(orderId) {
       const { data, error } = await supabase
         .from("error_reports")
         .select("id, order_id, description, category, sub_category, image")
         .eq("order_id", orderId);
-    
+
       if (error) {
         console.error("Error fetching error reports:", error);
         return [];
       }
       return data;
     },
-    
+
     // Function to fetch profile name by user ID (created_by)
     async getProfileName(userId) {
       const { data, error } = await supabase
@@ -1969,51 +2093,55 @@ export const useTransactionStore = defineStore("transactionStore", {
         .select("name")
         .eq("id", userId)
         .single();
-    
+
       if (error) {
         console.error(`Error fetching profile name for user ${userId}:`, error);
         return "[UNKNOWN]";
       }
-    
+
       return data?.name || "[UNKNOWN]";
     },
-    
+
     // Fetch Collection
     async fetchCollectionByLogisticsId(logisticsId) {
       const { data, error } = await supabase
         .from("collections")
-        .select(`
+        .select(
+          `
           id, logistics_id, collection_date, collection_time, remarks, address, date_collected, status,
           drivers ( id, name, contact_no1 ),
           contact_persons ( id, name, contact_no1, contact_no2 )
-        `)
+        `
+        )
         .eq("logistics_id", logisticsId)
         .eq("status", "active");
-    
+
       if (error) {
         console.error("Error fetching collections:", error);
         return [];
       }
-    
+
       return data;
     },
 
     async fetchCollectionHistoryByLogisticsId(logisticsId) {
       const { data, error } = await supabase
         .from("collections")
-        .select(`
+        .select(
+          `
           id, logistics_id, collection_date, collection_time, remarks, address, date_collected, status, created_at, created_by,
           drivers ( id, name, contact_no1 ),
           contact_persons ( id, name, contact_no1, contact_no2 )
-        `)
+        `
+        )
         .eq("logistics_id", logisticsId)
         .order("id", { ascending: true });
-    
+
       if (error) {
         console.error("Error fetching collections:", error);
         return [];
       }
-    
+
       // Fetch profile names for each collection
       const collectionsWithProfiles = await Promise.all(
         data.map(async (collection) => {
@@ -2023,46 +2151,50 @@ export const useTransactionStore = defineStore("transactionStore", {
           return collection;
         })
       );
-    
+
       return collectionsWithProfiles;
     },
-    
+
     // Fetch Deliveries
     async fetchDeliveryByLogisticsId(logisticsId) {
       const { data, error } = await supabase
         .from("deliveries")
-        .select(`
+        .select(
+          `
           id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status,
           drivers ( id, name, contact_no1 ),
           contact_persons ( id, name, contact_no1, contact_no2 )
-        `)
+        `
+        )
         .eq("logistics_id", logisticsId)
         .eq("status", "active");
-    
+
       if (error) {
         console.error("Error fetching deliveries:", error);
         return [];
       }
-    
+
       return data;
     },
 
     async fetchDeliveryHistoryByLogisticsId(logisticsId) {
       const { data, error } = await supabase
         .from("deliveries")
-        .select(`
+        .select(
+          `
           id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status, created_at, created_by,
           drivers ( id, name, contact_no1 ),
           contact_persons ( id, name, contact_no1, contact_no2 )
-        `)
+        `
+        )
         .eq("logistics_id", logisticsId)
-        .order("id", { ascending: true })
-    
+        .order("id", { ascending: true });
+
       if (error) {
         console.error("Error fetching deliveries:", error);
         return [];
       }
-    
+
       // Fetch profile names for each collection
       const deliveriesWithProfiles = await Promise.all(
         data.map(async (delivery) => {
@@ -2072,51 +2204,62 @@ export const useTransactionStore = defineStore("transactionStore", {
           return delivery;
         })
       );
-    
+
       return deliveriesWithProfiles;
     },
-    
+
     // Fetch Whole Order (Main Function)
     async fetchWholeOrderByOrderNo(orderNo) {
       try {
         // Step 1: Fetch main order and logistics details
         const { data, error } = await supabase
           .from("orders") // ✅ Directly fetch from orders
-          .select(`
-            id, order_no, logistics_id, tag_timestamp, tag_changes, tag_status, goods_status, payment_status, customer_id, order_date_time,
+          .select(
+            `
+            id, order_no, logistics_id, tag_timestamp, tag_changes, tag_status, goods_status, customer_id, order_date_time, order_payment_id,
             customers (
               id, name, contact_no1, contact_no2, email, type, sub_type, payment_type,
               schedule_remarks, price_remarks, accounting_remarks, other_remarks
-            )
-          `)
+            ),
+            order_payments (
+              payment_status, paid_amount, remarks)
+          `
+          )
           .eq("order_no", orderNo)
           .single();
-    
+
         if (error) throw error;
         if (!data) {
           console.warn(`No order found with order_no: ${orderNo}`);
           return null;
         }
-    
+
         // Step 2: Fetch logistics details using logistics_id
         const { data: logisticsData, error: logisticsError } = await supabase
           .from("logistics")
           .select("id, job_type, urgency, logistics_status")
           .eq("id", data.logistics_id)
           .single();
-    
+
         if (logisticsError) throw logisticsError;
-    
+
         // Step 3: Fetch related data
-        const [transactions, onetimeInstructions, errorReports, recurringInstructions, collection, delivery] = await Promise.all([
+        const [
+          transactions,
+          onetimeInstructions,
+          errorReports,
+          recurringInstructions,
+          collection,
+          delivery,
+        ] = await Promise.all([
           this.fetchTransactionsByOrderId(data.id),
           this.fetchOnetimeInstructionsByOrderId(data.id),
           this.fetchErrorReportsByOrderId(data.id),
           this.fetchRecurringInstructionsByCustomerId(data.customer_id),
           this.fetchCollectionByLogisticsId(data.logistics_id),
-          this.fetchDeliveryByLogisticsId(data.logistics_id)
+          this.fetchDeliveryByLogisticsId(data.logistics_id),
         ]);
-    
+
         // Step 4: Return formatted data
         return {
           logistics_id: logisticsData.id,
@@ -2147,14 +2290,15 @@ export const useTransactionStore = defineStore("transactionStore", {
         return null;
       }
     },
-    
+
     // end of fetching
 
     async createOrderFromCollection(logisticsId) {
       try {
-
         const collection = await this.fetchCollectionByLogisticsId(logisticsId);
-        transactionStore.readyBy = computeReadyByDate(collection?.collection_date);
+        transactionStore.readyBy = computeReadyByDate(
+          collection?.collection_date
+        );
         // Step 3: Create Order with logisticsId and get orderId
         const { orderId, orderNo } = await this.createOrder(logisticsId);
         if (!orderId) throw new Error("Failed to create order");
@@ -2168,7 +2312,6 @@ export const useTransactionStore = defineStore("transactionStore", {
         this.resetTransactionItems();
 
         return orderNo;
-
       } catch (error) {
         console.error("Error in create order from collection:", error);
       }
@@ -2180,39 +2323,41 @@ export const useTransactionStore = defineStore("transactionStore", {
         // Step 1: Create Logistics and get logisticsId
         const logisticsId = await this.createLogistics();
         if (!logisticsId) throw new Error("Failed to create logistics");
-    
+
         // Step 2: Create Collections & Delivery with logisticsId
         const collection = await this.createCollection(logisticsId);
         await this.createDelivery(logisticsId);
-    
+
         // Step 3: Calculate "readyBy" date (collection_date + 7 days)
-        transactionStore.readyBy = computeReadyByDate(collection?.collection_date);
-    
+        transactionStore.readyBy = computeReadyByDate(
+          collection?.collection_date
+        );
+
         // Step 4: Create Order with logisticsId and get orderId
         const { orderId, orderNo } = await this.createOrder(logisticsId);
         if (!orderId) throw new Error("Failed to create order");
-    
+
         // Step 5: Create Transaction, Instructions, and Error Reports with orderId
         await this.createTransaction(orderId);
         await this.createInstructions(orderId);
         await this.createErrorReports(orderId);
-    
+
         // Reset transaction data after successful save
         this.resetTransactionItems();
       } catch (error) {
         console.error("Error in createWholeTransaction:", error);
       }
-    },    
+    },
 
     computeReadyByDate(startDate) {
       if (!startDate) {
         console.warn("Invalid startDate provided to computeReadyByDate.");
         return null;
       }
-    
+
       const readyByDate = new Date(startDate);
       let addedDays = 0;
-    
+
       while (addedDays < 7) {
         readyByDate.setDate(readyByDate.getDate() + 1);
         const dayOfWeek = readyByDate.getDay(); // 0 = Sunday, 6 = Saturday
@@ -2220,9 +2365,9 @@ export const useTransactionStore = defineStore("transactionStore", {
           addedDays++; // Only count Monday-Friday
         }
       }
-    
+
       return readyByDate.toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
-    },    
+    },
 
     async createLogistics() {
       try {
@@ -2284,28 +2429,28 @@ export const useTransactionStore = defineStore("transactionStore", {
           .select("*")
           .eq("id", collectionId)
           .single();
-    
+
         if (fetchError) throw fetchError;
         if (!existingCollection) throw new Error("Collection not found");
-    
+
         // Mark the existing collection as inactive
         const { error: updateError } = await supabase
           .from("collections")
           .update({ status: "inactive" })
           .eq("id", collectionId);
-    
+
         if (updateError) throw updateError;
-    
+
         console.log("Existing collection marked as inactive");
-    
+
         // Create a new collection with the same logistics_id
         await this.createCollection(existingCollection.logistics_id);
-        
+
         console.log("New collection created successfully");
       } catch (error) {
         console.error("Error updating collection:", error);
       }
-    },    
+    },
 
     async createDelivery(logisticsId) {
       // ✅ Pass logisticsId as an argument
@@ -2342,33 +2487,53 @@ export const useTransactionStore = defineStore("transactionStore", {
           .select("*")
           .eq("id", deliveryId)
           .single();
-    
+
         if (fetchError) throw fetchError;
         if (!existingDelivery) throw new Error("Delivery not found");
-    
+
         // Mark the existing collection as inactive
         const { error: updateError } = await supabase
           .from("deliveries")
           .update({ status: "inactive" })
           .eq("id", deliveryId);
-    
+
         if (updateError) throw updateError;
-    
+
         console.log("Existing delivery marked as inactive");
-    
+
         // Create a new delivery with the same logistics_id
         await this.createDelivery(existingDelivery.logistics_id);
-        
+
         console.log("New delivery created successfully");
       } catch (error) {
         console.error("Error updating delivery:", error);
       }
-    },   
+    },
 
     async createOrder(logisticsId) {
-      // ✅ Pass logisticsId as an argument
       try {
         const currentTimestamp = new Date().toISOString();
+    
+        // Insert into order_payments first
+        const { data: paymentData, error: paymentError } = await supabase
+          .from("order_payments")
+          .insert([
+            {
+              paid_amount: 0,
+              payment_status: "unpaid",
+              remarks: null,
+            },
+          ])
+          .select("id")
+          .single();
+    
+        if (paymentError) throw paymentError;
+        if (!paymentData?.id)
+          throw new Error("Payment record was not created successfully.");
+    
+        const orderPaymentId = paymentData.id;
+    
+        // Then insert into orders with the order_payment_id
         const { data: orderData, error: orderError } = await supabase
           .from("orders")
           .insert([
@@ -2382,21 +2547,23 @@ export const useTransactionStore = defineStore("transactionStore", {
               payment_status: "unpaid",
               no_packets_hangers: "-",
               tag_status: "to print",
+              order_payment_id: orderPaymentId,
             },
           ])
           .select("id, order_no")
           .single();
-
+    
         if (orderError) throw orderError;
         if (!orderData?.id)
           throw new Error("Order was not created successfully.");
-
-        return { orderId: orderData.id, orderNo: orderData.order_no }; // ✅ Return both values properly
+    
+        return { orderId: orderData.id, orderNo: orderData.order_no };
       } catch (error) {
         console.error("Error in create order:", error);
         return null;
       }
     },
+    
 
     async createTransaction(orderId) {
       // ✅ Pass orderId as an argument
@@ -2412,7 +2579,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             subtotal: item.subtotal,
             category: item.category,
             tag_category: item.tag_category,
-            status: "active"
+            status: "active",
           };
 
           const { error: itemError } = await supabase
@@ -2433,38 +2600,38 @@ export const useTransactionStore = defineStore("transactionStore", {
           .select("id, status")
           .eq("order_id", orderId)
           .eq("status", "active");
-    
+
         if (fetchError) throw fetchError;
-    
+
         let newStatus = 1; // Default first update status
-    
+
         if (transactions.length > 0) {
           // Check for the highest existing status and increment
           const existingStatuses = transactions
             .map((t) => parseInt(t.status))
             .filter((s) => !isNaN(s));
-    
+
           if (existingStatuses.length > 0) {
             newStatus = Math.max(...existingStatuses) + 1;
           }
-          
+
           // Update the existing transactions with the new status
           const { error: updateError } = await supabase
             .from("transactions")
             .update({ status: newStatus })
             .eq("order_id", orderId)
             .eq("status", "active");
-    
+
           if (updateError) throw updateError;
         }
-    
+
         // Insert new transactions using createTransaction
         await this.createTransaction(orderId);
       } catch (error) {
         console.error("Error updating transaction:", error);
       }
     },
-    
+
     async createInstructions(orderId) {
       // ✅ Pass orderId as an argument
       try {

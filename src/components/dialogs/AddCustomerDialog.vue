@@ -2,7 +2,17 @@
   <q-dialog v-model="isOpen" persistent>
     <q-card style="min-width: 70em">
       <q-card-section class="dialog-header">
-        <div class="text-weight-bold text-h6">Add Customer</div>
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Add New Customer
+        </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="closeDialog"
+        />
       </q-card-section>
       <q-card-section class="dialog-body">
         <q-form @submit.prevent="handleAddCustomer">
@@ -12,19 +22,23 @@
             Customer Details
           </div>
 
-          <div class="row q-col-gutter-x-sm">
+          <div class="row q-col-gutter-md">
             <div class="col">
-              <div class="dialog-label">Name:</div>
+              <div class="dialog-label">
+                Name:<span class="dialog-asterisk">*</span>
+              </div>
               <q-input
                 v-model="customer.name"
-                label="Name"
+                label="Enter name here"
                 outlined
-                required
+                :rules="[(val) => !!val || 'Customer Name is required']"
                 class="dialog-inputs"
               />
             </div>
             <div class="col-3">
-              <div class="dialog-label">Customer Type:</div>
+              <div class="dialog-label">
+                Customer Type:<span class="dialog-asterisk">*</span>
+              </div>
               <q-select
                 v-model="selectedType"
                 :options="typeOptions"
@@ -32,67 +46,64 @@
                 option-label="label"
                 label="Select Customer Type"
                 outlined
+                :rules="[(val) => !!val || 'Customer Type is required']"
                 class="dialog-inputs"
               />
             </div>
             <div class="col-3">
-              <div class="dialog-label">Customer Sub-Type:</div>
+              <div class="dialog-label">
+                Customer Sub-Type:<span class="dialog-asterisk">*</span>
+              </div>
               <q-select
                 v-model="selectedSubType"
                 :options="filteredSubTypes"
                 label="Select Customer Sub-Type"
                 outlined
+                :rules="[(val) => !!val || 'Customer Sub-Type is required']"
                 class="dialog-inputs"
                 :disable="!selectedType"
               />
             </div>
           </div>
-          <div class="row q-col-gutter-x-sm">
+          <div class="row q-col-gutter-md">
             <div class="col">
-              <div class="dialog-label">Contact No:</div>
+              <div class="dialog-label">
+                Contact No:<span class="dialog-asterisk">*</span>
+              </div>
               <q-input
                 v-model="customer.contact_no1"
-                label="Contact No 1"
                 outlined
-                required
+                :rules="[(val) => !!val || 'Contact No. is required']"
                 class="dialog-inputs"
               />
             </div>
             <div class="col">
-              <div class="dialog-label">Alternative Contact No:</div>
+              <div class="dialog-label">
+                Alternative Contact No:<span class="dialog-asterisk"></span>
+              </div>
               <q-input
                 v-model="customer.contact_no2"
-                label="Contact No 2"
                 outlined
                 class="dialog-inputs"
               />
             </div>
             <div class="col">
-              <div class="dialog-label">E-mail Address:</div>
+              <div class="dialog-label">
+                E-mail Address:<span class="dialog-asterisk"></span>
+              </div>
               <q-input
                 v-model="customer.email"
-                label="Email"
-                outlined
-                class="dialog-inputs"
-              />
-            </div>
-          </div>
-          <div class="row q-col-gutter-x-sm">
-            <div class="col">
-              <div class="dialog-label">Payment Type:</div>
-              <q-select
-                v-model="customer.payment_type"
-                :options="paymentTypeOptions"
-                label="Payment Type"
                 outlined
                 class="dialog-inputs"
               />
             </div>
             <div class="col">
-              <div class="dialog-label">Recommended By:</div>
+              <div class="dialog-label">
+                Recommended By:<span class="dialog-asterisk"></span>
+              </div>
               <q-input
                 v-model="customer.recommended_by"
-                label="Recommended By"
+                label="Who recommended you?"
                 outlined
                 class="dialog-inputs"
               />
@@ -104,8 +115,9 @@
           >
             Remarks
           </div>
-          <div class="row q-col-gutter-x-sm">
+          <div class="row q-col-gutter-md q-mb-md">
             <div class="col">
+              <div class="dialog-label">Schedule Remarks:</div>
               <q-input
                 v-model="customer.schedule_remarks"
                 label="Schedule Remarks"
@@ -115,6 +127,7 @@
               />
             </div>
             <div class="col">
+              <div class="dialog-label">Price Remarks:</div>
               <q-input
                 v-model="customer.price_remarks"
                 label="Price Remarks"
@@ -124,8 +137,9 @@
               />
             </div>
           </div>
-          <div class="row q-col-gutter-x-sm">
+          <div class="row q-col-gutter-md q-mb-md">
             <div class="col">
+              <div class="dialog-label">Accounting Remarks:</div>
               <q-input
                 v-model="customer.accounting_remarks"
                 label="Accounting Remarks"
@@ -135,6 +149,7 @@
               />
             </div>
             <div class="col">
+              <div class="dialog-label">Other Remarks:</div>
               <q-input
                 v-model="customer.other_remarks"
                 label="Other Remarks"
@@ -146,8 +161,13 @@
           </div>
 
           <q-card-actions align="right">
-            <q-btn label="Cancel" color="negative" @click="closeDialog" />
-            <q-btn label="Add" color="primary" type="submit" />
+            <q-btn
+            unelevated
+              class="dialog-button"
+              label="Add New Customer"
+              color="primary"
+              type="submit"
+            />
           </q-card-actions>
         </q-form>
       </q-card-section>
@@ -158,6 +178,9 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
+import { useQuasar } from "quasar";
+
+const $q = useQuasar();
 
 const props = defineProps({ modelValue: Boolean });
 const emit = defineEmits(["update:modelValue", "customer-added"]);
@@ -168,8 +191,6 @@ const isOpen = ref(props.modelValue);
 // Selected Values
 const selectedType = ref(null);
 const selectedSubType = ref(null);
-
-const paymentTypeOptions = ref(["Cash", "Paid Online", "Pay Now"]);
 
 // Ensure customer.type & sub_type match selected dropdowns
 watch([selectedType, selectedSubType], ([newType, newSubType]) => {
@@ -196,7 +217,6 @@ const customer = ref({
   email: "",
   type: "",
   sub_type: "",
-  payment_type: "",
   recommended_by: "",
   schedule_remarks: "",
   price_remarks: "",
@@ -217,15 +237,25 @@ const handleAddCustomer = async () => {
       : "";
 
     await transactionStore.createCustomer(customer.value);
-    emit("customer-added"); // Notify parent
-    closeDialog(); // Close dialog after success
+
+    $q.notify({
+      type: "positive",
+      message: "Customer added successfully!",
+    });
+
+    emit("customer-added");
+    closeDialog();
   } catch (error) {
     console.error("Error adding customer:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to add customer. Please try again.",
+    });
   }
 };
 
 const closeDialog = () => {
-  emit("update:modelValue", false); // Update parent state
+  emit("update:modelValue", false);
   resetCustomerForm();
 };
 
@@ -237,7 +267,6 @@ const resetCustomerForm = () => {
     email: "",
     type: "",
     sub_type: "",
-    payment_type: "",
     recommended_by: "",
     schedule_remarks: "",
     price_remarks: "",
@@ -258,8 +287,6 @@ const fetchCustomerTypes = async () => {
   try {
     const response = await transactionStore.fetchCustomerTypes();
 
-    console.log("Response from fetchCustomerTypes:", response);
-
     // Populate type options
     typeOptions.value = response.customerTypes.map((type) => ({
       label: type,
@@ -269,26 +296,20 @@ const fetchCustomerTypes = async () => {
     // Assign sub-type mapping
     subTypeMapping.value = response.subTypeMapping;
 
-    console.log("Type Options:", typeOptions.value);
-    console.log("Sub-Type Mapping:", subTypeMapping.value);
+    // console.log("Type Options:", typeOptions.value);
+    // console.log("Sub-Type Mapping:", subTypeMapping.value);
   } catch (error) {
     console.error("Error fetching customer types:", error);
   }
 };
 
 watch(selectedType, (newType) => {
-  console.log("DEBUG: Selected Type (Fixed) ->", newType);
 
   // Check if newType is not null before accessing .value
   if (newType && newType.value) {
     filteredSubTypes.value = subTypeMapping.value[newType.value] || [];
-    console.log(
-      `DEBUG: Filtered Sub-Types for '${newType.value}' ->`,
-      filteredSubTypes.value
-    );
   } else {
     filteredSubTypes.value = [];
-    console.log("DEBUG: No Type Selected. Filtered Sub-Types cleared.");
   }
 
   selectedSubType.value = null; // Reset sub-type when type changes

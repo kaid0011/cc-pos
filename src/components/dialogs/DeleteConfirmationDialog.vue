@@ -14,8 +14,8 @@
         <q-card-section>
           <p>{{ message }}</p>
           <q-card-actions align="right">
-            <q-btn flat class="negative-button" :label="cancelLabel" @click="closeDialog" />
-            <q-btn flat class="main-button" :label="confirmLabel" @click="confirmAction" />
+            <q-btn unelevated color="negative" class="dialog-button" :label="cancelLabel" @click="closeDialog" />
+            <q-btn unelevated color="primary" class="dialog-button" :label="confirmLabel" @click="confirmAction" />
           </q-card-actions>
         </q-card-section>
       </q-card>

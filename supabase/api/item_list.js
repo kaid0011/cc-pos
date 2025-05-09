@@ -4,7 +4,7 @@ import { supabase } from '../config.js';
 export const fetchAllItems = async () => {
   try {
     const { data: items, error } = await supabase
-      .from('item_list')
+      .from('options_item_list')
       .select('*');
     if (error) {
       console.error('Error fetching items:', error.message);
@@ -21,7 +21,7 @@ export const fetchAllItems = async () => {
 export const createItem = async (newItem) => {
   try {
     const { data, error } = await supabase
-      .from('item_list')
+      .from('options_item_list')
       .insert([newItem]);
     if (error) {
       console.error('Error creating item:', error.message);
@@ -38,7 +38,7 @@ export const createItem = async (newItem) => {
 export const updateItems = async (item) => {
   try {
     const { data, error } = await supabase
-      .from('item_list')
+      .from('options_item_list')
       .update({
         name: item.name,
         category: item.category,
@@ -64,7 +64,7 @@ export const updateItems = async (item) => {
 export const deleteItems = async (itemId) => {
   try {
     const { data, error } = await supabase
-      .from('item_list')
+      .from('options_item_list')
       .delete()
       .eq('id', itemId);
     if (error) {

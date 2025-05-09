@@ -609,9 +609,18 @@ padding: 0.7em !important;
 }
 
 .dialog-inputs {
+  /* background-color: white; */
+  /* margin-bottom: 0.5em; */
+  /* border-radius: 0.5em; */
+}
+
+.q-field__inner {
   background-color: white;
-  margin-bottom: 0.5em;
   border-radius: 0.5em;
+}
+
+.q-field__bottom {
+  padding-top: 5px;
 }
 
 .outline-btn {
@@ -773,7 +782,16 @@ background-color: #e9e9e9;
 .dialog-label {
   margin-left: 5px;
   margin-bottom: 2px;
-  font-weight: 600
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.9em;
+}
+
+.dialog-asterisk {
+  color: red;
+  font-weight: 600;
+  font-size: 1.2em;
+  margin-left: 5px;
 }
 
 .transactions-history, .customers-management, .orders-history, .tags-management, .logistics-management, .invoices-page, .items-management {
@@ -785,4 +803,23 @@ background-color: #e9e9e9;
   height: 0.5in;
   page-break-before: avoid; /* Prevents empty pages */
   page-break-inside: avoid; /* Avoids content breaking */
+}
+.full-height {
+  height: 100% !important;
+}
+
+.input-dialog {
+  /* max-width: 50rem !important; */
+  min-width: 50rem !important;
+}
+
+.delete-dialog {
+  max-width: 40rem !important;
+  min-width: 40rem !important;
+}
+
+.dialog-button {
+  min-width: 4em;
+  padding-right: 10px !important;
+  padding-left: 10px !important;
 }

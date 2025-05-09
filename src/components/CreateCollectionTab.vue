@@ -2,7 +2,7 @@
   <div class="selected-customer" v-if="selectedCustomer">
     <q-card flat class="customer-card q-pa-sm text-p">
       <q-card-section>
-        <div class="text-uppercase text-weight-bold q-mb-xs">
+        <div class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs">
           Selected Customer
         </div>
         <q-separator class="q-my-xs q-mb-sm" />
@@ -26,276 +26,347 @@
       </q-card-section>
     </q-card>
 
-    <div class="contact-selection q-mt-md">
+    <div class="row contact-selection q-mt-md q-col-gutter-x-md">
       <!-- Collection Section -->
-      <div class="q-mb-md">
-        <div class="text-p text-uppercase text-weight-bold q-mt-md q-mb-xs">
-          For Collection
-        </div>
-        <q-checkbox
-          v-model="transactionStore.useCcCollection"
-          @update:model-value="
-            (value) => handleCheckboxChange('collection', value)
-          "
-          label="Self-collect"
-          class="row full-width q-mb-sm"
-        />
-
-        <q-btn
-          outline
-          class="outline-btn q-mb-sm"
-          color="primary"
-          label="Add Contact Person"
-          @click="showAddContactPersonDialog = true"
-        />
-        <q-btn
-          outline
-          color="primary"
-          label="Add Address"
-          @click="showAddAddressDialog = true"
-          class="outline-btn q-ml-sm q-mb-sm"
-        />
-
-        <q-select
-          v-model="transactionStore.selectedCollectionContact"
-          :options="contactOptions || []"
-          option-label="label"
-          option-value="id"
-          label="Select Collection Contact"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
-        <q-select
-          v-model="transactionStore.selectedCollectionAddress"
-          :options="transactionStore.addressOptions"
-          option-label="label"
-          option-value="id"
-          label="Select Collection Address"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
-
-        <!-- Collection Dates -->
-        <div class="row q-col-gutter-xs">
-          <div class="col">
-            <q-input
-              v-model="formattedCollectionDate"
-              outlined
-              dense
-              readonly
-              class="q-mb-xs bg-white"
-            >
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy>
-                    <q-date
-                      v-model="transactionStore.collectionDate"
-                      mask="YYYY-MM-DD"
-                    />
-                  </q-popup-proxy>
-                </q-icon>
-                <q-icon
-                  name="close"
-                  class="cursor-pointer q-ml-sm"
-                  @click="clearDate('collectionDate')"
-                />
-              </template>
-            </q-input>
+      <div class="col">
+        <q-card flat class="customer-card q-pa-md">
+          <div class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs">
+            For Collection
           </div>
-          <div class="col">
+          <q-separator class="q-mb-sm"/>
+          <q-checkbox
+            v-model="transactionStore.useCcCollection"
+            @update:model-value="
+              (value) => handleCheckboxChange('collection', value)
+            "
+            label="Self-collect"
+            class="row full-width q-mb-sm"
+          />
+  
+          <q-btn
+            outline
+            dense
+            class="outline-btn q-mb-sm q-px-sm"
+            color="primary"
+            label="Add Contact Person"
+            @click="showAddContactPersonDialog = true"
+          />
+          <q-btn
+            outline
+            dense
+            color="primary"
+            label="Add Address"
+            @click="showAddAddressDialog = true"
+            class="outline-btn q-ml-sm q-mb-sm q-px-sm"
+          />
+          <div>
+            <div class="dialog-label">
+              Contact Person<span class="dialog-asterisk">*</span>
+            </div>
             <q-select
-              v-model="transactionStore.collectionTime"
-              :options="transactionStore.timeOptions"
+              v-model="transactionStore.selectedCollectionContact"
+              :options="contactOptions || []"
               option-label="label"
-              option-value="value"
-              label="Select Collection Time"
+              option-value="id"
+              label="Select Collection Contact"
               outlined
               dense
               clearable
               class="q-mb-xs bg-white"
             />
           </div>
-        </div>
-        <q-select
-          v-model="transactionStore.selectedCollectionDriver"
-          :options="transactionStore.driverOptions"
-          option-label="name"
-          option-value="id"
-          label="Select Collection Driver"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
-        <div class="row q-col-gutter-xs">
-          <div class="col">
+          <div>
+            <div class="dialog-label">
+              Collection Address<span class="dialog-asterisk">*</span>
+            </div>
             <q-select
-              v-model="transactionStore.jobType"
-              :options="transactionStore.jobOptions"
+              v-model="transactionStore.selectedCollectionAddress"
+              :options="transactionStore.addressOptions"
               option-label="label"
-              option-value="value"
-              label="Select Job Type"
+              option-value="id"
+              label="Select Collection Address"
               outlined
               dense
               clearable
               class="q-mb-xs bg-white"
             />
           </div>
-          <div class="col">
+          <!-- Collection Dates -->
+          <div class="row q-col-gutter-xs">
+            <div class="col">
+              <div class="dialog-label">
+                Collection Date<span class="dialog-asterisk">*</span>
+              </div>
+              <q-input
+                v-model="formattedCollectionDate"
+                outlined
+                dense
+                readonly
+                class="q-mb-xs bg-white"
+              >
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy>
+                      <q-date
+                        v-model="transactionStore.collectionDate"
+                        mask="YYYY-MM-DD"
+                      />
+                    </q-popup-proxy>
+                  </q-icon>
+                  <q-icon
+                    name="close"
+                    class="cursor-pointer q-ml-sm"
+                    @click="clearDate('collectionDate')"
+                  />
+                </template>
+              </q-input>
+            </div>
+            <div class="col">
+              <div class="dialog-label">
+                Collection Time<span class="dialog-asterisk">*</span>
+              </div>
+              <q-select
+                v-model="transactionStore.collectionTime"
+                :options="transactionStore.timeOptions"
+                option-label="label"
+                option-value="value"
+                label="Select Collection Time"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+              />
+            </div>
+          </div>
+          <div>
+            <div class="dialog-label">
+              Colection Driver<span class="dialog-asterisk">*</span>
+            </div>
+            <q-select
+              v-model="transactionStore.selectedCollectionDriver"
+              :options="transactionStore.driverOptions"
+              option-label="name"
+              option-value="id"
+              label="Select Collection Driver"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+          </div>
+          <div class="row q-col-gutter-xs">
+            <div class="col">
+              <div class="dialog-label">
+                Job Type<span class="dialog-asterisk">*</span>
+              </div>
+              <q-select
+                v-model="transactionStore.jobType"
+                :options="transactionStore.jobOptions"
+                option-label="label"
+                option-value="value"
+                label="Select Job Type"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+              />
+            </div>
+            <div class="col">
+              <div class="dialog-label">
+                Pack Type<span class="dialog-asterisk">*</span>
+              </div>
+              <q-input
+                v-model="transactionStore.collectionPackType"
+                label="Pack Type"
+                outlined
+                dense
+                class="q-mb-xs bg-white"
+              />
+            </div>
+          </div>
+          <div>
+            <div class="dialog-label">
+              Remarks<span class="dialog-asterisk"></span>
+            </div>
             <q-input
-              v-model="transactionStore.collectionPackType"
+              v-model="transactionStore.collectionRemarks"
+              label="Remarks"
+              outlined
+              dense
+              class="q-mb-xs bg-white"
+            />
+          </div>
+          <q-btn
+            outline
+            dense
+            color="white"
+            label="Reset Collection"
+            @click="confirmReset('collection')"
+            class="text-red-9 text-weight-bold q-mt-sm q-px-sm"
+          />
+        </q-card>
+      </div>
+
+      <!-- Delivery Section -->
+      <div class="col">
+        <q-card flat class="customer-card q-pa-md">
+          <div class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs">
+            For Delivery
+          </div>
+          <q-separator class="q-mb-sm"/>
+          <q-checkbox
+            :model-value="transactionStore.useCcDelivery"
+            @update:model-value="
+              (value) => handleCheckboxChange('delivery', value)
+            "
+            label="Self-pickup"
+            class="row full-width q-mb-sm"
+          />
+          <q-btn
+            outline
+            dense
+            class="outline-btn q-mb-sm q-px-sm"
+            color="primary"
+            label="Add Contact Person"
+            @click="showAddContactPersonDialog = true"
+          />
+          <q-btn
+            outline
+            dense
+            color="primary"
+            label="Add Address"
+            @click="showAddAddressDialog = true"
+            class="outline-btn q-ml-sm q-mb-sm q-px-sm"
+          />
+          <div>
+            <div class="dialog-label">
+              Contact Person<span class="dialog-asterisk"></span>
+            </div>
+            <q-select
+              v-model="transactionStore.selectedDeliveryContact"
+              :options="contactOptions || []"
+              option-label="label"
+              option-value="id"
+              label="Select Delivery Contact"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+          </div>
+          <div>
+            <div class="dialog-label">
+              Address<span class="dialog-asterisk"></span>
+            </div>
+            <q-select
+              v-model="transactionStore.selectedDeliveryAddress"
+              :options="transactionStore.addressOptions"
+              option-label="label"
+              option-value="id"
+              label="Select Delivery Address"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+          </div>
+  
+          <!-- Delivery Dates -->
+          <div class="row q-col-gutter-sm">
+            <div class="col-6">
+              <div class="dialog-label">
+                Delivery Date<span class="dialog-asterisk">*</span>
+              </div>
+              <q-input
+                v-model="formattedDeliveryDate"
+                outlined
+                dense
+                readonly
+                class="q-mb-xs bg-white"
+              >
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer">
+                    <q-popup-proxy>
+                      <q-date
+                        v-model="transactionStore.deliveryDate"
+                        mask="YYYY-MM-DD"
+                      />
+                    </q-popup-proxy>
+                  </q-icon>
+                  <q-icon
+                    name="close"
+                    class="cursor-pointer q-ml-sm"
+                    @click="clearDate('deliveryDate')"
+                  />
+                </template>
+              </q-input>
+            </div>
+            <div class="col-6">
+              <div class="dialog-label">
+                Delivery Time<span class="dialog-asterisk"></span>
+              </div>
+              <q-select
+                v-model="transactionStore.deliveryTime"
+                :options="transactionStore.timeOptions"
+                option-label="label"
+                option-value="value"
+                label="Select Delivery Time"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+              />
+            </div>
+          </div>
+          <div>
+            <div class="dialog-label">
+              Delivery Driver<span class="dialog-asterisk"></span>
+            </div>
+            <q-select
+              v-model="transactionStore.selectedDeliveryDriver"
+              :options="transactionStore.driverOptions"
+              option-label="name"
+              option-value="id"
+              label="Select Delivery Driver"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
+          </div>
+          <div>
+            <div class="dialog-label">
+              Pack Type<span class="dialog-asterisk"></span>
+            </div>
+            <q-input
+              v-model="transactionStore.deliveryPackType"
               label="Pack Type"
               outlined
               dense
               class="q-mb-xs bg-white"
             />
           </div>
-        </div>
-        <q-input
-          v-model="transactionStore.collectionRemarks"
-          label="Remarks"
-          outlined
-          dense
-          class="q-mb-xs bg-white"
-        />
-        <q-btn
-          flat
-          color="white"
-          label="Reset Collection"
-          @click="confirmReset('collection')"
-          class="bg-red-9 text-weight-bold q-mt-sm"
-        />
-      </div>
-
-      <!-- Delivery Section -->
-      <div>
-        <div class="text-p text-uppercase text-weight-bold q-mb-xs">
-          For Delivery
-        </div>
-        <q-checkbox
-          :model-value="transactionStore.useCcDelivery"
-          @update:model-value="
-            (value) => handleCheckboxChange('delivery', value)
-          "
-          label="Self-pickup"
-          class="row full-width q-mb-sm"
-        />
-        <q-btn
-          outline
-          class="outline-btn q-mb-sm"
-          color="primary"
-          label="Add Contact Person"
-          @click="showAddContactPersonDialog = true"
-        />
-        <q-btn
-          outline
-          color="primary"
-          label="Add Address"
-          @click="showAddAddressDialog = true"
-          class="outline-btn q-ml-sm q-mb-sm"
-        />
-
-        <q-select
-          v-model="transactionStore.selectedDeliveryContact"
-          :options="contactOptions || []"
-          option-label="label"
-          option-value="id"
-          label="Select Delivery Contact"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
-        <q-select
-          v-model="transactionStore.selectedDeliveryAddress"
-          :options="transactionStore.addressOptions"
-          option-label="label"
-          option-value="id"
-          label="Select Delivery Address"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
-
-        <!-- Delivery Dates -->
-        <div class="row q-col-gutter-sm">
-          <div class="col-6">
+          <div>
+            <div class="dialog-label">
+              Remarks<span class="dialog-asterisk"></span>
+            </div>
             <q-input
-              v-model="formattedDeliveryDate"
+              v-model="transactionStore.deliveryRemarks"
+              label="Remarks"
               outlined
               dense
-              readonly
-              class="q-mb-xs bg-white"
-            >
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer">
-                  <q-popup-proxy>
-                    <q-date
-                      v-model="transactionStore.deliveryDate"
-                      mask="YYYY-MM-DD"
-                    />
-                  </q-popup-proxy>
-                </q-icon>
-                <q-icon
-                  name="close"
-                  class="cursor-pointer q-ml-sm"
-                  @click="clearDate('deliveryDate')"
-                />
-              </template>
-            </q-input>
-          </div>
-          <div class="col-6">
-            <q-select
-              v-model="transactionStore.deliveryTime"
-              :options="transactionStore.timeOptions"
-              option-label="label"
-              option-value="value"
-              label="Select Delivery Time"
-              outlined
-              dense
-              clearable
               class="q-mb-xs bg-white"
             />
           </div>
-        </div>
-        <q-select
-          v-model="transactionStore.selectedDeliveryDriver"
-          :options="transactionStore.driverOptions"
-          option-label="name"
-          option-value="id"
-          label="Select Delivery Driver"
-          outlined
-          dense
-          clearable
-          class="q-mb-xs bg-white"
-        />
-
-        <q-input
-          v-model="transactionStore.deliveryPackType"
-          label="Pack Type"
-          outlined
-          dense
-          class="q-mb-xs bg-white"
-        />
-        <q-input
-          v-model="transactionStore.deliveryRemarks"
-          label="Remarks"
-          outlined
-          dense
-          class="q-mb-xs bg-white"
-        />
-        <q-btn
-          flat
-          color="white"
-          label="Reset Delivery"
-          @click="confirmReset('delivery')"
-          class="bg-red-9 text-weight-bold q-mt-sm"
-        />
+          <q-btn
+            outline
+            dense
+            color="white"
+            label="Reset Delivery"
+            @click="confirmReset('delivery')"
+            class="text-red-9 text-weight-bold q-mt-sm q-px-sm"
+          />
+        </q-card>
       </div>
     </div>
   </div>

@@ -24,6 +24,7 @@
       </div>
 
       <q-btn
+      unelevated
         class="main-button"
         color="primary"
         icon="person_add"
@@ -48,7 +49,6 @@
             <div class="col bordered">Address</div>
             <div class="col bordered">Contact Nos</div>
             <div class="col bordered">Email</div>
-            <div class="col bordered">Payment Type</div>
             <div class="col bordered">Remarks</div>
             <div class="col bordered">Actions</div>
           </div>
@@ -84,10 +84,11 @@
               </div>
             </div>
             <div class="col bordered">{{ customer.email }}</div>
-            <div class="col bordered">{{ customer.payment_type }}</div>
             <div class="col bordered">{{ customer.remarks }}</div>
             <div class="col bordered actions">
               <q-btn
+              disable
+              unelevated
                 dense
                 label="Create Collection"
                 color="primary"
@@ -95,6 +96,8 @@
                 @click="openCollectionDialog(customer)"
               />
               <q-btn
+              disable
+              unelevated
                 dense
                 label="Create Transaction"
                 color="primary"
@@ -121,7 +124,6 @@
             <div class="col bordered">Address</div>
             <div class="col bordered">Contact Nos</div>
             <div class="col bordered">Email</div>
-            <div class="col bordered">Payment Type</div>
             <div class="col bordered">Remarks</div>
             <div class="col bordered">Actions</div>
           </div>
@@ -150,10 +152,11 @@
             </div>
             <div class="col bordered">{{ customer.contact_no1 || "N/A" }}</div>
             <div class="col bordered">{{ customer.email }}</div>
-            <div class="col bordered">{{ customer.payment_type }}</div>
             <div class="col bordered">{{ customer.remarks }}</div>
             <div class="col bordered actions">
               <q-btn
+              disable
+              unelevated
                 dense
                 label="Create Collection"
                 color="primary"
@@ -161,6 +164,8 @@
                 @click="openCollectionDialog(customer)"
               />
               <q-btn
+              disable
+              unelevated
                 dense
                 label="Create Transaction"
                 color="primary"
@@ -187,7 +192,6 @@
             <div class="col bordered">Address</div>
             <div class="col bordered">Contact Nos</div>
             <div class="col bordered">Email</div>
-            <div class="col bordered">Payment Type</div>
             <div class="col bordered">Remarks</div>
             <div class="col bordered">Actions</div>
           </div>
@@ -216,10 +220,11 @@
             </div>
             <div class="col bordered">{{ customer.contact_no1 || "N/A" }}</div>
             <div class="col bordered">{{ customer.email }}</div>
-            <div class="col bordered">{{ customer.payment_type }}</div>
             <div class="col bordered">{{ customer.remarks }}</div>
             <div class="col bordered actions">
               <q-btn
+              disable
+              unelevated
                 dense
                 label="Create Collection"
                 color="primary"
@@ -227,6 +232,8 @@
                 @click="openCollectionDialog(customer)"
               />
               <q-btn
+              disable
+              unelevated
                 dense
                 label="Create Transaction"
                 color="primary"

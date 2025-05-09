@@ -13,7 +13,6 @@
       <!-- Sidebar Menu -->
       <q-drawer v-model="leftDrawerOpen" side="left" overlay width="250">
         <q-list>
-          
           <!-- Dashboard Tab -->
           <q-item
             clickable
@@ -39,32 +38,20 @@
             </q-item-section>
             <q-item-section> POS </q-item-section>
           </q-item>
-
-          <!-- Orders Page -->
+          
+          <!-- Items Management -->
           <q-item
             clickable
-            @click="goToOrdersPage"
-            :active="isOrdersPageActive"
+            @click="goToItemsPage"
+            :active="isItemsPageActive"
             class="q-pa-md"
           >
             <q-item-section avatar>
-              <q-icon name="list_alt" />
+              <q-icon name="receipt_long" />
             </q-item-section>
-            <q-item-section> Order Management </q-item-section>
+            <q-item-section> Items Management </q-item-section>
           </q-item>
 
-          <!-- Customers Page -->
-          <q-item
-            clickable
-            @click="goToTagsPage"
-            :active="isTagsPageActive"
-            class="q-pa-md"
-          >
-            <q-item-section avatar>
-              <q-icon name="sell" />
-            </q-item-section>
-            <q-item-section> Tag Management </q-item-section>
-          </q-item>
 
           <!-- Customers Page -->
           <q-item
@@ -81,6 +68,7 @@
 
           <!-- Logistics Management -->
           <q-item
+          disable
             clickable
             @click="goToLogisticsPage"
             :active="isLogisticsPageActive"
@@ -91,7 +79,6 @@
             </q-item-section>
             <q-item-section> Logistics Management </q-item-section>
           </q-item>
-
 
           <!-- Logistics Management -->
 
@@ -127,31 +114,63 @@
           </q-item>
         </q-expansion-item> -->
 
-                  <!-- Invoices Management -->
-                  <q-item
-                  clickable
-                  @click="goToInvoicesPage"
-                  :active="isInvoicesPageActive"
-                  class="q-pa-md"
-                >
-                  <q-item-section avatar>
-                    <q-icon name="receipt_long" />
-                  </q-item-section>
-                  <q-item-section> Invoice Management </q-item-section>
-                </q-item>
+        
 
-                                  <!-- Items Management -->
-                                  <q-item
-                                  clickable
-                                  @click="goToItemsPage"
-                                  :active="isItemsPageActive"
-                                  class="q-pa-md"
-                                >
-                                  <q-item-section avatar>
-                                    <q-icon name="receipt_long" />
-                                  </q-item-section>
-                                  <q-item-section> Items Management </q-item-section>
-                                </q-item>
+          <!-- Orders Page -->
+          <q-item
+          disable
+            clickable
+            @click="goToOrdersPage"
+            :active="isOrdersPageActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="list_alt" />
+            </q-item-section>
+            <q-item-section> Order Management </q-item-section>
+          </q-item>
+
+          <!-- Tags Page -->
+          <q-item
+          disable
+            clickable
+            @click="goToTagsPage"
+            :active="isTagsPageActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="sell" />
+            </q-item-section>
+            <q-item-section> Tag Management </q-item-section>
+          </q-item>
+
+          <!-- Invoices Management -->
+          <q-item
+          disable
+            clickable
+            @click="goToInvoicesPage"
+            :active="isInvoicesPageActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="receipt_long" />
+            </q-item-section>
+            <q-item-section> Invoice Management </q-item-section>
+          </q-item>
+
+          <!-- Payments Management -->
+          <q-item
+          disable
+            clickable
+            @click="goToPaymentsPage"
+            :active="isPaymentsPageActive"
+            class="q-pa-md"
+          >
+            <q-item-section avatar>
+              <q-icon name="receipt_long" />
+            </q-item-section>
+            <q-item-section> Payments Management </q-item-section>
+          </q-item>
 
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
@@ -208,6 +227,9 @@ const isInvoicesPageActive = computed(() => route.path === "/invoices");
 // Check if the current route is Items Page
 const isItemsPageActive = computed(() => route.path === "/items");
 
+// Check if the current route is Items Page
+const isPaymentsPageActive = computed(() => route.path === "/payments");
+
 // Check if the current route is Collections
 // const isCollectionsActive = computed(() => route.path === "/collections");
 
@@ -226,6 +248,7 @@ const requiresAuth = computed(() => {
     "/logistics",
     "/invoices",
     "/items",
+    "/payments",
     // "/collections",
     // "/deliveries",
   ];
@@ -282,5 +305,9 @@ const goToInvoicesPage = () => {
 
 const goToItemsPage = () => {
   router.push("/items");
+};
+
+const goToPaymentsPage = () => {
+  router.push("/payments");
 };
 </script>

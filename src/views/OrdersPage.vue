@@ -133,7 +133,7 @@
             {{ logistics.logistics_status || "N/A" }}
           </div>
           <div class="col bordered text-uppercase">
-            {{ order.payment_status || "N/A" }}
+            {{ order.order_payment.payment_status || "N/A" }}
           </div>
           <div class="col bordered">
             <a

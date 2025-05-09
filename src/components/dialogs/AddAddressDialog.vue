@@ -2,54 +2,65 @@
     <q-dialog v-model="isOpen" persistent>
       <q-card style="width: 800px">
         <q-card-section class="dialog-header">
-          <div class="text-weight-bold text-h6">Add Address</div>
+          <div class="text-body1 text-uppercase text-weight-bold">Add Address</div>
+          <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="closeDialog"
+        />
         </q-card-section>
         <q-card-section class="dialog-body">
           <q-form @submit.prevent="handleAddAddress">
             <!-- Postal Code Search -->
             <div class="row q-gutter-x-sm">
               <div class="col">
-                <q-input v-model="address.postal_code" label="Postal Code" outlined class="dialog-inputs" />
+                <div class="dialog-label">Postal Code<span class="dialog-asterisk"></span></div>
+                <q-input v-model="address.postal_code" label="Enter here..." outlined class="dialog-inputs"/>
               </div>
-              <q-btn label="Search Address" color="primary" @click="searchAddress" class="q-mb-sm" />
+              <div class="">
+                <div class="dialog-label"><span class="dialog-asterisk"></span></div>
+                <q-btn label="Search Address" color="primary" @click="searchAddress" class="q-mb-sm" />
+              </div>
             </div>
             <q-separator class="q-my-md" />
   
             <!-- Address Fields -->
-            <div class="row q-col-gutter-x-sm">
+            <div class="row q-col-gutter-x-sm q-col-gutter-y-md q-mb-md">
               <div class="col-4">
-                <div class="dialog-label">Block No:</div>
+                <div class="dialog-label">Block No:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.block_no" label="Block Number" outlined class="dialog-inputs" />
               </div>
               <div class="col-8">
-                <div class="dialog-label">Road Name:</div>
+                <div class="dialog-label">Road Name:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.road_name" label="Road Name" outlined class="dialog-inputs" />
               </div>
               <div class="col-8">
-                <div class="dialog-label">Building Name:</div>
+                <div class="dialog-label">Building Name:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.building_name" label="Building Name" outlined class="dialog-inputs" />
               </div>
               <div class="col-4">
-                <div class="dialog-label">Unit No:</div>
+                <div class="dialog-label">Unit No:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.unit_no" label="Unit No" outlined class="dialog-inputs" />
               </div>
               <div class="col-3">
-                <div class="dialog-label">Postal Code:</div>
+                <div class="dialog-label">Postal Code:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.postal_code" label="Postal Code" outlined class="dialog-inputs" />
               </div>
               <div class="col-9">
-                <div class="dialog-label">Additional Information:</div>
+                <div class="dialog-label">Additional Information:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.additional_info" label="Additional Info" outlined class="dialog-inputs" />
               </div>
               <div class="col-12">
-                <div class="dialog-label">Remarks:</div>
+                <div class="dialog-label">Remarks:<span class="dialog-asterisk"></span></div>
                 <q-input v-model="address.remarks" label="Remarks" outlined class="dialog-inputs" />
               </div>
             </div>
   
             <q-card-actions align="right">
-              <q-btn label="Cancel" color="negative" @click="closeDialog" />
-              <q-btn label="Add" color="primary" type="submit" />
+              <q-btn label="Add Address" color="primary" type="submit" />
             </q-card-actions>
           </q-form>
         </q-card-section>
@@ -61,6 +72,9 @@
   import { ref, watch } from "vue";
   import { useTransactionStore } from "@/stores/transactionStore";
   import { callOneMapAPI } from "@/services/onemapService";
+  import { useQuasar } from "quasar";
+
+const $q = useQuasar();
   
   const props = defineProps({ modelValue: Boolean });
   const emit = defineEmits(["update:modelValue", "address-added"]);
@@ -84,11 +98,6 @@
   });
   
   const handleAddAddress = async () => {
-    if (!address.value.block_no || !address.value.road_name) {
-      console.error("Address is incomplete. Ensure all fields are filled.");
-      return;
-    }
-  
     try {
       const formattedAddress = {
         postal_code: address.value.postal_code.toUpperCase(),
@@ -101,18 +110,32 @@
       };
   
       await transactionStore.addAddress(formattedAddress);
-      console.log("✅ Address added successfully:", formattedAddress);
+      // console.log("✅ Address added successfully:", formattedAddress);
+
+      $q.notify({
+      type: "positive",
+      message: "Address added successfully.",
+    });
+
   
       emit("address-added"); // Notify parent component
       closeDialog();
     } catch (error) {
       console.error("❌ Error adding address:", error.message);
+
+      $q.notify({
+      type: "negative",
+      message: "Failed to add address. Please try again.",
+    });
     }
   };
   
   const searchAddress = async () => {
     if (!address.value.postal_code) {
-      console.error("Postal code is required.");
+      $q.notify({
+      type: "negative",
+      message: "Enter postal code to search an address",
+    });
       return;
     }
   

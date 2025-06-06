@@ -166,34 +166,29 @@ import { ref, onMounted, computed } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 
 const transactionStore = useTransactionStore();
-const orders = ref([]); // Stores fetched orders
-const currentPage = ref(1); // Current page for pagination
-const pageSize = ref(10); // Number of records per page
+const rawOrders = ref([]);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const searchQuery = ref("");
 
-const searchQuery = ref(""); // Search input
-// Date Filters
 const collectionStartDate = ref(null);
 const collectionEndDate = ref(null);
 const deliveryStartDate = ref(null);
 const deliveryEndDate = ref(null);
 
-
-// Fetch orders on mount
 onMounted(async () => {
   try {
-    orders.value = await transactionStore.fetchAllOrdersSimple();
+    rawOrders.value = await transactionStore.fetchAllOrdersSimple();
   } catch (error) {
     console.error("Error fetching orders:", error);
   }
 });
 
-// Format date display
 const formattedCollectionStartDate = computed(() => formatDate(collectionStartDate.value));
 const formattedCollectionEndDate = computed(() => formatDate(collectionEndDate.value));
 const formattedDeliveryStartDate = computed(() => formatDate(deliveryStartDate.value));
 const formattedDeliveryEndDate = computed(() => formatDate(deliveryEndDate.value));
 
-// Clear Date Input
 const clearDate = (type) => {
   if (type === "collectionStartDate") collectionStartDate.value = null;
   if (type === "collectionEndDate") collectionEndDate.value = null;
@@ -201,49 +196,51 @@ const clearDate = (type) => {
   if (type === "deliveryEndDate") deliveryEndDate.value = null;
 };
 
-// Filter Orders Based on Search & Date Range
 const filteredOrders = computed(() => {
   const query = searchQuery.value.toLowerCase();
 
-  return orders.value.map(logistics => ({
-    ...logistics,
-    orders: logistics.orders?.filter(order => {
-      const collectionDate = logistics.collections?.[0]?.collection_date || null;
-      const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
+  return rawOrders.value.map((logistics) => {
+    const order = logistics.order || {};
 
-      const collectionMatch =
-        (!collectionStartDate.value || collectionDate >= collectionStartDate.value) &&
-        (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
+    const collectionDate = logistics.collections?.[0]?.collection_date || null;
+    const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
 
-      const deliveryMatch =
-        (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
-        (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
+    const collectionMatch =
+      (!collectionStartDate.value || collectionDate >= collectionStartDate.value) &&
+      (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
 
-      const searchMatch =
-        (order.order_no && order.order_no.toLowerCase().includes(query)) ||
-        (order.customer?.name && order.customer.name.toLowerCase().includes(query)) ||
-        (order.goods_status && order.goods_status.toLowerCase().includes(query)) ||
-        (order.payment_status && order.payment_status.toLowerCase().includes(query)) ||
-        (logistics.logistics_status && logistics.logistics_status.toLowerCase().includes(query));
+    const deliveryMatch =
+      (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
+      (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
 
-      return collectionMatch && deliveryMatch && searchMatch;
-    }) || []
-  })).filter(logistics => logistics.orders.length > 0);
+    const searchMatch =
+      (order.order_no && order.order_no.toLowerCase().includes(query)) ||
+      (logistics.customer?.name && logistics.customer.name.toLowerCase().includes(query)) ||
+      (order.goods_status && order.goods_status.toLowerCase().includes(query)) ||
+      (order.order_payment?.payment_status && order.order_payment.payment_status.toLowerCase().includes(query)) ||
+      (logistics.logistics_status && logistics.logistics_status.toLowerCase().includes(query));
+
+    return {
+      ...logistics,
+      orders: collectionMatch && deliveryMatch && searchMatch && order.order_no ? [{
+        ...order,
+        customer: logistics.customer || null,
+        goods_status: order.goods_status || logistics.order?.goods_status || null
+      }] : [],
+    };
+  }).filter((l) => l.orders.length > 0);
 });
 
-// Pagination: Get the paginated slice of orders
 const paginatedOrders = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
   const end = start + pageSize.value;
   return filteredOrders.value.slice(start, end);
 });
 
-// Total number of pages
 const totalPages = computed(() =>
   Math.ceil(filteredOrders.value.length / pageSize.value)
 );
 
-// Function to format dates
 const formatDate = (dateString) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -255,41 +252,29 @@ const formatDate = (dateString) => {
   });
 };
 
-// Get collection date from collections array
 const getCollectionDate = (collections) => {
   if (!collections || collections.length === 0) return "N/A";
   return formatDate(collections[0]?.collection_date);
 };
 
-// Get delivery date from deliveries array
 const getDeliveryDate = (deliveries) => {
   if (!deliveries || deliveries.length === 0) return "N/A";
   return formatDate(deliveries[0]?.delivery_date);
 };
 
-// Open Customer Tab
 const openCustomerTab = (customerId) => {
   if (!customerId) return;
   window.open(`/customers/${customerId}`, "_blank");
 };
 
-// Open Order Dialog and fetch transaction items
 const openOrderDialog = async (order) => {
   try {
     if (!order) return;
 
-    // Pre-fill the transaction store with customer details
-    transactionStore.setSelectedCustomer({
-      id: order.customer_id,
-    });
-
-    // Set order number
+    transactionStore.setSelectedCustomer({ id: order.customer_id });
     transactionStore.setOrderNo(order.order_no);
-
-    // Reset previous transaction items
     transactionStore.resetTransactionItems();
 
-    // Open order details in a new tab
     window.open(`/orders/${order.order_no}`, "_blank");
   } catch (error) {
     console.error("Error opening order dialog:", error);

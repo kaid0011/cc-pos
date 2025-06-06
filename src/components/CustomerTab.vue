@@ -1,12 +1,12 @@
 <template>
   <div class="customer-tab main-container row">
     <!-- Select Customer Column -->
-    <div class="col-6 left-container">
+    <div class="col-5 left-container">
       <SelectCustomerTab />
     </div>
 
     <!-- Create Collection Column -->
-    <div class="col-6 right-container">
+    <div class="col-7 right-container">
       <CreateCollectionTab />
     </div>
   </div>

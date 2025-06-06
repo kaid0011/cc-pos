@@ -17,7 +17,7 @@
         </div>
 
         <!-- Search bar -->
-        <div v-if="selectedItemCategory !== 'Others'" class="search-container">
+        <div v-if="selectedItemCategory !== 'others'" class="search-container">
           <q-input
             class="search-input items-center"
             v-model="searchItem"
@@ -43,7 +43,7 @@
 
       <!-- Item List Section -->
       <div class="item-container">
-        <div v-if="selectedItemCategory !== 'Others'" class="item-list">
+        <div v-if="selectedItemCategory !== 'others'" class="item-list">
           <div
             class="q-pa-md"
             v-for="(group, subCategory) in groupedItems"
@@ -1891,12 +1891,12 @@ const transactionCount = computed(
 );
 
 const categories = [
-  "Clothings",
-  "Beddings",
-  "Upholsteries",
-  "Miscellaneous",
-  "Onsite Cleaning",
-  "Others",
+  "clothings",
+  "beddings",
+  "upholsteries",
+  "miscellaneous",
+  "onsite cleaning",
+  "others",
 ];
 
 // Computed property for total quantity

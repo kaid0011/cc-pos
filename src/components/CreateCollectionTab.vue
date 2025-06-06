@@ -2,7 +2,9 @@
   <div class="selected-customer" v-if="selectedCustomer">
     <q-card flat class="customer-card q-pa-sm text-p">
       <q-card-section>
-        <div class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs">
+        <div
+          class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
+        >
           Selected Customer
         </div>
         <q-separator class="q-my-xs q-mb-sm" />
@@ -30,19 +32,21 @@
       <!-- Collection Section -->
       <div class="col">
         <q-card flat class="customer-card q-pa-md">
-          <div class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs">
+          <div
+            class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
+          >
             For Collection
           </div>
-          <q-separator class="q-mb-sm"/>
-          <q-checkbox
+          <q-separator class="q-mb-md" />
+          <!-- <q-checkbox
             v-model="transactionStore.useCcCollection"
             @update:model-value="
               (value) => handleCheckboxChange('collection', value)
             "
             label="Self-collect"
             class="row full-width q-mb-sm"
-          />
-  
+          /> -->
+
           <q-btn
             outline
             dense
@@ -146,7 +150,7 @@
               v-model="transactionStore.selectedCollectionDriver"
               :options="transactionStore.driverOptions"
               option-label="name"
-              option-value="id"
+              option-value="name"
               label="Select Collection Driver"
               outlined
               dense
@@ -210,18 +214,21 @@
       <!-- Delivery Section -->
       <div class="col">
         <q-card flat class="customer-card q-pa-md">
-          <div class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs">
+          <div
+            class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
+          >
             For Delivery
           </div>
-          <q-separator class="q-mb-sm"/>
-          <q-checkbox
+          <q-separator class="q-mb-md" />
+          <!-- <q-checkbox
             :model-value="transactionStore.useCcDelivery"
             @update:model-value="
               (value) => handleCheckboxChange('delivery', value)
             "
             label="Self-pickup"
             class="row full-width q-mb-sm"
-          />
+          /> -->
+
           <q-btn
             outline
             dense
@@ -270,7 +277,7 @@
               class="q-mb-xs bg-white"
             />
           </div>
-  
+
           <!-- Delivery Dates -->
           <div class="row q-col-gutter-sm">
             <div class="col-6">
@@ -326,7 +333,7 @@
               v-model="transactionStore.selectedDeliveryDriver"
               :options="transactionStore.driverOptions"
               option-label="name"
-              option-value="id"
+              option-value="name"
               label="Select Delivery Driver"
               outlined
               dense
@@ -384,34 +391,39 @@
   <!-- Confirmation Dialog -->
   <q-dialog v-model="showConfirmation">
     <q-card>
-      <q-card-section>
-        <div class="text-h6">Confirm Reset</div>
-        <div class="q-mt-md">
-          Are you sure you want to reset this section? This action cannot be
-          undone.
-        </div>
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">Confirm Reset</div>
       </q-card-section>
 
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          label="Cancel"
-          color="secondary"
-          @click="showConfirmation = false"
-        />
-        <q-btn
-          flat
-          label="Yes, Reset"
-          color="negative"
-          @click="confirmAction"
-        />
-      </q-card-actions>
+      <q-card-section class="dialog-body">
+        <p>
+          Are you sure you want to reset this section? This action cannot be
+          undone.
+        </p>
+
+        <q-card-actions align="right">
+          <q-btn
+            class="dialog-button"
+            unelevated
+            label="Cancel"
+            color="negative"
+            @click="showConfirmation = false"
+          />
+          <q-btn
+            class="dialog-button"
+            unelevated
+            label="Yes"
+            color="primary"
+            @click="confirmAction"
+          />
+        </q-card-actions>
+      </q-card-section>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watchEffect } from "vue";
+import { ref, onMounted, computed, watchEffect, watch } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import AddContactPersonDialog from "@/components/dialogs/AddContactDialog.vue";
 import AddAddressDialog from "@/components/dialogs/AddAddressDialog.vue";
@@ -426,6 +438,17 @@ onMounted(async () => {
   await transactionStore.loadJobOptions();
 });
 
+// Auto-update delivery date when collection date changes
+watch(
+  () => transactionStore.collectionDate,
+  (newDate) => {
+    if (newDate) {
+      const newDeliveryDate = addWorkingDays(newDate, 7);
+      transactionStore.deliveryDate = newDeliveryDate;
+    }
+  }
+);
+
 const selectedCustomer = computed(() => transactionStore.selectedCustomer);
 
 // Trigger an immediate update for contactOptions when the selected customer changes
@@ -437,11 +460,11 @@ const handleCheckboxChange = (type, value) => {
   if (type === "collection") {
     transactionStore.useCcCollection = value;
     transactionStore.toggleUseCcCollection(value); // Call store logic
-    console.log(`Self-collect checkbox updated: ${value}`);
+    // console.log(`Self-collect checkbox updated: ${value}`);
   } else if (type === "delivery") {
     transactionStore.useCcDelivery = value;
     transactionStore.toggleUseCcDelivery(value); // Call store logic
-    console.log(`Self-pickup checkbox updated: ${value}`);
+    // console.log(`Self-pickup checkbox updated: ${value}`);
   }
 };
 

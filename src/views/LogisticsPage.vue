@@ -348,7 +348,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                 <div class="text-weight-bold">
                   <a
                     @click.prevent="
-                    openUpdateLogisticsDialog(transaction.logistics_id)
+                      openUpdateLogisticsDialog(transaction.logistics_id)
                     "
                     class="text-weight-bold"
                   >
@@ -420,16 +420,19 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           <div class="text-body1 text-uppercase text-weight-bold">
             Create Collection
           </div>
+          <q-btn
+            icon="close"
+            flat
+            dense
+            round
+            class="absolute-top-right q-ma-sm"
+            @click="showCreateCollectionDialog = false"
+          />
         </q-card-section>
         <q-card-section class="q-pa-none">
           <CreateCollectionTab />
         </q-card-section>
-        <q-card-actions align="right" class="bg-grey-5">
-          <q-btn
-            color="negative"
-            @click="showCreateCollectionDialog = false"
-            label="Close"
-          />
+        <q-card-actions align="right" style="background-color: #ffe0cd;">
           <q-btn
             color="primary"
             @click="createCollection()"
@@ -450,50 +453,68 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           <div class="text-body1 text-uppercase text-weight-bold">
             Create Order
           </div>
+          <q-btn
+            icon="close"
+            flat
+            dense
+            round
+            class="absolute-top-right q-ma-sm"
+            @click="showCreateOrderDialog = false"
+          />
         </q-card-section>
         <q-card-section>
           <CreateOrderFromCollection />
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn
-            flat
-            class="negative-button"
-            @click="handleClose"
-            label="Close"
-          />
-        </q-card-actions>
       </q-card>
     </q-dialog>
-    <q-dialog v-model="showUpdateLogisticsDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+
+    <q-dialog
+      v-model="showUpdateLogisticsDialog"
+      persistent
+      transition-show="slide-down"
+      transition-hide="slide-up"
+    >
       <q-card style="min-width: 90vw">
         <q-card-section class="dialog-header">
-          <div class="text-body1 text-uppercase text-weight-bold">Update Collection and Delivery</div>
+          <div class="text-body1 text-uppercase text-weight-bold">
+            Update Collection and Delivery
+          </div>
+          <q-btn
+            icon="close"
+            flat
+            dense
+            round
+            class="absolute-top-right q-ma-sm"
+            @click="showUpdateLogisticsDialog = false"
+          />
         </q-card-section>
         <q-card-section class="q-pa-none">
           <div class="full-container">
-            <div class="row q-col-gutter-md q-pa-lg">
+            <div class="text-subtitle1 text-weight-bold q-ma-md q-pl-md">
+              Customer Name:
+              <span class="text-subtitle1 text-uppercase text-weight-bold text-red-9">
+                {{ selectedTransaction?.customer?.name || "[NOT SELECTED]" }}
+              </span>
+            </div>
+            <div class="row q-col-gutter-md q-px-lg q-pb-lg">
               <div class="col-6">
-                  <UpdateCollectionDialog/>
+                <UpdateCollectionDialog />
               </div>
               <div class="col-6">
-                  <UpdateDeliveryDialog/>
+                <UpdateDeliveryDialog />
               </div>
             </div>
-            <q-separator class="q-mt-md"/>
-            <div>            
-              <CollectionHistory/>
+            <q-separator class="q-mt-md" />
+            <div>
+              <CollectionHistory />
             </div>
             <div>
-              <DeliveryHistory/>
+              <DeliveryHistory />
             </div>
           </div>
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat color="negative" @click="showUpdateLogisticsDialog = false" label="Close" />
-        </q-card-actions>
       </q-card>
     </q-dialog>
-   
   </div>
 </template>
 
@@ -530,6 +551,8 @@ const showCreateOrderDialog = ref(false);
 const showUpdateLogisticsDialog = ref(false);
 
 const showWeeklySummary = ref(false);
+
+const selectedTransaction = ref(null);
 
 const toggleWeeklySummary = () => {
   showWeeklySummary.value = !showWeeklySummary.value;
@@ -574,7 +597,7 @@ const drivers = computed(() => {
   const driverNames = transactionStore.driverOptions.map(
     (driver) => driver.name
   );
-  return [...new Set(driverNames)];
+  return [...new Set(driverNames), "[NOT SET]"];
 });
 
 onMounted(async () => {
@@ -725,9 +748,12 @@ const createOrder = (collection) => {
   transactionStore.resetTransactionItems();
   // Set the transaction store properties
   transactionStore.selectedCustomer = collection.customer;
-  transactionStore.selectedDeliveryContact = collection.delivery?.contact_person || null;
-  transactionStore.selectedCollectionContact = collection.contact_person || null;
-  transactionStore.selectedDeliveryAddress = collection.delivery?.address || null;
+  transactionStore.selectedDeliveryContact =
+    collection.delivery?.contact_person || null;
+  transactionStore.selectedCollectionContact =
+    collection.contact_person || null;
+  transactionStore.selectedDeliveryAddress =
+    collection.delivery?.address || null;
   transactionStore.selectedCollectionAddress = collection.address || null;
   transactionStore.selectedCollectionDriver = collection.driver || null;
   transactionStore.selectedDeliveryDriver = collection.delivery?.driver || null;
@@ -949,33 +975,42 @@ const getTransactionClass = (count) => {
   else return "";
 };
 
-
 const openUpdateLogisticsDialog = async (logisticsId) => {
   try {
+    const matched = allTransactions.value.find(
+      (t) => t.logistics_id === logisticsId
+    );
+    selectedTransaction.value = matched || null;
+
     await updateCollection(logisticsId);
     await updateDelivery(logisticsId);
+
+    transactionStore.selectedCustomer = selectedTransaction.value?.customer || null;
+
     showUpdateLogisticsDialog.value = true;
   } catch (error) {
     console.error("Error opening logistics update dialog:", error);
-    $q.notify({ type: "negative", message: "Failed to load logistics details" });
+    $q.notify({
+      type: "negative",
+      message: "Failed to load logistics details",
+    });
   }
 };
 
 const updateCollection = async (logisticsId) => {
   try {
-    const collectionData = await transactionStore.fetchCollectionByLogisticsId(logisticsId);
+    const collectionData = await transactionStore.fetchCollectionByLogisticsId(
+      logisticsId
+    );
     if (!collectionData || collectionData.length === 0) {
       throw new Error("No collection data found!");
     }
     const collection = collectionData[0];
-    let contactPerson = collection?.contact_persons;
-    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
-      contactPerson = contactPerson[0];
-    }
+    
     transactionStore.selectedCollectionId = collection.id || null;
-    transactionStore.selectedCollectionContact = contactPerson || null;
+    transactionStore.selectedCollectionContact = collection.customer_contact_persons || null;
     transactionStore.selectedCollectionAddress = collection.address || null;
-    transactionStore.selectedCollectionDriver = collection.drivers || null;
+    transactionStore.selectedCollectionDriver = collection.driver_name || null;
     transactionStore.collectionDate = collection.collection_date || null;
     transactionStore.collectionTime = collection.collection_time || null;
     transactionStore.collectionRemarks = collection.remarks || null;
@@ -985,25 +1020,27 @@ const updateCollection = async (logisticsId) => {
     transactionStore.logisticsId = collection.logistics_id || null;
   } catch (error) {
     console.error("Error fetching collection details:", error);
-    $q.notify({ type: "negative", message: "Failed to load collection details" });
+    $q.notify({
+      type: "negative",
+      message: "Failed to load collection details",
+    });
   }
 };
 
 const updateDelivery = async (logisticsId) => {
   try {
-    const deliveryData = await transactionStore.fetchDeliveryByLogisticsId(logisticsId);
+    const deliveryData = await transactionStore.fetchDeliveryByLogisticsId(
+      logisticsId
+    );
     if (!deliveryData || deliveryData.length === 0) {
       throw new Error("No delivery data found!");
     }
     const delivery = deliveryData[0];
-    let contactPerson = delivery?.contact_persons;
-    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
-      contactPerson = contactPerson[0];
-    }
+    
     transactionStore.selectedDeliveryId = delivery.id || null;
-    transactionStore.selectedDeliveryContact = contactPerson || null;
+    transactionStore.selectedDeliveryContact = delivery.customer_contact_persons || null;
     transactionStore.selectedDeliveryAddress = delivery.address || null;
-    transactionStore.selectedDeliveryDriver = delivery.drivers || null;
+    transactionStore.selectedDeliveryDriver = delivery.driver_name || null;
     transactionStore.deliveryDate = delivery.delivery_date || null;
     transactionStore.deliveryTime = delivery.delivery_time || null;
     transactionStore.deliveryRemarks = delivery.remarks || null;

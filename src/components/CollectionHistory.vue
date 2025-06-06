@@ -51,10 +51,10 @@
           </div>
         </div>
         <div class="col bordered">
-          <div>{{ transaction.contact_persons?.name || "[NOT SET]" }}</div>
-          <div>{{ transaction.contact_persons?.contact_no1 || "-" }}</div>
-          <div v-if="transaction.contact_persons?.contact_no2">
-            {{ transaction.contact_persons?.contact_no2 || "-" }}
+          <div>{{ transaction.customer_contact_persons?.name || "[NOT SET]" }}</div>
+          <div>{{ transaction.customer_contact_persons?.contact_no1 || "-" }}</div>
+          <div v-if="transaction.customer_contact_persons?.contact_no2">
+            {{ transaction.customer_contact_persons?.contact_no2 || "-" }}
           </div>
         </div>
         <div class="col bordered">

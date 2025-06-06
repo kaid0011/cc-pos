@@ -32,6 +32,7 @@
             @click="goToPOS"
             :active="isPOSActive"
             class="q-pa-md"
+            disable
           >
             <q-item-section avatar>
               <q-icon name="point_of_sale" />
@@ -68,7 +69,6 @@
 
           <!-- Logistics Management -->
           <q-item
-          disable
             clickable
             @click="goToLogisticsPage"
             :active="isLogisticsPageActive"
@@ -118,7 +118,6 @@
 
           <!-- Orders Page -->
           <q-item
-          disable
             clickable
             @click="goToOrdersPage"
             :active="isOrdersPageActive"
@@ -132,11 +131,11 @@
 
           <!-- Tags Page -->
           <q-item
-          disable
             clickable
             @click="goToTagsPage"
             :active="isTagsPageActive"
             class="q-pa-md"
+            disable
           >
             <q-item-section avatar>
               <q-icon name="sell" />
@@ -146,11 +145,11 @@
 
           <!-- Invoices Management -->
           <q-item
-          disable
             clickable
             @click="goToInvoicesPage"
             :active="isInvoicesPageActive"
             class="q-pa-md"
+            disable
           >
             <q-item-section avatar>
               <q-icon name="receipt_long" />
@@ -160,11 +159,11 @@
 
           <!-- Payments Management -->
           <q-item
-          disable
             clickable
             @click="goToPaymentsPage"
             :active="isPaymentsPageActive"
             class="q-pa-md"
+            disable
           >
             <q-item-section avatar>
               <q-icon name="receipt_long" />

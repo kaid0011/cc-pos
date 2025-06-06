@@ -230,14 +230,17 @@ onMounted(async () => {
   await transactionStore.loadItems();
 });
 
+const capitalizeFirst = (str) =>
+  str.replace(/\b\w/g, (char) => char.toUpperCase());
+
 // Options and Category Data
 const categoryOptions = [
-  "Clothings",
-  "Beddings",
-  "Upholsteries",
-  "Miscellaneous",
-  "Onsite Cleaning",
-  "New Item",
+  "clothings",
+  "beddings",
+  "upholsteries",
+  "miscellaneous",
+  "onsite cleaning",
+  "new item",
 ];
 const priceTypeOptions = ["Current", "TBA", "Custom"];
 const unitTypeOptions = ["pc", "sqft", "kg"];

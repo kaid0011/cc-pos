@@ -3,8 +3,7 @@
     <div class="preview row">
       <div class="col-6 preview-left-container">
         <div class="customer-details-container q-pb-md">
-          <q-btn
-          disable
+          <q-btn 
             dense
             flat
             label="Create Collection"
@@ -41,7 +40,7 @@
                   v-if="
                     customerDetails.contact_no2 &&
                     customerDetails.contact_no2.length
-                  "
+                  " 
                 >
                   / {{ customerDetails.contact_no2 }}</span
                 >
@@ -700,7 +699,7 @@ async function createCollection() {
 
     // Show success dialog
     $q.dialog({
-      title: "Success",
+      title: "Collection Created",
       message: "Collection created successfully!",
       ok: "OK",
       color: "positive",

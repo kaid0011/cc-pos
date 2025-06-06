@@ -91,18 +91,12 @@
 
             <div class="q-pa-md">
               <div class="text-h6">Collection Driver Details</div>
-              <q-input
-                v-model="collection.driver.name"
-                label="Driver Name"
-                outlined
-                dense
-              />
-              <q-input
-                v-model="collection.driver.contact_no1"
-                label="Driver Contact"
-                outlined
-                dense
-              />
+<q-input
+  v-model="collection.driver_name"
+  label="Driver Name"
+  outlined
+  dense
+/>
             </div>
 
             <div class="q-pa-md">
@@ -186,18 +180,12 @@
 
             <div class="q-pa-md">
               <div class="text-h6">Delivery Driver Details</div>
-              <q-input
-                v-model="collection.delivery.driver.name"
-                label="Driver Name"
-                outlined
-                dense
-              />
-              <q-input
-                v-model="collection.delivery.driver.contact_no1"
-                label="Driver Contact"
-                outlined
-                dense
-              />
+<q-input
+  v-model="collection.driver_name"
+  label="Driver Name"
+  outlined
+  dense
+/>
             </div>
 
             <div class="q-pa-md">
@@ -253,7 +241,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";d
 import { useTransactionStore } from "@/stores/transactionStore";
 
 const route = useRoute();
@@ -267,10 +255,8 @@ const collection = ref({
   area: "",
   status: "",
   remarks: "",
-  driver: {
-    name: "",
-    contact_no1: "",
-  },
+  driver_name: "",
+  driver_contact: "",
   contact_person: {
     name: "",
     contact_no1: "",
@@ -293,6 +279,8 @@ const collection = ref({
     area: "",
     status: "",
     remarks: "",
+    driver_name: "",
+    driver_contact: "",
     contact_person: {
       name: "",
       contact_no1: "",
@@ -300,12 +288,9 @@ const collection = ref({
       email: "",
       remarks: "",
     },
-    driver: {
-      name: "",
-      contact_no1: "",
-    },
   },
 });
+
 
 const fetchCollectionDeliveryDetails = async () => {
   const collectionId = route.params.id;
@@ -316,34 +301,27 @@ const fetchCollectionDeliveryDetails = async () => {
     console.log("Fetched Collection Details:", data);
 
     // Safely populate the fields while maintaining default empty strings
-    collection.value = {
-      ...collection.value,
-      ...data,
-      driver: {
-        ...collection.value.driver,
-        ...data.driver,
-      },
-      contact_person: {
-        ...collection.value.contact_person,
-        ...data.contact_person,
-      },
-      customer: {
-        ...collection.value.customer,
-        ...data.customer,
-      },
-      delivery: {
-        ...collection.value.delivery,
-        ...data.delivery,
-        contact_person: {
-          ...collection.value.delivery.contact_person,
-          ...data.delivery?.contact_person,
-        },
-        driver: {
-          ...collection.value.delivery.driver,
-          ...data.delivery?.driver,
-        },
-      },
-    };
+collection.value = {
+  ...collection.value,
+  ...data,
+  contact_person: {
+    ...collection.value.contact_person,
+    ...data.contact_person,
+  },
+  customer: {
+    ...collection.value.customer,
+    ...data.customer,
+  },
+  delivery: {
+    ...collection.value.delivery,
+    ...data.delivery,
+    contact_person: {
+      ...collection.value.delivery.contact_person,
+      ...data.delivery?.contact_person,
+    },
+  },
+};
+
   } catch (error) {
     console.error("Error fetching collection details:", error);
   }

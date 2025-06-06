@@ -87,7 +87,6 @@
             <div class="col bordered">{{ customer.remarks }}</div>
             <div class="col bordered actions">
               <q-btn
-              disable
               unelevated
                 dense
                 label="Create Collection"
@@ -96,7 +95,6 @@
                 @click="openCollectionDialog(customer)"
               />
               <q-btn
-              disable
               unelevated
                 dense
                 label="Create Transaction"
@@ -155,7 +153,6 @@
             <div class="col bordered">{{ customer.remarks }}</div>
             <div class="col bordered actions">
               <q-btn
-              disable
               unelevated
                 dense
                 label="Create Collection"
@@ -164,7 +161,6 @@
                 @click="openCollectionDialog(customer)"
               />
               <q-btn
-              disable
               unelevated
                 dense
                 label="Create Transaction"
@@ -223,7 +219,6 @@
             <div class="col bordered">{{ customer.remarks }}</div>
             <div class="col bordered actions">
               <q-btn
-              disable
               unelevated
                 dense
                 label="Create Collection"
@@ -232,7 +227,6 @@
                 @click="openCollectionDialog(customer)"
               />
               <q-btn
-              disable
               unelevated
                 dense
                 label="Create Transaction"
@@ -259,36 +253,41 @@
     />
 
     <q-dialog
-    v-model="showCreateCollectionDialog"
-    persistent
-    transition-show="slide-down"
-    transition-hide="slide-up"
-  >
-    <q-card class="dialog" style="width: 600px">
-      <q-card-section class="dialog-header">
-        <div class="text-body1 text-uppercase text-weight-bold">
-          Create Collection
-        </div>
-      </q-card-section>
-      <q-card-section>
-        <CreateCollectionTab/>
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          class="negative-button"
-          @click="showCreateCollectionDialog = false"
-          label="Close"
-        />
-        <q-btn
-          flat
-          class=""
-          @click="createCollection()"
-          label="Create Collection"
-        />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      v-model="showCreateCollectionDialog"
+      persistent
+      transition-show="slide-down"
+      transition-hide="slide-up"
+    >
+      <q-card class="input-dialog" style="min-width: 300em">
+        <q-card-section class="dialog-header">
+          <div class="text-body1 text-uppercase text-weight-bold">
+            Create Collection
+          </div>
+          <q-btn
+            icon="close"
+            flat
+            dense
+            round
+            class="absolute-top-right q-ma-sm"
+            @click="showCreateCollectionDialog = false"
+          />
+        </q-card-section>
+        <q-card-section class="dialog-body">
+          <!-- Inject the CreateCollectionTab Component Here -->
+          <CreateCollectionTab />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            unelevated
+            class="full-width"
+            color="primary"
+            @click="createCollection()"
+            label="Create Collection"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </div>
 </template>
 
@@ -413,15 +412,13 @@ async function createCollection() {
 
     // Show success dialog
     $q.dialog({
-      title: "Success",
+      title: "Collection Created",
       message: "Collection created successfully!",
       ok: "OK",
       color: "positive",
     });
 
     // Reset the fields
-    transactionStore.collectionTime = null;
-    transactionStore.deliveryTime = null;
     transactionStore.selectedCollectionContact = null;
     transactionStore.selectedDeliveryContact = null;
     transactionStore.selectedCollectionAddress = null;
@@ -430,7 +427,6 @@ async function createCollection() {
     transactionStore.selectedDeliveryDriver = null;
     transactionStore.collectionRemarks = "";
     transactionStore.deliveryRemarks = "";
-    transactionStore.jobType = "";
 
     // Close the dialog
     showCreateCollectionDialog.value = false;
@@ -446,6 +442,7 @@ async function createCollection() {
     });
   }
 }
+
 const activeTab = ref("all");
 
 const contractCustomers = computed(() => {

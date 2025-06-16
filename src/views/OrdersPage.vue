@@ -121,19 +121,27 @@
             </a>
           </div>
           <div class="col bordered">
-            {{ getCollectionDate(logistics.collections) }}
+            <div>{{ getCollectionDate(logistics.collections) }}</div>
+            <div><span class="text-weight-bold q-mr-xs">Time:</span>{{ logistics.collections?.[0]?.collection_time || 'N/A' }}</div>
           </div>
           <div class="col bordered">
-            {{ getDeliveryDate(logistics.deliveries) }}
+            <div>{{ getDeliveryDate(logistics.deliveries) }}</div>
+            <div><span class="text-weight-bold q-mr-xs">Time:</span>{{ logistics.collections?.[0]?.collection_time || 'N/A' }}</div>
           </div>
           <div class="col bordered text-uppercase">
-            {{ order.goods_status || "N/A" }}
+            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ order.goods_status }}</div>
+            <div><span class="text-weight-bold q-mr-xs">Bags:</span> {{ logistics.collections?.[0]?.no_bags || '-' }}</div>
+            <div><span class="text-weight-bold q-mr-xs">Hang:</span> {{ order.order_production?.no_hangers || '-' }}</div>
+            <div><span class="text-weight-bold q-mr-xs">Pack:</span> {{ order.order_production?.no_packets || '-' }}</div>
           </div>
           <div class="col bordered text-uppercase">
-            {{ logistics.logistics_status || "N/A" }}
+            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ logistics.logistics_status }}</div>
           </div>
           <div class="col bordered text-uppercase">
-            {{ order.order_payment.payment_status || "N/A" }}
+            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ order.payment_status }}</div>
+            <div>Paid: <span class="q-ml-xs text-weight-bold">{{ order.paid_amount }}</span></div>
+            <div>Balance: <span class="q-ml-xs text-red text-weight-bold">{{ order.total_amount - order.paid_amount }}</span></div>
+            <div>Amount: <span class="q-ml-xs text-weight-bold">{{ order.total_amount }}</span></div>
           </div>
           <div class="col bordered">
             <a
@@ -214,19 +222,26 @@ const filteredOrders = computed(() => {
       (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
 
     const searchMatch =
-      (order.order_no && order.order_no.toLowerCase().includes(query)) ||
-      (logistics.customer?.name && logistics.customer.name.toLowerCase().includes(query)) ||
-      (order.goods_status && order.goods_status.toLowerCase().includes(query)) ||
-      (order.order_payment?.payment_status && order.order_payment.payment_status.toLowerCase().includes(query)) ||
-      (logistics.logistics_status && logistics.logistics_status.toLowerCase().includes(query));
+      (order.order_no.toLowerCase().includes(query)) ||
+      (logistics.customer?.name.toLowerCase().includes(query)) ||
+      (order.goods_status?.toLowerCase().includes(query)) ||
+      (order.order_payment?.payment_status.toLowerCase().includes(query)) ||
+      (logistics.logistics_status.toLowerCase().includes(query));
 
     return {
       ...logistics,
-      orders: collectionMatch && deliveryMatch && searchMatch && order.order_no ? [{
-        ...order,
-        customer: logistics.customer || null,
-        goods_status: order.goods_status || logistics.order?.goods_status || null
-      }] : [],
+      orders: collectionMatch && deliveryMatch && searchMatch && order.order_no
+  ? [{
+      ...order,
+      customer: logistics.customer || null,
+      customer_id: logistics.customer?.id || null,
+      goods_status: order.order_production?.goods_status || "N/A",
+      payment_status: order.order_payment?.payment_status || "N/A",
+      total_amount: order.order_payment?.total_amount || "N/A",
+      paid_amount: order.order_payment?.paid_amount || "0"
+    }]
+  : [],
+
     };
   }).filter((l) => l.orders.length > 0);
 });

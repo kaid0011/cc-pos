@@ -100,56 +100,53 @@
         No orders found.
       </div>
 
-      <div v-else v-for="(logistics, index) in paginatedOrders" :key="index">
-        <div
-          v-for="(order, idx) in logistics.orders"
-          :key="idx"
-          class="row row-col-row q-px-md"
-        >
-          <div class="col bordered">
-            <a
-              @click="openOrderDialog(order)"
-              class="text-weight-bold text-subtitle1"
-            >
-              {{ order.order_no }}
-            </a>
-          </div>
-          <div class="col bordered">
-            {{ getCollectionDate(logistics.collections) }}
-          </div>
-          <div class="col bordered">
-            {{ getDeliveryDate(logistics.deliveries) }}
-          </div>
-          <div class="col bordered">
-            <a
-              v-if="order.customer?.id"
-              @click.prevent="openCustomerTab(order.customer.id)"
-              class="text-weight-bold text-subtitle1"
-            >
-              {{ order.customer?.name || "Unknown" }}
-            </a>
-            <span v-else>N/A</span>
-          </div>
-          <div class="col bordered text-uppercase">
-            {{ order.tag_timestamp || "-" }}
-          </div>
-          <div class="col bordered text-uppercase">
-            {{ order.tag_changes || "-" }}
-          </div>
-          <div class="col bordered text-uppercase text-subtitle1" :class="getStatusClass(order.tag_status)">
-            <div class="text-weight-bolder ">{{ order.tag_status || "-" }}</div>
-            <div>
-              <q-btn
-                label="View Tag"
-                color="primary"
-                dense
-                class="q-px-sm q-my-sm"
-                @click="viewTag(order.order_no)"
-              />
-            </div>
-          </div>
-        </div>
+<div v-for="(logistics, index) in paginatedOrders" :key="index" class="row row-col-row q-px-md">
+    <div class="col bordered">
+      <a
+@click="openOrderDialog(logistics)"
+        class="text-weight-bold text-subtitle1"
+      >
+        {{ logistics.order?.order_no || "N/A" }}
+      </a>
+    </div>
+    <div class="col bordered">
+      {{ getCollectionDate(logistics.collections) }}
+    </div>
+    <div class="col bordered">
+      {{ getDeliveryDate(logistics.deliveries) }}
+    </div>
+    <div class="col bordered">
+      <a
+        v-if="logistics.customer?.id"
+        @click.prevent="openCustomerTab(logistics.customer.id)"
+        class="text-weight-bold text-subtitle1"
+      >
+        {{ logistics.customer?.name || "Unknown" }}
+      </a>
+      <span v-else>N/A</span>
+    </div>
+    <div class="col bordered text-uppercase">
+      {{ logistics.order?.order_tags?.tag_timestamp || "-" }}
+    </div>
+    <div class="col bordered text-uppercase">
+      {{ logistics.order?.order_tags?.tag_changes || "-" }}
+    </div>
+    <div class="col bordered text-uppercase text-subtitle1" :class="getStatusClass(logistics.order?.order_tags?.tag_status)">
+      <div class="text-weight-bolder ">
+        {{ logistics.order?.order_tags?.tag_status || "-" }}
       </div>
+      <div>
+        <q-btn
+          label="View Tag"
+          color="primary"
+          dense
+          class="q-px-sm q-my-sm"
+          @click="viewTag(logistics.order?.order_no)"
+        />
+      </div>
+    </div>
+  </div>
+
     </div>
     <!-- Pagination Controls -->
     <div class="row justify-center q-mt-md">
@@ -191,11 +188,14 @@ const getStatusClass = (status) => {
 // Fetch orders on mount
 onMounted(async () => {
   try {
-    orders.value = await transactionStore.fetchAllOrdersSimple();
+    const result = await transactionStore.fetchAllOrdersSimple();
+    console.log("📦 Orders fetched:", JSON.stringify(result, null, 2));
+    orders.value = result;
   } catch (error) {
     console.error("Error fetching orders:", error);
   }
 });
+
 
 // Format date display
 const formattedCollectionStartDate = computed(() => formatDate(collectionStartDate.value));
@@ -215,28 +215,31 @@ const clearDate = (type) => {
 const filteredOrders = computed(() => {
   const query = searchQuery.value.toLowerCase();
 
-  return orders.value.map(logistics => ({
-    ...logistics,
-    orders: logistics.orders?.filter(order => {
-      const collectionDate = logistics.collections?.[0]?.collection_date || null;
-      const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
+  return orders.value.filter(logistics => {
+    const orderNo = logistics.order?.order_no?.toLowerCase() || "";
+    const customerName = logistics.customer?.name?.toLowerCase() || "";
+    const tagStatus = logistics.order?.order_tags?.tag_status?.toLowerCase() || "";
 
-      const collectionMatch =
-        (!collectionStartDate.value || collectionDate >= collectionStartDate.value) &&
-        (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
+    const collectionDate = logistics.collections?.[0]?.collection_date || null;
+    const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
 
-      const deliveryMatch =
-        (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
-        (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
+    const collectionMatch =
+      (!collectionStartDate.value || collectionDate >= collectionStartDate.value) &&
+      (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
 
-      const searchMatch =
-        (order.order_no && order.order_no.toLowerCase().includes(query)) ||
-        (order.customer?.name && order.customer.name.toLowerCase().includes(query));
+    const deliveryMatch =
+      (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
+      (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
 
-      return collectionMatch && deliveryMatch && searchMatch;
-    }) || []
-  })).filter(logistics => logistics.orders.length > 0);
+    const searchMatch =
+      orderNo.includes(query) ||
+      customerName.includes(query) ||
+      tagStatus.includes(query);
+
+    return collectionMatch && deliveryMatch && searchMatch;
+  });
 });
+
 
 // Pagination: Get the paginated slice of orders
 const paginatedOrders = computed(() => {
@@ -281,27 +284,24 @@ const openCustomerTab = (customerId) => {
 };
 
 // Open Order Dialog and fetch transaction items
-const openOrderDialog = async (order) => {
+const openOrderDialog = async (logistics) => {
   try {
-    if (!order) return;
+    if (!logistics || !logistics.order) return;
 
-    // Pre-fill the transaction store with customer details
-    transactionStore.setSelectedCustomer({
-      id: order.customer_id,
-    });
+transactionStore.setSelectedCustomer({
+  id: logistics.customer?.id,
+});
 
-    // Set order number
-    transactionStore.setOrderNo(order.order_no);
 
-    // Reset previous transaction items
+    transactionStore.setOrderNo(logistics.order.order_no);
     transactionStore.resetTransactionItems();
 
-    // Open order details in a new tab
-    window.open(`/orders/${order.order_no}`, "_blank");
+    window.open(`/orders/${logistics.order.order_no}`, "_blank");
   } catch (error) {
     console.error("Error opening order dialog:", error);
   }
 };
+
 
 const viewTag = (order_no) => {
   const url = `/tags/${order_no}`;

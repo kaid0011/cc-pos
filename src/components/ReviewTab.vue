@@ -62,7 +62,7 @@
           </div>
           <div class="text-summary-row">
             Collection Driver:
-            <span class="text-summary">{{ transactionStore.selectedCollectionDriver?.name || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.selectedCollectionDriver || "-" }}</span>
           </div>
         </div>
 
@@ -98,7 +98,7 @@
           </div>
           <div class="text-summary-row">
             Delivery Driver:
-            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver?.name || "-" }}</span>
+            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver || "-" }}</span>
           </div>
         </div>
       </div>

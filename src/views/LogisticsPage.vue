@@ -317,7 +317,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                 </div>
                 <div>
                   <span class="text-weight-bold">Driver: </span
-                  >{{ transaction.driver?.name || "[NOT SET]" }}
+                  >{{ transaction.driver_name || "[NOT SET]" }}
                 </div>
                 <!-- <div v-if="transaction.driver">
                   {{ transaction.driver?.contact_no1 }}
@@ -462,7 +462,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
             @click="showCreateOrderDialog = false"
           />
         </q-card-section>
-        <q-card-section>
+        <q-card-section class="q-pa-none">
           <CreateOrderFromCollection />
         </q-card-section>
       </q-card>
@@ -545,13 +545,9 @@ const selectedGenerateDate = ref(new Date().toISOString().split("T")[0]);
 const selectedWeek = ref(new Date().toISOString().split("T")[0]); // Default: today
 
 const showCreateCollectionDialog = ref(false);
-
 const showCreateOrderDialog = ref(false);
-
 const showUpdateLogisticsDialog = ref(false);
-
 const showWeeklySummary = ref(false);
-
 const selectedTransaction = ref(null);
 
 const toggleWeeklySummary = () => {
@@ -588,16 +584,9 @@ const formatDate = (dateString) => {
 
 const driverTabs = computed(() => {
   const driverNames = transactionStore.driverOptions.map(
-    (driver) => driver.name
+    (driver) => driver.name?.toLowerCase?.() || "[not set]"
   );
   return ["All", "[NOT SET]", ...new Set(driverNames)];
-});
-
-const drivers = computed(() => {
-  const driverNames = transactionStore.driverOptions.map(
-    (driver) => driver.name
-  );
-  return [...new Set(driverNames), "[NOT SET]"];
 });
 
 onMounted(async () => {
@@ -628,11 +617,11 @@ const getTransactionsByDriver = (driverName) => {
   }
   if (driverName === "[NOT SET]") {
     return filteredTransactions.value.filter(
-      (transaction) => !transaction.driver || !transaction.driver.name
+      (transaction) => !transaction.driver_name
     );
   }
   return filteredTransactions.value.filter(
-    (transaction) => transaction.driver?.name === driverName
+    (transaction) => transaction.driver_name === driverName
   );
 };
 
@@ -645,7 +634,7 @@ const filterTransactions = () => {
   filteredTransactions.value = allTransactions.value
     .filter((transaction) => {
       const customerName = transaction.customer?.name?.toLowerCase() || "";
-      const driverName = transaction.driver?.name?.toLowerCase() || "";
+      const driverName = transaction.driver_name?.toLowerCase() || "";
       const logisticsStatus = transaction.logistics_status?.toLowerCase() || "";
       const transactionDate = formatDate(
         transaction.collection_date || transaction.delivery_date
@@ -755,8 +744,8 @@ const createOrder = (collection) => {
   transactionStore.selectedDeliveryAddress =
     collection.delivery?.address || null;
   transactionStore.selectedCollectionAddress = collection.address || null;
-  transactionStore.selectedCollectionDriver = collection.driver || null;
-  transactionStore.selectedDeliveryDriver = collection.delivery?.driver || null;
+  transactionStore.selectedCollectionDriver = collection.driver_name || null;
+  transactionStore.selectedDeliveryDriver = collection.delivery?.driver_name || null;
   transactionStore.collectionDate = collection.collection_date || null;
   transactionStore.deliveryDate = collection.delivery?.delivery_date || null;
   transactionStore.collectionTime = collection.collection_time || null;
@@ -786,7 +775,7 @@ const generateDriverSchedule = () => {
     const transactionDate =
       transaction.collection_date || transaction.delivery_date;
     return (
-      transaction.driver?.name === selectedDriver.name &&
+      transaction.driver_name === selectedDriver.name &&
       transactionDate === selectedGenerateDate.value
     );
   });
@@ -922,6 +911,15 @@ const formattedWeekDates = computed(() => {
   });
 });
 
+const drivers = computed(() => {
+  const unique = new Set();
+  allTransactions.value.forEach((t) => {
+    const name = t.driver_name || "[NOT SET]";
+    unique.add(name);
+  });
+  return Array.from(unique);
+});
+
 const driverTransactionCounts = computed(() => {
   const counts = {};
   drivers.value.forEach((driver) => {
@@ -934,7 +932,7 @@ const driverTransactionCounts = computed(() => {
         const transactionDate = new Date(
           transaction.collection_date || transaction.delivery_date
         );
-        const driverName = transaction.driver?.name || "[NOT SET]";
+        const driverName = transaction.driver_name || "[NOT SET]";
         return (
           transactionDate.toDateString() === dayDate.toDateString() &&
           driverName === driver

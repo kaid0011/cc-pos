@@ -1,5 +1,4 @@
 <template>
-  <div class="main-page">
     <q-stepper
       class="category-stepper"
       v-model="step"
@@ -23,7 +22,7 @@
         <ReviewTab @next="step = 4" @back="step = 2" />
 
         <!-- Submit Transaction Button (Moved from ReviewTab.vue) -->
-        <div class="row justify-end q-mx-md q-my-sm">
+        <div class="row justify-end q-px-lg q-pb-lg" style="background-color: #ffe0cd;">
           <q-btn @click="handleSubmit" color="primary" label="Submit Transaction" />
         </div>
       </q-step>
@@ -41,7 +40,6 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-  </div>
 </template>
 
 <script setup>

@@ -312,11 +312,18 @@ onMounted(async () => {
     // Assign fetched data directly
     logistics.value = orderDetails || {};
     order.value = orderDetails.order || {};
-    customer.value = orderDetails.order.customer || {};
-    collection.value = orderDetails.collection?.[0] || {}; 
-    delivery.value = orderDetails.delivery?.[0] || {}; 
-    transactions.value = orderDetails.order.transactions || [];
-    reports.value = orderDetails.order.error_reports || [];
+    customer.value = orderDetails.customer || {};
+    collection.value = orderDetails.collection?.[0] || {};
+    delivery.value = orderDetails.delivery?.[0] || {};
+
+        transactions.value = [];
+    (orderDetails.transactions || []).forEach((tx) => {
+      if (Array.isArray(tx.order_transaction_items)) {
+        tx.order_transaction_items.forEach((item) => transactions.value.push(item));
+      }
+    });
+
+    reports.value = orderDetails.error_reports || [];
 
     // Prepare instructionsOnetime with dynamically created `to` field
     instructionsOnetime.value = (orderDetails.instructionsOneTime || []).map(
@@ -397,8 +404,8 @@ const totalSubtotal = computed(() => {
 
 // Date formatting
 const formattedOrderDate = computed(() =>
-  order.value?.order_date_time
-    ? new Date(order.value.order_date_time).toLocaleDateString("en-US", {
+  order.value?.created_at
+    ? new Date(order.value.created_at).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -407,18 +414,19 @@ const formattedOrderDate = computed(() =>
 );
 
 const readyByFormatted = computed(() => {
-  if (!order.value?.ready_by) return "N/A";
-  const date = new Date(order.value.ready_by);
-  
-  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const dayOfWeek = daysOfWeek[date.getDay()];
-  
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-
-  return `${dayOfWeek}, ${day}/${month}/${year}`;
+  const date = order.value?.order_production?.ready_by
+    ? new Date(order.value.order_production.ready_by)
+    : null;
+  return date
+    ? date.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "N/A";
 });
+
 
 
 const tagCategoryCounts = computed(() => {

@@ -47,7 +47,7 @@
           </div>
           <div>
             <span class="text-weight-bold">Driver: </span>
-            {{ transaction.drivers?.name || "[NOT SET]" }}
+            {{ transaction.driver_name || "[NOT SET]" }}
           </div>
         </div>
         <div class="col bordered">

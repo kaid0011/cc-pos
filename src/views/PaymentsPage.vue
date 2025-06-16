@@ -1,7 +1,7 @@
 <template>
     <div class="full-container orders-history">
       <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
-        Order Management
+        Payments Management
       </div>
   
       <!-- Search Filters -->

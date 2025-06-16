@@ -19,7 +19,7 @@
             <div class="text-slip-row">
               Order Date:
               <span class="text-summary">{{
-                formatDate(order?.order_date_time)
+                formatDate(order?.created_at)
               }}</span>
             </div>
           </div>
@@ -66,12 +66,6 @@
               <span class="text-summary">{{ customer?.email || "N/A" }}</span>
             </div>
 
-            <div class="text-slip-row">
-              Payment Type:
-              <span class="text-summary">{{
-                customer?.payment_type || "N/A"
-              }}</span>
-            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -95,7 +89,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ collection.contact_persons?.name }}
+                {{ collection.customer_contact_persons?.name }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -126,7 +120,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Driver:</div>
               <div class="col-6">
-                {{ collection.drivers?.name }}
+                {{ collection.driver_name }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -166,7 +160,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ delivery.contact_persons?.name }}
+                {{ delivery.customer_contact_persons?.name }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -198,7 +192,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Driver:</div>
               <div class="col-6">
-                {{ delivery.drivers?.name }}
+                {{ delivery.driver_name }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -261,7 +255,7 @@
             </div>
             <div class="col text-uppercase">
               <q-input
-                v-model="order.goods_status"
+                v-model="goodsStatus"
                 filled
                 placeholder="Enter Goods Status"
                 dense
@@ -287,7 +281,7 @@
             </div>
             <div class="col text-uppercase">
               <q-input
-                v-model="order.payment_status"
+                v-model="paymentStatus"
                 filled
                 placeholder="Enter Payment Status"
                 dense
@@ -300,7 +294,7 @@
             </div>
             <div class="col">
               <q-input
-                v-model="customer.payment_type"
+                v-model="paymentType"
                 filled
                 placeholder="Enter Payment Type"
                 dense
@@ -313,7 +307,7 @@
             </div>
             <div class="col">
               <q-input
-                v-model="order.no_packets_hangers"
+                v-model="noPacketsHangers"
                 filled
                 placeholder="Enter No. of Packets / Hangers"
                 dense
@@ -500,10 +494,11 @@
             >
               <div>
                 <!-- Instruction ID and description -->
-                <div class="text-p q-ml-sm">
-                  <span class="text-weight-bold">#{{ instruction.id }}:</span>
-                  {{ instruction.description || "No description provided." }}
-                </div>
+<div class="text-p q-ml-sm">
+  <q-icon name="circle" size="7px" class="q-mr-sm text-primary" />
+  <span>{{ instruction.description || "No description provided." }}</span>
+</div>
+
 
                 <!-- Instruction chips -->
                 <div class="instruction-chips q-ml-lg">
@@ -578,11 +573,12 @@
               <div>
                 <!-- Display the report description -->
                 <div class="text-p">
+                  
                   <span>
                     <q-icon
                       name="circle"
                       color="primary"
-                      size="8px"
+                      size="7px"
                       class="q-mr-sm q-ml-md"
                     />
                   </span>
@@ -1389,24 +1385,40 @@ onMounted(async () => {
 onMounted(async () => {
   try {
     const orderNo = route.params.order_no;
-    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
-      orderNo
-    );
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+
     if (!orderDetails) {
       console.warn("No order details found for:", orderNo);
       return;
     }
+
     logistics.value = orderDetails || {};
     order.value = orderDetails.order || {};
-    customer.value = orderDetails.order.customer || {};
+    customer.value = orderDetails.customer || {};
     collection.value = orderDetails.collection?.[0] || {};
     delivery.value = orderDetails.delivery?.[0] || {};
-    transactions.value = orderDetails.order.transactions || [];
-    reports.value = orderDetails.order.error_reports || [];
 
-    // Combine onetime and recurring instructions into a single array
+transactions.value = [];
+
+(orderDetails.transactions || []).forEach((tx, i) => {
+  if (Array.isArray(tx.order_transaction_items)) {
+    tx.order_transaction_items.forEach((item, j) => {
+      transactions.value.push(item);
+    });
+  } else {
+    console.warn(`⚠️ No items in transaction ${i}`);
+  }
+});
+
+
+
+reports.value = orderDetails.error_reports || [];
+
+
+    console.log("Assigned reports to reactive var:", reports.value);
+
     instructions.value = [
-      ...(orderDetails.order.instructions_onetime || []).map((instruction) => ({
+      ...(orderDetails.instructions_onetime || []).map((instruction) => ({
         ...instruction,
         type: "onetime",
         to: [
@@ -1416,25 +1428,25 @@ onMounted(async () => {
           ...(instruction.picking_sending ? ["pickingsending"] : []),
         ],
       })),
-      ...(orderDetails.order.instructions_recurring || []).map(
-        (instruction) => ({
-          ...instruction,
-          type: "recurring",
-          to: [
-            ...(instruction.admin ? ["admin"] : []),
-            ...(instruction.cleaning ? ["cleaning"] : []),
-            ...(instruction.packing ? ["packing"] : []),
-            ...(instruction.picking_sending ? ["pickingsending"] : []),
-          ],
-        })
-      ),
+      ...(orderDetails.instructions_recurring || []).map((instruction) => ({
+        ...instruction,
+        type: "recurring",
+        to: [
+          ...(instruction.admin ? ["admin"] : []),
+          ...(instruction.cleaning ? ["cleaning"] : []),
+          ...(instruction.packing ? ["packing"] : []),
+          ...(instruction.picking_sending ? ["pickingsending"] : []),
+        ],
+      })),
     ];
 
-    console.log("Loaded order data:", order.value);
+    console.log("Final instructions list:", instructions.value);
+
   } catch (error) {
-    console.error("Error loading order details:", error);
+    console.error("❌ Error loading order details:", error);
   }
 });
+
 
 // Watcher for transactions to dynamically calculate subtotals
 watch(
@@ -1464,6 +1476,55 @@ onMounted(async () => {
     console.error("Error fetching error items:", error);
   }
 });
+
+const paymentStatus = computed({
+  get() {
+    return order.value.order_payment?.payment_status || '';
+  },
+  set(val) {
+    if (!order.value.order_payment) {
+      order.value.order_payment = {}; // init fallback object
+    }
+    order.value.order_payment.payment_status = val;
+  }
+});
+
+const goodsStatus = computed({
+  get() {
+    return order.value.order_production?.goods_status || '';
+  },
+  set(val) {
+    if (!order.value.order_production) {
+      order.value.order_production = {};
+    }
+    order.value.order_production.goods_status = val;
+  }
+});
+
+const paymentType = computed({
+  get() {
+    return order.value.order_payment?.payment_type || '';
+  },
+  set(val) {
+    if (!order.value.order_payment) {
+      order.value.order_payment = {}; // init fallback object
+    }
+    order.value.order_payment.payment_type = val;
+  }
+});
+
+const noPacketsHangers = computed({
+  get() {
+    return order.value.order_production?.no_packets_hangers || '';
+  },
+  set(val) {
+    if (!order.value.order_production) {
+      order.value.order_production = {};
+    }
+    order.value.order_production.no_packets_hangers = val;
+  }
+});
+
 
 function autoResize(event) {
   const textarea = event.target;
@@ -1726,32 +1787,32 @@ function getContactNumber(contactPersonId) {
 
 const formattedCollectionContactNos = computed({
   get() {
-    const contact1 = collection.value.contact_persons?.contact_no1 || "-";
-    const contact2 = collection.value.contact_persons?.contact_no2;
+    const contact1 = collection.value.customer_contact_persons?.contact_no1 || "-";
+    const contact2 = collection.value.customer_contact_persons?.contact_no2;
 
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    collection.value.contact_persons.contact_no1 = contact1 || "";
+    collection.value.customer_contact_persons.contact_no1 = contact1 || "";
 
     // Only set contact_no2 if it was provided
-    collection.value.contact_persons.contact_no2 = contact2 || null;
+    collection.value.customer_contact_persons.contact_no2 = contact2 || null;
   },
 });
 
 const formattedDeliveryContactNos = computed({
   get() {
-    const contact1 = delivery.value.contact_persons?.contact_no1 || "-";
-    const contact2 = delivery.value.contact_persons?.contact_no2;
+    const contact1 = delivery.value.customer_contact_persons?.contact_no1 || "-";
+    const contact2 = delivery.value.customer_contact_persons?.contact_no2;
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    delivery.value.contact_persons.contact_no1 = contact1 || "";
-    delivery.value.contact_persons.contact_no2 = contact2 || "";
+    delivery.value.customer_contact_persons.contact_no1 = contact1 || "";
+    delivery.value.customer_contact_persons.contact_no2 = contact2 || "";
   },
 });
 

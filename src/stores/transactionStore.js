@@ -1582,6 +1582,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         collection_time,
         pack_type,
         logistics_id,
+        driver_name,
         customer_contact_persons (
           id,
           name,
@@ -1623,6 +1624,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           remarks: collection.remarks,
           contact_person_id: collection.contact_person_id,
           address: collection.address,
+          driver_name: collection.driver_name,
           date_collected: collection.date_collected,
           collection_date: collection.collection_date,
           collection_time: collection.collection_time,
@@ -1678,6 +1680,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             delivery_time,
             pack_type,
             logistics_id,
+            driver_name,
             customer_contact_persons (
               id,
               name,
@@ -1717,6 +1720,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           remarks: delivery.remarks,
           contact_person_id: delivery.contact_person_id,
           address: delivery.address,
+          driver_name: delivery.driver_name,
           date_delivered: delivery.date_delivered,
           delivery_date: delivery.delivery_date,
           delivery_time: delivery.delivery_time,
@@ -1900,117 +1904,136 @@ async fetchAllOrdersSimple() {
   try {
     const { data, error } = await supabase
       .from("logistics")
-      .select(`
+      .select(
+        `
+      id,
+      logistics_status,
+      orders (
         id,
-        logistics_status,
-        orders (
-          id,
-          order_no,
-          order_payments (
-            payment_status,
-            paid_amount
-          ),
-          order_tags (
-            tag_status,
-            tag_changes
-          ),
-          order_production (
-            ready_by,
-            goods_status,
-            no_packets_hangers
-          )
+        order_no,
+        order_payments (
+          payment_status,
+          total_amount,
+          paid_amount
         ),
-        customers (
-          id,
-          name,
-          contact_no1,
-          contact_no2
+        order_tags (
+          tag_status,
+          tag_changes
         ),
-        logistics_collections (
-          id,
-          logistics_id,
-          collection_date,
-          collection_time
-        ),
-        logistics_deliveries (
-          id,
-          logistics_id,
-          delivery_date,
-          delivery_time
+        order_production (
+          ready_by,
+          goods_status,
+          no_packets,
+          no_hangers
         )
-      `)
+      ),
+      customers (
+        id,
+        name,
+        contact_no1,
+        contact_no2
+      ),
+      logistics_collections (
+        id,
+        logistics_id,
+        collection_date,
+        collection_time,
+        no_bags
+      ),
+      logistics_deliveries (
+        id,
+        logistics_id,
+        delivery_date,
+        delivery_time
+      )
+    `
+      )
       .order("id", { ascending: true });
 
     if (error) throw error;
+
+    console.log("Fetched logistics data:", data); // 👈 Log fetched raw data
 
     if (!data?.length) {
       console.warn("No orders found.");
       return [];
     }
 
-    return data.map((logistics) => ({
-      logistics_id: logistics.id,
-      logistics_status: logistics.logistics_status,
-      order: logistics.orders
-        ? {
-            id: logistics.orders.id,
-            order_no: logistics.orders.order_no,
-            order_payment: logistics.orders.order_payments
-              ? {
-                  payment_status: logistics.orders.order_payments.payment_status,
-                  paid_amount: logistics.orders.order_payments.paid_amount
-                }
-              : null,
-            tag_status: logistics.orders.order_tags?.tag_status || null,
-            tag_changes: logistics.orders.order_tags?.tag_changes || null,
-            ready_by: logistics.orders.order_production?.ready_by || null,
-            goods_status: logistics.orders.order_production?.goods_status || null,
-            no_packets_hangers:
-              logistics.orders.order_production?.no_packets_hangers || null,
-          }
-        : null,
-      customer: logistics.customers
-        ? {
-            id: logistics.customers.id,
-            name: logistics.customers.name,
-            contact_no1: logistics.customers.contact_no1,
-            contact_no2: logistics.customers.contact_no2,
-          }
-        : null,
-      collections:
-        logistics.logistics_collections?.map((c) => ({
-          id: c.id,
-          collection_date: c.collection_date,
-          collection_time: c.collection_time,
-        })) || [],
-      deliveries:
-        logistics.logistics_deliveries?.map((d) => ({
-          id: d.id,
-          delivery_date: d.delivery_date,
-          delivery_time: d.delivery_time,
-        })) || [],
-    }));
+return data.map((logistics) => ({
+  logistics_id: logistics.id,
+  logistics_status: logistics.logistics_status,
+  order: logistics.orders
+    ? {
+        id: logistics.orders.id,
+        order_no: logistics.orders.order_no,
+        order_payment: Array.isArray(logistics.orders.order_payments)
+          ? logistics.orders.order_payments[0] || null
+          : logistics.orders.order_payments || null,
+        order_tags: Array.isArray(logistics.orders.order_tags)
+          ? logistics.orders.order_tags[0] || null
+          : logistics.orders.order_tags || null,
+        order_production: Array.isArray(logistics.orders.order_production)
+          ? logistics.orders.order_production[0] || null
+          : logistics.orders.order_production || null,
+      }
+    : null,
+  customer: logistics.customers
+    ? {
+        id: logistics.customers.id,
+        name: logistics.customers.name,
+        contact_no1: logistics.customers.contact_no1,
+        contact_no2: logistics.customers.contact_no2,
+      }
+    : null,
+  collections:
+    logistics.logistics_collections?.map((c) => ({
+      id: c.id,
+      collection_date: c.collection_date,
+      collection_time: c.collection_time,
+    })) || [],
+  deliveries:
+    logistics.logistics_deliveries?.map((d) => ({
+      id: d.id,
+      delivery_date: d.delivery_date,
+      delivery_time: d.delivery_time,
+    })) || [],
+}));
+
   } catch (error) {
     console.error("Error fetching all orders:", error);
     return [];
   }
 },
     // Fetch Transactions
-    async fetchTransactionsByOrderId(orderId) {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select(
-          "id, order_id, item_name, price, process, quantity, pieces, subtotal, category, tag_category"
-        )
-        .eq("order_id", orderId)
-        .eq("status", "active");
+async fetchTransactionsByOrderId(orderId) {
+  const { data, error } = await supabase
+    .from("order_transactions")
+    .select(`
+      order_id,
+      created_at,
+      status,
+      order_transaction_items (
+        item_name,
+        price,
+        process,
+        quantity,
+        pieces,
+        subtotal,
+        category,
+        tag_category
+      )
+    `)
+    .eq("order_id", orderId)
+    .eq("status", "active");
 
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        return [];
-      }
-      return data;
-    },
+  if (error) {
+    console.error("Error fetching transactions:", error);
+    return [];
+  }
+
+  console.log("Fetched transactions:", data);
+  return data;
+},
 
     // Fetch One-Time Instructions
     async fetchOnetimeInstructionsByOrderId(orderId) {
@@ -2029,25 +2052,27 @@ async fetchAllOrdersSimple() {
     },
 
     // Fetch Recurring Instructions
-    async fetchRecurringInstructionsByCustomerId(customerId) {
-      const { data, error } = await supabase
-        .from("instructions_recurring")
-        .select(
-          "id, customer_id, description, admin, packing, cleaning, picking_sending"
-        )
-        .eq("customer_id", customerId);
+async fetchRecurringInstructionsByCustomerId(customerId) {
+  const { data, error } = await supabase
+    .from("instructions_recurring")
+    .select(
+      "id, customer_id, description, admin, packing, cleaning, picking_sending"
+    )
+    .eq("customer_id", customerId);
 
-      if (error) {
-        console.error("Error fetching recurring instructions:", error);
-        return [];
-      }
-      return data;
-    },
+  if (error) {
+    console.error("Error fetching recurring instructions:", error);
+    return [];
+  }
+
+  // console.log("✅ Recurring instructions fetched:", data);
+  return data;
+},
 
     // Fetch Error Reports
     async fetchErrorReportsByOrderId(orderId) {
       const { data, error } = await supabase
-        .from("error_reports")
+        .from("order_error_reports")
         .select("id, order_id, description, category, sub_category, image")
         .eq("order_id", orderId);
 
@@ -2055,6 +2080,8 @@ async fetchAllOrdersSimple() {
         console.error("Error fetching error reports:", error);
         return [];
       }
+  // console.log("✅ Error reports fetched:", data);
+
       return data;
     },
 
@@ -2177,88 +2204,87 @@ async fetchAllOrdersSimple() {
     },
 
     // Fetch Whole Order (Main Function)
-    async fetchWholeOrderByOrderNo(orderNo) {
-      try {
-        // Step 1: Fetch main order and logistics details
-        const { data, error } = await supabase
-          .from("orders") // ✅ Directly fetch from orders
-          .select(
-            `
-            id, order_no, logistics_id, tag_timestamp, tag_changes, tag_status, goods_status, customer_id, order_date_time, order_payment_id,
-            customers (
-              id, name, contact_no1, contact_no2, email, type, sub_type, payment_type,
-              schedule_remarks, price_remarks, accounting_remarks, other_remarks
-            ),
-            order_payments (
-              payment_status, paid_amount, remarks)
-          `
-          )
-          .eq("order_no", orderNo)
-          .single();
+async fetchWholeOrderByOrderNo(orderNo) {
+  try {
+    const { data, error } = await supabase
+      .from("logistics")
+      .select(
+        `
+        id,
+        job_type,
+        urgency,
+        logistics_status,
+        customer_id,
+        orders!inner(order_no, id, created_at, 
+          order_payments(payment_status, paid_amount, payment_type),
+          order_tags(tag_status, tag_changes),
+          order_production(ready_by, goods_status, no_packets, no_hangers)
+        ),
+        customers(id, name, contact_no1, contact_no2, email, type, sub_type,
+          schedule_remarks, price_remarks, accounting_remarks, other_remarks
+        ),
+        logistics_collections(id, logistics_id, collection_date, collection_time, address, driver_name, remarks, no_bags, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks)),
+        logistics_deliveries(id, logistics_id, delivery_date, delivery_time, address, driver_name, remarks, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks))
+        `
+      )
+      .eq("orders.order_no", orderNo)
+      .single();
 
-        if (error) throw error;
-        if (!data) {
-          console.warn(`No order found with order_no: ${orderNo}`);
-          return null;
-        }
+    if (error) throw error;
+    if (!data) {
+      console.warn(`No order found with order_no: ${orderNo}`);
+      return null;
+    }
 
-        // Step 2: Fetch logistics details using logistics_id
-        const { data: logisticsData, error: logisticsError } = await supabase
-          .from("logistics")
-          .select("id, job_type, urgency, logistics_status")
-          .eq("id", data.logistics_id)
-          .single();
+    const order = data.orders;
 
-        if (logisticsError) throw logisticsError;
+    const [
+      transactions,
+      onetimeInstructions,
+      errorReports,
+      recurringInstructions
+    ] = await Promise.all([
+      this.fetchTransactionsByOrderId(order.id),
+      this.fetchOnetimeInstructionsByOrderId(order.id),
+      this.fetchErrorReportsByOrderId(order.id),
+      this.fetchRecurringInstructionsByCustomerId(data.customer_id)
+    ]);
 
-        // Step 3: Fetch related data
-        const [
-          transactions,
-          onetimeInstructions,
-          errorReports,
-          recurringInstructions,
-          collection,
-          delivery,
-        ] = await Promise.all([
-          this.fetchTransactionsByOrderId(data.id),
-          this.fetchOnetimeInstructionsByOrderId(data.id),
-          this.fetchErrorReportsByOrderId(data.id),
-          this.fetchRecurringInstructionsByCustomerId(data.customer_id),
-          this.fetchCollectionByLogisticsId(data.logistics_id),
-          this.fetchDeliveryByLogisticsId(data.logistics_id),
-        ]);
+    const fullData = {
+      logistics_id: data.id,
+      job_type: data.job_type,
+      urgency: data.urgency,
+      logistics_status: data.logistics_status,
+      customer_id: order.customer_id,
+      customer: data.customers || null,
+      transactions,
+      instructions_onetime: onetimeInstructions,
+      error_reports: errorReports,
+      order: {
+        id: order.id,
+        order_no: order.order_no,
+        created_at: order.created_at,
+        order_payment: Array.isArray(order.order_payments)
+          ? order.order_payments[0] || null
+          : order.order_payments || null,
+        order_tags: Array.isArray(order.order_tags)
+          ? order.order_tags[0] || null
+          : order.order_tags || null,
+        order_production: Array.isArray(order.order_production)
+          ? order.order_production[0] || null
+          : order.order_production || null
+      },
+      instructions_recurring: recurringInstructions,
+      collection: data.logistics_collections || [],
+      delivery: data.logistics_deliveries || []
+    };
 
-        // Step 4: Return formatted data
-        return {
-          logistics_id: logisticsData.id,
-          job_type: logisticsData.job_type,
-          urgency: logisticsData.urgency,
-          logistics_status: logisticsData.logistics_status,
-          order: {
-            id: data.id,
-            order_no: data.order_no,
-            order_date_time: data.order_date_time,
-            tag_timestamp: data.tag_timestamp,
-            tag_changes: data.tag_changes,
-            tag_status: data.tag_status,
-            goods_status: data.goods_status,
-            payment_status: data.payment_status,
-            customer_id: data.customer_id,
-            customer: data.customers || null,
-            transactions,
-            instructions_onetime: onetimeInstructions,
-            error_reports: errorReports,
-          },
-          instructions_recurring: recurringInstructions,
-          collection,
-          delivery,
-        };
-      } catch (error) {
-        console.error("Error fetching whole order:", error);
-        return null;
-      }
-    },
-
+    return fullData;
+  } catch (error) {
+    console.error("Error fetching whole order:", error);
+    return null;
+  }
+},
     // end of fetching
 
     async createOrderFromCollection(logisticsId) {
@@ -2540,7 +2566,8 @@ async fetchAllOrdersSimple() {
               order_id: orderId,
               ready_by: this.readyBy || null,
               goods_status: "none",
-              no_packets_hangers: null,
+              no_packets: null,
+              no_hangers: null,
             },
           ])
           .select("id")

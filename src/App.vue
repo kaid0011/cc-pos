@@ -32,7 +32,6 @@
             @click="goToPOS"
             :active="isPOSActive"
             class="q-pa-md"
-            disable
           >
             <q-item-section avatar>
               <q-icon name="point_of_sale" />
@@ -135,7 +134,6 @@
             @click="goToTagsPage"
             :active="isTagsPageActive"
             class="q-pa-md"
-            disable
           >
             <q-item-section avatar>
               <q-icon name="sell" />
@@ -149,7 +147,6 @@
             @click="goToInvoicesPage"
             :active="isInvoicesPageActive"
             class="q-pa-md"
-            disable
           >
             <q-item-section avatar>
               <q-icon name="receipt_long" />
@@ -163,7 +160,6 @@
             @click="goToPaymentsPage"
             :active="isPaymentsPageActive"
             class="q-pa-md"
-            disable
           >
             <q-item-section avatar>
               <q-icon name="receipt_long" />

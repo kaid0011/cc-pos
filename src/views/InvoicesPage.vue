@@ -83,7 +83,7 @@
     <div class="row-col-table">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
-        <div class="col bordered q-py-sm text-weight-bolder">Order No</div>
+        <div class="col bordered q-py-sm text-weight-bolder">Invoice No</div>
         <div class="col bordered q-py-sm text-weight-bolder">
           Collection Date
         </div>
@@ -113,9 +113,12 @@
           class="row row-col-row q-px-md"
         >
           <div class="col bordered">
+            <div class="text-weight-bolder">
+              {{  order.order_invoices?.invoice_no }}
+            </div>
             <a
               @click="openOrderDialog(order)"
-              class="text-weight-bold text-subtitle1"
+              class="text-subtitle2"
             >
               {{ order.order_no }}
             </a>
@@ -228,7 +231,9 @@ const filteredOrders = computed(() => {
       customer: logistics.customer || null,
       customer_id: logistics.customer?.id || null,
       goods_status: order.order_production?.goods_status || "N/A",
-      payment_status: order.order_payment?.payment_status || "N/A"
+      payment_status: order.order_payment?.payment_status || "N/A",
+      total_amount: order.order_payment?.total_amount || "N/A",
+      paid_amount: order.order_payment?.paid_amount || "0"
     }]
   : [],
 

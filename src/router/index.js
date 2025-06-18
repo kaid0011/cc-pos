@@ -13,6 +13,7 @@ import TagView from "@/views/TagView.vue";
 import LogisticsPage from "@/views/LogisticsPage.vue";
 import LogisticsView from "@/views/LogisticsView.vue";
 import InvoicesPage from "@/views/InvoicesPage.vue";
+import InvoiceView from "@/views/InvoiceView.vue";
 import ItemsPage from "@/views/ItemsPage.vue";
 import PaymentsPage from "@/views/PaymentsPage.vue";
 
@@ -111,22 +112,6 @@ const routes = [
       requiresAuth: true, // Transactions require authentication
     },
   },
-  // {
-  //   path: "/collections",
-  //   name: "Collections",
-  //   component: CollectionsPage,
-  //   meta: {
-  //     requiresAuth: true, // Transactions require authentication
-  //   },
-  // },
-  // {
-  //   path: "/deliveries",
-  //   name: "Deliveries",
-  //   component: DeliveriesPage,
-  //   meta: {
-  //     requiresAuth: true, // Transactions require authentication
-  //   },
-  // },
   {
     path: "/tags/:order_no",
     name: "TagView",
@@ -139,6 +124,14 @@ const routes = [
     path: "/invoices",
     name: "Invoices",
     component: InvoicesPage,
+    meta: {
+      requiresAuth: true, // Transactions require authentication
+    },
+  },
+  {
+    path: "/invoice/:order_no",
+    name: "InvoiceView",
+    component: InvoiceView,
     meta: {
       requiresAuth: true, // Transactions require authentication
     },

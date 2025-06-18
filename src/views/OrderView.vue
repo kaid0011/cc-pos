@@ -7,7 +7,7 @@
           <div class="text-left">
             <div class="text-caption">
               <div class="text-h6 text-uppercase text-weight-bolder order-box">
-                Order Slip
+                Order Details
               </div>
             </div>
           </div>
@@ -65,7 +65,6 @@
               Email Address:
               <span class="text-summary">{{ customer?.email || "N/A" }}</span>
             </div>
-
           </div>
         </q-card-section>
       </q-card>
@@ -79,7 +78,7 @@
             <div class="text-weight-bold">
               <a
                 @click.prevent="
-                openCollectionHistoryDialog(collection.logistics_id)
+                  openCollectionHistoryDialog(collection.logistics_id)
                 "
               >
                 (View Collection History)
@@ -150,7 +149,7 @@
             <div class="text-weight-bold">
               <a
                 @click.prevent="
-                openDeliveryHistoryDialog(delivery.logistics_id)
+                  openDeliveryHistoryDialog(delivery.logistics_id)
                 "
               >
                 (View Delivery History)
@@ -225,14 +224,15 @@
         <q-card-section>
           <div class="row q-mb-sm items-center">
             <div class="col-4 text-right q-mr-sm">
-              <div>Job Type / Urgency:</div>
+              <div>Job Type:</div>
             </div>
             <div class="col">
               <q-input
                 v-model="logistics.job_type"
-                filled
+                outlined
                 placeholder="Enter Job Type / Urgency"
                 dense
+                class="text-uppercase"
               />
             </div>
           </div>
@@ -243,9 +243,10 @@
             <div class="col">
               <q-input
                 v-model="logistics.urgency"
-                filled
+                outlined
                 placeholder="Enter Job Sub-Type"
                 dense
+                class="text-uppercase"
               />
             </div>
           </div>
@@ -256,9 +257,10 @@
             <div class="col text-uppercase">
               <q-input
                 v-model="goodsStatus"
-                filled
+                outlined
                 placeholder="Enter Goods Status"
                 dense
+                class="text-uppercase"
               />
             </div>
           </div>
@@ -269,48 +271,52 @@
             <div class="col text-uppercase">
               <q-input
                 v-model="logistics.logistics_status"
-                filled
+                outlined
                 placeholder="Enter Logistics Status"
                 dense
+                class="text-uppercase"
               />
             </div>
           </div>
           <div class="row q-mb-sm items-center">
             <div class="col-4 text-right q-mr-sm">
-              <div>Payment Status:</div>
-            </div>
-            <div class="col text-uppercase">
-              <q-input
-                v-model="paymentStatus"
-                filled
-                placeholder="Enter Payment Status"
-                dense
-              />
-            </div>
-          </div>
-          <div class="row q-mb-sm items-center">
-            <div class="col-4 text-right q-mr-sm">
-              <div>Payment Type:</div>
+              <div>No. of Packets:</div>
             </div>
             <div class="col">
               <q-input
-                v-model="paymentType"
-                filled
-                placeholder="Enter Payment Type"
+                v-model="noPackets"
+                outlined
+                placeholder="Enter No. of Packets"
                 dense
+                class="text-uppercase"
               />
             </div>
           </div>
           <div class="row q-mb-sm items-center">
             <div class="col-4 text-right q-mr-sm">
-              <div>No. of Packets / Hangers:</div>
+              <div>No. of Hangers:</div>
             </div>
             <div class="col">
               <q-input
-                v-model="noPacketsHangers"
-                filled
-                placeholder="Enter No. of Packets / Hangers"
+                v-model="noHangers"
+                outlined
+                placeholder="Enter No. of Hangers"
                 dense
+                class="text-uppercase"
+              />
+            </div>
+          </div>
+          <div class="row q-mb-sm items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>No. of Rolls:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="noRolls"
+                outlined
+                placeholder="Enter No. of Rolls"
+                dense
+                class="text-uppercase"
               />
             </div>
           </div>
@@ -328,14 +334,67 @@
 
     <!-- Right Container -->
     <div class="col-6 preview-right-container">
-      <!-- Download PDF Button -->
-      <!-- <q-btn
-        flat
-        color="primary"
-        class="text-white q-mb-md q-mt-md"
-        @click="downloadOrderPDF"
-        label="Download PDF"
-      /> -->
+      <q-card class="preview-card order-container q-ma-md" ref="orderContainer">
+        <div class="row justify-between items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Invoice Details
+          </div>
+          <q-btn
+            label="Add Payment"
+            color="primary"
+            icon="add"
+            dense
+            flat
+            class="q-px-sm"
+            @click="openAddPaymentDialog"
+          />
+        </div>
+        <q-separator class="q-my-xs" />
+        <q-card-section>
+          <div class="">
+            <div>
+              Payment Status:
+              <span class="q-ml-xs text-weight-bold text-uppercase">{{
+                order.order_payment?.payment_status
+              }}</span>
+            </div>
+            <div>
+              Paid:
+              <span class="q-ml-xs text-weight-bold">
+                ${{ (order.order_payment?.paid_amount || 0).toFixed(2) }}
+              </span>
+            </div>
+            <div>
+              Balance:
+              <span class="q-ml-xs text-red text-weight-bold">
+                ${{
+                  (
+                    (order.order_payment?.total_amount || 0) -
+                    (order.order_payment?.paid_amount || 0)
+                  ).toFixed(2)
+                }}
+              </span>
+            </div>
+            <div>
+              Amount:
+              <span class="q-ml-xs text-weight-bold">
+                ${{ (order.order_payment?.total_amount || 0).toFixed(2) }}
+              </span>
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions>
+          
+              <q-btn
+                unelevated
+                label="Generate Invoice"
+                color="primary"
+                icon="update"
+                class="full-width q-mt-sm"
+                @click="generateInvoiceTab(order?.order_no)"
+              />
+        </q-card-actions>
+      </q-card>
       <q-card class="transactions-list preview-card q-ma-md">
         <!-- Add Instruction Button -->
         <div class="row justify-between items-center">
@@ -494,11 +553,16 @@
             >
               <div>
                 <!-- Instruction ID and description -->
-<div class="text-p q-ml-sm">
-  <q-icon name="circle" size="7px" class="q-mr-sm text-primary" />
-  <span>{{ instruction.description || "No description provided." }}</span>
-</div>
-
+                <div class="text-p q-ml-sm">
+                  <q-icon
+                    name="circle"
+                    size="7px"
+                    class="q-mr-sm text-primary"
+                  />
+                  <span>{{
+                    instruction.description || "No description provided."
+                  }}</span>
+                </div>
 
                 <!-- Instruction chips -->
                 <div class="instruction-chips q-ml-lg">
@@ -573,7 +637,6 @@
               <div>
                 <!-- Display the report description -->
                 <div class="text-p">
-                  
                   <span>
                     <q-icon
                       name="circle"
@@ -1272,66 +1335,236 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
-  <q-dialog v-model="showUpdateCollectionDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+  <q-dialog
+    v-model="showUpdateCollectionDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
     <q-card style="min-width: 50em">
       <q-card-section class="dialog-header">
-        <div class="text-body1 text-uppercase text-weight-bold">Update Collection</div>
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Update Collection
+        </div>
       </q-card-section>
       <q-card-section class="q-pa-none">
-        <UpdateCollectionDialog/>
+        <UpdateCollectionDialog />
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn flat color="negative" @click="showUpdateCollectionDialog = false" label="Close" />
+        <q-btn
+          flat
+          color="negative"
+          @click="showUpdateCollectionDialog = false"
+          label="Close"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
 
-  <q-dialog v-model="showUpdateDeliveryDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+  <q-dialog
+    v-model="showUpdateDeliveryDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
     <q-card style="min-width: 50em">
       <q-card-section class="dialog-header">
-        <div class="text-body1 text-uppercase text-weight-bold">Update Delivery</div>
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Update Delivery
+        </div>
       </q-card-section>
       <q-card-section class="q-pa-none">
-        <UpdateDeliveryDialog/>
+        <UpdateDeliveryDialog />
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn flat color="negative" @click="showUpdateDeliveryDialog = false" label="Close" />
+        <q-btn
+          flat
+          color="negative"
+          @click="showUpdateDeliveryDialog = false"
+          label="Close"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
 
-  <q-dialog v-model="showCollectionHistoryDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+  <q-dialog
+    v-model="showCollectionHistoryDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
     <q-card style="min-width: 90vw">
       <q-card-section class="dialog-header">
-        <div class="text-body1 text-uppercase text-weight-bold">Collection History</div>
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Collection History
+        </div>
       </q-card-section>
       <q-card-section class="q-pa-none">
         <div class="full-container">
-            <CollectionHistory/>
+          <CollectionHistory />
         </div>
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn flat color="negative" @click="showCollectionHistoryDialog = false" label="Close" />
+        <q-btn
+          flat
+          color="negative"
+          @click="showCollectionHistoryDialog = false"
+          label="Close"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
 
-  <q-dialog v-model="showDeliveryHistoryDialog" persistent transition-show="slide-down" transition-hide="slide-up">
+  <q-dialog
+    v-model="showDeliveryHistoryDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
     <q-card style="min-width: 90vw">
       <q-card-section class="dialog-header">
-        <div class="text-body1 text-uppercase text-weight-bold">Delivery History</div>
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Delivery History
+        </div>
       </q-card-section>
       <q-card-section class="q-pa-none">
         <div class="full-container">
-            <DeliveryHistory/>
+          <DeliveryHistory />
         </div>
       </q-card-section>
       <q-card-actions align="right">
-        <q-btn flat color="negative" @click="showDeliveryHistoryDialog = false" label="Close" />
+        <q-btn
+          flat
+          color="negative"
+          @click="showDeliveryHistoryDialog = false"
+          label="Close"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>
-  
+
+  <q-dialog v-model="showAddPaymentDialog">
+    <q-card style="min-width: 1000px">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Add Payment
+        </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showAddPaymentDialog = false"
+        />
+      </q-card-section>
+
+      <q-card-section class="dialog-body text-subtitle1">
+        <div class="row text-center">
+          <div class="col all-border text-uppercase">
+            <div>Paid</div>
+            <div class="text-weight-bolder text-uppercase text-h6 text-green-9">
+              ${{ (order.order_payment?.paid_amount || 0).toFixed(2) }}
+            </div>
+          </div>
+          <div class="col all-border text-uppercase">
+            <div>Unpaid</div>
+            <div class="text-weight-bolder text-uppercase text-h6 text-red-9">
+              ${{
+                (
+                  (order.order_payment?.total_amount || 0) -
+                  (order.order_payment?.paid_amount || 0)
+                ).toFixed(2)
+              }}
+            </div>
+          </div>
+          <div class="col all-border text-uppercase">
+            <div>Total Amount</div>
+            <div class="text-weight-bolder text-uppercase text-h6">
+              ${{ (order.order_payment?.total_amount || 0).toFixed(2) }}
+            </div>
+          </div>
+        </div>
+
+        <q-separator class="q-my-sm" />
+
+        <q-banner
+          v-if="selectedPaymentType === 'Online Package Credits'"
+          class="bg-yellow-1 text-primary q-my-sm"
+          rounded
+        >
+          <q-icon name="account_balance_wallet" class="q-mr-sm" />
+          Customer Credit Available:
+          <span class="text-weight-bolder text-subtitle1 q-ml-xs"
+            >${{ (totalCredits || 0).toFixed(2) }}</span
+          >
+        </q-banner>
+        <div class="row q-col-gutter-x-md">
+          <div class="col-6">
+            <div class="dialog-label">
+              Payment Type<span class="dialog-asterisk">*</span>
+            </div>
+            <q-select
+              v-model="selectedPaymentType"
+              :options="paymentTypes"
+              outlined
+              dense
+              class="dialog-inputs"
+              :rules="[(val) => !!val || 'Payment Type is required']"
+            />
+          </div>
+          <div class="col-6">
+            <div class="dialog-label">
+              Payment Amount<span class="dialog-asterisk">*</span>
+            </div>
+            <q-input
+              v-model.number="paymentAmount"
+              type="number"
+              outlined
+              dense
+              class="dialog-inputs q-pb-xs"
+              :rules="[
+                (val) => !!val || 'Payment Amount is required',
+                (val) => val > 0 || 'Must be greater than 0',
+              ]"
+            />
+            <div v-if="selectedPaymentType === 'Bank Transfer' || selectedPaymentType === 'Cheque'">
+              <div class="dialog-label q-mb-xs">
+                Reference No.<span class="dialog-asterisk">*</span>
+              </div>
+              <q-input
+                v-model="referenceNo"
+                type="text"
+                outlined
+                dense
+                class="dialog-inputs"
+                placeholder="Enter bank transfer reference number"
+                :rules="[(val) => !!val || 'Reference number is required']"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="q-mb-sm">
+          <div class="dialog-label q-mb-xs">Remarks</div>
+          <q-input
+            v-model="creditRemarks"
+            type="textarea"
+            outlined
+            dense
+            class="dialog-inputs"
+          />
+        </div>
+
+        <q-btn
+          unelevated
+          color="primary"
+          label="Add Payment"
+          class="full-width q-my-sm"
+          @click="addPayment"
+        />
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -1340,10 +1573,10 @@ import { fetchAllErrorItems } from "@/../supabase/api/error_list.js";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { useRoute } from "vue-router";
 import { Notify } from "quasar";
-import UpdateCollectionDialog from '@/components/dialogs/UpdateCollectionDialog.vue';
-import UpdateDeliveryDialog from '@/components/dialogs/UpdateDeliveryDialog.vue';
-import CollectionHistory from '@/components/CollectionHistory.vue';
-import DeliveryHistory from '@/components/DeliveryHistory.vue';
+import UpdateCollectionDialog from "@/components/dialogs/UpdateCollectionDialog.vue";
+import UpdateDeliveryDialog from "@/components/dialogs/UpdateDeliveryDialog.vue";
+import CollectionHistory from "@/components/CollectionHistory.vue";
+import DeliveryHistory from "@/components/DeliveryHistory.vue";
 
 const transactionStore = useTransactionStore();
 const route = useRoute();
@@ -1385,7 +1618,9 @@ onMounted(async () => {
 onMounted(async () => {
   try {
     const orderNo = route.params.order_no;
-    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
+      orderNo
+    );
 
     if (!orderDetails) {
       console.warn("No order details found for:", orderNo);
@@ -1398,22 +1633,19 @@ onMounted(async () => {
     collection.value = orderDetails.collection?.[0] || {};
     delivery.value = orderDetails.delivery?.[0] || {};
 
-transactions.value = [];
+    transactions.value = [];
 
-(orderDetails.transactions || []).forEach((tx, i) => {
-  if (Array.isArray(tx.order_transaction_items)) {
-    tx.order_transaction_items.forEach((item, j) => {
-      transactions.value.push(item);
+    (orderDetails.transactions || []).forEach((tx, i) => {
+      if (Array.isArray(tx.order_transaction_items)) {
+        tx.order_transaction_items.forEach((item, j) => {
+          transactions.value.push(item);
+        });
+      } else {
+        console.warn(`⚠️ No items in transaction ${i}`);
+      }
     });
-  } else {
-    console.warn(`⚠️ No items in transaction ${i}`);
-  }
-});
 
-
-
-reports.value = orderDetails.error_reports || [];
-
+    reports.value = orderDetails.error_reports || [];
 
     console.log("Assigned reports to reactive var:", reports.value);
 
@@ -1441,12 +1673,10 @@ reports.value = orderDetails.error_reports || [];
     ];
 
     console.log("Final instructions list:", instructions.value);
-
   } catch (error) {
     console.error("❌ Error loading order details:", error);
   }
 });
-
 
 // Watcher for transactions to dynamically calculate subtotals
 watch(
@@ -1479,52 +1709,75 @@ onMounted(async () => {
 
 const paymentStatus = computed({
   get() {
-    return order.value.order_payment?.payment_status || '';
+    return order.value.order_payment?.payment_status || "";
   },
   set(val) {
     if (!order.value.order_payment) {
       order.value.order_payment = {}; // init fallback object
     }
     order.value.order_payment.payment_status = val;
-  }
+  },
 });
 
 const goodsStatus = computed({
   get() {
-    return order.value.order_production?.goods_status || '';
+    return order.value.order_production?.goods_status || "";
   },
   set(val) {
     if (!order.value.order_production) {
       order.value.order_production = {};
     }
     order.value.order_production.goods_status = val;
-  }
+  },
 });
 
 const paymentType = computed({
   get() {
-    return order.value.order_payment?.payment_type || '';
+    return order.value.order_payment?.payment_type || "";
   },
   set(val) {
     if (!order.value.order_payment) {
       order.value.order_payment = {}; // init fallback object
     }
     order.value.order_payment.payment_type = val;
-  }
+  },
 });
 
-const noPacketsHangers = computed({
+const noPackets = computed({
   get() {
-    return order.value.order_production?.no_packets_hangers || '';
+    return order.value.order_production?.no_packets || "";
   },
   set(val) {
     if (!order.value.order_production) {
       order.value.order_production = {};
     }
-    order.value.order_production.no_packets_hangers = val;
-  }
+    order.value.order_production.no_packets = val;
+  },
 });
 
+const noHangers = computed({
+  get() {
+    return order.value.order_production?.no_hangers || "";
+  },
+  set(val) {
+    if (!order.value.order_production) {
+      order.value.order_production = {};
+    }
+    order.value.order_production.no_hangers = val;
+  },
+});
+
+const noRolls = computed({
+  get() {
+    return order.value.order_production?.no_rolls || "";
+  },
+  set(val) {
+    if (!order.value.order_production) {
+      order.value.order_production = {};
+    }
+    order.value.order_production.no_rolls = val;
+  },
+});
 
 function autoResize(event) {
   const textarea = event.target;
@@ -1787,7 +2040,8 @@ function getContactNumber(contactPersonId) {
 
 const formattedCollectionContactNos = computed({
   get() {
-    const contact1 = collection.value.customer_contact_persons?.contact_no1 || "-";
+    const contact1 =
+      collection.value.customer_contact_persons?.contact_no1 || "-";
     const contact2 = collection.value.customer_contact_persons?.contact_no2;
 
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
@@ -1804,7 +2058,8 @@ const formattedCollectionContactNos = computed({
 
 const formattedDeliveryContactNos = computed({
   get() {
-    const contact1 = delivery.value.customer_contact_persons?.contact_no1 || "-";
+    const contact1 =
+      delivery.value.customer_contact_persons?.contact_no1 || "-";
     const contact2 = delivery.value.customer_contact_persons?.contact_no2;
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
@@ -2395,7 +2650,7 @@ watch(selectedSearchItemName, (newItemName) => {
 async function updateTransaction(orderId) {
   try {
     // Prepare transaction items and ensure they are properly formatted
-    transactionStore.transactionItems = transactions.value.map(item => ({
+    transactionStore.transactionItems = transactions.value.map((item) => ({
       name: item.item_name,
       order_id: orderId,
       price: item.price,
@@ -2405,7 +2660,7 @@ async function updateTransaction(orderId) {
       subtotal: item.subtotal,
       category: item.category,
       tag_category: item.tag_category,
-      status: "active"
+      status: "active",
     }));
 
     // Call the transactionStore updateTransaction
@@ -2647,7 +2902,9 @@ const showUpdateDeliveryDialog = ref(false);
 
 const updateCollection = async (logisticsId) => {
   try {
-    const collectionData = await transactionStore.fetchCollectionByLogisticsId(logisticsId);
+    const collectionData = await transactionStore.fetchCollectionByLogisticsId(
+      logisticsId
+    );
     if (!collectionData || collectionData.length === 0) {
       throw new Error("No collection data found!");
     }
@@ -2667,7 +2924,7 @@ const updateCollection = async (logisticsId) => {
     transactionStore.jobType = collection.job_type || null;
     transactionStore.readyBy = collection.ready_by || null;
     transactionStore.logisticsId = collection.logistics_id || null;
-    
+
     showUpdateCollectionDialog.value = true;
   } catch (error) {
     console.error("Error fetching collection details:", error);
@@ -2676,7 +2933,9 @@ const updateCollection = async (logisticsId) => {
 
 const updateDelivery = async (logisticsId) => {
   try {
-    const deliveryData = await transactionStore.fetchDeliveryByLogisticsId(logisticsId);
+    const deliveryData = await transactionStore.fetchDeliveryByLogisticsId(
+      logisticsId
+    );
     if (!deliveryData || deliveryData.length === 0) {
       throw new Error("No delivery data found!");
     }
@@ -2705,7 +2964,7 @@ const updateDelivery = async (logisticsId) => {
 
 const openCollectionHistoryDialog = async (logisticsId) => {
   try {
-    transactionStore.logisticsId = logisticsId
+    transactionStore.logisticsId = logisticsId;
     showCollectionHistoryDialog.value = true;
   } catch (error) {
     console.error("Error opening collection history dialog:", error);
@@ -2714,10 +2973,114 @@ const openCollectionHistoryDialog = async (logisticsId) => {
 
 const openDeliveryHistoryDialog = async (logisticsId) => {
   try {
-    transactionStore.logisticsId = logisticsId
+    transactionStore.logisticsId = logisticsId;
     showDeliveryHistoryDialog.value = true;
   } catch (error) {
     console.error("Error opening delivery history dialog:", error);
   }
 };
+
+// Payment dialog control
+const showAddPaymentDialog = ref(false);
+
+// Payment form state
+const selectedPaymentType = ref("Cash");
+const paymentTypes = ref(["Cash", "Bank Transfer", "Cheque", "Online Package Credits"]); // Add your options here
+const paymentAmount = ref(0);
+const creditRemarks = ref("");
+
+// Open dialog from button
+const openAddPaymentDialog = () => {
+  showAddPaymentDialog.value = true;
+};
+
+const referenceNo = ref("");
+
+// extend addPayment method to include referenceNo validation
+const addPayment = async () => {
+  if (
+    !selectedPaymentType.value ||
+    !paymentAmount.value ||
+    paymentAmount.value <= 0
+  ) {
+    Notify.create({
+      message: "Please fill in all required payment fields.",
+      color: "red",
+    });
+    return;
+  }
+
+  if (selectedPaymentType.value === "Bank Transfer" && !referenceNo.value) {
+    Notify.create({
+      message: "Reference No. is required for Bank Transfer.",
+      color: "red",
+    });
+    return;
+  }
+
+  if (!order.value?.id) {
+    Notify.create({
+      message: "Invalid order. Cannot process payment.",
+      color: "red",
+    });
+    return;
+  }
+
+  try {
+    const payload = {
+      order_id: order.value.id,
+      amount: paymentAmount.value,
+      type: selectedPaymentType.value,
+      remarks: creditRemarks.value,
+      reference_no: referenceNo.value || null,
+    };
+
+    await transactionStore.addPayment(payload);
+
+    Notify.create({ message: "Payment added successfully.", color: "green" });
+
+    selectedPaymentType.value = null;
+    paymentAmount.value = 0;
+    creditRemarks.value = "";
+    referenceNo.value = "";
+    showAddPaymentDialog.value = false;
+  } catch (err) {
+    console.error("Error adding payment:", err);
+    Notify.create({ message: "Failed to add payment.", color: "red" });
+  }
+};
+
+const totalCredits = ref(0);
+
+watch(selectedPaymentType, async (newType) => {
+  console.log("💡 Payment Type Changed:", newType);
+
+  if (newType === "Online Package Credits" && customer.value?.id) {
+    console.log("🔍 Fetching credits for customer ID:", customer.value.id);
+
+    try {
+      const creditData = await transactionStore.fetchCustomerCreditsById(
+        customer.value.id
+      );
+
+      console.log("✅ Credits fetched:", creditData);
+
+      totalCredits.value =
+        (creditData?.online_package || 0) + (creditData?.other_credits || 0);
+
+      console.log("📦 totalCredits updated to:", totalCredits.value);
+    } catch (err) {
+      console.error("❌ Failed to fetch customer credits:", err);
+      Notify.create({
+        message: "Failed to load credits. Try again.",
+        color: "red",
+      });
+    }
+  }
+});
+
+function generateInvoiceTab(orderNo) {
+  const url = `/invoice/${orderNo}`;
+  window.open(url, "_blank");
+}
 </script>

@@ -1018,6 +1018,44 @@ export const useTransactionStore = defineStore("transactionStore", {
       if (insertError) throw insertError;
     },
 
+async addPayment({ order_id, amount, type, remarks, reference_no }) {
+  if (!order_id) throw new Error("Missing order_id");
+
+  const { data: orderPayment, error: fetchError } = await supabase
+    .from("order_payments")
+    .select("id, paid_amount, total_amount")
+    .eq("order_id", order_id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const currentPaid = orderPayment.paid_amount || 0;
+  const newPaidAmount = currentPaid + amount;
+  const isFullyPaid = newPaidAmount >= (orderPayment.total_amount || 0);
+
+  const { error: updateError } = await supabase
+    .from("order_payments")
+    .update({
+      paid_amount: newPaidAmount,
+      payment_status: isFullyPaid ? "paid" : "partial",
+    })
+    .eq("id", orderPayment.id);
+
+  if (updateError) throw updateError;
+
+  const { error: insertError } = await supabase
+    .from("order_payments_history")
+    .insert({
+      order_payment_id: orderPayment.id,
+      amount,
+      payment_type: type,
+      remarks,
+      reference_no,
+    });
+
+  if (insertError) throw insertError;
+},
+
     async setSelectedCustomer(customer) {
       this.selectedCustomer = customer;
 
@@ -1924,7 +1962,12 @@ async fetchAllOrdersSimple() {
           ready_by,
           goods_status,
           no_packets,
-          no_hangers
+          no_hangers,
+          no_rolls
+        ),
+        order_invoices (
+         invoice_no,
+         created_at
         )
       ),
       customers (
@@ -1975,6 +2018,9 @@ return data.map((logistics) => ({
         order_production: Array.isArray(logistics.orders.order_production)
           ? logistics.orders.order_production[0] || null
           : logistics.orders.order_production || null,
+        order_invoices: Array.isArray(logistics.orders.order_invoices)
+          ? logistics.orders.order_invoices[0] || null
+          : logistics.orders.order_invoices || null,
       }
     : null,
   customer: logistics.customers
@@ -2020,7 +2066,8 @@ async fetchTransactionsByOrderId(orderId) {
         pieces,
         subtotal,
         category,
-        tag_category
+        tag_category,
+        unit
       )
     `)
     .eq("order_id", orderId)
@@ -2216,9 +2263,10 @@ async fetchWholeOrderByOrderNo(orderNo) {
         logistics_status,
         customer_id,
         orders!inner(order_no, id, created_at, 
-          order_payments(payment_status, paid_amount, payment_type),
+          order_payments(payment_status, paid_amount, total_amount),
           order_tags(tag_status, tag_changes),
-          order_production(ready_by, goods_status, no_packets, no_hangers)
+          order_production(ready_by, goods_status, no_packets, no_hangers, no_rolls),
+          order_invoices(invoice_no, created_at)
         ),
         customers(id, name, contact_no1, contact_no2, email, type, sub_type,
           schedule_remarks, price_remarks, accounting_remarks, other_remarks
@@ -2272,7 +2320,10 @@ async fetchWholeOrderByOrderNo(orderNo) {
           : order.order_tags || null,
         order_production: Array.isArray(order.order_production)
           ? order.order_production[0] || null
-          : order.order_production || null
+          : order.order_production || null,
+        order_invoices: Array.isArray(order.order_invoices)
+          ? order.order_invoices[0] || null
+          : order.order_invoices || null
       },
       instructions_recurring: recurringInstructions,
       collection: data.logistics_collections || [],
@@ -2320,6 +2371,7 @@ async fetchWholeOrderByOrderNo(orderNo) {
         await this.createTransaction(orderId);
         await this.createInstructions(orderId);
         await this.createErrorReports(orderId);
+        await this.createInvoice(orderId);
 
         this.resetTransactionItems();
 
@@ -2353,6 +2405,7 @@ async fetchWholeOrderByOrderNo(orderNo) {
         await this.createTransaction(orderId);
         await this.createInstructions(orderId);
         await this.createErrorReports(orderId);
+        await this.createInvoice(orderId);
 
         // Reset transaction data after successful save
         this.resetTransactionItems();
@@ -2568,6 +2621,7 @@ async fetchWholeOrderByOrderNo(orderNo) {
               goods_status: "none",
               no_packets: null,
               no_hangers: null,
+              no_rolls: null
             },
           ])
           .select("id")
@@ -2651,6 +2705,7 @@ async fetchWholeOrderByOrderNo(orderNo) {
             subtotal: item.subtotal,
             category: item.category,
             tag_category: item.tag_category,
+            unit: item.unit
           };
 
           console.log(
@@ -2773,6 +2828,41 @@ async fetchWholeOrderByOrderNo(orderNo) {
         console.error("Error in create error reports:", error);
       }
     },
+
+    async createInvoice(orderId) {
+  try {
+    if (!orderId) throw new Error("Invalid orderId");
+
+    // Step 1: Get the latest invoice_no
+    const { data: latestInvoice, error: fetchError } = await supabase
+      .from("invoices")
+      .select("invoice_no")
+      .order("invoice_no", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    const lastInvoiceNo = latestInvoice?.invoice_no ?? 0;
+    const newInvoiceNo = lastInvoiceNo + 1;
+
+    // Step 2: Insert new invoice
+    const { data: insertedInvoice, error: insertError } = await supabase
+      .from("invoices")
+      .insert({ order_id: orderId, invoice_no: newInvoiceNo })
+      .select("id, invoice_no")
+      .single();
+
+    if (insertError) throw insertError;
+
+    console.log("[createInvoice] Invoice created:", insertedInvoice);
+    return insertedInvoice;
+  } catch (error) {
+    console.error("[createInvoice] Error:", error);
+    return null;
+  }
+}
+
     // end of order creation
   },
 });

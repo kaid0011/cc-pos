@@ -12,7 +12,7 @@
           <div class="col-auto text-right">
             <div>Name:</div>
             <div>Contact No:</div>
-            <div>Email:</div>
+            <div v-if="selectedCustomer.email">Email:</div>
           </div>
           <div class="col q-pl-sm">
             <div class="text-summary">{{ selectedCustomer.name }}</div>
@@ -22,7 +22,7 @@
                 / {{ selectedCustomer.contact_no2 || "-" }}</span
               >
             </div>
-            <div class="text-summary">{{ selectedCustomer.email }}</div>
+            <div v-if="selectedCustomer.email" class="text-summary">{{ selectedCustomer.email }}</div>
           </div>
         </div>
       </q-card-section>
@@ -177,16 +177,28 @@
             </div>
             <div class="col">
               <div class="dialog-label">
-                Pack Type<span class="dialog-asterisk">*</span>
+                No. of Bags<span class="dialog-asterisk">*</span>
               </div>
               <q-input
-                v-model="transactionStore.collectionPackType"
-                label="Pack Type"
+                v-model="transactionStore.collectionNoBags"
+                label="No. of Bags"
                 outlined
                 dense
                 class="q-mb-xs bg-white"
               />
             </div>
+          </div>
+          <div>
+            <div class="dialog-label">
+              Urgency<span class="dialog-asterisk"></span>
+            </div>
+            <q-input
+              v-model="transactionStore.jobUrgency"
+              label="Urgency"
+              outlined
+              dense
+              class="q-mb-xs bg-white"
+            />
           </div>
           <div>
             <div class="dialog-label">
@@ -338,18 +350,6 @@
               outlined
               dense
               clearable
-              class="q-mb-xs bg-white"
-            />
-          </div>
-          <div>
-            <div class="dialog-label">
-              Pack Type<span class="dialog-asterisk"></span>
-            </div>
-            <q-input
-              v-model="transactionStore.deliveryPackType"
-              label="Pack Type"
-              outlined
-              dense
               class="q-mb-xs bg-white"
             />
           </div>
@@ -526,15 +526,16 @@ const updateOptions = async () => {
     transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
     transactionStore.ready_by = addWorkingDays(new Date(), 7);
 
-    contactOptions.value = transactionStore.contactOptions.map((contact) => ({
-      id: contact.id,
-      name: contact.name,
-      contact_no1: contact.contact_no1,
-      contact_no2: contact.contact_no2,
-      label: `${contact.name} - ${contact.contact_no1 || ""} / ${
-        contact.contact_no2 || "-"
-      }`,
-    }));
+contactOptions.value = transactionStore.contactOptions.map((contact) => ({
+  id: contact.id,
+  name: contact.name,
+  contact_no1: contact.contact_no1,
+  contact_no2: contact.contact_no2,
+  label: `${contact.name} - ${contact.contact_no1 || ""}${
+    contact.contact_no2 ? ` / ${contact.contact_no2}` : ""
+  }`,
+}));
+
 
     addressOptions.value = transactionStore.addressOptions.map((address) => ({
       id: address.id,

@@ -50,7 +50,7 @@
             :key="subCategory"
           >
             <div
-              class="text-h6 text-uppercase text-weight-bolder text-center q-py-sm"
+              class="text-h6 text-uppercase text-weight-bold text-center q-py-sm"
             >
               {{ subCategory }}
             </div>
@@ -147,12 +147,12 @@
         <div
           class="row row-col-header text-p text-center text-uppercase text-weight-bold"
         >
-          <div class="col-5 col bordered text-weight-bolder">Item</div>
-          <div class="col-2 col bordered text-weight-bolder">Process</div>
-          <div class="col-1 col bordered text-weight-bolder">Price</div>
-          <div class="col-1 col bordered text-weight-bolder">Qty</div>
-          <div class="col-2 col bordered text-weight-bolder">Subtotal</div>
-          <div class="col-1 col bordered text-weight-bolder"></div>
+          <div class="col-5 col bordered text-weight-bold">Item</div>
+          <div class="col-2 col bordered text-weight-bold">Process</div>
+          <div class="col-1 col bordered text-weight-bold">Price</div>
+          <div class="col-1 col bordered text-weight-bold">Qty</div>
+          <div class="col-2 col bordered text-weight-bold">Subtotal</div>
+          <div class="col-1 col bordered text-weight-bold"></div>
         </div>
 
         <!-- Render each transaction item if there are items in the list -->
@@ -188,11 +188,10 @@
         <div
           class="row row-col-footer text-p text-center text-weight-bolder items-center"
         >
-          <div class="col-5 text-left q-pl-sm text-uppercase">Total</div>
-          <div class="col-2"></div>
+          <div class="col-7 text-left q-pl-sm text-uppercase">Total</div>
           <div class="col-1 col bordered"></div>
           <div class="col-1 col bordered">{{ totalQuantity }}</div>
-          <div class="col-2 col bordered">${{ totalAmount.toFixed(2) }}</div>
+          <div class="col-2 col bordered text-red-9">${{ totalAmount.toFixed(2) }}</div>
           <div class="col-1"></div>
         </div>
       </div>

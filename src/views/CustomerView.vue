@@ -48,7 +48,7 @@
               <!-- <div>
             <strong>Contact No 2:</strong> {{ customerDetails.contact_no2 }}
           </div> -->
-              <div><strong>Email:</strong> {{ customerDetails.email }}</div>
+              <div><strong>Email:</strong> {{ customerDetails.email || '-'}}</div>
 
               <div>
                 <strong>Customer Type:</strong> {{ customerDetails.type }}
@@ -59,7 +59,7 @@
               </div>
               <div>
                 <strong>Recommended By:</strong>
-                {{ customerDetails.recommended_by }}
+                {{ customerDetails.recommended_by || '-'}}
               </div>
               <div>
                 <strong>Customer Since:</strong>

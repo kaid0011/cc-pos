@@ -17,9 +17,9 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
       <div class="row justify-between">
         <div class="col-2 text-center">
           <div v-if="showWeeklySummary">
-            <div class="mark-green">1+ col/del</div>
-            <div class="mark-yellow">10+ col/del</div>
-            <div class="mark-red">20+ col/del</div>
+            <div class="mark-green line-height-1">1+ col/del</div>
+            <div class="mark-yellow line-height-1">10+ col/del</div>
+            <div class="mark-red line-height-1">20+ col/del</div>
           </div>
         </div>
         <div class="col row items-center justify-center q-mb-sm">
@@ -30,10 +30,10 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
             @click="previousWeek"
           />
           <div class="text-center">
-            <div class="text-h6 text-weight-bolder text-uppercase">
+            <div class="text-h6 text-weight-bolder text-uppercase line-height-1">
               Weekly Summary
             </div>
-            <div class="text-subtitle1 text-weight-bold">
+            <div class="text-subtitle1 text-weight-bold line-height-1">
               ({{ formattedStartOfWeek }} - {{ formattedEndOfWeek }})
             </div>
           </div>
@@ -60,12 +60,12 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
       <div v-if="showWeeklySummary" class="weekly-summary-container">
         <!-- Header Row: Weekdays with Dates -->
         <div
-          class="row text-center text-weight-bold bg-primary text-white items-center all-border q-pa-none"
+          class="row text-center text-weight-bold bg-primary text-white items-center all-border" style="padding: 0.5em;"
         >
           <div class="col">Driver</div>
-          <div v-for="(day, index) in daysOfWeek" :key="day" class="col">
-            <div>{{ day }}</div>
-            <div class="text-caption">{{ formattedWeekDates[index] }}</div>
+          <div v-for="(day, index) in daysOfWeek" :key="day" class="col line-height-1">
+            <div class="text-uppercase text-yellow">{{ day }}</div>
+            <div class="text-caption line-height-1 text-weight-bold">{{ formattedWeekDates[index] }}</div>
           </div>
         </div>
 
@@ -74,6 +74,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           v-for="driver in drivers"
           :key="driver"
           class="row text-center items-center bg-grey-3 q-pa-sm all-border"
+          style="padding: 0.5em;"
         >
           <div class="col text-weight-bold">{{ driver }}</div>
           <div
@@ -113,11 +114,11 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
       </div>
     </q-card>
 
-    <q-card flat class="generate-card q-mb-lg q-pa-sm">
+    <q-card flat class="generate-card q-mb-lg">
       <div class="text-subtitle1 text-uppercase text-weight-bolder">
         Generate Driver Schedule
       </div>
-      <div class="row q-pa-sm q-col-gutter-x-lg">
+      <div class="row q-col-gutter-x-lg">
         <div class="col">
           <q-input
             class="date-input"
@@ -152,7 +153,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
             outlined
             dense
             clearable
-            class="q-mb-xs bg-white"
+            class="bg-white"
           />
         </div>
         <div class="col-auto">
@@ -256,7 +257,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               <div class="col bordered q-py-sm text-weight-bolder">Address</div>
               <!-- <div class="col bordered q-py-sm text-weight-bolder">Driver Name</div> -->
               <div class="col bordered q-py-sm text-weight-bolder">
-                Pack Type
+                No. of Bags
               </div>
               <div class="col q-py-sm text-weight-bolder">Remarks</div>
               <div class="col bordered q-py-sm text-weight-bolder">Status</div>
@@ -339,7 +340,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                   {{ transaction.driver?.contact_no1 }}
                 </div>
               </div> -->
-              <div class="col bordered">{{ transaction.pack_type || "-" }}</div>
+              <div class="col bordered">{{ transaction.no_bags || "-" }}</div>
               <div class="col bordered">{{ transaction.remarks || "-" }}</div>
               <div
                 class="col mark-bg-pink bordered text-uppercase text-weight-bold"
@@ -819,7 +820,7 @@ const generateDriverSchedule = () => {
       customer,
       contactPerson,
       transaction.address || "[NOT SET]",
-      `Pack Type:\n${transaction.pack_type || "-"}`,
+      `No. of Bags:\n${transaction.no_bags || "-"}`,
       transaction.remarks || "-",
     ];
   });
@@ -912,12 +913,10 @@ const formattedWeekDates = computed(() => {
 });
 
 const drivers = computed(() => {
-  const unique = new Set();
-  allTransactions.value.forEach((t) => {
-    const name = t.driver_name || "[NOT SET]";
-    unique.add(name);
-  });
-  return Array.from(unique);
+  const allDriverNames = transactionStore.driverOptions.map((d) => d.name?.trim() || "[NOT SET]");
+  const uniqueNames = new Set(allDriverNames);
+  uniqueNames.add("[NOT SET]"); // Ensure fallback always exists
+  return Array.from(uniqueNames);
 });
 
 const driverTransactionCounts = computed(() => {
@@ -1012,7 +1011,7 @@ const updateCollection = async (logisticsId) => {
     transactionStore.collectionDate = collection.collection_date || null;
     transactionStore.collectionTime = collection.collection_time || null;
     transactionStore.collectionRemarks = collection.remarks || null;
-    transactionStore.collectionPackType = collection.pack_type || null;
+    transactionStore.collectionNoBags = collection.no_bags || null;
     transactionStore.jobType = collection.job_type || null;
     transactionStore.readyBy = collection.ready_by || null;
     transactionStore.logisticsId = collection.logistics_id || null;
@@ -1042,7 +1041,7 @@ const updateDelivery = async (logisticsId) => {
     transactionStore.deliveryDate = delivery.delivery_date || null;
     transactionStore.deliveryTime = delivery.delivery_time || null;
     transactionStore.deliveryRemarks = delivery.remarks || null;
-    transactionStore.deliveryPackType = delivery.pack_type || null;
+    transactionStore.deliveryNoBags = delivery.no_bags || null;
     transactionStore.jobType = delivery.job_type || null;
     transactionStore.readyBy = delivery.ready_by || null;
     transactionStore.logisticsId = delivery.logistics_id || null;

@@ -4,7 +4,7 @@
       <!-- Order Summary Header -->
       <div class="row summary-header text-p">
         <div class="col summary-card-header justify-between text-p">
-          <div class="text-h6 text-center text-weight-bolder text-uppercase">
+          <div class="text-h6 text-center text-weight-bold text-uppercase">
             Order Details
           </div>
           <q-separator class="q-my-sm" />
@@ -35,7 +35,7 @@
         </div>
         <!-- Collection Details -->
         <div class="col summary-card-header">
-          <div class="text-h6 text-center text-weight-bolder text-uppercase">
+          <div class="text-h6 text-center text-weight-bold text-uppercase">
             Collection Details
           </div>
           <q-separator class="q-my-sm" />
@@ -68,7 +68,7 @@
 
         <!-- Delivery Details -->
         <div class="col summary-card-header">
-          <div class="text-h6 text-center text-weight-bolder text-uppercase">
+          <div class="text-h6 text-center text-weight-bold text-uppercase">
             Delivery Details
           </div>
           <q-separator class="q-my-sm" />
@@ -107,12 +107,12 @@
       <div class="transaction-summary">
         <!-- Table Header -->
         <div class="row row-col-header">
-          <div class="col col-4 text-weight-bolder bordered">Item</div>
-          <div class="col col-2 text-weight-bolder bordered">Process</div>
-          <div class="col col-2 text-weight-bolder bordered">Price</div>
-          <div class="col col-1 text-weight-bolder bordered">Pcs</div>
-          <div class="col col-1 text-weight-bolder bordered">Qty</div>
-          <div class="col col-2 text-weight-bolder bordered">Subtotal</div>
+          <div class="col col-4 text-weight-bold bordered">Item</div>
+          <div class="col col-2 text-weight-bold bordered">Process</div>
+          <div class="col col-2 text-weight-bold bordered">Price</div>
+          <div class="col col-1 text-weight-bold bordered">Pcs</div>
+          <div class="col col-1 text-weight-bold bordered">Qty</div>
+          <div class="col col-2 text-weight-bold bordered">Subtotal</div>
         </div>
 
         <!-- Transactions or Fallback Message -->
@@ -147,7 +147,7 @@
           <div class="col col-1 text-weight-bolder bordered">
             {{ totalQty }}
           </div>
-          <div class="col col-2 text-weight-bolder bordered">
+          <div class="col col-2 text-weight-bolder bordered text-red-9">
             {{ totalSubtotal }}
           </div>
         </div>
@@ -158,7 +158,7 @@
         <!-- Instructions Summary -->
         <div class="col-6">
           <q-card flat class="summary-card q-mt-md">
-            <div class="text-h6 text-center text-weight-bolder text-uppercase">
+            <div class="text-h6 text-center text-weight-bold text-uppercase">
               Instructions
             </div>
             <q-separator class="q-my-sm" />
@@ -264,7 +264,7 @@
         <!-- Error Reporting Summary -->
         <div class="col-6">
           <q-card flat class="summary-card q-mt-md">
-            <div class="text-h6 text-center text-weight-bolder text-uppercase">
+            <div class="text-h6 text-center text-weight-bold text-uppercase">
               Error Reporting
             </div>
             <q-separator class="q-my-sm" />

@@ -88,19 +88,19 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ collection.customer_contact_persons?.name }}
+                {{ collection.customer_contact_persons?.name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Nos:</div>
               <div class="col-6">
-                {{ formattedCollectionContactNos }}
+                {{ formattedCollectionContactNos || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Address:</div>
               <div class="col-6">
-                {{ collection.address }}
+                {{ collection.address || "-" }}
               </div>
             </div>
 
@@ -113,19 +113,25 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Time:</div>
               <div class="col-6">
-                {{ collection.collection_time }}
+                {{ collection.collection_time || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Driver:</div>
               <div class="col-6">
-                {{ collection.driver_name }}
+                {{ collection.driver_name || "-" }}
+              </div>
+            </div>
+            <div class="row text-slip-row row-col-row">
+              <div class="col-6">No. of Bags:</div>
+              <div class="col-6">
+                {{ collection.no_bags || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Remarks:</div>
               <div class="col-6">
-                {{ collection.remarks }}
+                {{ collection.remarks || "-" }}
               </div>
             </div>
 
@@ -159,19 +165,19 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ delivery.customer_contact_persons?.name }}
+                {{ delivery.customer_contact_persons?.name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Nos:</div>
               <div class="col-6">
-                {{ formattedDeliveryContactNos }}
+                {{ formattedDeliveryContactNos || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Address:</div>
               <div class="col-6">
-                {{ delivery.address }}
+                {{ delivery.address || "-" }}
               </div>
             </div>
 
@@ -185,19 +191,19 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Time:</div>
               <div class="col-6">
-                {{ delivery.delivery_time }}
+                {{ delivery.delivery_time || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Driver:</div>
               <div class="col-6">
-                {{ delivery.driver_name }}
+                {{ delivery.driver_name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Remarks:</div>
               <div class="col-6">
-                {{ delivery.remarks }}
+                {{ delivery.remarks || "-" }}
               </div>
             </div>
             <q-card-actions align="right">
@@ -217,54 +223,12 @@
       <q-card class="preview-card q-mt-md">
         <div class="row justify-start items-center">
           <div class="text-subtitle1 text-uppercase text-weight-bolder">
-            Other Information
+            Logistics Details
           </div>
         </div>
         <q-separator class="q-mt-xs" />
-        <q-card-section>
-          <div class="row q-mb-sm items-center">
-            <div class="col-4 text-right q-mr-sm">
-              <div>Job Type:</div>
-            </div>
-            <div class="col">
-              <q-input
-                v-model="logistics.job_type"
-                outlined
-                placeholder="Enter Job Type / Urgency"
-                dense
-                class="text-uppercase"
-              />
-            </div>
-          </div>
-          <div class="row q-mb-sm items-center">
-            <div class="col-4 text-right q-mr-sm">
-              <div>Urgency:</div>
-            </div>
-            <div class="col">
-              <q-input
-                v-model="logistics.urgency"
-                outlined
-                placeholder="Enter Job Sub-Type"
-                dense
-                class="text-uppercase"
-              />
-            </div>
-          </div>
-          <div class="row q-mb-sm items-center">
-            <div class="col-4 text-right q-mr-sm">
-              <div>Goods Status:</div>
-            </div>
-            <div class="col text-uppercase">
-              <q-input
-                v-model="goodsStatus"
-                outlined
-                placeholder="Enter Goods Status"
-                dense
-                class="text-uppercase"
-              />
-            </div>
-          </div>
-          <div class="row q-mb-sm items-center">
+        <q-card-section class="q-pb-sm">
+          <div class="row q-mb-xs items-center">
             <div class="col-4 text-right q-mr-sm">
               <div>Logistics Status:</div>
             </div>
@@ -278,7 +242,68 @@
               />
             </div>
           </div>
-          <div class="row q-mb-sm items-center">
+          <div class="row q-mb-xs items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Job Type:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="logistics.job_type"
+                outlined
+                placeholder="Enter Job Type / Urgency"
+                dense
+                class="text-uppercase"
+              />
+            </div>
+          </div>
+          <div class="row q-mb-xs items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Urgency:</div>
+            </div>
+            <div class="col">
+              <q-input
+                v-model="logistics.urgency"
+                outlined
+                placeholder="Enter Job Sub-Type"
+                dense
+                class="text-uppercase"
+              />
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions class="q-pt-none" align="right">
+          <q-btn
+            label="Update Other Information"
+            color="primary"
+            icon="update"
+            @click="updateOtherInformation"
+          />
+        </q-card-actions>
+      </q-card>
+
+      <q-card class="preview-card q-mt-md">
+        <div class="row justify-start items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Production Details
+          </div>
+        </div>
+        <q-separator class="q-mt-xs" />
+        <q-card-section class="q-pb-sm">
+          <div class="row q-mb-xs items-center">
+            <div class="col-4 text-right q-mr-sm">
+              <div>Goods Status:</div>
+            </div>
+            <div class="col text-uppercase">
+              <q-input
+                v-model="goodsStatus"
+                outlined
+                placeholder="Enter Goods Status"
+                dense
+                class="text-uppercase"
+              />
+            </div>
+          </div>
+          <div class="row q-mb-xs items-center">
             <div class="col-4 text-right q-mr-sm">
               <div>No. of Packets:</div>
             </div>
@@ -292,7 +317,7 @@
               />
             </div>
           </div>
-          <div class="row q-mb-sm items-center">
+          <div class="row q-mb-xs items-center">
             <div class="col-4 text-right q-mr-sm">
               <div>No. of Hangers:</div>
             </div>
@@ -306,7 +331,7 @@
               />
             </div>
           </div>
-          <div class="row q-mb-sm items-center">
+          <div class="row q-mb-xs items-center">
             <div class="col-4 text-right q-mr-sm">
               <div>No. of Rolls:</div>
             </div>
@@ -321,7 +346,7 @@
             </div>
           </div>
         </q-card-section>
-        <q-card-actions align="right">
+        <q-card-actions class="q-pt-none" align="right">
           <q-btn
             label="Update Other Information"
             color="primary"
@@ -330,11 +355,8 @@
           />
         </q-card-actions>
       </q-card>
-    </div>
 
-    <!-- Right Container -->
-    <div class="col-6 preview-right-container">
-      <q-card class="preview-card order-container q-ma-md" ref="orderContainer">
+      <q-card class="preview-card order-container q-mt-md" ref="orderContainer">
         <div class="row justify-between items-center">
           <div class="text-subtitle1 text-uppercase text-weight-bolder">
             Invoice Details
@@ -350,7 +372,7 @@
           />
         </div>
         <q-separator class="q-my-xs" />
-        <q-card-section>
+        <q-card-section class="q-pb-sm">
           <div class="">
             <div>
               Payment Status:
@@ -383,18 +405,21 @@
             </div>
           </div>
         </q-card-section>
-        <q-card-actions>
-          
-              <q-btn
-                unelevated
-                label="Generate Invoice"
-                color="primary"
-                icon="update"
-                class="full-width q-mt-sm"
-                @click="generateInvoiceTab(order?.order_no)"
-              />
+        <q-card-actions class="q-pt-none">
+          <q-btn
+            unelevated
+            label="Generate Invoice"
+            color="primary"
+            icon="update"
+            class="full-width q-mt-sm"
+            @click="generateInvoiceTab(order?.order_no)"
+          />
         </q-card-actions>
       </q-card>
+    </div>
+
+    <!-- Right Container -->
+    <div class="col-6 preview-right-container">
       <q-card class="transactions-list preview-card q-ma-md">
         <!-- Add Instruction Button -->
         <div class="row justify-between items-center">
@@ -1346,18 +1371,18 @@
         <div class="text-body1 text-uppercase text-weight-bold">
           Update Collection
         </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showUpdateCollectionDialog = false"
+        />
       </q-card-section>
       <q-card-section class="q-pa-none">
         <UpdateCollectionDialog />
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          color="negative"
-          @click="showUpdateCollectionDialog = false"
-          label="Close"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 
@@ -1372,18 +1397,18 @@
         <div class="text-body1 text-uppercase text-weight-bold">
           Update Delivery
         </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showUpdateDeliveryDialog = false"
+        />
       </q-card-section>
       <q-card-section class="q-pa-none">
         <UpdateDeliveryDialog />
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          color="negative"
-          @click="showUpdateDeliveryDialog = false"
-          label="Close"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 
@@ -1398,20 +1423,20 @@
         <div class="text-body1 text-uppercase text-weight-bold">
           Collection History
         </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showCollectionHistoryDialog = false"
+        />
       </q-card-section>
       <q-card-section class="q-pa-none">
         <div class="full-container">
           <CollectionHistory />
         </div>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          color="negative"
-          @click="showCollectionHistoryDialog = false"
-          label="Close"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 
@@ -1426,20 +1451,20 @@
         <div class="text-body1 text-uppercase text-weight-bold">
           Delivery History
         </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showDeliveryHistoryDialog = false"
+        />
       </q-card-section>
       <q-card-section class="q-pa-none">
         <div class="full-container">
           <DeliveryHistory />
         </div>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          color="negative"
-          @click="showDeliveryHistoryDialog = false"
-          label="Close"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
 
@@ -1528,7 +1553,12 @@
                 (val) => val > 0 || 'Must be greater than 0',
               ]"
             />
-            <div v-if="selectedPaymentType === 'Bank Transfer' || selectedPaymentType === 'Cheque'">
+            <div
+              v-if="
+                selectedPaymentType === 'Bank Transfer' ||
+                selectedPaymentType === 'Cheque'
+              "
+            >
               <div class="dialog-label q-mb-xs">
                 Reference No.<span class="dialog-asterisk">*</span>
               </div>
@@ -2920,7 +2950,7 @@ const updateCollection = async (logisticsId) => {
     transactionStore.collectionDate = collection.collection_date || null;
     transactionStore.collectionTime = collection.collection_time || null;
     transactionStore.collectionRemarks = collection.remarks || null;
-    transactionStore.collectionPackType = collection.pack_type || null;
+    transactionStore.collectionNoBags = collection.no_bags || null;
     transactionStore.jobType = collection.job_type || null;
     transactionStore.readyBy = collection.ready_by || null;
     transactionStore.logisticsId = collection.logistics_id || null;
@@ -2951,7 +2981,7 @@ const updateDelivery = async (logisticsId) => {
     transactionStore.deliveryDate = delivery.delivery_date || null;
     transactionStore.deliveryTime = delivery.delivery_time || null;
     transactionStore.deliveryRemarks = delivery.remarks || null;
-    transactionStore.deliveryPackType = delivery.pack_type || null;
+    transactionStore.deliveryNoBags = delivery.no_bags || null;
     transactionStore.jobType = delivery.job_type || null;
     transactionStore.readyBy = delivery.ready_by || null;
     transactionStore.logisticsId = delivery.logistics_id || null;
@@ -2985,7 +3015,12 @@ const showAddPaymentDialog = ref(false);
 
 // Payment form state
 const selectedPaymentType = ref("Cash");
-const paymentTypes = ref(["Cash", "Bank Transfer", "Cheque", "Online Package Credits"]); // Add your options here
+const paymentTypes = ref([
+  "Cash",
+  "Bank Transfer",
+  "Cheque",
+  "Online Package Credits",
+]); // Add your options here
 const paymentAmount = ref(0);
 const creditRemarks = ref("");
 

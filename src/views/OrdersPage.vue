@@ -139,9 +139,9 @@
           </div>
           <div class="col bordered text-uppercase">
             <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ order.payment_status }}</div>
-            <div>Paid: <span class="q-ml-xs text-weight-bold">{{ order.paid_amount }}</span></div>
-            <div>Balance: <span class="q-ml-xs text-red text-weight-bold">{{ order.total_amount - order.paid_amount }}</span></div>
-            <div>Amount: <span class="q-ml-xs text-weight-bold">{{ order.total_amount }}</span></div>
+            <div>Paid: <span class="q-ml-xs text-weight-bold">${{ (order.paid_amount || 0).toFixed(2) }}</span></div>
+            <div>Balance: <span class="q-ml-xs text-red text-weight-bold">${{ ((order.total_amount - order.paid_amount) || 0).toFixed(2) }}</span></div>
+            <div>Amount: <span class="q-ml-xs text-weight-bold">${{ (order.total_amount || 0).toFixed(2) }}</span></div>
           </div>
           <div class="col bordered">
             <a
@@ -203,7 +203,6 @@ const clearDate = (type) => {
   if (type === "deliveryStartDate") deliveryStartDate.value = null;
   if (type === "deliveryEndDate") deliveryEndDate.value = null;
 };
-
 const filteredOrders = computed(() => {
   const query = searchQuery.value.toLowerCase();
 
@@ -221,30 +220,31 @@ const filteredOrders = computed(() => {
       (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
       (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
 
-    const searchMatch =
-      (order.order_no.toLowerCase().includes(query)) ||
-      (logistics.customer?.name.toLowerCase().includes(query)) ||
-      (order.goods_status?.toLowerCase().includes(query)) ||
-      (order.order_payment?.payment_status.toLowerCase().includes(query)) ||
-      (logistics.logistics_status.toLowerCase().includes(query));
+    const searchMatch = [
+      order.order_no,
+      logistics.customer?.name,
+      order.goods_status,
+      order.order_payment?.payment_status,
+      logistics.logistics_status
+    ].some((field) => field?.toLowerCase().includes(query));
 
     return {
       ...logistics,
       orders: collectionMatch && deliveryMatch && searchMatch && order.order_no
-  ? [{
-      ...order,
-      customer: logistics.customer || null,
-      customer_id: logistics.customer?.id || null,
-      goods_status: order.order_production?.goods_status || "N/A",
-      payment_status: order.order_payment?.payment_status || "N/A",
-      total_amount: order.order_payment?.total_amount || "N/A",
-      paid_amount: order.order_payment?.paid_amount || "0"
-    }]
-  : [],
-
+        ? [{
+            ...order,
+            customer: logistics.customer || null,
+            customer_id: logistics.customer?.id || null,
+            goods_status: order.order_production?.goods_status || "N/A",
+            payment_status: order.order_payment?.payment_status || "N/A",
+            total_amount: order.order_payment?.total_amount || "N/A",
+            paid_amount: order.order_payment?.paid_amount || "0"
+          }]
+        : [],
     };
   }).filter((l) => l.orders.length > 0);
 });
+
 
 const paginatedOrders = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;

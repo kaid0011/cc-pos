@@ -1,9 +1,10 @@
 <template>
-  <q-card class="slip-card">
+  <q-card class="slip-card text-weight-bold">
     <div class="text-subtitle1 text-uppercase text-weight-bolder">Collection Details</div>
     <q-separator class="q-my-xs" />
 
-    <div class="text-slip-row">
+<div class="row q-col-gutter-sm">
+      <div class="col text-slip-row">
       Contact Person:
       <q-select
         v-model="transactionStore.selectedCollectionContact"
@@ -13,21 +14,21 @@
         outlined
         dense
         clearable
-        class="q-mb-xs bg-white"
-        label="Select Collection Contact Person"
+        class="q-mb-sm bg-white"
       />
     </div>
 
-    <div class="text-slip-row">
+    <div class="col text-slip-row">
       Contact Nos:
       <q-input
         v-model="formattedCollectionContactNos"
         disable
         outlined
         dense
-        class="q-mb-xs bg-white"
+        class="q-mb-sm bg-white"
       />
     </div>
+</div>
 
     <div class="text-slip-row">
       Address:
@@ -39,19 +40,19 @@
         outlined
         dense
         clearable
-        class="q-mb-xs bg-white"
-        label="Select Collection Address"
+        class="q-mb-sm bg-white"
       />
     </div>
 
-    <div class="text-slip-row">
+    <div class="row q-col-gutter-sm">
+<div class="col text-slip-row">
       Collection Date:
       <q-input
         v-model="formattedCollectionDate"
         outlined
         dense
         readonly
-        class="q-mb-xs bg-white"
+        class="q-mb-sm bg-white"
       >
         <template v-slot:append>
           <q-icon name="event" class="cursor-pointer">
@@ -63,7 +64,7 @@
       </q-input>
     </div>
 
-    <div class="text-slip-row">
+    <div class="col text-slip-row">
       Collection Time:
       <q-select
         v-model="transactionStore.collectionTime"
@@ -72,12 +73,13 @@
         option-value="id"
         outlined
         dense
-        class="q-mb-xs bg-white"
-        label="Select Collection Time"
+        class="q-mb-sm bg-white"
       />
     </div>
+    </div>
 
-    <div class="text-slip-row">
+<div class="row q-col-gutter-sm">
+    <div class="col text-slip-row">
       Collection Driver:
       <q-select
         v-model="transactionStore.selectedCollectionDriver"
@@ -85,10 +87,19 @@
         option-label="name"
         outlined
         dense
-        class="q-mb-xs bg-white"
-        label="Select Collection Driver"
+        class="q-mb-sm bg-white"
       />
     </div>
+        <div class="col text-slip-row">
+      No.of Bags:
+      <q-input
+        v-model="transactionStore.collectionNoBags"
+        outlined
+        dense
+        class="q-mb-sm bg-white"
+      />
+    </div>
+</div>
 
     <div class="text-slip-row">
       Remarks:
@@ -96,7 +107,7 @@
         v-model="transactionStore.collectionRemarks"
         outlined
         dense
-        class="q-mb-xs bg-white"
+        class="q-mb-sm bg-white"
       />
     </div>
 
@@ -145,6 +156,16 @@ onMounted(async () => {
 });
 
 watch(
+  () => transactionStore.collectionDate,
+  (newDate) => {
+    if (newDate) {
+      const newDeliveryDate = addWorkingDays(newDate, 7);
+      transactionStore.deliveryDate = newDeliveryDate;
+    }
+  }
+);
+
+watch(
   () => transactionStore.selectedCustomer?.id,
   async (newCustomerId) => {
     console.log("Watch - Customer ID Changed:", newCustomerId);
@@ -156,6 +177,18 @@ watch(
     }
   }
 );
+
+function addWorkingDays(startDate, workingDays) {
+  let date = new Date(startDate);
+  while (workingDays > 0) {
+    date.setDate(date.getDate() + 1); // Move to the next day
+    // Check if it's a weekday (Monday to Friday)
+    if (date.getDay() !== 0 && date.getDay() !== 6) {
+      workingDays--;
+    }
+  }
+  return date.toISOString().split("T")[0]; // Return date in YYYY-MM-DD format
+}
 
 async function updateOptions(customerId) {
   try {
@@ -237,6 +270,7 @@ async function updateCollection() {
       type: "positive",
       message: "Collection updated successfully.",
     });
+    
   } catch (error) {
     console.error("Update collection failed:", error);
     $q.notify({

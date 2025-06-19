@@ -1,20 +1,29 @@
 <template>
   <div class="logistics-management">
-    <div class="text-h6 text-uppercase text-weight-bolder text-center q-mb-sm">
-      Delivery History
+<div class="q-px-md flex items-center justify-between bg-brown-4 text-white q-pa-sm">
+  <div class="text-h6 text-uppercase text-weight-bold">
+    Delivery History
   </div>
-    <div class="row-col-table">
+  <q-btn
+    dense
+    flat
+    round
+    :icon="showDeliveryHistory ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
+    @click="showDeliveryHistory = !showDeliveryHistory"
+  />
+</div>
+    <div class="row-col-table" v-if="showDeliveryHistory">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
-        <div class="col bordered q-py-sm text-weight-bolder">Date</div>
-        <div class="col bordered q-py-sm text-weight-bolder">
+        <div class="col bordered q-py-sm text-weight-bold">Date</div>
+        <div class="col bordered q-py-sm text-weight-bold">
           Contact Person
         </div>
-        <div class="col bordered q-py-sm text-weight-bolder">Address</div>
-        <div class="col bordered q-py-sm text-weight-bolder">Pack Type</div>
-        <div class="col q-py-sm text-weight-bolder">Remarks</div>
-        <div class="col bordered q-py-sm text-weight-bolder">Status</div>
-        <div class="col q-py-sm text-weight-bolder">Created At/By</div>
+        <div class="col bordered q-py-sm text-weight-bold">Address</div>
+        <div class="col bordered q-py-sm text-weight-bold">No. of Bags</div>
+        <div class="col q-py-sm text-weight-bold">Remarks</div>
+        <div class="col bordered q-py-sm text-weight-bold">Status</div>
+        <div class="col q-py-sm text-weight-bold">Created At/By</div>
       </div>
 
       <!-- Table Rows -->
@@ -60,10 +69,10 @@
         <div class="col bordered">
           {{ transaction.address || "[NOT SET]" }}
         </div>
-        <div class="col bordered">{{ transaction.pack_type || "-" }}</div>
+        <div class="col bordered">{{ transaction.no_bags || "-" }}</div>
         <div class="col bordered">{{ transaction.remarks || "-" }}</div>
         <div class="col bordered text-uppercase text-weight-bold">
-            {{ transaction.logistics_status }}
+            {{ transaction.logistics.logistics_status }}
         </div>
         <div class="col bordered">
           <div>
@@ -84,6 +93,8 @@ import { useTransactionStore } from "@/stores/transactionStore";
 
 const transactionStore = useTransactionStore();
 const allTransactions = ref([]);
+const showDeliveryHistory = ref(false);
+
 
 // Function to format dates in "Thu, 30/01/2025" format
 const formatDate = (dateString) => {

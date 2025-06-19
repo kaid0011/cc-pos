@@ -1,32 +1,35 @@
 <template>
-  <q-card class="slip-card">
-    <div class="text-subtitle1 text-uppercase text-weight-bolder">Delivery Details</div>
+  <q-card class="slip-card text-weight-bold">
+    <div class="text-subtitle1 text-uppercase text-weight-bolder">
+      Delivery Details
+    </div>
     <q-separator class="q-my-xs" />
 
-    <div class="text-slip-row">
-      Contact Person:
-      <q-select
-        v-model="transactionStore.selectedDeliveryContact"
-        :options="contactOptions"
-        option-label="name"
-        option-value="id"
-        outlined
-        dense
-        clearable
-        class="q-mb-xs bg-white"
-        label="Select Delivery Contact Person"
-      />
-    </div>
+    <div class="row q-col-gutter-sm">
+      <div class="col text-slip-row">
+        Contact Person:
+        <q-select
+          v-model="transactionStore.selectedDeliveryContact"
+          :options="contactOptions"
+          option-label="name"
+          option-value="id"
+          outlined
+          dense
+          clearable
+          class="q-mb-sm bg-white"
+        />
+      </div>
 
-    <div class="text-slip-row">
-      Contact Nos:
-      <q-input
-        v-model="formattedDeliveryContactNos"
-        disable
-        outlined
-        dense
-        class="q-mb-xs bg-white"
-      />
+      <div class="col text-slip-row">
+        Contact Nos:
+        <q-input
+          v-model="formattedDeliveryContactNos"
+          disable
+          outlined
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
     </div>
 
     <div class="text-slip-row">
@@ -39,55 +42,69 @@
         outlined
         dense
         clearable
-        class="q-mb-xs bg-white"
-        label="Select Delivery Address"
+        class="q-mb-sm bg-white"
       />
     </div>
 
-    <div class="text-slip-row">
-      Delivery Date:
-      <q-input
-        v-model="formattedDeliveryDate"
-        outlined
-        dense
-        readonly
-        class="q-mb-xs bg-white"
-      >
-        <template v-slot:append>
-          <q-icon name="event" class="cursor-pointer">
-            <q-popup-proxy>
-              <q-date v-model="transactionStore.deliveryDate" mask="YYYY-MM-DD" />
-            </q-popup-proxy>
-          </q-icon>
-        </template>
-      </q-input>
+    <div class="row q-col-gutter-sm">
+      <div class="col text-slip-row">
+        Delivery Date:
+        <q-input
+          v-model="formattedDeliveryDate"
+          outlined
+          dense
+          readonly
+          class="q-mb-sm bg-white"
+        >
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy>
+                <q-date
+                  v-model="transactionStore.deliveryDate"
+                  mask="YYYY-MM-DD"
+                />
+              </q-popup-proxy>
+            </q-icon>
+          </template>
+        </q-input>
+      </div>
+
+      <div class="col text-slip-row">
+        Delivery Time:
+        <q-select
+          v-model="transactionStore.deliveryTime"
+          :options="timeOptions"
+          option-label="label"
+          option-value="id"
+          outlined
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
     </div>
 
-    <div class="text-slip-row">
-      Delivery Time:
-      <q-select
-        v-model="transactionStore.deliveryTime"
-        :options="timeOptions"
-        option-label="label"
-        option-value="id"
-        outlined
-        dense
-        class="q-mb-xs bg-white"
-        label="Select Delivery Time"
-      />
-    </div>
+    <div class="row q-col-gutter-sm">
+      <div class="col text-slip-row">
+        Delivery Driver:
+        <q-select
+          v-model="transactionStore.selectedDeliveryDriver"
+          :options="driverOptions"
+          option-label="name"
+          outlined
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
 
-    <div class="text-slip-row">
-      Delivery Driver:
-      <q-select
-        v-model="transactionStore.selectedDeliveryDriver"
-        :options="driverOptions"
-        option-label="name"
-        outlined
-        dense
-        class="q-mb-xs bg-white"
-        label="Select Delivery Driver"
-      />
+      <div class="col text-slip-row">
+        No. of Bags:
+        <q-input
+          v-model="transactionStore.deliveryNoBags"
+          outlined
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
     </div>
 
     <div class="text-slip-row">
@@ -96,7 +113,7 @@
         v-model="transactionStore.deliveryRemarks"
         outlined
         dense
-        class="q-mb-xs bg-white"
+        class="q-mb-sm bg-white"
       />
     </div>
 
@@ -166,7 +183,9 @@ async function updateOptions(customerId) {
 
     addressOptions.value = transactionStore.addressOptions.map((address) => ({
       id: address.id,
-      label: `${address.block_no} ${address.road_name} ${address.unit_no} ${address.building_name}, ${address.postal_code} (${address?.additional_info || ""})`,
+      label: `${address.block_no} ${address.road_name} ${address.unit_no} ${
+        address.building_name
+      }, ${address.postal_code} (${address?.additional_info || ""})`,
     }));
   } catch (error) {
     console.error("Error loading contact/address options:", error);
@@ -175,7 +194,9 @@ async function updateOptions(customerId) {
   }
 }
 
-const formattedDeliveryDate = computed(() => formatDate(transactionStore.deliveryDate));
+const formattedDeliveryDate = computed(() =>
+  formatDate(transactionStore.deliveryDate)
+);
 
 function formatDate(dateString) {
   if (!dateString) return "N/A";

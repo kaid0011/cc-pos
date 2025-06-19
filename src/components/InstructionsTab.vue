@@ -3,9 +3,10 @@
     <!-- Instructions Section -->
     <div class="left-container col-6">
       <q-card flat class="card1">
-        <div class="text-p text-center text-uppercase text-weight-bolder q-mb-sm">
+        <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
           Instructions
         </div>
+        <q-separator class="q-mb-sm"/>
         <div class="row q-gutter-x-md">
           <div class="col-auto">
             <div>Enter Instructions:</div>
@@ -70,6 +71,7 @@
               />
             </div>
             <q-btn
+            unelevated
               color="primary"
               label="Add Instruction"
               class="float-right q-mt-sm"
@@ -185,9 +187,10 @@
     <div class="right-container col-6">
       <!-- Error Reporting Section -->
       <q-card flat class="card3">
-        <div class="text-p text-center text-uppercase text-weight-bolder q-mb-sm">
+        <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
           Error Reporting
         </div>
+        <q-separator class="q-mb-sm"/>
         <div class="q-px-md">
           <div class="row items-center q-mb-sm">
             <div class="col-4">Select Category:</div>
@@ -293,6 +296,7 @@
         <div class="row">
           <div class="full-width">
             <q-btn
+            unelevated
               color="primary"
               label="Add Report"
               class="float-right q-mt-sm"

@@ -273,10 +273,10 @@
         </q-card-section>
         <q-card-actions class="q-pt-none" align="right">
           <q-btn
-            label="Update Other Information"
+            label="Update Logistics Details"
             color="primary"
             icon="update"
-            @click="updateOtherInformation"
+            @click="updateLogistics"
           />
         </q-card-actions>
       </q-card>
@@ -348,10 +348,10 @@
         </q-card-section>
         <q-card-actions class="q-pt-none" align="right">
           <q-btn
-            label="Update Other Information"
+            label="Update Production Details"
             color="primary"
             icon="update"
-            @click="updateOtherInformation"
+            @click="updateProduction"
           />
         </q-card-actions>
       </q-card>
@@ -2171,40 +2171,73 @@ const openCustomerTab = (customerId) => {
   window.open(url, "_blank"); // Open in a new tab
 };
 
-function updateOtherInformation() {
+const updateLogistics = async () => {
   try {
-    // Prepare payload
-    const payload = {
-      job_type: logistics.value.job_type,
-      urgency: logistics.value.urgency,
-      goods_status: order.value.goods_status,
+    const logisticsId = logistics.value.logistics_id;
+    if (!logisticsId) {
+      Notify.create({ message: "Logistics ID not found.", color: "red" });
+      return;
+    }
+
+    const success = await transactionStore.updateLogistics(logisticsId, {
       logistics_status: logistics.value.logistics_status,
-      payment_status: order.value.payment_status,
-      payment_type: customer.value.payment_type,
-      no_packets_hangers: order.value.no_packets_hangers,
+      job_type: logistics.value.job_type,
+      urgency: logistics.value.urgency
+    });
+
+    console.log("✅ updateLogistics response:", success);
+
+    if (success) {
+      Notify.create({ message: "Logistics details updated successfully!", color: "green" });
+    } else {
+      Notify.create({ message: "Failed to update logistics.", color: "red" });
+    }
+  } catch (err) {
+    console.error("❌ Error in updateLogistics:", err);
+    Notify.create({ message: "Unexpected error occurred.", color: "red" });
+  }
+};
+
+const updateProduction = async () => {
+  try {
+    if (!order.value?.id) {
+      Notify.create({
+        message: "Order ID is missing. Cannot update production.",
+        color: "red",
+      });
+      return;
+    }
+
+    const payload = {
+      ready_by: order.value.order_production?.ready_by || null,
+      goods_status: order.value.order_production?.goods_status || "",
+      no_packets: order.value.order_production?.no_packets || "",
+      no_hangers: order.value.order_production?.no_hangers || "",
+      no_rolls: order.value.order_production?.no_rolls || "",
     };
 
-    // Call store action or API to update
-    transactionStore.updateOrderOtherInfo(order.value.order_no, payload);
+    const success = await transactionStore.updateProduction(order.value.id, payload);
 
-    // Notify success
+    if (success) {
+      Notify.create({
+        message: "Production details updated successfully!",
+        color: "green",
+      });
+    } else {
+      Notify.create({
+        message: "Failed to update production details.",
+        color: "red",
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error in updateProduction:", err);
     Notify.create({
-      message: "Other Information updated successfully.",
-      color: "green",
-      icon: "check_circle",
-      position: "top",
-    });
-  } catch (error) {
-    // Handle error
-    Notify.create({
-      message: "Failed to update Other Information.",
+      message: "Unexpected error while updating production.",
       color: "red",
-      icon: "error",
-      position: "top",
     });
-    console.error("Error updating Other Information:", error);
   }
-}
+};
+
 
 // State for the delete dialog
 const isDeleteDialogOpen = ref(false);

@@ -2467,6 +2467,97 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
+async updateLogistics(logisticsId, updateData) {
+  try {
+    // 1. Fetch existing logistics record for archiving
+    const { data: logisticsData, error: fetchError } = await supabase
+      .from("logistics")
+      .select("id, logistics_status, created_at, job_type, urgency, created_by")
+      .eq("id", logisticsId)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!logisticsData) throw new Error("Logistics record not found.");
+
+    // 2. Archive to logistics_history
+    const { id, ...rest } = logisticsData;
+    const { error: insertError } = await supabase
+      .from("logistics_history")
+      .insert([{ ...rest, logistics_id: id }]);
+
+    if (insertError) throw insertError;
+
+    // 3. Add system-generated values manually
+    const session = await supabase.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+
+    const enrichedUpdate = {
+      ...updateData,
+      created_at: new Date().toISOString(),
+      created_by: userId,
+    };
+
+    // 4. Update logistics row
+    const { error: updateError } = await supabase
+      .from("logistics")
+      .update(enrichedUpdate)
+      .eq("id", logisticsId);
+
+    if (updateError) throw updateError;
+
+    return true;
+  } catch (error) {
+    console.error("❌ Error updating logistics:", error);
+    return false;
+  }
+},
+
+async updateProduction(orderId, updateData) {
+  try {
+    // 1. Fetch current production row
+    const { data: prodData, error: fetchError } = await supabase
+      .from("order_production")
+      .select("id, ready_by, goods_status, no_packets, no_hangers, no_rolls, created_at, created_by")
+      .eq("order_id", orderId)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!prodData) throw new Error("Production record not found.");
+
+    // 2. Archive to order_production_history
+    const { id, ...rest } = prodData;
+    const { error: insertError } = await supabase
+      .from("order_production_history")
+      .insert([{ ...rest, order_production_id: id }]);
+
+    if (insertError) throw insertError;
+
+    // 3. Get current user ID
+    const session = await supabase.auth.getSession();
+    const userId = session?.data?.session?.user?.id;
+
+    // 4. Prepare update payload
+    const enrichedUpdate = {
+      ...updateData,
+      created_at: new Date().toISOString(),
+      created_by: userId,
+    };
+
+    // 5. Update the production record
+    const { error: updateError } = await supabase
+      .from("order_production")
+      .update(enrichedUpdate)
+      .eq("order_id", orderId);
+
+    if (updateError) throw updateError;
+
+    return true;
+  } catch (error) {
+    console.error("❌ Error updating production:", error);
+    return false;
+  }
+},
+
     // in store
     async createCollection(logisticsId, fallback = {}) {
       try {

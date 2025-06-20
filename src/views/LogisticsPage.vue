@@ -30,7 +30,9 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
             @click="previousWeek"
           />
           <div class="text-center">
-            <div class="text-h6 text-weight-bolder text-uppercase line-height-1">
+            <div
+              class="text-h6 text-weight-bolder text-uppercase line-height-1"
+            >
               Weekly Summary
             </div>
             <div class="text-subtitle1 text-weight-bold line-height-1">
@@ -60,12 +62,19 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
       <div v-if="showWeeklySummary" class="weekly-summary-container">
         <!-- Header Row: Weekdays with Dates -->
         <div
-          class="row text-center text-weight-bold bg-primary text-white items-center all-border" style="padding: 0.5em;"
+          class="row text-center text-weight-bold bg-primary text-white items-center all-border"
+          style="padding: 0.5em"
         >
           <div class="col">Driver</div>
-          <div v-for="(day, index) in daysOfWeek" :key="day" class="col line-height-1">
+          <div
+            v-for="(day, index) in daysOfWeek"
+            :key="day"
+            class="col line-height-1"
+          >
             <div class="text-uppercase text-yellow">{{ day }}</div>
-            <div class="text-caption line-height-1 text-weight-bold">{{ formattedWeekDates[index] }}</div>
+            <div class="text-caption line-height-1 text-weight-bold">
+              {{ formattedWeekDates[index] }}
+            </div>
           </div>
         </div>
 
@@ -74,7 +83,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           v-for="driver in drivers"
           :key="driver"
           class="row text-center items-center bg-grey-3 q-pa-sm all-border"
-          style="padding: 0.5em;"
+          style="padding: 0.5em"
         >
           <div class="col text-weight-bold">{{ driver }}</div>
           <div
@@ -205,36 +214,41 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
     </div>
 
     <div>
-      <!-- Tab Panels -->
-      <q-tabs
-        v-model="activeDriverTab"
-        align="justify"
-        class="tab-header"
-        dense
-        indicator-color="secondary"
-      >
-        <!-- Dynamic Driver Tabs -->
-        <q-tab
-          v-for="driver in driverTabs"
-          :key="driver"
-          :name="driver"
-          :class="{
-            'active-tab': activeDriverTab === driver,
-            'text-weight-bold text-subtitle1 tab-divider': true,
-          }"
-        >
-          {{ driver }} ({{
-            getTransactionsByDriver(driver).filter(
-              (t) => t.type === "collection"
-            ).length
-          }}
-          :
-          {{
-            getTransactionsByDriver(driver).filter((t) => t.type === "delivery")
-              .length
-          }})
-        </q-tab>
-      </q-tabs>
+      <q-scroll-area class="q-mb-sm" style="width: 100%; height: 3em;" :thumb-style="thumbStyle" :bar-style="barStyle">
+        <div class="row no-wrap">
+          <q-tabs
+            v-model="activeDriverTab"
+            align="left"
+            dense
+            narrow-indicator
+            indicator-color="secondary"
+            class="tab-header"
+            visible
+          >
+            <q-tab
+              v-for="driver in driverTabs"
+              :key="driver"
+              :name="driver"
+              :class="{
+                'active-tab': activeDriverTab === driver,
+                'text-weight-bold text-subtitle1 tab-divider': true,
+              }"
+            >
+              {{ driver }} ({{
+                getTransactionsByDriver(driver).filter(
+                  (t) => t.type === "collection"
+                ).length
+              }}
+              :
+              {{
+                getTransactionsByDriver(driver).filter(
+                  (t) => t.type === "delivery"
+                ).length
+              }})
+            </q-tab>
+          </q-tabs>
+        </div>
+      </q-scroll-area>
 
       <q-tab-panels v-model="activeDriverTab" animated>
         <!-- Dynamic Driver Panels -->
@@ -433,7 +447,7 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
         <q-card-section class="q-pa-none">
           <CreateCollectionTab />
         </q-card-section>
-        <q-card-actions align="right" style="background-color: #ffe0cd;">
+        <q-card-actions align="right" style="background-color: #ffe0cd">
           <q-btn
             color="primary"
             @click="createCollection()"
@@ -493,7 +507,9 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           <div class="full-container">
             <div class="text-subtitle1 text-weight-bold q-ma-md q-pl-md">
               Customer Name:
-              <span class="text-subtitle1 text-uppercase text-weight-bold text-red-9">
+              <span
+                class="text-subtitle1 text-uppercase text-weight-bold text-red-9"
+              >
                 {{ selectedTransaction?.customer?.name || "[NOT SELECTED]" }}
               </span>
             </div>
@@ -585,7 +601,7 @@ const formatDate = (dateString) => {
 
 const driverTabs = computed(() => {
   const driverNames = transactionStore.driverOptions.map(
-    (driver) => driver.name?.toLowerCase?.() || "[not set]"
+    (driver) => driver.name?.trim().toLowerCase() || "[not set]"
   );
   return ["All", "[NOT SET]", ...new Set(driverNames)];
 });
@@ -616,14 +632,20 @@ const getTransactionsByDriver = (driverName) => {
   if (driverName === "All") {
     return filteredTransactions.value;
   }
+
   if (driverName === "[NOT SET]") {
     return filteredTransactions.value.filter(
-      (transaction) => !transaction.driver_name
+      (transaction) =>
+        !transaction.driver_name ||
+        transaction.driver_name.trim().toLowerCase() === "[not set]"
     );
   }
-  return filteredTransactions.value.filter(
-    (transaction) => transaction.driver_name === driverName
-  );
+
+  return filteredTransactions.value.filter((transaction) => {
+    const normalizedDriver =
+      transaction.driver_name?.trim().toLowerCase() || "[not set]";
+    return normalizedDriver === driverName.toLowerCase();
+  });
 };
 
 const filterTransactions = () => {
@@ -746,7 +768,8 @@ const createOrder = (collection) => {
     collection.delivery?.address || null;
   transactionStore.selectedCollectionAddress = collection.address || null;
   transactionStore.selectedCollectionDriver = collection.driver_name || null;
-  transactionStore.selectedDeliveryDriver = collection.delivery?.driver_name || null;
+  transactionStore.selectedDeliveryDriver =
+    collection.delivery?.driver_name || null;
   transactionStore.collectionDate = collection.collection_date || null;
   transactionStore.deliveryDate = collection.delivery?.delivery_date || null;
   transactionStore.collectionTime = collection.collection_time || null;
@@ -913,7 +936,9 @@ const formattedWeekDates = computed(() => {
 });
 
 const drivers = computed(() => {
-  const allDriverNames = transactionStore.driverOptions.map((d) => d.name?.trim() || "[NOT SET]");
+  const allDriverNames = transactionStore.driverOptions.map(
+    (d) => d.name?.trim() || "[NOT SET]"
+  );
   const uniqueNames = new Set(allDriverNames);
   uniqueNames.add("[NOT SET]"); // Ensure fallback always exists
   return Array.from(uniqueNames);
@@ -982,7 +1007,8 @@ const openUpdateLogisticsDialog = async (logisticsId) => {
     await updateCollection(logisticsId);
     await updateDelivery(logisticsId);
 
-    transactionStore.selectedCustomer = selectedTransaction.value?.customer || null;
+    transactionStore.selectedCustomer =
+      selectedTransaction.value?.customer || null;
 
     showUpdateLogisticsDialog.value = true;
   } catch (error) {
@@ -1003,9 +1029,10 @@ const updateCollection = async (logisticsId) => {
       throw new Error("No collection data found!");
     }
     const collection = collectionData[0];
-    
+
     transactionStore.selectedCollectionId = collection.id || null;
-    transactionStore.selectedCollectionContact = collection.customer_contact_persons || null;
+    transactionStore.selectedCollectionContact =
+      collection.customer_contact_persons || null;
     transactionStore.selectedCollectionAddress = collection.address || null;
     transactionStore.selectedCollectionDriver = collection.driver_name || null;
     transactionStore.collectionDate = collection.collection_date || null;
@@ -1033,9 +1060,10 @@ const updateDelivery = async (logisticsId) => {
       throw new Error("No delivery data found!");
     }
     const delivery = deliveryData[0];
-    
+
     transactionStore.selectedDeliveryId = delivery.id || null;
-    transactionStore.selectedDeliveryContact = delivery.customer_contact_persons || null;
+    transactionStore.selectedDeliveryContact =
+      delivery.customer_contact_persons || null;
     transactionStore.selectedDeliveryAddress = delivery.address || null;
     transactionStore.selectedDeliveryDriver = delivery.driver_name || null;
     transactionStore.deliveryDate = delivery.delivery_date || null;
@@ -1050,4 +1078,21 @@ const updateDelivery = async (logisticsId) => {
     $q.notify({ type: "negative", message: "Failed to load delivery details" });
   }
 };
+
+const thumbStyle = {
+  right: '4px',
+  borderRadius: '5px',
+  // backgroundColor: '#027be3',
+  // opacity: 0.75,
+  height: '7px'
+}
+
+const barStyle = {
+  right: '2px',
+  borderRadius: '9px',
+  // backgroundColor: '#027be3',
+  // opacity: 0.2,
+  height: '7px'
+}
+
 </script>

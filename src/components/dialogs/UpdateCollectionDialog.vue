@@ -83,7 +83,7 @@
       Collection Driver:
       <q-select
         v-model="transactionStore.selectedCollectionDriver"
-        :options="driverOptions"
+        :options="sortedDriverOptions"
         option-label="name"
         outlined
         dense
@@ -137,11 +137,16 @@ const timeOptions = ref([]);
 const contactOptions = ref([]);
 const addressOptions = ref([]);
 
+const sortedDriverOptions = computed(() => {
+  return [...transactionStore.driverOptions].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+});
+
 onMounted(async () => {
   await transactionStore.loadDrivers();
   await transactionStore.loadTimeOptions();
 
-  driverOptions.value = transactionStore.driverOptions;
   timeOptions.value = transactionStore.timeOptions;
 
   console.log("Mounted - Driver Options:", driverOptions.value);

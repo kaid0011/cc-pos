@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <div v-for="logistics in matchedOrders" :key="logistics.order?.order_no" class="row justify-center q-mb-lg">
+    <div v-for="logistics in matchedOrders" :key="logistics.order?.order_no" class="row justify-center q-pb-lg">
       <q-card class="tag-card-container">
         <q-card flat class="tag-card" ref="printableCard">
           <div class="row tag-card-header justify-between items-center">
@@ -163,26 +163,26 @@ onMounted(async () => {
     driver.value = parsedDriver;
     date.value = parsedDate;
 
-    const allOrders = await transactionStore.fetchAllOrdersSimple();
-
-    const orderNos = allOrders
-      .filter((logistics) =>
-        logistics.collections?.some(
-          (c) => c?.driver_name === parsedDriver && c?.collection_date === parsedDate
-        )
-      )
-      .map((l) => l.order?.order_no)
-      .filter(Boolean);
+    const orderNosQuery = (route.query.orders || '').split(',').filter(Boolean);
+    if (!orderNosQuery.length) {
+      console.warn("No order numbers provided via query.");
+      matchedOrders.value = [];
+      return;
+    }
 
     const fullDetails = await Promise.all(
-      orderNos.map((orderNo) => transactionStore.fetchWholeOrderByOrderNo(orderNo))
+      orderNosQuery.map((orderNo) =>
+        transactionStore.fetchWholeOrderByOrderNo(orderNo)
+      )
     );
 
     matchedOrders.value = fullDetails.map((orderDetails) => {
       const transactions = [];
       (orderDetails.transactions || []).forEach((tx) => {
         if (Array.isArray(tx.order_transaction_items)) {
-          tx.order_transaction_items.forEach((item) => transactions.push(item));
+          tx.order_transaction_items.forEach((item) =>
+            transactions.push(item)
+          );
         }
       });
 
@@ -195,8 +195,6 @@ onMounted(async () => {
 
       const totalPcs = transactions.reduce((acc, item) => {
         const pcs = parseFloat(item.pieces) || 1;
-        const qty = parseFloat(item.quantity) || 1;
-        // return acc + pcs * qty;
         return acc + pcs;
       }, 0);
 
@@ -231,7 +229,6 @@ onMounted(async () => {
   }
 });
 
-
 const formatDate = (date) => {
   if (!date) return 'N/A';
   const parsed = new Date(date);
@@ -243,43 +240,149 @@ const formatDate = (date) => {
 };
 
 const downloadTagPDF = () => {
+  const cards = document.querySelectorAll('.tag-card');
+  if (!cards.length) {
+    console.error("Printable tag-card not found");
+    return;
+  }
+
+  const container = document.createElement('div');
+
+  cards.forEach((card) => {
+    const clone = card.cloneNode(true);
+
+    // Handle QR canvas replacement
+    const originalCanvases = card.querySelectorAll('canvas');
+    const clonedQRContainers = clone.querySelectorAll('canvas');
+
+    originalCanvases.forEach((canvas, index) => {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL("image/png");
+const desiredSize = 100; // Adjust this value to scale
+img.style.width = `70px`;
+img.style.height = `70px`;
+img.style.marginLeft = '10px';
+img.style.marginTop = '5px';
+img.width = desiredSize;
+img.height = desiredSize;
+
+
+      const clonedCanvas = clonedQRContainers[index];
+      if (clonedCanvas && clonedCanvas.parentNode) {
+        clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
+      }
+    });
+
+    container.appendChild(clone);
+  });
+
+  const options = {
+    margin: [13, 13, 13, 13],
+    filename: `Tag_Slip_Group.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: null
+    },
+    jsPDF: {
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait"
+    },
+    pagebreak: { avoid: [".tag-card"] }
+  };
+
   setTimeout(() => {
-    const element = printableCard.value?.$el || printableCard.value;
-    const options = {
-      margin: [13, 13, 13, 13],
-      filename: `Tag_Slip_Group.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { avoid: ['.tag-card'] }
-    };
-    html2pdf().set(options).from(element).toPdf().save().catch(console.error);
+    html2pdf()
+      .set(options)
+      .from(container)
+      .toPdf()
+      .save()
+      .catch((err) => console.error("Error generating PDF:", err));
   }, 500);
 };
 
 const PrintTagPDF = () => {
-  setTimeout(() => {
-    const element = printableCard.value?.$el || printableCard.value;
-    const options = {
-      margin: [13, 13, 13, 13],
-      filename: `Tag_Slip_Group.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { avoid: ['.tag-card'] }
-    };
-    html2pdf().set(options).from(element).toPdf().output('blob').then((blob) => {
-      const pdfUrl = URL.createObjectURL(blob);
-      const newWindow = window.open(pdfUrl, '_blank');
-      if (newWindow) {
-        setTimeout(() => {
-          newWindow.print();
-          newWindow.onafterprint = () => newWindow.close();
-        }, 300);
+  const cards = document.querySelectorAll('.tag-card');
+  if (!cards.length) {
+    console.error("Printable tag-card not found");
+    return;
+  }
+
+  const container = document.createElement('div');
+
+  cards.forEach((card) => {
+    const clone = card.cloneNode(true);
+
+    // Replace QR canvas with <img>
+    const originalCanvases = card.querySelectorAll('canvas');
+    const clonedQRContainers = clone.querySelectorAll('canvas');
+
+    originalCanvases.forEach((canvas, index) => {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL("image/png");
+
+      const desiredSize = 100;
+img.style.width = `70px`;
+img.style.height = `70px`;
+img.style.marginLeft = '10px';
+img.style.marginTop = '5px';
+img.width = desiredSize;
+img.height = desiredSize;
+
+      const clonedCanvas = clonedQRContainers[index];
+      if (clonedCanvas && clonedCanvas.parentNode) {
+        clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
       }
-    }).catch(console.error);
+    });
+
+    container.appendChild(clone);
+  });
+
+  const options = {
+    margin: [13, 13, 13, 13],
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: null
+    },
+    jsPDF: {
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait"
+    },
+    pagebreak: { avoid: [".tag-card"] }
+  };
+
+  setTimeout(() => {
+    html2pdf()
+      .set(options)
+      .from(container)
+      .toPdf()
+      .output("blob")
+      .then((blob) => {
+        const pdfUrl = URL.createObjectURL(blob);
+        const newWindow = window.open(pdfUrl, "_blank");
+
+        if (newWindow) {
+          setTimeout(() => {
+            newWindow.print();
+            newWindow.onafterprint = () => newWindow.close();
+          }, 500);
+        } else {
+          console.error("Pop-up blocked. Please allow pop-ups for this site.");
+        }
+      })
+      .catch((err) => console.error("Error generating PDF for printing:", err));
   }, 500);
 };
+
 
 const PrintTag = () => {
   const tags = document.querySelectorAll(".tags");

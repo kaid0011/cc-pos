@@ -148,7 +148,7 @@
             </div>
             <q-select
               v-model="transactionStore.selectedCollectionDriver"
-              :options="transactionStore.driverOptions"
+              :options="sortedDriverOptions"
               option-label="name"
               option-value="name"
               label="Select Collection Driver"
@@ -343,7 +343,7 @@
             </div>
             <q-select
               v-model="transactionStore.selectedDeliveryDriver"
-              :options="transactionStore.driverOptions"
+              :options="sortedDriverOptions"
               option-label="name"
               option-value="name"
               label="Select Delivery Driver"
@@ -455,6 +455,12 @@ const selectedCustomer = computed(() => transactionStore.selectedCustomer);
 const contactOptions = ref([]);
 const addressOptions = ref([]);
 const driverOptions = ref([]);
+
+const sortedDriverOptions = computed(() => {
+  return [...transactionStore.driverOptions].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+});
 
 const handleCheckboxChange = (type, value) => {
   if (type === "collection") {

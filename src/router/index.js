@@ -122,7 +122,7 @@ const routes = [
     },
   },
   {
-    path: "/tags/group/:groupSlug",
+    path: "/tags/grp-:groupSlug",
     name: "TagGroupView",
     component: TagGroupView,
     meta: { requiresAuth: true },

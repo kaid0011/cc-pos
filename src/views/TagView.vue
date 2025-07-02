@@ -502,8 +502,7 @@ const PrintTagPDF = () => {
     const element = printableCard.value.$el || printableCard.value;
 
     const options = {
-      margin: [13, 13, 13, 13], // 0.5-inch margins
-      filename: `Tag_Slip_${order.value?.order_no || "N/A"}.pdf`,
+      margin: [13, 13, 13, 13],
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
         scale: 2,
@@ -517,30 +516,28 @@ const PrintTagPDF = () => {
         format: "a4",
         orientation: "portrait",
       },
-      pagebreak: { avoid: [".tag-card"] }, // Prevents breaking important elements
+      pagebreak: { avoid: [".tag-card"] },
     };
 
     html2pdf()
       .set(options)
       .from(element)
       .toPdf()
-      .output("blob") // Convert to a Blob
+      .output("blob")
       .then((blob) => {
         const pdfUrl = URL.createObjectURL(blob);
-        const newWindow = window.open(pdfUrl, "_blank");
+        const printWindow = window.open(pdfUrl, "_blank");
 
-        if (newWindow) {
+        if (printWindow) {
           setTimeout(() => {
-            newWindow.print(); // Open print dialog
-            newWindow.onafterprint = () => {
-              newWindow.close(); // Close tab after printing
-            };
-          }, 300); // Small delay to ensure PDF loads
+            printWindow.print();
+            printWindow.onafterprint = () => printWindow.close();
+          }, 500);
         } else {
           console.error("Pop-up blocked. Please allow pop-ups for this site.");
         }
       })
-      .catch((err) => console.error("Error generating PDF:", err));
+      .catch((err) => console.error("Error generating PDF for printing:", err));
   }, 500);
 };
 

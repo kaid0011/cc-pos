@@ -143,7 +143,7 @@
         <div class="col">
           <q-select
             v-model="transactionStore.selectedGenerateDriver"
-            :options="transactionStore.driverOptions"
+            :options="sortedDriverOptions"
             option-label="name"
             option-value="id"
             label="Select Driver"
@@ -620,6 +620,12 @@ const showCreateOrderDialog = ref(false);
 const showUpdateLogisticsDialog = ref(false);
 const showWeeklySummary = ref(false);
 const selectedTransaction = ref(null);
+
+const sortedDriverOptions = computed(() => {
+  return [...transactionStore.driverOptions].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+});
 
 const toggleWeeklySummary = () => {
   showWeeklySummary.value = !showWeeklySummary.value;

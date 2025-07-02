@@ -142,7 +142,7 @@
           </q-item>
 
           <!-- Invoices Management -->
-          <q-item
+          <!-- <q-item
             clickable
             @click="goToInvoicesPage"
             :active="isInvoicesPageActive"
@@ -152,10 +152,10 @@
               <q-icon name="receipt_long" />
             </q-item-section>
             <q-item-section> Invoice Management </q-item-section>
-          </q-item>
+          </q-item> -->
 
           <!-- Payments Management -->
-          <q-item
+          <!-- <q-item
             clickable
             @click="goToPaymentsPage"
             :active="isPaymentsPageActive"
@@ -165,7 +165,7 @@
               <q-icon name="receipt_long" />
             </q-item-section>
             <q-item-section> Payments Management </q-item-section>
-          </q-item>
+          </q-item> -->
 
           <!-- Log Out Tab -->
           <q-item clickable @click="logout" class="q-pa-md">
@@ -217,7 +217,7 @@ const isTagsPageActive = computed(() => route.path === "/tags");
 const isLogisticsPageActive = computed(() => route.path === "/logistics");
 
 // Check if the current route is Invoices Page
-const isInvoicesPageActive = computed(() => route.path === "/invoices");
+// const isInvoicesPageActive = computed(() => route.path === "/invoices");
 
 // Check if the current route is Items Page
 const isItemsPageActive = computed(() => route.path === "/items");
@@ -241,9 +241,9 @@ const requiresAuth = computed(() => {
     "/customers",
     "/tags",
     "/logistics",
-    "/invoices",
+    // "/invoices",
     "/items",
-    "/payments",
+    // "/payments",
     // "/collections",
     // "/deliveries",
   ];
@@ -294,15 +294,15 @@ const goToLogisticsPage = () => {
 //   router.push("/deliveries");
 // };
 
-const goToInvoicesPage = () => {
-  router.push("/invoices");
-};
+// const goToInvoicesPage = () => {
+//   router.push("/invoices");
+// };
 
 const goToItemsPage = () => {
   router.push("/items");
 };
 
-const goToPaymentsPage = () => {
-  router.push("/payments");
-};
+// const goToPaymentsPage = () => {
+//   router.push("/payments");
+// };
 </script>

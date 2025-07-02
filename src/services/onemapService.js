@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const ONEMAP_TOKEN_API = "https://www.onemap.gov.sg/api/auth/post/getToken";
+const ONEMAP_TOKEN_API = "https://www.onemap.gov.sg//api/auth/post/getToken";
 
 const tokenStorage = {
   key: "onemap_token",

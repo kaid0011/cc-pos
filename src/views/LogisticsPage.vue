@@ -1,15 +1,3 @@
-<!-- <template>
-<div class="full-container">
-    <CollectionsPage/>
-    <DeliveriesPage/>
-</div>
-</template>
-
-<script setup>
-import CollectionsPage from '@/views/CollectionsPage.vue'
-import DeliveriesPage from '@/views/DeliveriesPage.vue'
-</script> -->
-
 <template>
   <div class="full-container logistics-management">
     <!-- Weekly Summary Section -->
@@ -214,7 +202,12 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
     </div>
 
     <div>
-      <q-scroll-area class="q-mb-sm" style="width: 100%; height: 3em;" :thumb-style="thumbStyle" :bar-style="barStyle">
+      <q-scroll-area
+        class="q-mb-sm"
+        style="width: 100%; height: 3em"
+        :thumb-style="thumbStyle"
+        :bar-style="barStyle"
+      >
         <div class="row no-wrap">
           <q-tabs
             v-model="activeDriverTab"
@@ -231,8 +224,9 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               :name="driver"
               :class="{
                 'active-tab': activeDriverTab === driver,
-                'text-weight-bold text-subtitle1 tab-divider': true,
+                'text-weight-bold tab-divider': true,
               }"
+              class="q-py-none q-px-sm"
             >
               {{ driver }} ({{
                 getTransactionsByDriver(driver).filter(
@@ -258,23 +252,23 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
           :name="driver"
           class="q-pa-none"
         >
-          <div class="row-col-table">
+          <div class="row-col-table line-height-1">
             <!-- Table Header -->
             <div class="row row-col-header q-px-md">
               <div class="col bordered q-py-sm text-weight-bolder">
-                Customer
+                Logistics Status
               </div>
-              <div class="col bordered q-py-sm text-weight-bolder">Date</div>
               <div class="col bordered q-py-sm text-weight-bolder">
-                Contact Person
+                Payment Status
+              </div>
+              <div class="col bordered q-py-sm text-weight-bolder">
+                Goods Status
+              </div>
+              <div class="col bordered q-py-sm text-weight-bolder">
+                customer
               </div>
               <div class="col bordered q-py-sm text-weight-bolder">Address</div>
-              <!-- <div class="col bordered q-py-sm text-weight-bolder">Driver Name</div> -->
-              <div class="col bordered q-py-sm text-weight-bolder">
-                No. of Bags
-              </div>
               <div class="col q-py-sm text-weight-bolder">Remarks</div>
-              <div class="col bordered q-py-sm text-weight-bolder">Status</div>
             </div>
 
             <!-- Table Rows -->
@@ -291,27 +285,46 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
               :key="transaction.id"
               class="row row-col-row q-mx-md"
             >
-              <div class="col bordered">
-                <div class="text-weight-bold">
-                  <a
-                    @click.prevent="openCustomerTab(transaction.customer?.id)"
-                    class="text-weight-bold text-subtitle1"
+              <div
+                class="col bordered"
+                :class="
+                  transaction.type === 'collection'
+                    ? 'mark-bg-pink'
+                    : 'mark-bg-blue'
+                "
+              >
+                <div>
+                  <div
+                    class="text-uppercase text-weight-bold text-subtitle1 text-center q-mb-sm line-height-1"
+                    style="border-style: solid; border-width: 1px"
                   >
-                    {{ transaction.customer?.name || "[NOT SELECTED]" }}
-                  </a>
+                    <div class="text-weight-bold">
+                      <a
+                        @click.prevent="
+                          openUpdateLogisticsDialog(transaction.logistics_id)
+                        "
+                        class="text-weight-bold"
+                      >
+                        {{ transaction.logistics_status }}
+                      </a>
+                    </div>
+                  </div>
                 </div>
-                <div>{{ transaction.customer?.contact_no1 || "-" }}</div>
-                <div v-if="transaction.customer?.contact_no2">
-                  {{ transaction.customer?.contact_no2 || "-" }}
-                </div>
-              </div>
-              <div class="col bordered">
                 <div v-if="transaction.type === 'collection'">
                   <div class="text-weight-bolder text-uppercase">
                     <mark-pink>Collection:</mark-pink>
                   </div>
                   <div>
                     {{ formatDate(transaction.collection_date) || "[NOT SET]" }}
+                  </div>
+
+                  <div>
+                    <span class="text-weight-bold">Time: </span>
+                    {{ transaction.collection_time || "-" }}
+                  </div>
+                  <div>
+                    <span class="text-weight-bold">Driver: </span
+                    >{{ transaction.collection_driver || "[NOT SET]" }}
                   </div>
                 </div>
                 <div v-if="transaction.type === 'delivery'">
@@ -321,55 +334,17 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                   <div>
                     {{ formatDate(transaction.delivery_date) || "[NOT SET]" }}
                   </div>
+
+                  <div>
+                    <span class="text-weight-bold">Time: </span>
+                    {{ transaction.delivery_time || "-" }}
+                  </div>
+                  <div>
+                    <span class="text-weight-bold">Driver: </span
+                    >{{ transaction.delivery_driver || "[NOT SET]" }}
+                  </div>
                 </div>
-                <div>
-                  <span class="text-weight-bold">Time: </span>
-                  {{
-                    transaction.collection_time ||
-                    transaction.delivery_time ||
-                    "-"
-                  }}
-                </div>
-                <div>
-                  <span class="text-weight-bold">Driver: </span
-                  >{{ transaction.driver_name || "[NOT SET]" }}
-                </div>
-                <!-- <div v-if="transaction.driver">
-                  {{ transaction.driver?.contact_no1 }}
-                </div> -->
-              </div>
-              <div class="col bordered">
-                <div>{{ transaction.contact_person?.name || "[NOT SET]" }}</div>
-                <div>{{ transaction.contact_person?.contact_no1 || "-" }}</div>
-                <div v-if="transaction.contact_person?.contact_no2">
-                  {{ transaction.contact_person?.contact_no2 || "-" }}
-                </div>
-              </div>
-              <div class="col bordered">
-                {{ transaction.address || "[NOT SET]" }}
-              </div>
-              <!-- <div class="col bordered">
-                <div>{{ transaction.driver?.name || "[NOT SET]" }}</div>
-                <div v-if="transaction.driver">
-                  {{ transaction.driver?.contact_no1 }}
-                </div>
-              </div> -->
-              <div class="col bordered">{{ transaction.no_bags || "-" }}</div>
-              <div class="col bordered">{{ transaction.remarks || "-" }}</div>
-              <div
-                class="col mark-bg-pink bordered text-uppercase text-weight-bold"
-                v-if="transaction.type === 'collection'"
-              >
-                <div class="text-weight-bold">
-                  <a
-                    @click.prevent="
-                      openUpdateLogisticsDialog(transaction.logistics_id)
-                    "
-                    class="text-weight-bold"
-                  >
-                    {{ transaction.logistics_status }}
-                  </a>
-                </div>
+
                 <div v-if="transaction.order_no" class="q-mt-sm text-">
                   <q-btn
                     outline
@@ -392,31 +367,110 @@ import DeliveriesPage from '@/views/DeliveriesPage.vue'
                   />
                 </div>
               </div>
-              <div
-                class="col mark-bg-blue bordered text-uppercase text-weight-bold"
-                v-if="transaction.type === 'delivery'"
-              >
-                <a
-                  @click.prevent="
-                    openUpdateLogisticsDialog(transaction.logistics_id)
-                  "
-                  class="text-weight-bold"
+              <div class="col bordered text-uppercase">
+                <!-- <div v-if="transaction.type === 'delivery'"> -->
+                <div
+                  class="text-weight-bold text-subtitle1 text-center q-mb-sm line-height-1"
+                  style="border-style: solid; border-width: 1px"
                 >
-                  {{ transaction.logistics_status }}
-                </a>
-                <div v-if="transaction.order_no" class="q-mt-sm text-">
-                  <q-btn
-                    outline
-                    color="blue-8"
-                    dense
-                    @click="openOrderTab(transaction)"
-                    class="text-weight-bold bg-blue-1"
-                  >
-                    {{ transaction.order_no }}
-                  </q-btn>
+                  {{ transaction.order_payments?.payment_status || "-" }}
                 </div>
-                <div v-else></div>
+                <div>
+                  Credits:
+                  <span class="q-ml-xs text-weight-bold">
+                    ${{
+                      (
+                        parseFloat(
+                          transaction.customer_credits?.online_package || "0"
+                        ) +
+                        parseFloat(
+                          transaction.customer_credits?.other_credits || "0"
+                        )
+                      ).toFixed(2)
+                    }}
+                  </span>
+                </div>
+                <div>
+                  Paid:
+                  <span class="q-ml-xs text-weight-bold"
+                    >${{
+                      transaction.order_payments?.paid_amount || "0.00"
+                    }}</span
+                  >
+                </div>
+                <div>
+                  Balance:
+                  <span class="q-ml-xs text-red text-weight-bold"
+                    >${{
+                      transaction.order_payments?.balance_amount || "0.00"
+                    }}</span
+                  >
+                </div>
+                <div>
+                  Amount:
+                  <span class="q-ml-xs text-weight-bold"
+                    >${{
+                      transaction.order_payments?.total_amount || "0.00"
+                    }}</span
+                  >
+                </div>
+                <!-- </div> -->
               </div>
+              <div class="col bordered">
+                <div
+                  class="text-weight-bold text-subtitle1 text-center q-mb-sm line-height-1 text-uppercase"
+                  style="border-style: solid; border-width: 1px"
+                >
+                  {{ transaction.order_production?.goods_status || "-" }}
+                </div>
+                <div>
+                  <span class="text-weight-bold text-uppercase">Ready By:</span>
+                  {{ formatDate(transaction.order_production?.ready_by) }}
+                </div>
+                <div v-if="transaction.order_production?.no_bags">
+                  <span class="text-weight-bold text-uppercase">Bags:</span>
+                  {{ transaction.order_production?.no_bags }}b
+                </div>
+                <div v-if="transaction.order_production?.no_hangers">
+                  <span class="text-weight-bold text-uppercase">Hang:</span>
+                  {{ transaction.order_production?.no_hangers }}h
+                </div>
+                <div v-if="transaction.order_production?.no_packets">
+                  <span class="text-weight-bold text-uppercase">Pack:</span>
+                  {{ transaction.order_production?.no_packets }}p
+                </div>
+                <div v-if="transaction.order_production?.no_rolls">
+                  <span class="text-weight-bold text-uppercase">Rolls:</span>
+                  {{ transaction.order_production?.no_rolls }}r
+                </div>
+              </div>
+
+              <div class="col bordered">
+                <div class="text-weight-bold">
+                  <a
+                    @click.prevent="openCustomerTab(transaction.customer?.id)"
+                    class="text-weight-bold text-subtitle1"
+                  >
+                    {{ transaction.customer?.name || "[NOT SELECTED]" }}
+                  </a>
+                </div>
+                <div>{{ transaction.customer?.contact_no1 || "-" }}</div>
+                <div v-if="transaction.customer?.contact_no2">
+                  {{ transaction.customer?.contact_no2 || "-" }}
+                </div>
+                <q-separator class="q-my-sm" />
+                <div class="mark-green">Contact Person</div>
+                <div>{{ transaction.contact_person?.name || "[NOT SET]" }}</div>
+                <div>{{ transaction.contact_person?.contact_no1 || "-" }}</div>
+                <div v-if="transaction.contact_person?.contact_no2">
+                  {{ transaction.contact_person?.contact_no2 || "-" }}
+                </div>
+              </div>
+              <div class="col bordered">
+                {{ transaction.address || "[NOT SET]" }}
+              </div>
+
+              <div class="col bordered">{{ transaction.remarks || "-" }}</div>
             </div>
           </div>
         </q-tab-panel>
@@ -613,13 +667,21 @@ onMounted(async () => {
       activeDriverTab.value = driverTabs.value[0];
     }
 
-    const rawCollections = await transactionStore.fetchAllCollections();
-    const rawDeliveries = await transactionStore.fetchAllDeliveries();
+const rawCollections = await transactionStore.fetchAllCollections();
+const rawDeliveries = await transactionStore.fetchAllDeliveries();
 
-    allTransactions.value = [
-      ...rawCollections.map((item) => ({ ...item, type: "collection" })),
-      ...rawDeliveries.map((item) => ({ ...item, type: "delivery" })),
-    ];
+allTransactions.value = [
+  ...rawCollections.map((item) => ({
+    ...item,
+    collection_driver: item.driver_name,
+    type: "collection",
+  })),
+  ...rawDeliveries.map((item) => ({
+    ...item,
+    delivery_driver: item.driver_name,
+    type: "delivery",
+  })),
+];
 
     console.log("Loaded Transactions: ", allTransactions.value); // Debugging log
     filterTransactions();
@@ -754,29 +816,54 @@ const openCustomerTab = (customerId) => {
   window.open(url, "_blank"); // Open in a new tab
 };
 
-const createOrder = (collection) => {
-  if (!collection) return;
+const createOrder = (transaction) => {
+  if (!transaction) return;
 
   transactionStore.resetTransactionItems();
-  // Set the transaction store properties
-  transactionStore.selectedCustomer = collection.customer;
-  transactionStore.selectedDeliveryContact =
-    collection.delivery?.contact_person || null;
-  transactionStore.selectedCollectionContact =
-    collection.contact_person || null;
-  transactionStore.selectedDeliveryAddress =
-    collection.delivery?.address || null;
-  transactionStore.selectedCollectionAddress = collection.address || null;
-  transactionStore.selectedCollectionDriver = collection.driver_name || null;
-  transactionStore.selectedDeliveryDriver =
-    collection.delivery?.driver_name || null;
-  transactionStore.collectionDate = collection.collection_date || null;
-  transactionStore.deliveryDate = collection.delivery?.delivery_date || null;
-  transactionStore.collectionTime = collection.collection_time || null;
-  transactionStore.deliveryTime = collection.delivery?.delivery_time || null;
-  transactionStore.logisticsId = collection.logistics_id | null;
 
-  showCreateOrderDialog.value = true; // Open the order dialog
+  const isCollection = transaction.type === "collection";
+  const isDelivery = transaction.type === "delivery";
+
+  // Load both collection & delivery data by logistics_id (async handled later)
+  transactionStore.selectedCustomer = transaction.customer;
+  transactionStore.logisticsId = transaction.logistics_id || null;
+
+  if (isCollection) {
+    transactionStore.selectedCollectionContact =
+      transaction.contact_person || null;
+    transactionStore.selectedCollectionAddress = transaction.address || null;
+    transactionStore.selectedCollectionDriver = transaction.driver_name || null;
+    transactionStore.collectionDate = transaction.collection_date || null;
+    transactionStore.collectionTime = transaction.collection_time || null;
+    transactionStore.collectionRemarks = transaction.remarks || null;
+    transactionStore.collectionNoBags = transaction.no_bags || null;
+  }
+
+  if (isDelivery) {
+    transactionStore.selectedDeliveryContact =
+      transaction.contact_person || null;
+    transactionStore.selectedDeliveryAddress = transaction.address || null;
+    transactionStore.selectedDeliveryDriver = transaction.driver_name || null;
+    transactionStore.deliveryDate = transaction.delivery_date || null;
+    transactionStore.deliveryTime = transaction.delivery_time || null;
+    transactionStore.deliveryRemarks = transaction.remarks || null;
+  }
+
+  // Fetch and assign missing counterpart
+  Promise.all([
+    updateCollection(transaction.logistics_id),
+    updateDelivery(transaction.logistics_id),
+  ])
+    .then(() => {
+      showCreateOrderDialog.value = true;
+    })
+    .catch((error) => {
+      console.error("Error loading related data:", error);
+      $q.notify({
+        type: "negative",
+        message: "Failed to fetch collection or delivery data.",
+      });
+    });
 };
 
 function handleClose() {
@@ -1080,19 +1167,18 @@ const updateDelivery = async (logisticsId) => {
 };
 
 const thumbStyle = {
-  right: '4px',
-  borderRadius: '5px',
+  right: "4px",
+  borderRadius: "5px",
   // backgroundColor: '#027be3',
   // opacity: 0.75,
-  height: '7px'
-}
+  height: "7px",
+};
 
 const barStyle = {
-  right: '2px',
-  borderRadius: '9px',
+  right: "2px",
+  borderRadius: "9px",
   // backgroundColor: '#027be3',
   // opacity: 0.2,
-  height: '7px'
-}
-
+  height: "7px",
+};
 </script>

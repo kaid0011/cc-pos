@@ -10,6 +10,7 @@ import CustomerView from "@/views/CustomerView.vue";
 import PaymentPage from "@/views/PaymentPage.vue";
 import TagsPage from "@/views/TagsPage.vue";
 import TagView from "@/views/TagView.vue";
+import TagGroupView from "@/views/TagGroupView.vue";
 import LogisticsPage from "@/views/LogisticsPage.vue";
 import LogisticsView from "@/views/LogisticsView.vue";
 import InvoicesPage from "@/views/InvoicesPage.vue";
@@ -119,6 +120,12 @@ const routes = [
     meta: {
       requiresAuth: true, // Transactions require authentication
     },
+  },
+  {
+    path: "/tags/group/:groupSlug",
+    name: "TagGroupView",
+    component: TagGroupView,
+    meta: { requiresAuth: true },
   },
   {
     path: "/invoices",

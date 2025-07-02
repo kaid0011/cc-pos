@@ -110,7 +110,7 @@
         <div
           v-for="(order, idx) in logistics.orders"
           :key="idx"
-          class="row row-col-row q-px-md"
+          class="row row-col-row q-px-md line-height-1"
         >
           <div class="col bordered">
             <a
@@ -123,36 +123,50 @@
           <div class="col bordered">
             <div>{{ getCollectionDate(logistics.collections) }}</div>
             <div><span class="text-weight-bold q-mr-xs">Time:</span>{{ logistics.collections?.[0]?.collection_time || 'N/A' }}</div>
+             <div><span class="text-weight-bold q-mr-xs">Driver:</span>{{ logistics.collections?.[0]?.driver_name || 'N/A' }}</div>
           </div>
           <div class="col bordered">
             <div>{{ getDeliveryDate(logistics.deliveries) }}</div>
-            <div><span class="text-weight-bold q-mr-xs">Time:</span>{{ logistics.collections?.[0]?.collection_time || 'N/A' }}</div>
-          </div>
-          <div class="col bordered text-uppercase">
-            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ order.goods_status }}</div>
-            <div><span class="text-weight-bold q-mr-xs">Bags:</span> {{ logistics.collections?.[0]?.no_bags || '-' }}</div>
-            <div><span class="text-weight-bold q-mr-xs">Hang:</span> {{ order.order_production?.no_hangers || '-' }}</div>
-            <div><span class="text-weight-bold q-mr-xs">Pack:</span> {{ order.order_production?.no_packets || '-' }}</div>
-          </div>
-          <div class="col bordered text-uppercase">
-            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ logistics.logistics_status }}</div>
-          </div>
-          <div class="col bordered text-uppercase">
-            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm" style="border-style: solid; border-width: 1px;">{{ order.payment_status }}</div>
-            <div>Paid: <span class="q-ml-xs text-weight-bold">${{ (order.paid_amount || 0).toFixed(2) }}</span></div>
-            <div>Balance: <span class="q-ml-xs text-red text-weight-bold">${{ ((order.total_amount - order.paid_amount) || 0).toFixed(2) }}</span></div>
-            <div>Amount: <span class="q-ml-xs text-weight-bold">${{ (order.total_amount || 0).toFixed(2) }}</span></div>
+            <div><span class="text-weight-bold q-mr-xs">Time:</span>{{ logistics.deliveries?.[0]?.delivery_time || 'N/A' }}</div>
+             <div><span class="text-weight-bold q-mr-xs">Driver:</span>{{ logistics.deliveries?.[0]?.driver_name || 'N/A' }}</div>
           </div>
           <div class="col bordered">
-            <a
-              v-if="order.customer?.id"
-              @click.prevent="openCustomerTab(order.customer.id)"
-              class="text-weight-bold text-subtitle1"
-            >
-              {{ order.customer?.name || "Unknown" }}
-            </a>
-            <span v-else>N/A</span>
+            <div class="text-weight-bold text-uppercase text-subtitle1 text-center q-mb-sm line-height-1" style="border-style: solid; border-width: 1px;">{{ order.goods_status }}</div>
+            <div v-if="logistics.collections?.[0]?.no_bags"><span class="text-weight-bold text-uppercase q-mr-xs">Bags: </span>{{ logistics.collections?.[0]?.no_bags || '-' }}b</div>
+            <div v-if="order.order_production?.no_hangers"><span class="text-weight-bold text-uppercase q-mr-xs">Hang:</span> {{ order.order_production?.no_hangers || '-' }}h</div>
+            <div v-if="order.order_production?.no_packets"><span class="text-weight-bold text-uppercase q-mr-xs">Pack:</span> {{ order.order_production?.no_packets || '-' }}p</div>
+            <div v-if="order.order_production?.no_rolls"><span class="text-weight-bold text-uppercase q-mr-xs">Rolls:</span> {{ order.order_production?.no_rolls || '-' }}r</div>
           </div>
+          <div class="col bordered text-uppercase">
+            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm line-height-1" style="border-style: solid; border-width: 1px;">{{ logistics.logistics_status }}</div>
+          </div>
+          <div class="col bordered text-uppercase">
+            <div class="text-weight-bold text-subtitle1 text-center q-mb-sm line-height-1" style="border-style: solid; border-width: 1px;">{{ order.payment_status }}</div>
+            <div>Paid: <span class="q-ml-xs text-weight-bold">${{ order.paid_amount }}</span></div>
+            <div>Balance: <span class="q-ml-xs text-red text-weight-bold">${{ order.balance_amount }}</span></div>
+            <div>Amount: <span class="q-ml-xs text-weight-bold">${{ order.total_amount }}</span></div>
+          </div>
+              <div class="col bordered">
+                <div class="text-weight-bold">
+                  <a
+                    @click.prevent="openCustomerTab(order.customer?.id)"
+                    class="text-weight-bold text-subtitle1"
+                  >
+                    {{ order.customer?.name || "[NOT SELECTED]" }}
+                  </a>
+                </div>
+                <div>{{ order.customer?.contact_no1 || "-" }}</div>
+                <div v-if="order.customer?.contact_no2">
+                  {{ order.customer?.contact_no2 || "-" }}
+                </div>
+                <q-separator class="q-my-sm" />
+                <div class="mark-green">Contact Person</div>
+                <div>{{ logistics.collections?.[0]?.contact_person?.name || "[NOT SET]" }}</div>
+                <div>{{ logistics.collections?.[0]?.contact_person?.contact_no1 || "-" }}</div>
+                <div v-if="logistics.collections?.[0]?.contact_person?.contact_no2">
+                  {{ logistics.collections?.[0]?.contact_person?.contact_no2 || "-" }}
+                </div>
+              </div>
         </div>
       </div>
     </div>
@@ -237,8 +251,9 @@ const filteredOrders = computed(() => {
             customer_id: logistics.customer?.id || null,
             goods_status: order.order_production?.goods_status || "N/A",
             payment_status: order.order_payment?.payment_status || "N/A",
-            total_amount: order.order_payment?.total_amount || "N/A",
-            paid_amount: order.order_payment?.paid_amount || "0"
+            total_amount: parseFloat(order.order_payment?.total_amount || 0).toFixed(2),
+        paid_amount: parseFloat(order.order_payment?.paid_amount || 0).toFixed(2),
+        balance_amount: parseFloat((order.order_payment?.total_amount || 0) - (order.order_payment?.paid_amount || 0)).toFixed(2)
           }]
         : [],
     };

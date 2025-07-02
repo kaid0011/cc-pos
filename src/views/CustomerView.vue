@@ -11,7 +11,7 @@
             @click="openCollectionDialog(customerDetails)"
           />
         </div>
-        <q-card class="preview-card">
+        <q-card class="preview-card ">
           <div class="row justify-between items-center">
             <div
               class="text-h6 text-uppercase text-weight-bolder q-ml-lg q-mt-md"
@@ -295,11 +295,11 @@
 
                 <q-card-section>
                   <div>
-                    Online Package Credits: {{ customerCredits.online_package }}
+                    Online Package Credits: <span class="text-weight-bolder mark-yellow">${{ parseFloat(customerCredits.online_package).toFixed(2) }}</span>
                   </div>
-                  <div>Other Credits: {{ customerCredits.other_credits }}</div>
+                  <div>Other Credits: <span class="text-weight-bolder mark-yellow">${{ parseFloat(customerCredits.other_credits).toFixed(2) }}</span></div>
                   <q-separator />
-                  <div>Total Credits: {{ creditsTotal }}</div>
+                  <div>Total Credits: <span class="text-weight-bolder mark-yellow">${{ parseFloat(creditsTotal).toFixed(2) }}</span></div>
                 </q-card-section>
                 <div class="row">
                   <q-btn
@@ -320,9 +320,9 @@
                 </div>
                 <a class="text-subtitle1"> (View Order Payments)</a>
                 <q-card-section>
-                  <div>Unpaid Amount: $50.00</div>
-                  <div>Paid Amount: $75.00</div>
-                  <div>Total Amount: $125.00</div>
+                  <div>Unpaid Amount: <span class="text-weight-bolder mark-yellow"></span></div>
+                  <div>Paid Amount: <span class="text-weight-bolder mark-yellow"></span></div>
+                  <div>Total Amount: <span class="text-weight-bolder mark-yellow"></span></div>
                 </q-card-section>
               </q-card>
             </div>

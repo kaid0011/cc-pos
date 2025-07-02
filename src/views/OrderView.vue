@@ -78,7 +78,7 @@
             <div class="text-weight-bold">
               <a
                 @click.prevent="
-                  openCollectionHistoryDialog(collection.logistics_id)
+                  openCollectionHistoryDialog(activeCollection.logistics_id)
                 "
               >
                 (View Collection History)
@@ -88,7 +88,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ collection.customer_contact_persons?.name || "-" }}
+                {{ activeCollection.customer_contact_persons?.name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -100,7 +100,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Address:</div>
               <div class="col-6">
-                {{ collection.address || "-" }}
+                {{ activeCollection.address || "-" }}
               </div>
             </div>
 
@@ -113,25 +113,25 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Time:</div>
               <div class="col-6">
-                {{ collection.collection_time || "-" }}
+                {{ activeCollection.collection_time || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Driver:</div>
               <div class="col-6">
-                {{ collection.driver_name || "-" }}
+                {{ activeCollection.driver_name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">No. of Bags:</div>
               <div class="col-6">
-                {{ collection.no_bags || "-" }}
+                {{ activeCollection.no_bags || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Remarks:</div>
               <div class="col-6">
-                {{ collection.remarks || "-" }}
+                {{ activeCollection.remarks || "-" }}
               </div>
             </div>
 
@@ -155,7 +155,7 @@
             <div class="text-weight-bold">
               <a
                 @click.prevent="
-                  openDeliveryHistoryDialog(delivery.logistics_id)
+                  openDeliveryHistoryDialog(activeDelivery.logistics_id)
                 "
               >
                 (View Delivery History)
@@ -165,7 +165,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ delivery.customer_contact_persons?.name || "-" }}
+                {{ activeDelivery.customer_contact_persons?.name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -177,7 +177,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Address:</div>
               <div class="col-6">
-                {{ delivery.address || "-" }}
+                {{ activeDelivery.address || "-" }}
               </div>
             </div>
 
@@ -191,19 +191,19 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Time:</div>
               <div class="col-6">
-                {{ delivery.delivery_time || "-" }}
+                {{ activeDelivery.delivery_time || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Driver:</div>
               <div class="col-6">
-                {{ delivery.driver_name || "-" }}
+                {{ activeDelivery.driver_name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Remarks:</div>
               <div class="col-6">
-                {{ delivery.remarks || "-" }}
+                {{ activeDelivery.remarks || "-" }}
               </div>
             </div>
             <q-card-actions align="right">
@@ -773,10 +773,20 @@
   <!-- Add Transaction Dialog -->
   <q-dialog v-model="isAddTransactionDialogOpen" persistent>
     <q-card>
-      <q-card-section>
-        <div class="text-h6 text-center">Add Transaction</div>
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Add Transaction
+        </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="isAddTransactionDialogOpen = false"
+        />
       </q-card-section>
-      <q-card-section>
+      <q-card-section class="dialog-body">
         <!-- Add Transaction Form (Copied from OthersComponent) -->
         <div class="text-p">
           <q-checkbox
@@ -1029,14 +1039,6 @@
           </div>
         </div>
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          label="Close"
-          color="negative"
-          @click="closeAddTransactionDialog"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
   <q-dialog v-model="isAddContactPersonDialogOpen" persistent>
@@ -1616,7 +1618,9 @@ const order = ref({}); // Changed from null to an empty object
 const customer = ref({});
 const logistics = ref({});
 const collection = ref({});
+const activeCollection = ref({});
 const delivery = ref({});
+const activeDelivery = ref({});
 const transactions = ref([]);
 const instructions = ref([]);
 const reports = ref([]);
@@ -1660,8 +1664,10 @@ onMounted(async () => {
     logistics.value = orderDetails || {};
     order.value = orderDetails.order || {};
     customer.value = orderDetails.customer || {};
-    collection.value = orderDetails.collection?.[0] || {};
-    delivery.value = orderDetails.delivery?.[0] || {};
+    collection.value = orderDetails.collection || {};
+    activeCollection.value = orderDetails.collection.find(col => col.status === 'active') || {};
+    delivery.value = orderDetails.delivery || {};
+    activeDelivery.value = orderDetails.delivery.find(del => del.status === 'active') || {};
 
     transactions.value = [];
 
@@ -2036,10 +2042,10 @@ const totalSubtotal = computed(() => {
 
 // Computed properties for formatted display
 const formattedCollectionDate = computed(() =>
-  formatDate(collection.value.collection_date)
+  formatDate(activeCollection.value.collection_date)
 );
 const formattedDeliveryDate = computed(() =>
-  formatDate(delivery.value.delivery_date)
+  formatDate(activeDelivery.value.delivery_date)
 );
 
 // Function to format dates as "Thu, 30/01/2025"
@@ -2071,33 +2077,33 @@ function getContactNumber(contactPersonId) {
 const formattedCollectionContactNos = computed({
   get() {
     const contact1 =
-      collection.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = collection.value.customer_contact_persons?.contact_no2;
+      activeCollection.value.customer_contact_persons?.contact_no1 || "-";
+    const contact2 = activeCollection.value.customer_contact_persons?.contact_no2;
 
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    collection.value.customer_contact_persons.contact_no1 = contact1 || "";
+    activeCollection.value.customer_contact_persons.contact_no1 = contact1 || "";
 
     // Only set contact_no2 if it was provided
-    collection.value.customer_contact_persons.contact_no2 = contact2 || null;
+    activeCollection.value.customer_contact_persons.contact_no2 = contact2 || null;
   },
 });
 
 const formattedDeliveryContactNos = computed({
   get() {
     const contact1 =
-      delivery.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = delivery.value.customer_contact_persons?.contact_no2;
+      activeDelivery.value.customer_contact_persons?.contact_no1 || "-";
+    const contact2 = activeDelivery.value.customer_contact_persons?.contact_no2;
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    delivery.value.customer_contact_persons.contact_no1 = contact1 || "";
-    delivery.value.customer_contact_persons.contact_no2 = contact2 || "";
+    activeDelivery.value.customer_contact_persons.contact_no1 = contact1 || "";
+    activeDelivery.value.customer_contact_persons.contact_no2 = contact2 || "";
   },
 });
 
@@ -2971,24 +2977,21 @@ const updateCollection = async (logisticsId) => {
     if (!collectionData || collectionData.length === 0) {
       throw new Error("No collection data found!");
     }
-    const collection = collectionData[0];
-    let contactPerson = collection?.contact_persons;
-    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
-      contactPerson = contactPerson[0];
-    }
-    transactionStore.selectedCollectionId = collection.id || null;
-    transactionStore.selectedCollectionContact = contactPerson || null;
-    transactionStore.selectedCollectionAddress = collection.address || null;
-    transactionStore.selectedCollectionDriver = collection.drivers || null;
-    transactionStore.collectionDate = collection.collection_date || null;
-    transactionStore.collectionTime = collection.collection_time || null;
-    transactionStore.collectionRemarks = collection.remarks || null;
-    transactionStore.collectionNoBags = collection.no_bags || null;
-    transactionStore.jobType = collection.job_type || null;
-    transactionStore.readyBy = collection.ready_by || null;
-    transactionStore.logisticsId = collection.logistics_id || null;
+    transactionStore.selectedCustomer = customer || null;
+    transactionStore.selectedCollectionId = collectionData[0].id || null;
+    transactionStore.selectedCollectionContact = collectionData[0].customer_contact_persons || null;
+    transactionStore.selectedCollectionAddress = collectionData[0].address || null;
+    transactionStore.selectedCollectionDriver = collectionData[0].driver_name || null;
+    transactionStore.collectionDate = collectionData[0].collection_date || null;
+    transactionStore.collectionTime = collectionData[0].collection_time || null;
+    transactionStore.collectionRemarks = collectionData[0].remarks || null;
+    transactionStore.collectionNoBags = collectionData[0].no_bags || null;
+    transactionStore.jobType = collectionData[0].job_type || null;
+    transactionStore.readyBy = collectionData[0].ready_by || null;
+    transactionStore.logisticsId = collectionData[0].logistics_id || null;
 
     showUpdateCollectionDialog.value = true;
+
   } catch (error) {
     console.error("Error fetching collection details:", error);
   }
@@ -3002,24 +3005,21 @@ const updateDelivery = async (logisticsId) => {
     if (!deliveryData || deliveryData.length === 0) {
       throw new Error("No delivery data found!");
     }
-    const delivery = deliveryData[0];
-    let contactPerson = delivery?.contact_persons;
-    if (Array.isArray(contactPerson) && contactPerson.length > 0) {
-      contactPerson = contactPerson[0];
-    }
-    transactionStore.selectedDeliveryId = delivery.id || null;
-    transactionStore.selectedDeliveryContact = contactPerson || null;
-    transactionStore.selectedDeliveryAddress = delivery.address || null;
-    transactionStore.selectedDeliveryDriver = delivery.drivers || null;
-    transactionStore.deliveryDate = delivery.delivery_date || null;
-    transactionStore.deliveryTime = delivery.delivery_time || null;
-    transactionStore.deliveryRemarks = delivery.remarks || null;
-    transactionStore.deliveryNoBags = delivery.no_bags || null;
-    transactionStore.jobType = delivery.job_type || null;
-    transactionStore.readyBy = delivery.ready_by || null;
-    transactionStore.logisticsId = delivery.logistics_id || null;
+    transactionStore.selectedCustomer = customer || null;
+    transactionStore.selectedDeliveryId = deliveryData[0].id || null;
+    transactionStore.selectedDeliveryContact = deliveryData[0].customer_contact_persons || null;
+    transactionStore.selectedDeliveryAddress = deliveryData[0].address || null;
+    transactionStore.selectedDeliveryDriver = deliveryData[0].driver_name || null;
+    transactionStore.deliveryDate = deliveryData[0].delivery_date || null;
+    transactionStore.deliveryTime = deliveryData[0].delivery_time || null;
+    transactionStore.deliveryRemarks = deliveryData[0].remarks || null;
+    transactionStore.deliveryNoBags = deliveryData[0].no_bags || null;
+    transactionStore.jobType = deliveryData[0].job_type || null;
+    transactionStore.readyBy = deliveryData[0].ready_by || null;
+    transactionStore.logisticsId = deliveryData[0].logistics_id || null;
 
     showUpdateDeliveryDialog.value = true;
+
   } catch (error) {
     console.error("Error fetching delivery details:", error);
   }

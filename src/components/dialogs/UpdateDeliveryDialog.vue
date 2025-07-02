@@ -95,16 +95,6 @@
           class="q-mb-sm bg-white"
         />
       </div>
-
-      <div class="col text-slip-row">
-        No. of Bags:
-        <q-input
-          v-model="transactionStore.deliveryNoBags"
-          outlined
-          dense
-          class="q-mb-sm bg-white"
-        />
-      </div>
     </div>
 
     <div class="text-slip-row">

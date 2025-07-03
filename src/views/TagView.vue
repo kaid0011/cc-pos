@@ -154,7 +154,7 @@
                 {{ `$${item.price.toFixed(2)}` }}
               </div>
               <div class="col col-1 tag-card-cell text-center">
-                {{ item.pieces * item.quantity }}
+                {{ item.pieces }}
               </div>
               <div class="col col-1 tag-card-cell text-center">
                 {{ item.quantity }}
@@ -381,8 +381,7 @@ function formatSectionLabel(section) {
 const totalPcs = computed(() => {
   return transactions.value.reduce((acc, item) => {
     const pcs = parseFloat(item.pieces) || 1; // Ensure a numeric value
-    const qty = parseFloat(item.quantity) || 1; // Ensure a numeric value
-    return acc + (pcs*qty);
+    return acc + pcs;
   }, 0);
 });
 
@@ -432,7 +431,7 @@ const readyByFormatted = computed(() => {
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
     const category = item.tag_category?.toLowerCase() || "others";
-    const pieces = parseInt(item.pieces*item.quantity) || 0; // Use pieces instead of quantity
+    const pieces = parseInt(item.pieces) || 0; // Use pieces instead of quantity
     counts[category] = (counts[category] || 0) + pieces;
     return counts;
   }, {});

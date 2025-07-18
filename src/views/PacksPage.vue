@@ -1,7 +1,7 @@
 <template>
   <div class="full-container orders-history">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
-      Tags Management
+      Packs Management
     </div>
 
     <q-card class="row preview-card q-mb-md">
@@ -38,35 +38,19 @@
             />
           </template>
         </q-input>
-        <div class="row q-col-gutter-sm">
-          <div class="col">
-            <q-btn
-            unelevated
-              label="Generate Tag"
-              color="primary full-width"
-              :disable="!selectedMatchedOrders.length"
-              @click="generateTag"
-              class="q-mt-sm"
-            />
-          </div>
-          <div class="col">
-            <q-btn
-            unelevated
-              label="Generate Invoice"
-              color="secondary full-width"
-              :disable="!selectedMatchedOrders.length"
-              @click="generateInvoice"
-              class="q-mt-sm"
-            />
-          </div>
-        </div>
         <q-btn
-        outline
-          label="Customize Tag"
+          label="Generate Packing List"
           color="primary full-width"
-          @click="openCustomizeDialog"
+          :disable="!selectedMatchedOrders.length"
+          @click="generatePack"
           class="q-mt-sm"
         />
+        <!-- <q-btn
+          label="Customize Tag"
+          color="secondary full-width"
+          @click="openCustomizeDialog"
+          class="q-mt-sm"
+        /> -->
       </div>
 
       <div class="col-7 q-pa-md">
@@ -144,7 +128,7 @@
     <div class="row justify-end q-mb-sm q-gutter-x-sm">
       <!-- Collection Start Date -->
       <div class="col">
-        <q-input
+        <!-- <q-input
           v-model="formattedCollectionStartDate"
           outlined
           dense
@@ -164,12 +148,12 @@
               @click="clearDate('collectionStartDate')"
             />
           </template>
-        </q-input>
+        </q-input> -->
       </div>
 
       <!-- Collection End Date -->
       <div class="col">
-        <q-input
+        <!-- <q-input
           v-model="formattedCollectionEndDate"
           outlined
           dense
@@ -189,12 +173,12 @@
               @click="clearDate('collectionEndDate')"
             />
           </template>
-        </q-input>
+        </q-input> -->
       </div>
 
       <!-- Delivery Start Date -->
       <div class="col">
-        <q-input
+        <!-- <q-input
           v-model="formattedDeliveryStartDate"
           outlined
           dense
@@ -214,12 +198,12 @@
               @click="clearDate('deliveryStartDate')"
             />
           </template>
-        </q-input>
+        </q-input> -->
       </div>
 
       <!-- Delivery End Date -->
       <div class="col">
-        <q-input
+        <!-- <q-input
           v-model="formattedDeliveryEndDate"
           outlined
           dense
@@ -239,7 +223,7 @@
               @click="clearDate('deliveryEndDate')"
             />
           </template>
-        </q-input>
+        </q-input> -->
       </div>
 
       <!-- Search Input -->
@@ -267,9 +251,7 @@
         <div class="col text-weight-bolder q-py-sm">Collection Date</div>
         <div class="col text-weight-bolder q-py-sm">Delivery Date</div>
         <div class="col text-weight-bolder q-py-sm">Customer Name</div>
-        <div class="col text-weight-bolder q-py-sm">Tag Timestamp</div>
-        <div class="col text-weight-bolder q-py-sm">Changes</div>
-        <div class="col text-weight-bolder q-py-sm">Status</div>
+        <div class="col text-weight-bolder q-py-sm">Actions</div>
       </div>
 
       <!-- Table Rows -->
@@ -342,29 +324,17 @@
             {{ logistics.collections?.[0]?.contact_person?.contact_no2 || "-" }}
           </div>
         </div>
-        <div class="col bordered text-uppercase">
-          {{ logistics.order?.order_tags?.tag_timestamp || "-" }}
-        </div>
-        <div class="col bordered text-uppercase">
-          {{ logistics.order?.order_tags?.tag_changes || "-" }}
-        </div>
         <div
           class="col bordered text-uppercase text-subtitle1"
-          :class="getStatusClass(logistics.order?.order_tags?.tag_status)"
         >
-          <div class="text-weight-bolder">
-            {{ logistics.order?.order_tags?.tag_status || "-" }}
-          </div>
-          <div>
             <q-btn
-              label="View Tag"
+              label="View Details"
               color="primary"
               unelevated
               dense
               class="q-px-sm q-my-sm"
-              @click="viewTag(logistics.order?.order_no)"
+              @click="viewPack(logistics.order?.order_no)"
             />
-          </div>
         </div>
       </div>
     </div>
@@ -414,7 +384,7 @@
         <q-input v-model="customG" label="G" outlined dense />
 
         <q-card flat style="border: solid; border-width: 1px; border-radius: 0">
-          <q-card flat class="tags" style="max-height: 46px">
+          <q-card flat class="tags" style="max-height: 46px;">
             <div class="text-center row q-pa-xs">
               <div class="col">
                 <div>{{ customA || "0" }}</div>
@@ -523,13 +493,21 @@ watch([selectedDriver, selectedDate], () => {
   const driverName = selectedDriver.value.name;
   const selectedRawDate = selectedDate.value;
 
-  matchedOrdersList.value = filteredOrders.value.filter((logistics) =>
-    logistics.collections?.some(
-      (c) =>
-        c?.driver_name === driverName && c?.collection_date === selectedRawDate
-    )
-  );
+
+  matchedOrdersList.value = filteredOrders.value.filter((logistics, index) => {
+    const hasMatchingDriver = logistics.collections?.some(
+      (c) => c?.driver_name === driverName
+    );
+
+    const hasMatchingDeliveryDate = logistics.deliveries?.some(
+      (d) => d?.delivery_date === selectedRawDate
+    );
+
+    return hasMatchingDriver && hasMatchingDeliveryDate;
+  });
+
 });
+
 
 const getStatusClass = (status) => {
   if (!status) return "";
@@ -663,8 +641,8 @@ const openOrderDialog = async (logistics) => {
   }
 };
 
-const viewTag = (order_no) => {
-  const url = `/tags/${order_no}`;
+const viewPack = (order_no) => {
+  const url = `/packs/${order_no}`;
   window.open(url, "_blank");
 };
 
@@ -685,7 +663,7 @@ const DRIVER_CODES = {
 
 const matchedOrdersList = ref([]);
 
-const generateTag = () => {
+const generatePack = () => {
   const driverName = selectedDriver.value?.name;
   const selectedRawDate = selectedDate.value;
 
@@ -707,38 +685,10 @@ const generateTag = () => {
     .filter(Boolean);
 
   const query = encodeURIComponent(selectedOrderNos.join(","));
-  const url = `/tags/grp-${groupSlug}?orders=${query}`;
+  const url = `/packs/grp-${groupSlug}?orders=${query}`;
 
   window.open(url, "_blank");
 };
-
-const generateInvoice = () => {
-  const driverName = selectedDriver.value?.name;
-  const selectedRawDate = selectedDate.value;
-
-  if (!driverName || !selectedRawDate) {
-    console.warn("Driver or Date not selected");
-    return;
-  }
-
-  if (!selectedMatchedOrders.value.length) {
-    console.warn("No orders selected to generate invoice.");
-    return;
-  }
-
-  const driverCode = DRIVER_CODES[driverName] || driverName;
-  const groupSlug = `${driverCode}-${selectedRawDate}`;
-
-  const selectedOrderNos = selectedMatchedOrders.value
-    .map((logistics) => logistics.order?.order_no)
-    .filter(Boolean);
-
-  const query = encodeURIComponent(selectedOrderNos.join(","));
-  const url = `/invoice/grp-${groupSlug}?orders=${query}`;
-
-  window.open(url, "_blank");
-};
-
 
 const showCustomizeDialog = ref(false);
 const customPcs = ref(null);
@@ -765,13 +715,13 @@ const printCustomTag = () => {
   container.style.margin = "0";
   container.style.padding = "0";
 
-  for (let i = 0; i < pcsCount; i++) {
-    const clone = tag.cloneNode(true);
-    if (i > 0) {
-      clone.style.pageBreakBefore = "always";
-    }
-    container.appendChild(clone);
+for (let i = 0; i < pcsCount; i++) {
+  const clone = tag.cloneNode(true);
+  if (i > 0) {
+    clone.style.pageBreakBefore = "always";
   }
+  container.appendChild(clone);
+}
 
   const options = {
     margin: 0,
@@ -799,4 +749,5 @@ const printCustomTag = () => {
     })
     .catch(console.error);
 };
+
 </script>

@@ -12,7 +12,11 @@
         </q-btn>
       </div>
     </div>
-    <div class="row justify-center q-mb-lg">
+    <div
+      v-for="logistics in matchedOrders"
+      :key="logistics.order?.order_no"
+      class="row justify-center q-mb-lg"
+    >
       <q-card class="tag-card-container">
         <q-card flat class="tag-card" ref="printableCard">
           <div class="row tag-card-header items-center">
@@ -34,8 +38,8 @@
               <div class="row q-mt-md tag-card-header q-mr-md">
                 <div>
                   <qrcode-vue
-                    v-if="order?.order_no"
-                    :value="order.order_no"
+                    v-if="logistics.order?.order_no"
+                    :value="logistics.order.order_no"
                     :size="70"
                     level="H"
                   />
@@ -44,18 +48,24 @@
                 <div class="q-ml-sm q-mt-sm text-subtitle1 line-height-1">
                   <div>
                     Order No:
-                    <span class="text-weight-bold">{{ order?.order_no }}</span>
+                    <span class="text-weight-bold">{{
+                      logistics.order?.order_no
+                    }}</span>
                   </div>
                   <div>
                     Invoice Date:
                     <span class="text-weight-bold">
-                      {{ formatDateOnly(order?.order_invoices?.created_at) }}
+                      {{
+                        formatDateOnly(
+                          logistics.order?.order_invoices?.created_at
+                        )
+                      }}
                     </span>
                   </div>
                   <div>
                     Invoice No:
                     <span class="text-weight-bold q-ml-md">{{
-                      order?.order_invoices?.invoice_no
+                      logistics.order?.order_invoices?.invoice_no
                     }}</span>
                   </div>
                 </div>
@@ -65,23 +75,25 @@
                   Customer Information
                 </div>
                 <div>
-                  Name: <span>{{ customer?.name || "N/A" }}</span>
+                  Name: <span>{{ logistics.customer?.name || "N/A" }}</span>
                 </div>
                 <div>
                   Billing Address:
-                  <span>{{ customer?.billing_address || "N/A" }}</span>
+                  <span>{{
+                    logistics.customer?.billing_address || "N/A"
+                  }}</span>
                 </div>
                 <div>
                   Contact No:
                   <span
-                    >{{ customer?.contact_no1
-                    }}<span v-if="customer?.contact_no2">
-                      / {{ customer?.contact_no2 }}</span
+                    >{{ logistics.customer?.contact_no1
+                    }}<span v-if="logistics.customer.contact_no2">
+                      / {{ logistics.customer?.contact_no2 }}</span
                     ></span
                   >
                 </div>
                 <div>
-                  Email: <span>{{ customer?.email || "N/A" }}</span>
+                  Email: <span>{{ logistics.customer?.email || "N/A" }}</span>
                 </div>
               </div>
             </div>
@@ -99,14 +111,19 @@
                   Collection Details
                 </div>
                 <div>
-                  {{ collection?.customer_contact_persons?.name || "N/A" }}
+                  {{
+                    logistics.collection?.customer_contact_persons?.name ||
+                    "N/A"
+                  }}
                 </div>
-                <div>{{ collection?.address || "N/A" }}</div>
-                <div>Collected By: {{ collection?.driver_name || "N/A" }}</div>
+                <div>{{ logistics.collection?.address || "N/A" }}</div>
+                <div>
+                  Collected By: {{ logistics.collection?.driver_name || "N/A" }}
+                </div>
                 <div>
                   Collected On:
-                  {{ formatDateOnly(collection?.collection_date) }},
-                  {{ collection?.collection_time }}
+                  {{ formatDateOnly(logistics.collection?.collection_date) }},
+                  {{ logistics.collection?.collection_time }}
                 </div>
               </div>
 
@@ -123,13 +140,18 @@
                   Delivery Details
                 </div>
                 <div>
-                  {{ delivery?.customer_contact_persons?.name || "N/A" }}
+                  {{
+                    logistics.delivery?.customer_contact_persons?.name || "N/A"
+                  }}
                 </div>
-                <div>{{ delivery?.address || "N/A" }}</div>
-                <div>Delivered By: {{ delivery?.driver_name || "N/A" }}</div>
+                <div>{{ logistics.delivery?.address || "N/A" }}</div>
                 <div>
-                  Delivered On: {{ formatDateOnly(delivery?.delivery_date) }},
-                  {{ delivery?.delivery_time }}
+                  Delivered By: {{ logistics.delivery?.driver_name || "N/A" }}
+                </div>
+                <div>
+                  Delivered On:
+                  {{ formatDateOnly(logistics.delivery?.delivery_date) }},
+                  {{ logistics.delivery?.delivery_time }}
                 </div>
               </div>
             </div>
@@ -157,9 +179,9 @@
             </div>
           </div>
 
-          <div v-if="transactions.length > 0">
+          <div v-if="logistics.transactions.length > 0">
             <div
-              v-for="item in transactions"
+              v-for="item in logistics.transactions"
               :key="item.name"
               class="row line-height-1"
             >
@@ -193,13 +215,13 @@
               Total :
             </div>
             <div class="col col-1 text-weight-bold text-center">
-              {{ totalPcs }}
+              {{ logistics.totalPcs }}
             </div>
             <div class="col col-1 text-weight-bold text-center">
-              {{ totalQty }}
+              {{ logistics.totalQty }}
             </div>
             <div class="col col-2 text-weight-bold text-center">
-              ${{ totalPrice }}
+              ${{ logistics.totalPrice }}
             </div>
           </div>
           <div class="q-mt-md">
@@ -209,13 +231,13 @@
                   Payment Summary
                 </div>
                 <div>
-                  Subtotal: <span>${{ totalPrice }}</span>
+                  Subtotal: <span>${{ logistics.totalPrice }}</span>
                 </div>
                 <div>
                   Deposit:
                   <span
                     >${{
-                      (order?.order_payment?.deposit || 0).toFixed(2)
+                      (logistics.order?.order_payment?.deposit || 0).toFixed(2)
                     }}</span
                   >
                 </div>
@@ -224,8 +246,8 @@
                   <span
                     >${{
                       (
-                        customer?.customer_credits[0]?.online_package +
-                          customer?.customer_credits[0]?.other_credits || 0
+                        logistics.customer?.customer_credits[0]?.online_package +
+                          logistics.customer?.customer_credits[0]?.other_credits || 0
                       ).toFixed(2)
                     }}</span
                   >
@@ -235,8 +257,8 @@
                   <span
                     >${{
                       (
-                        order?.order_payment?.total_amount -
-                          order?.order_payment?.paid_amount || 0
+                        logistics.order?.order_payment?.total_amount -
+                          logistics.order?.order_payment?.paid_amount || 0
                       ).toFixed(2)
                     }}</span
                   >
@@ -250,7 +272,7 @@
                   Outstanding:
                   <span
                     >${{
-                      (order?.order_payment?.total_amount || 0).toFixed(2)
+                      (logistics.order?.order_payment?.total_amount || 0).toFixed(2)
                     }}</span
                   >
                 </div>
@@ -258,7 +280,7 @@
                   Outstanding Paid:
                   <span
                     >${{
-                      (order?.order_payment?.paid_amount || 0).toFixed(2)
+                      (logistics.order?.order_payment?.paid_amount || 0).toFixed(2)
                     }}</span
                   >
                 </div>
@@ -267,8 +289,8 @@
                   <span
                     >${{
                       (
-                        order?.order_payment?.total_amount -
-                          order?.order_payment?.paid_amount || 0
+                        logistics.order?.order_payment?.total_amount -
+                          logistics.order?.order_payment?.paid_amount || 0
                       ).toFixed(2)
                     }}</span
                   >
@@ -414,6 +436,7 @@ import ccdcLogo from "@/assets/images/cc_dc_logo.png";
 
 const transactionStore = useTransactionStore();
 const route = useRoute();
+const matchedOrders = ref([]);
 
 const order = ref(null);
 const customer = ref(null);
@@ -428,62 +451,48 @@ const reports = ref([]);
 const printableCard = ref(null);
 
 onMounted(async () => {
-  try {
-    // Get order_no from route params
-    const orderNo = route.params.order_no;
+  const orderNos = (route.query.orders || "").split(",").filter(Boolean);
+  if (!orderNos.length) return;
 
-    // Fetch the order details
-    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
-      orderNo
-    );
-    console.log("Order Details:", orderDetails);
+  const fullDetails = await Promise.all(
+    orderNos.map((orderNo) =>
+      transactionStore.fetchWholeOrderByOrderNo(orderNo)
+    )
+  );
 
-    // Assign fetched data directly
-    logistics.value = orderDetails || {};
-    order.value = orderDetails.order || {};
-    customer.value = orderDetails.customer || {};
-    collection.value = orderDetails.collection || {};
-    delivery.value = orderDetails.delivery || {};
-
-    transactions.value = [];
+  matchedOrders.value = fullDetails.map((orderDetails) => {
+    const transactions = [];
     (orderDetails.transactions || []).forEach((tx) => {
-      if (Array.isArray(tx.order_transaction_items)) {
-        tx.order_transaction_items.forEach((item) =>
-          transactions.value.push(item)
-        );
-      }
+      (tx.order_transaction_items || []).forEach((item) =>
+        transactions.push(item)
+      );
     });
 
-    reports.value = orderDetails.error_reports || [];
-
-    // Prepare instructionsOnetime with dynamically created `to` field
-    instructionsOnetime.value = (orderDetails.instructionsOneTime || []).map(
-      (instruction) => ({
-        ...instruction,
-        to: [
-          ...(instruction.admin ? ["admin"] : []),
-          ...(instruction.cleaning ? ["cleaning"] : []),
-          ...(instruction.packing ? ["packing"] : []),
-          ...(instruction.picking_sending ? ["pickingsending"] : []),
-        ],
-      })
+    const totalQty = transactions.reduce(
+      (acc, item) => acc + (parseFloat(item.quantity) || 0),
+      0
     );
+    const totalPcs = transactions.reduce(
+      (acc, item) => acc + (parseFloat(item.pieces) || 1),
+      0
+    );
+    const totalPrice = transactions
+      .reduce(
+        (acc, item) =>
+          acc +
+          (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0),
+        0
+      )
+      .toFixed(2);
 
-    // Prepare instructionsRecurring with dynamically created `to` field
-    instructionsRecurring.value = (
-      orderDetails.instructionsRecurring || []
-    ).map((instruction) => ({
-      ...instruction,
-      to: [
-        ...(instruction.admin ? ["admin"] : []),
-        ...(instruction.cleaning ? ["cleaning"] : []),
-        ...(instruction.packing ? ["packing"] : []),
-        ...(instruction.picking_sending ? ["pickingsending"] : []),
-      ],
-    }));
-  } catch (error) {
-    console.error("Error loading order details:", error);
-  }
+    return {
+      ...orderDetails,
+      transactions,
+      totalQty,
+      totalPcs,
+      totalPrice,
+    };
+  });
 });
 
 // Helper functions for instruction chip colors and labels
@@ -584,91 +593,154 @@ const formattedTagDetails = computed(() => {
 });
 
 const downloadInvoicePDF = () => {
-  if (!printableCard.value) {
-    console.error("Printable tag-card not found");
-    return;
-  }
+  Promise.all([preloadImage(payQr), preloadImage(ccLogo)])
+    .then(() => {
+      const cards = document.querySelectorAll(".tag-card");
+      if (!cards.length) return;
 
-  setTimeout(() => {
-    const element = printableCard.value.$el || printableCard.value;
+      const container = document.createElement("div");
 
-    const options = {
-      margin: [13, 13, 13, 13], // 0.5-inch margins
-      filename: `Invoice_${order.value?.order_no || "N/A"}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: null,
-      },
-      jsPDF: {
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait",
-      },
-      pagebreak: { avoid: [".tag-card"] }, // Prevents breaking important elements
-    };
+      cards.forEach((card, index) => {
+        const wrapper = document.createElement("div");
+        const clone = card.cloneNode(true);
 
-    html2pdf()
-      .set(options)
-      .from(element)
-      .toPdf()
-      .save() // Directly triggers download
-      .catch((err) => console.error("Error generating PDF:", err));
-  }, 500);
+        // replace canvases with images (QR)
+        const originalCanvases = card.querySelectorAll("canvas");
+        const clonedQRContainers = clone.querySelectorAll("canvas");
+
+        originalCanvases.forEach((canvas, idx) => {
+          const img = document.createElement("img");
+          img.src = canvas.toDataURL("image/png");
+          img.style.width = `70px`;
+          img.style.height = `70px`;
+          img.style.marginLeft = "10px";
+          img.style.marginTop = "5px";
+          img.width = 100;
+          img.height = 100;
+
+          const clonedCanvas = clonedQRContainers[idx];
+          if (clonedCanvas && clonedCanvas.parentNode) {
+            clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
+          }
+        });
+
+        if (index !== cards.length - 1) {
+          wrapper.style.breakAfter = "page";
+        }
+
+        wrapper.appendChild(clone);
+        container.appendChild(wrapper);
+      });
+
+      const options = {
+        margin: [13, 13, 13, 15],
+        filename: `Invoice_Group.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          backgroundColor: null,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+      };
+
+      setTimeout(() => {
+        html2pdf()
+          .set(options)
+          .from(container)
+          .save()
+          .catch((err) => console.error("Error generating PDF:", err));
+      }, 500);
+    })
+    .catch((err) => {
+      console.error("Preload failed:", err);
+    });
 };
 
 const PrintInvoicePDF = () => {
-  if (!printableCard.value) {
+  const cards = document.querySelectorAll(".tag-card");
+  if (!cards.length) {
     console.error("Printable tag-card not found");
     return;
   }
 
+  const container = document.createElement("div");
+
+  cards.forEach((card, index) => {
+    const wrapper = document.createElement("div");
+    const clone = card.cloneNode(true);
+
+    const originalCanvases = card.querySelectorAll("canvas");
+    const clonedQRContainers = clone.querySelectorAll("canvas");
+
+    originalCanvases.forEach((canvas, idx) => {
+      const img = document.createElement("img");
+      img.src = canvas.toDataURL("image/png");
+      img.style.width = `70px`;
+      img.style.height = `70px`;
+      img.style.marginLeft = "10px";
+      img.style.marginTop = "5px";
+      img.width = 100;
+      img.height = 100;
+
+      const clonedCanvas = clonedQRContainers[idx];
+      if (clonedCanvas && clonedCanvas.parentNode) {
+        clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
+      }
+    });
+
+    wrapper.appendChild(clone);
+
+    if (index !== cards.length - 1) {
+      wrapper.style.breakAfter = "page";
+    }
+
+    container.appendChild(wrapper);
+  });
+
+  const options = {
+    margin: [13, 13, 13, 13],
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      allowTaint: true,
+      backgroundColor: null,
+    },
+    jsPDF: {
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    },
+  };
+
   setTimeout(() => {
-    const element = printableCard.value.$el || printableCard.value;
-
-    const options = {
-      margin: [13, 13, 13, 13], // 0.5-inch margins
-      filename: `Invoice_${order.value?.order_no || "N/A"}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: null,
-      },
-      jsPDF: {
-        unit: "mm",
-        format: "a4",
-        orientation: "portrait",
-      },
-      pagebreak: { avoid: [".tag-card"] }, // Prevents breaking important elements
-    };
-
     html2pdf()
       .set(options)
-      .from(element)
+      .from(container)
       .toPdf()
-      .output("blob") // Convert to a Blob
+      .output("blob")
       .then((blob) => {
         const pdfUrl = URL.createObjectURL(blob);
         const newWindow = window.open(pdfUrl, "_blank");
 
         if (newWindow) {
           setTimeout(() => {
-            newWindow.print(); // Open print dialog
-            newWindow.onafterprint = () => {
-              newWindow.close(); // Close tab after printing
-            };
-          }, 300); // Small delay to ensure PDF loads
+            newWindow.print();
+            newWindow.onafterprint = () => newWindow.close();
+          }, 500);
         } else {
           console.error("Pop-up blocked. Please allow pop-ups for this site.");
         }
       })
-      .catch((err) => console.error("Error generating PDF:", err));
+      .catch((err) => console.error("Error generating PDF for printing:", err));
   }, 500);
 };
 
@@ -690,4 +762,13 @@ const totalPrice = computed(() => {
     }, 0)
     .toFixed(2);
 });
+
+function preloadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => resolve(src);
+    img.onerror = reject;
+  });
+}
 </script>

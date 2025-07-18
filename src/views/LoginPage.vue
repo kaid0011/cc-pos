@@ -83,7 +83,7 @@ const login = async () => {
     error.value = loginError.message;
   } else {
     console.log("Logged in successfully!", user);
-    router.push("/pos"); // Redirect to /dashboard after successful login
+    router.push("/dashboard"); // Redirect to /dashboard after successful login
   }
 
   loading.value = false;

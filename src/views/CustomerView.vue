@@ -74,7 +74,7 @@
                 >
                   Schedule Remarks:
                 </div>
-                <div class="q-pa-sm">
+                <div class="q-pa-sm" style="white-space: pre-line;">
                   {{ customerDetails.schedule_remarks }}
                 </div>
               </div>
@@ -84,7 +84,7 @@
                 >
                   Price Remarks:
                 </div>
-                <div class="q-pa-sm">{{ customerDetails.price_remarks }}</div>
+                <div class="q-pa-sm" style="white-space: pre-line;">{{ customerDetails.price_remarks }}</div>
               </div>
             </div>
             <div class="row">
@@ -94,7 +94,7 @@
                 >
                   Accounting Remarks:
                 </div>
-                <div class="q-pa-sm">
+                <div class="q-pa-sm" style="white-space: pre-line;">
                   {{ customerDetails.accounting_remarks }}
                 </div>
               </div>
@@ -104,7 +104,7 @@
                 >
                   Other Remarks:
                 </div>
-                <div class="q-pa-sm">{{ customerDetails.other_remarks }}</div>
+                <div class="q-pa-sm" style="white-space: pre-line;">{{ customerDetails.other_remarks }}</div>
               </div>
             </div>
           </q-card-section>

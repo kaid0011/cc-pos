@@ -34,7 +34,8 @@
         <q-card-section>
           <div class="">
             <div class="text-slip-row">
-              Customer Name:
+              <span v-if="customer?.type == 'Contract'">Company Name:</span>
+              <span v-else>Customer Name:</span>
               <span
                 ><a
                   class="text-summary text-weight-bold"
@@ -78,7 +79,7 @@
             <div class="text-weight-bold">
               <a
                 @click.prevent="
-                  openCollectionHistoryDialog(activeCollection.logistics_id)
+                  openCollectionHistoryDialog(collection.logistics_id)
                 "
               >
                 (View Collection History)
@@ -88,7 +89,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ activeCollection.customer_contact_persons?.name || "-" }}
+                {{ collection.customer_contact_persons?.name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -100,7 +101,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Address:</div>
               <div class="col-6">
-                {{ activeCollection.address || "-" }}
+                {{ collection.address || "-" }}
               </div>
             </div>
 
@@ -113,25 +114,25 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Time:</div>
               <div class="col-6">
-                {{ activeCollection.collection_time || "-" }}
+                {{ collection.collection_time || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Collection Driver:</div>
               <div class="col-6">
-                {{ activeCollection.driver_name || "-" }}
+                {{ collection.driver_name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">No. of Bags:</div>
               <div class="col-6">
-                {{ activeCollection.no_bags || "-" }}
+                {{ collection.no_bags || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Remarks:</div>
               <div class="col-6">
-                {{ activeCollection.remarks || "-" }}
+                {{ collection.remarks || "-" }}
               </div>
             </div>
 
@@ -155,7 +156,7 @@
             <div class="text-weight-bold">
               <a
                 @click.prevent="
-                  openDeliveryHistoryDialog(activeDelivery.logistics_id)
+                  openDeliveryHistoryDialog(delivery.logistics_id)
                 "
               >
                 (View Delivery History)
@@ -165,7 +166,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Contact Person:</div>
               <div class="col-6">
-                {{ activeDelivery.customer_contact_persons?.name || "-" }}
+                {{ delivery.customer_contact_persons?.name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
@@ -177,7 +178,7 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Address:</div>
               <div class="col-6">
-                {{ activeDelivery.address || "-" }}
+                {{ delivery.address || "-" }}
               </div>
             </div>
 
@@ -191,19 +192,19 @@
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Time:</div>
               <div class="col-6">
-                {{ activeDelivery.delivery_time || "-" }}
+                {{ delivery.delivery_time || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Delivery Driver:</div>
               <div class="col-6">
-                {{ activeDelivery.driver_name || "-" }}
+                {{ delivery.driver_name || "-" }}
               </div>
             </div>
             <div class="row text-slip-row row-col-row">
               <div class="col-6">Remarks:</div>
               <div class="col-6">
-                {{ activeDelivery.remarks || "-" }}
+                {{ delivery.remarks || "-" }}
               </div>
             </div>
             <q-card-actions align="right">
@@ -1609,7 +1610,9 @@ import UpdateCollectionDialog from "@/components/dialogs/UpdateCollectionDialog.
 import UpdateDeliveryDialog from "@/components/dialogs/UpdateDeliveryDialog.vue";
 import CollectionHistory from "@/components/CollectionHistory.vue";
 import DeliveryHistory from "@/components/DeliveryHistory.vue";
+import { useQuasar } from "quasar";
 
+const $q = useQuasar();
 const transactionStore = useTransactionStore();
 const route = useRoute();
 
@@ -1618,9 +1621,7 @@ const order = ref({}); // Changed from null to an empty object
 const customer = ref({});
 const logistics = ref({});
 const collection = ref({});
-const activeCollection = ref({});
 const delivery = ref({});
-const activeDelivery = ref({});
 const transactions = ref([]);
 const instructions = ref([]);
 const reports = ref([]);
@@ -1665,10 +1666,7 @@ onMounted(async () => {
     order.value = orderDetails.order || {};
     customer.value = orderDetails.customer || {};
     collection.value = orderDetails.collection || {};
-    activeCollection.value = orderDetails.collection.find(col => col.status === 'active') || {};
     delivery.value = orderDetails.delivery || {};
-    activeDelivery.value = orderDetails.delivery.find(del => del.status === 'active') || {};
-
     transactions.value = [];
 
     (orderDetails.transactions || []).forEach((tx, i) => {
@@ -2042,10 +2040,10 @@ const totalSubtotal = computed(() => {
 
 // Computed properties for formatted display
 const formattedCollectionDate = computed(() =>
-  formatDate(activeCollection.value.collection_date)
+  formatDate(collection.value.collection_date)
 );
 const formattedDeliveryDate = computed(() =>
-  formatDate(activeDelivery.value.delivery_date)
+  formatDate(delivery.value.delivery_date)
 );
 
 // Function to format dates as "Thu, 30/01/2025"
@@ -2077,33 +2075,36 @@ function getContactNumber(contactPersonId) {
 const formattedCollectionContactNos = computed({
   get() {
     const contact1 =
-      activeCollection.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = activeCollection.value.customer_contact_persons?.contact_no2;
+      collection.value.customer_contact_persons?.contact_no1 || "-";
+    const contact2 =
+      collection.value.customer_contact_persons?.contact_no2;
 
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    activeCollection.value.customer_contact_persons.contact_no1 = contact1 || "";
+    collection.value.customer_contact_persons.contact_no1 =
+      contact1 || "";
 
     // Only set contact_no2 if it was provided
-    activeCollection.value.customer_contact_persons.contact_no2 = contact2 || null;
+    collection.value.customer_contact_persons.contact_no2 =
+      contact2 || null;
   },
 });
 
 const formattedDeliveryContactNos = computed({
   get() {
     const contact1 =
-      activeDelivery.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = activeDelivery.value.customer_contact_persons?.contact_no2;
+      delivery.value.customer_contact_persons?.contact_no1 || "-";
+    const contact2 = delivery.value.customer_contact_persons?.contact_no2;
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    activeDelivery.value.customer_contact_persons.contact_no1 = contact1 || "";
-    activeDelivery.value.customer_contact_persons.contact_no2 = contact2 || "";
+    delivery.value.customer_contact_persons.contact_no1 = contact1 || "";
+    delivery.value.customer_contact_persons.contact_no2 = contact2 || "";
   },
 });
 
@@ -2188,13 +2189,16 @@ const updateLogistics = async () => {
     const success = await transactionStore.updateLogistics(logisticsId, {
       logistics_status: logistics.value.logistics_status,
       job_type: logistics.value.job_type,
-      urgency: logistics.value.urgency
+      urgency: logistics.value.urgency,
     });
 
     console.log("✅ updateLogistics response:", success);
 
     if (success) {
-      Notify.create({ message: "Logistics details updated successfully!", color: "green" });
+      Notify.create({
+        message: "Logistics details updated successfully!",
+        color: "green",
+      });
     } else {
       Notify.create({ message: "Failed to update logistics.", color: "red" });
     }
@@ -2222,7 +2226,10 @@ const updateProduction = async () => {
       no_rolls: order.value.order_production?.no_rolls || "",
     };
 
-    const success = await transactionStore.updateProduction(order.value.id, payload);
+    const success = await transactionStore.updateProduction(
+      order.value.id,
+      payload
+    );
 
     if (success) {
       Notify.create({
@@ -2243,7 +2250,6 @@ const updateProduction = async () => {
     });
   }
 };
-
 
 // State for the delete dialog
 const isDeleteDialogOpen = ref(false);
@@ -2979,9 +2985,12 @@ const updateCollection = async (logisticsId) => {
     }
     transactionStore.selectedCustomer = customer || null;
     transactionStore.selectedCollectionId = collectionData[0].id || null;
-    transactionStore.selectedCollectionContact = collectionData[0].customer_contact_persons || null;
-    transactionStore.selectedCollectionAddress = collectionData[0].address || null;
-    transactionStore.selectedCollectionDriver = collectionData[0].driver_name || null;
+    transactionStore.selectedCollectionContact =
+      collectionData[0].customer_contact_persons || null;
+    transactionStore.selectedCollectionAddress =
+      collectionData[0].address || null;
+    transactionStore.selectedCollectionDriver =
+      collectionData[0].driver_name || null;
     transactionStore.collectionDate = collectionData[0].collection_date || null;
     transactionStore.collectionTime = collectionData[0].collection_time || null;
     transactionStore.collectionRemarks = collectionData[0].remarks || null;
@@ -2991,7 +3000,6 @@ const updateCollection = async (logisticsId) => {
     transactionStore.logisticsId = collectionData[0].logistics_id || null;
 
     showUpdateCollectionDialog.value = true;
-
   } catch (error) {
     console.error("Error fetching collection details:", error);
   }
@@ -3007,9 +3015,11 @@ const updateDelivery = async (logisticsId) => {
     }
     transactionStore.selectedCustomer = customer || null;
     transactionStore.selectedDeliveryId = deliveryData[0].id || null;
-    transactionStore.selectedDeliveryContact = deliveryData[0].customer_contact_persons || null;
+    transactionStore.selectedDeliveryContact =
+      deliveryData[0].customer_contact_persons || null;
     transactionStore.selectedDeliveryAddress = deliveryData[0].address || null;
-    transactionStore.selectedDeliveryDriver = deliveryData[0].driver_name || null;
+    transactionStore.selectedDeliveryDriver =
+      deliveryData[0].driver_name || null;
     transactionStore.deliveryDate = deliveryData[0].delivery_date || null;
     transactionStore.deliveryTime = deliveryData[0].delivery_time || null;
     transactionStore.deliveryRemarks = deliveryData[0].remarks || null;
@@ -3019,7 +3029,6 @@ const updateDelivery = async (logisticsId) => {
     transactionStore.logisticsId = deliveryData[0].logistics_id || null;
 
     showUpdateDeliveryDialog.value = true;
-
   } catch (error) {
     console.error("Error fetching delivery details:", error);
   }
@@ -3064,57 +3073,93 @@ const openAddPaymentDialog = () => {
 
 const referenceNo = ref("");
 
-// extend addPayment method to include referenceNo validation
 const addPayment = async () => {
-  if (
-    !selectedPaymentType.value ||
-    !paymentAmount.value ||
-    paymentAmount.value <= 0
-  ) {
-    Notify.create({
-      message: "Please fill in all required payment fields.",
-      color: "red",
+  console.log("🔁 addPayment triggered");
+
+  if (!selectedPaymentType.value || paymentAmount.value <= 0) {
+    $q.notify({
+      type: "negative",
+      message: "Please select payment type and enter a valid amount.",
     });
     return;
   }
 
-  if (selectedPaymentType.value === "Bank Transfer" && !referenceNo.value) {
-    Notify.create({
-      message: "Reference No. is required for Bank Transfer.",
-      color: "red",
-    });
+  console.log("💳 Selected payment type:", selectedPaymentType.value);
+  console.log("💰 Payment amount:", paymentAmount.value);
+
+  const paymentSection = order.value?.order_payment;
+  console.log("📦 order.order_payment:", paymentSection);
+
+  const orderId = order.value?.id;
+
+  console.log("🧾 Extracted order ID:", orderId);
+
+  if (!orderId) {
+    $q.notify({ type: "negative", message: "order ID is missing." });
     return;
   }
 
-  if (!order.value?.id) {
-    Notify.create({
-      message: "Invalid order. Cannot process payment.",
-      color: "red",
-    });
-    return;
-  }
+  const paymentData = {
+    order_id: orderId, // rename this key
+    type: selectedPaymentType.value,
+    amount: paymentAmount.value,
+    reference_no: referenceNo.value,
+  };
+
+  console.log("📤 Final payment data to send:", paymentData);
 
   try {
-    const payload = {
-      order_id: order.value.id,
-      amount: paymentAmount.value,
-      type: selectedPaymentType.value,
-      remarks: creditRemarks.value,
-      reference_no: referenceNo.value || null,
-    };
+    await transactionStore.addPayment(paymentData);
 
-    await transactionStore.addPayment(payload);
+    const outstanding = parseFloat(
+      (order.order_payment?.total_amount || 0) -
+        (order.order_payment?.paid_amount || 0) || 0
+    );
+    const overpaidAmount = paymentAmount.value - outstanding;
 
-    Notify.create({ message: "Payment added successfully.", color: "green" });
+    console.log("📊 Overpaid amount:", overpaidAmount);
 
+    if (overpaidAmount > 0) {
+const totalAmount = order.order_payment?.total_amount || 0;
+const alreadyPaid = order.order_payment?.paid_amount || 0;
+const unpaidAmount = totalAmount - alreadyPaid;
+
+const overpaidAmount = Math.max(paymentAmount.value - unpaidAmount, 0);
+
+if (overpaidAmount > 0) {
+  await transactionStore.topUpCredits({
+    customerId: customer.value.id,
+    type: "Over Payment",
+    amount: overpaidAmount,
+    remarks: `Auto-credited from invoice #${orderId}`,
+  });
+  $q.notify({
+    type: "info",
+    message: `Overpayment of $${overpaidAmount.toFixed(
+      2
+    )} credited to customer.`,
+  });
+};
+      $q.notify({
+        type: "info",
+        message: `Overpayment of $${overpaidAmount.toFixed(
+          2
+        )} credited to customer.`,
+      });
+    }
+
+    showAddPaymentDialog.value = false;
     selectedPaymentType.value = null;
     paymentAmount.value = 0;
-    creditRemarks.value = "";
     referenceNo.value = "";
-    showAddPaymentDialog.value = false;
-  } catch (err) {
-    console.error("Error adding payment:", err);
-    Notify.create({ message: "Failed to add payment.", color: "red" });
+
+    $q.notify({ type: "positive", message: "Payment added successfully." });
+  } catch (error) {
+    console.error("❌ Error adding payment:", error);
+    $q.notify({
+      type: "negative",
+      message: "Failed to add payment. Please try again.",
+    });
   }
 };
 

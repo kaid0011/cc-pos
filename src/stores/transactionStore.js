@@ -28,6 +28,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     selectedCollectionAddress: null,
     selectedCollectionDriver: null,
     selectedDeliveryDriver: null,
+    totalAmount: null,
     orderNo: "",
     addresses: "",
     isOrderNoManuallySet: false,
@@ -69,14 +70,37 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         const { data: userProfile, error } = await supabase
           .from("profiles")
-          .select("system_access, name")
+          .select("system_access, name, position")
           .eq("id", user.id) // Match where profiles.id is the current user's ID
           .single(); // Assumes one result per user
 
         if (error) throw error;
-        return userProfile.system_access;
+        return userProfile;
       } catch (error) {
         console.error("Error fetching user system access:", error);
+        return null;
+      }
+    },
+
+    async getUserPosition() {
+      try {
+        const { data, error: userError } = await supabase.auth.getUser(); // Get authenticated user data
+        if (userError) throw userError;
+
+        const user = data.user; // Ensure we get the user object
+        if (!user || !user.id)
+          throw new Error("User not authenticated or ID missing");
+
+        const { data: userPosition, error } = await supabase
+          .from("profiles")
+          .select("position")
+          .eq("id", user.id) // Match where profiles.id is the current user's ID
+          .single(); // Assumes one result per user
+
+        if (error) throw error;
+        return userPosition.position;
+      } catch (error) {
+        console.error("Error fetching user position:", error);
         return null;
       }
     },
@@ -2391,26 +2415,25 @@ export const useTransactionStore = defineStore("transactionStore", {
         logistics_status,
         customer_id,
         orders!inner(order_no, id, created_at, 
-          order_payments(payment_status, paid_amount, total_amount),
+          order_payments(id, payment_status, paid_amount, total_amount, deposit),
           order_tags(tag_status, tag_changes),
           order_production(ready_by, goods_status, no_packets, no_hangers, no_rolls),
           order_invoices(invoice_no, created_at)
         ),
         customers(id, name, contact_no1, contact_no2, email, type, sub_type,
-          schedule_remarks, price_remarks, accounting_remarks, other_remarks
+          schedule_remarks, price_remarks, accounting_remarks, other_remarks, billing_address,
+          customer_credits(online_package, other_credits)
         ),
-        logistics_collections(id, logistics_id, collection_date, collection_time, address, driver_name, remarks, no_bags, status, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks)),
-        logistics_deliveries(id, logistics_id, delivery_date, delivery_time, address, driver_name, remarks, status, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks))
+        logistics_collections:logistics_collections(status, id, logistics_id, collection_date, collection_time, address, driver_name, remarks, no_bags, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks)),
+        logistics_deliveries:logistics_deliveries(status, id, logistics_id, delivery_date, delivery_time, address, driver_name, remarks, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks))
         `
           )
           .eq("orders.order_no", orderNo)
+          .eq("logistics_collections.status", "active")
+          .eq("logistics_deliveries.status", "active")
           .single();
 
         if (error) throw error;
-        if (!data) {
-          console.warn(`No order found with order_no: ${orderNo}`);
-          return null;
-        }
 
         const order = data.orders;
 
@@ -2454,17 +2477,16 @@ export const useTransactionStore = defineStore("transactionStore", {
               : order.order_invoices || null,
           },
           instructions_recurring: recurringInstructions,
-          collection: data.logistics_collections || [],
-          delivery: data.logistics_deliveries || [],
+          collection: (data.logistics_collections || [])[0] || null,
+          delivery: (data.logistics_deliveries || [])[0] || null,
         };
-        console.log("fetchWholeOrder:", fullData);
+
         return fullData;
       } catch (error) {
         console.error("Error fetching whole order:", error);
         return null;
       }
     },
-    // end of fetching
 
     async createOrderFromCollection(logisticsId) {
       try {
@@ -2512,8 +2534,12 @@ export const useTransactionStore = defineStore("transactionStore", {
     // start of order creation
     async createWholeTransaction() {
       try {
+                // Step 4: Create Order with logisticsId and get orderId
+        const { orderId } = await this.createOrder();
+        if (!orderId) throw new Error("Failed to create order");
+
         // Step 1: Create Logistics and get logisticsId
-        const logisticsId = await this.createLogistics();
+        const logisticsId = await this.createLogistics(orderId);
         if (!logisticsId) throw new Error("Failed to create logistics");
 
         // Step 2: Create Collections & Delivery with logisticsId
@@ -2521,13 +2547,9 @@ export const useTransactionStore = defineStore("transactionStore", {
         await this.createDelivery(logisticsId);
 
         // Step 3: Calculate "readyBy" date (collection_date + 7 days)
-        transactionStore.readyBy = computeReadyByDate(
+        this.readyBy = await this.computeReadyByDate(
           collection?.collection_date
         );
-
-        // Step 4: Create Order with logisticsId and get orderId
-        const { orderId, orderNo } = await this.createOrder(logisticsId);
-        if (!orderId) throw new Error("Failed to create order");
 
         // Step 5: Create Transaction, Instructions, and Error Reports with orderId
         await this.createTransaction(orderId);
@@ -2537,12 +2559,14 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         // Reset transaction data after successful save
         this.resetTransactionItems();
+
+        return this.order_no;
       } catch (error) {
         console.error("Error in createWholeTransaction:", error);
       }
     },
 
-    computeReadyByDate(startDate) {
+    async computeReadyByDate(startDate) {
       if (!startDate) {
         console.warn("Invalid startDate provided to computeReadyByDate.");
         return null;
@@ -2551,7 +2575,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       const readyByDate = new Date(startDate);
       let addedDays = 0;
 
-      while (addedDays < 7) {
+      while (addedDays < 5) {
         readyByDate.setDate(readyByDate.getDate() + 1);
         const dayOfWeek = readyByDate.getDay(); // 0 = Sunday, 6 = Saturday
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
@@ -2562,7 +2586,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       return readyByDate.toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
     },
 
-    async createLogistics() {
+    async createLogistics(orderId) {
       try {
         const { data: logisticsData, error: logisticsError } = await supabase
           .from("logistics")
@@ -2572,6 +2596,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               logistics_status: "collection arranged",
               job_type: this.jobType,
               urgency: this.jobUrgency,
+              order_id: orderId
             },
           ])
           .select("id")
@@ -2702,9 +2727,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 this.collectionTime ?? fallback.collection_time ?? null,
               remarks: this.collectionRemarks ?? fallback.remarks ?? null,
               driver_name:
-                this.selectedCollectionDriver?.name ??
-                fallback.driver_name ??
-                null,
+                this.selectedCollectionDriver ?? null,
               no_bags: this.collectionNoBags ?? fallback.no_bags ?? null,
               status: "active",
               logistics_id: logisticsId,
@@ -2767,9 +2790,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 this.deliveryTime ?? fallback.delivery_time ?? null,
               remarks: this.deliveryRemarks ?? fallback.remarks ?? null,
               driver_name:
-                this.selectedDeliveryDriver?.name ??
-                fallback.driver_name ??
-                null,
+                this.selectedDeliveryDriver ??mnull,
               status: "active",
               logistics_id: logisticsId,
             },
@@ -2841,6 +2862,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               order_id: orderId,
               payment_status: "unpaid",
               paid_amount: 0,
+              total_amount: this.totalAmount
             },
           ])
           .select("id")
@@ -2856,7 +2878,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           .insert([
             {
               order_id: orderId,
-              ready_by: this.readyBy || null,
+              ready_by: this.readyBy,
               goods_status: "none",
               no_packets: null,
               no_hangers: null,

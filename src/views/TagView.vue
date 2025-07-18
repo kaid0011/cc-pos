@@ -80,45 +80,64 @@
               </div>
             </div>
             <div class="col-auto">
-              <q-card
-                flat
-                style="border: solid; border-width: 1px; border-radius: 0"
-              >
-                <q-card flat class="tags">
-                  <div class="text-center row q-pa-xs">
-                    <div class="col">
-                      <div>{{ tagCategoryCounts.clothing || 0 }}</div>
+              <q-card flat class="tags row justify-between text-center">
+                <div class="col-auto">
+                  <div class="tag-urgency">U</div>
+                </div>
+                <div class="col-auto">
+                  <div class="row text-center">
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.clothing || 0 }}
+                      </div>
                       <div>A</div>
                     </div>
-                    <div class="col">
-                      <div>{{ tagCategoryCounts.bedding || 0 }}</div>
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.bedding || 0 }}
+                      </div>
                       <div>B</div>
                     </div>
-                    <div class="col">
-                      <div>{{ tagCategoryCounts.curtain || 0 }}</div>
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.curtain || 0 }}
+                      </div>
                       <div>C</div>
                     </div>
-                    <div class="col">
-                      <div>{{ tagCategoryCounts.sofa || 0 }}</div>
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.sofa || 0 }}
+                      </div>
                       <div>D</div>
                     </div>
-                    <div class="col">
-                      <div>{{ tagCategoryCounts.stuffed_toy || 0 }}</div>
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.stuffed_toy || 0 }}
+                      </div>
                       <div>E</div>
                     </div>
-                    <div class="col">
-                      <div>{{ tagCategoryCounts.carpet || 0 }}</div>
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.carpet || 0 }}
+                      </div>
                       <div>F</div>
                     </div>
-                    <div class="col q-mr-sm">
-                      <div>{{ tagCategoryCounts.others || 0 }}</div>
+                    <div class="col-auto tag-count">
+                      <div class="text-weight-bold">
+                        {{ tagCategoryCounts.others || 0 }}
+                      </div>
                       <div>G</div>
                     </div>
-                    <div class="col-6 tag-details">
-                      {{ formattedTagDetails }}
-                    </div>
                   </div>
-                </q-card>
+                </div>
+                <div class="col-auto tag-details text-weight-bold">
+                  {{ formattedTagDetails }}
+                </div>
+                <div class="col-auto">
+                  <div class="tag-pcs">
+                    {{ totalPcs }}
+                  </div>
+                </div>
               </q-card>
             </div>
           </div>
@@ -306,7 +325,9 @@ onMounted(async () => {
     const orderNo = route.params.order_no;
 
     // Fetch the order details
-    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+    const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
+      orderNo
+    );
     console.log("Order Details:", orderDetails);
 
     // Assign fetched data directly
@@ -316,10 +337,12 @@ onMounted(async () => {
     collection.value = orderDetails.collection?.[0] || {};
     delivery.value = orderDetails.delivery?.[0] || {};
 
-        transactions.value = [];
+    transactions.value = [];
     (orderDetails.transactions || []).forEach((tx) => {
       if (Array.isArray(tx.order_transaction_items)) {
-        tx.order_transaction_items.forEach((item) => transactions.value.push(item));
+        tx.order_transaction_items.forEach((item) =>
+          transactions.value.push(item)
+        );
       }
     });
 
@@ -350,7 +373,6 @@ onMounted(async () => {
         ...(instruction.picking_sending ? ["pickingsending"] : []),
       ],
     }));
-
   } catch (error) {
     console.error("Error loading order details:", error);
   }
@@ -425,8 +447,6 @@ const readyByFormatted = computed(() => {
       })
     : "N/A";
 });
-
-
 
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
@@ -550,7 +570,8 @@ async function PrintTag() {
 
   try {
     // Get the total number of tags to print
-    const totalTags = Object.values(tagCategoryCounts.value).reduce((a, b) => a + b, 0) || 1;
+    const totalTags =
+      Object.values(tagCategoryCounts.value).reduce((a, b) => a + b, 0) || 1;
 
     // Create a container to hold multiple cloned tags
     const clonedContainer = document.createElement("div");
@@ -607,6 +628,4 @@ async function PrintTag() {
     console.error("Error generating printable tag PDF:", error);
   }
 }
-
-
 </script>

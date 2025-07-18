@@ -125,7 +125,7 @@
             <div class="col col-4 bordered">{{ item.name }}</div>
             <div class="col col-2 bordered">{{ item.process }}</div>
             <div class="col col-2 bordered">{{ item.price }}</div>
-            <div class="col col-1 bordered">{{ computedPcs(item) }}</div>
+            <div class="col col-1 bordered">{{ item.pieces }}</div>
             <div class="col col-1 bordered">{{ item.quantity }}</div>
             <div class="col col-2 bordered">{{ item.subtotal }}</div>
           </div>
@@ -393,7 +393,7 @@ const isDialogOpen = ref(false);
 const dialogMessage = ref("");
 
 const totalPcs = computed(() =>
-  rows.value.reduce((acc, item) => acc + computedPcs(item), 0)
+  rows.value.reduce((acc, item) => acc + (item.pieces || 0), 0)
 );
 
 const totalQty = computed(() =>
@@ -433,8 +433,4 @@ const formattedDeliveryDate = computed(() => {
 
     : "--/--/----";
 });
-
-const computedPcs = (item) => {
-  return (item.pieces || 1) * (item.quantity || 1);
-};
 </script>

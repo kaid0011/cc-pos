@@ -146,17 +146,16 @@
             <div class="dialog-label">
               Colection Driver<span class="dialog-asterisk">*</span>
             </div>
-            <q-select
-              v-model="transactionStore.selectedCollectionDriver"
-              :options="sortedDriverOptions"
-              option-label="name"
-              option-value="name"
-              label="Select Collection Driver"
-              outlined
-              dense
-              clearable
-              class="q-mb-xs bg-white"
-            />
+<q-select
+  v-model="transactionStore.selectedCollectionDriver"
+  :options="sortedDriverOptions"
+  label="Select Collection Driver"
+  outlined
+  dense
+  clearable
+  class="q-mb-xs bg-white"
+/>
+
           </div>
           <div class="row q-col-gutter-xs">
             <div class="col">
@@ -341,17 +340,16 @@
             <div class="dialog-label">
               Delivery Driver<span class="dialog-asterisk"></span>
             </div>
-            <q-select
-              v-model="transactionStore.selectedDeliveryDriver"
-              :options="sortedDriverOptions"
-              option-label="name"
-              option-value="name"
-              label="Select Delivery Driver"
-              outlined
-              dense
-              clearable
-              class="q-mb-xs bg-white"
-            />
+           <q-select
+  v-model="transactionStore.selectedDeliveryDriver"
+  :options="sortedDriverOptions"
+  label="Select Delivery Driver"
+  outlined
+  dense
+  clearable
+  class="q-mb-xs bg-white"
+/>
+
           </div>
           <div>
             <div class="dialog-label">
@@ -449,6 +447,21 @@ watch(
   }
 );
 
+// auto update order_no based on collection driver
+watch(
+  () => transactionStore.selectedCollectionDriver,
+  async (newDriver, oldDriver) => {
+    if (newDriver && newDriver !== oldDriver) {
+      try {
+        transactionStore.order_no = await transactionStore.generateOrderNo();
+      } catch (error) {
+        console.error("Failed to generate order number:", error);
+      }
+    }
+  }
+);
+
+
 const selectedCustomer = computed(() => transactionStore.selectedCustomer);
 
 // Trigger an immediate update for contactOptions when the selected customer changes
@@ -457,10 +470,11 @@ const addressOptions = ref([]);
 const driverOptions = ref([]);
 
 const sortedDriverOptions = computed(() => {
-  return [...transactionStore.driverOptions].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  return transactionStore.driverOptions
+    .map((driver) => driver.name)
+    .sort((a, b) => a.localeCompare(b));
 });
+
 
 const handleCheckboxChange = (type, value) => {
   if (type === "collection") {

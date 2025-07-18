@@ -1908,6 +1908,14 @@ const totalAmount = computed(() => {
   return transactionItems.value.reduce((sum, item) => sum + item.subtotal, 0);
 });
 
+// After totalAmount declaration
+watch(
+  () => totalAmount.value,
+  (newTotal) => {
+    transactionStore.totalAmount = newTotal;
+  }
+);
+
 // References for items and dialog states
 const searchItem = ref("");
 const selectedItemCategory = ref(null);

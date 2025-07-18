@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { supabase } from "@/../supabase/config.js";
+import { useTransactionStore } from '@/stores/transactionStore';
 
+// Import views
 import DashboardPage from "@/views/DashboardPage.vue";
 import PosPage from "@/views/PosPage.vue";
 import OrdersPage from "@/views/OrdersPage.vue";
@@ -11,35 +13,42 @@ import PaymentPage from "@/views/PaymentPage.vue";
 import TagsPage from "@/views/TagsPage.vue";
 import TagView from "@/views/TagView.vue";
 import TagGroupView from "@/views/TagGroupView.vue";
+import PacksPage from "@/views/PacksPage.vue";
+import PacksGroupView from "@/views/PacksGroupView.vue";
 import LogisticsPage from "@/views/LogisticsPage.vue";
 import LogisticsView from "@/views/LogisticsView.vue";
 import InvoicesPage from "@/views/InvoicesPage.vue";
 import InvoiceView from "@/views/InvoiceView.vue";
+import InvoiceGroupView from "@/views/InvoiceGroupView.vue";
 import ItemsPage from "@/views/ItemsPage.vue";
 import PaymentsPage from "@/views/PaymentsPage.vue";
-
-// import CollectionsPage from "@/views/CollectionsPage.vue";
-// import DeliveriesPage from "@/views/DeliveriesPage.vue";
 
 const routes = [
   {
     path: "/",
-    redirect: "/login", // Redirect from root (/) to /pos
+    redirect: "/login",
   },
   {
     path: "/login",
     name: "Login",
     component: () => import("@/views/LoginPage.vue"),
     meta: {
-      requiresAuth: false, // Login does not require authentication
+      requiresAuth: false,
     },
+  },
+  {
+    path: "/unauthorized",
+    name: "Unauthorized",
+    component: () => import("@/views/UnauthorizedPage.vue"),
+    meta: { requiresAuth: false },
   },
   {
     path: "/dashboard",
     name: "Dashboard",
     component: DashboardPage,
     meta: {
-      requiresAuth: true, // POS requires authentication
+      requiresAuth: true,
+      roles: ["driver", "csr", "admin", "production"],
     },
   },
   {
@@ -47,7 +56,8 @@ const routes = [
     name: "Pos",
     component: PosPage,
     meta: {
-      requiresAuth: true, // POS requires authentication
+      requiresAuth: true,
+      roles: ["csr", "admin", "production"],
     },
   },
   {
@@ -55,7 +65,8 @@ const routes = [
     name: "OrdersPage",
     component: OrdersPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["csr", "admin"],
     },
   },
   {
@@ -63,7 +74,8 @@ const routes = [
     name: "Customers",
     component: CustomersPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["csr", "admin"],
     },
   },
   {
@@ -71,7 +83,8 @@ const routes = [
     name: "CustomerView",
     component: CustomerView,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["csr", "admin"],
     },
   },
   {
@@ -80,21 +93,43 @@ const routes = [
     component: OrderView,
     meta: {
       requiresAuth: true,
+      roles: ["csr", "admin"],
     },
   },
-  
   {
     path: "/payment/:order_no",
     name: "PaymentPage",
     component: PaymentPage,
-    meta: { requiresAuth: true },
-  },  
+    meta: {
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
   {
     path: "/tags",
     name: "Tags",
     component: TagsPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["production", "admin"],
+    },
+  },
+  {
+    path: "/packs",
+    name: "Packs",
+    component: PacksPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["production", "admin"],
+    },
+  },
+  {
+    path: "/packs/grp-:groupSlug",
+    name: "PacksGroupView",
+    component: PacksGroupView,
+    meta: {
+      requiresAuth: true,
+      roles: ["production", "admin"],
     },
   },
   {
@@ -102,7 +137,8 @@ const routes = [
     name: "LogisticsPage",
     component: LogisticsPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["driver", "csr", "admin"],
     },
   },
   {
@@ -110,7 +146,8 @@ const routes = [
     name: "LogisticsView",
     component: LogisticsView,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["driver", "csr", "admin"],
     },
   },
   {
@@ -118,21 +155,26 @@ const routes = [
     name: "TagView",
     component: TagView,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["production", "admin"],
     },
   },
   {
     path: "/tags/grp-:groupSlug",
     name: "TagGroupView",
     component: TagGroupView,
-    meta: { requiresAuth: true },
+    meta: {
+      requiresAuth: true,
+      roles: ["production", "admin"],
+    },
   },
   {
     path: "/invoices",
     name: "Invoices",
     component: InvoicesPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["admin", "csr"],
     },
   },
   {
@@ -140,7 +182,17 @@ const routes = [
     name: "InvoiceView",
     component: InvoiceView,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["admin", "csr"],
+    },
+  },
+    {
+    path: "/invoice/grp-:groupSlug",
+    name: "InvoiceGroupView",
+    component: InvoiceGroupView,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin", "csr", "production"],
     },
   },
   {
@@ -148,52 +200,63 @@ const routes = [
     name: "Items",
     component: ItemsPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["admin", "csr"],
     },
   },
-  
   {
     path: "/payments",
     name: "Payments",
     component: PaymentsPage,
     meta: {
-      requiresAuth: true, // Transactions require authentication
+      requiresAuth: true,
+      roles: ["admin"],
     },
   },
   {
-    path: "/:catchAll(.*)", // Catch-all route for 404 pages
+    path: "/:catchAll(.*)",
     name: "NotFound",
-    component: () => import("@/views/NotFound.vue"), // Lazy-loaded 404 page
+    component: () => import("@/views/NotFound.vue"),
     meta: {
-      requiresAuth: true, // Login does not require authentication
+      requiresAuth: true,
     },
   },
 ];
 
-// Create the router instance
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
 
-// Global navigation guard for authentication checks
 router.beforeEach(async (to, from, next) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession(); // Get the current session
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
 
-  // If trying to access a route that requires authentication
-  if (to.meta.requiresAuth && !session) {
-    // No active session, redirect to login
-    return next({ path: "/login" });
+  if (to.path === '/login' && user) {
+    // Redirect logged-in user away from login
+    return next('/dashboard');
   }
 
-  // If trying to access login while authenticated, redirect to POS
-  if (to.name === "Login" && session) {
-    return next({ path: "/dashboard" });
+  if (to.meta.requiresAuth && !user) {
+    // Block if no active user session
+    return next('/login');
   }
 
-  next(); // Proceed to the route
+  // Normalize user role
+  const transactionStore = useTransactionStore();
+  const position = await transactionStore.getUserPosition();
+  const userRole = position?.trim().toLowerCase();
+
+  // If route requires specific roles, enforce it
+  if (to.meta?.roles?.length) {
+    const allowedRoles = to.meta.roles.map(r => r.toLowerCase());
+    if (!allowedRoles.includes(userRole)) {
+      return next('/unauthorized');
+    }
+  }
+
+  next();
 });
+
 
 export default router;

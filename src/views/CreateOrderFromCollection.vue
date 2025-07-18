@@ -61,7 +61,10 @@ const transactionSuccess = ref(false);
 async function handleSubmit() {
   try {
     const logisticsId = transactionStore.logisticsId;
-    const orderNo = await transactionStore.createOrderFromCollection(logisticsId); // Save transaction and get order number
+    
+        await transactionStore.createOrderFromCollection(logisticsId); // Save transaction and get order number
+        
+        const orderNo = transactionStore.order_no;
     if (!orderNo) {
       throw new Error("Order number could not be retrieved.");
     }

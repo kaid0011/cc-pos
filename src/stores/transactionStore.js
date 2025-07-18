@@ -2494,7 +2494,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         this.readyBy = this.computeReadyByDate(collection?.collection_date);
 
         // Step 1: Create Order and get orderId
-        const { orderId, orderNo } = await this.createOrder(logisticsId);
+        const { orderId } = await this.createOrder(logisticsId);
         if (!orderId) throw new Error("Failed to create order");
 
         console.log("[createOrderFromCollection] Created orderId:", orderId);
@@ -2560,7 +2560,6 @@ export const useTransactionStore = defineStore("transactionStore", {
         // Reset transaction data after successful save
         this.resetTransactionItems();
 
-        return this.order_no;
       } catch (error) {
         console.error("Error in createWholeTransaction:", error);
       }

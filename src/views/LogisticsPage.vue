@@ -663,7 +663,13 @@ const driverTabs = computed(() => {
   const driverNames = transactionStore.driverOptions.map(
     (driver) => driver.name?.trim().toLowerCase() || "[not set]"
   );
-  return ["All", "[NOT SET]", ...new Set(driverNames)];
+
+  const uniqueSorted = [...new Set(driverNames)]
+    .filter((name) => name !== "[not set]")
+    .sort((a, b) => a.localeCompare(b));
+
+  // return ["All", ...uniqueSorted, "[NOT SET]"];
+  return [...uniqueSorted, "[NOT SET]"];
 });
 
 onMounted(async () => {

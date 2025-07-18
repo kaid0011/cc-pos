@@ -468,8 +468,8 @@ function formatDate(date) {
 }
 
 const formattedTagDetails = computed(() => {
-  const collectionDate = formatDate(collection.value.collection_date);
-  const deliveryDate = formatDate(delivery.value.delivery_date);
+  const collectionDate = formatDate(collection.value?.collection_date);
+  const deliveryDate = formatDate(delivery.value?.delivery_date);
   const orderNoLast5 = order.value?.order_no?.slice(-5) || "N/A";
   return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
 });

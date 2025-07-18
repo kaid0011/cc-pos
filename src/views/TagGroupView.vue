@@ -356,10 +356,10 @@ onMounted(async () => {
 
       const formattedTagDetails = (() => {
         const collectionDate = formatDate(
-          orderDetails.collection?.[0]?.collection_date
+          orderDetails.collection?.collection_date
         );
         const deliveryDate = formatDate(
-          orderDetails.delivery?.[0]?.delivery_date
+          orderDetails.delivery?.delivery_date
         );
         const orderNoLast5 = orderDetails.order?.order_no?.slice(-5) || "N/A";
         return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
@@ -538,24 +538,41 @@ const PrintTagPDF = () => {
 
 const PrintTag = () => {
   const tags = document.querySelectorAll(".tags");
+  if (!tags.length) {
+    console.error("No .tags element found");
+    return;
+  }
+
   const container = document.createElement("div");
   container.style.display = "flex";
   container.style.flexWrap = "wrap";
   container.style.gap = "0px";
 
   tags.forEach((tag) => {
-    const count = Array.from(tag.querySelectorAll(".col")).reduce(
-      (sum, col) => {
-        const val = parseInt(col.textContent.trim());
-        return sum + (isNaN(val) ? 0 : val);
-      },
-      0
-    );
-    for (let i = 0; i < count; i++) {
-      const clone = tag.cloneNode(true);
-      clone.style.pageBreakBefore = "always";
-      container.appendChild(clone);
-    }
+    const tagCounts = tag.querySelectorAll(".tag-count");
+
+    tagCounts.forEach((tagCount) => {
+      const countEl = tagCount.querySelector(".text-weight-bold");
+      const count = parseInt(countEl?.textContent?.trim() || "0");
+      if (!count || isNaN(count)) return;
+
+      for (let i = 0; i < count; i++) {
+        const clone = tag.cloneNode(true);
+        clone.style.pageBreakBefore = "always";
+
+        // Replace QR canvas with image if needed
+        const canvases = clone.querySelectorAll("canvas");
+        canvases.forEach((canvas) => {
+          const img = document.createElement("img");
+          img.src = canvas.toDataURL("image/png");
+          img.style.width = `70px`;
+          img.style.height = `70px`;
+          canvas.parentNode?.replaceChild(img, canvas);
+        });
+
+        container.appendChild(clone);
+      }
+    });
   });
 
   const options = {
@@ -584,6 +601,7 @@ const PrintTag = () => {
     })
     .catch(console.error);
 };
+
 </script>
 
 <style scoped>

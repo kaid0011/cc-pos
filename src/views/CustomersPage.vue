@@ -352,9 +352,10 @@ async function createCollection() {
 const activeTab = ref("all");
 
 const contractCustomers = computed(() => {
-  return filteredCustomersWithAddress.value.filter(
-    (customer) => customer.type === "Contract"
-  );
+  return filteredCustomersWithAddress.value
+    .filter((customer) => customer.type === "Contract")
+    .slice()
+    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 });
 
 const nonContractCustomers = computed(() => {

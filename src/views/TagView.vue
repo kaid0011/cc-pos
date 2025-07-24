@@ -72,7 +72,13 @@
               </div>
               <div class="">
                 No. of Bags:
-                <span class="text-summary">{{ "N/A" }}</span>
+                <span class="text-summary">{{ collection?.no_bags || 0 }}</span>
+              </div>
+              <div class="">
+                Total Amount:
+                <span class="text-summary"
+                  >${{ order?.order_payment?.total_amount.toFixed(2) }}</span
+                >
               </div>
               <div class="">
                 Notes:
@@ -82,7 +88,7 @@
             <div class="col-auto">
               <q-card flat class="tags row justify-between text-center">
                 <div class="col-auto">
-                  <div class="tag-urgency">U</div>
+                  <div class="tag-urgency">{{ tagUrgency }}</div>
                 </div>
                 <div class="col-auto">
                   <div class="row text-center">
@@ -334,8 +340,8 @@ onMounted(async () => {
     logistics.value = orderDetails || {};
     order.value = orderDetails.order || {};
     customer.value = orderDetails.customer || {};
-    collection.value = orderDetails.collection?.[0] || {};
-    delivery.value = orderDetails.delivery?.[0] || {};
+    collection.value = orderDetails.collection || {};
+    delivery.value = orderDetails.delivery || {};
 
     transactions.value = [];
     (orderDetails.transactions || []).forEach((tx) => {
@@ -376,6 +382,13 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error loading order details:", error);
   }
+});
+
+const tagUrgency = computed(() => {
+  const urgency = logistics.value?.urgency?.toLowerCase?.() || "";
+  if (urgency === "urgent") return "U";
+  if (urgency === "express") return "E";
+  else return "D";
 });
 
 // Helper functions for instruction chip colors and labels

@@ -676,14 +676,30 @@ watch(rowsPerPage, () => {
 
 // Computed property for filtered items
 const filteredItems = computed(() => {
-  if (!searchQuery.value) {
-    return items.value;
+  let filtered = items.value;
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase();
+    filtered = filtered.filter((item) =>
+      Object.values(item).some((val) =>
+        String(val).toLowerCase().includes(q)
+      )
+    );
   }
-  return items.value.filter((item) =>
-    Object.values(item).some((val) =>
-      String(val).toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  );
+
+  return filtered.slice().sort((a, b) => {
+    const catA = a.category?.toLowerCase() || "";
+    const catB = b.category?.toLowerCase() || "";
+    if (catA !== catB) return catA.localeCompare(catB);
+
+    const subA = a.sub_category?.toLowerCase() || "";
+    const subB = b.sub_category?.toLowerCase() || "";
+    if (subA !== subB) return subA.localeCompare(subB);
+
+    const nameA = a.name?.toLowerCase() || "";
+    const nameB = b.name?.toLowerCase() || "";
+    return nameA.localeCompare(nameB);
+  });
 });
 
 // Fetch items on component mount

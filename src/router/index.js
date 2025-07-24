@@ -7,6 +7,7 @@ import DashboardPage from "@/views/DashboardPage.vue";
 import PosPage from "@/views/PosPage.vue";
 import OrdersPage from "@/views/OrdersPage.vue";
 import OrderView from "@/views/OrderView.vue";
+import OrderViewReadOnly from "@/views/OrderViewReadOnly.vue";
 import CustomersPage from "@/views/CustomersPage.vue";
 import CustomerView from "@/views/CustomerView.vue";
 import PaymentPage from "@/views/PaymentPage.vue";
@@ -14,6 +15,7 @@ import TagsPage from "@/views/TagsPage.vue";
 import TagView from "@/views/TagView.vue";
 import TagGroupView from "@/views/TagGroupView.vue";
 import PacksPage from "@/views/PacksPage.vue";
+import PacksView from "@/views/PacksView.vue";
 import PacksGroupView from "@/views/PacksGroupView.vue";
 import LogisticsPage from "@/views/LogisticsPage.vue";
 import LogisticsView from "@/views/LogisticsView.vue";
@@ -97,6 +99,15 @@ const routes = [
     },
   },
   {
+    path: "/orders/read-:order_no",
+    name: "OrderViewReadOnly",
+    component: OrderViewReadOnly,
+    meta: {
+      requiresAuth: true,
+      roles: ["csr", "admin", "production", "driver"],
+    },
+  },
+  {
     path: "/payment/:order_no",
     name: "PaymentPage",
     component: PaymentPage,
@@ -118,6 +129,15 @@ const routes = [
     path: "/packs",
     name: "Packs",
     component: PacksPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["production", "admin"],
+    },
+  },
+  {
+    path: "/packs/:order_no",
+    name: "PacksView",
+    component: PacksView,
     meta: {
       requiresAuth: true,
       roles: ["production", "admin"],

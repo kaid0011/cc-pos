@@ -2206,6 +2206,7 @@ export const useTransactionStore = defineStore("transactionStore", {
       created_at,
       status,
       order_transaction_items (
+      id,
         item_name,
         price,
         process,
@@ -2214,7 +2215,8 @@ export const useTransactionStore = defineStore("transactionStore", {
         subtotal,
         category,
         tag_category,
-        unit
+        unit,
+        ready_status
       )
     `
         )
@@ -2534,7 +2536,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     // start of order creation
     async createWholeTransaction() {
       try {
-                // Step 4: Create Order with logisticsId and get orderId
+        // Step 4: Create Order with logisticsId and get orderId
         const { orderId } = await this.createOrder();
         if (!orderId) throw new Error("Failed to create order");
 
@@ -2559,7 +2561,6 @@ export const useTransactionStore = defineStore("transactionStore", {
 
         // Reset transaction data after successful save
         this.resetTransactionItems();
-
       } catch (error) {
         console.error("Error in createWholeTransaction:", error);
       }
@@ -2595,7 +2596,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               logistics_status: "collection arranged",
               job_type: this.jobType,
               urgency: this.jobUrgency,
-              order_id: orderId
+              order_id: orderId,
             },
           ])
           .select("id")
@@ -2725,8 +2726,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time:
                 this.collectionTime ?? fallback.collection_time ?? null,
               remarks: this.collectionRemarks ?? fallback.remarks ?? null,
-              driver_name:
-                this.selectedCollectionDriver ?? null,
+              driver_name: this.selectedCollectionDriver ?? null,
               no_bags: this.collectionNoBags ?? fallback.no_bags ?? null,
               status: "active",
               logistics_id: logisticsId,
@@ -2788,8 +2788,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_time:
                 this.deliveryTime ?? fallback.delivery_time ?? null,
               remarks: this.deliveryRemarks ?? fallback.remarks ?? null,
-              driver_name:
-                this.selectedDeliveryDriver ??mnull,
+              driver_name: this.selectedDeliveryDriver ?? mnull,
               status: "active",
               logistics_id: logisticsId,
             },
@@ -2861,7 +2860,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               order_id: orderId,
               payment_status: "unpaid",
               paid_amount: 0,
-              total_amount: this.totalAmount
+              total_amount: this.totalAmount,
             },
           ])
           .select("id")
@@ -3126,6 +3125,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    // end of order creation
+    
   },
 });

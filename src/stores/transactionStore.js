@@ -635,6 +635,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           unit,
           category,
           tag_category,
+          pack_type
         };
         this.transactionItems = [...this.transactionItems, newItem]; // Add directly
         return;
@@ -665,6 +666,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             unit,
             category,
             tag_category,
+            pack_type
           };
           this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
         }
@@ -692,6 +694,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             unit,
             category,
             tag_category,
+            pack_type
           };
           this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
         }
@@ -2216,7 +2219,8 @@ export const useTransactionStore = defineStore("transactionStore", {
         category,
         tag_category,
         unit,
-        ready_status
+        ready_status,
+        pack_type
       )
     `
         )
@@ -2968,6 +2972,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             category: item.category,
             tag_category: item.tag_category,
             unit: item.unit,
+            pack_type: item.pack_type
           };
 
           console.log(
@@ -3125,6 +3130,14 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
+    async updateTransactionReady(id, ready_status) {
+      const { error } = await supabase
+        .from("order_transaction_items")
+        .update({ ready_status })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
     
   },
 });

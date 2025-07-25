@@ -124,59 +124,147 @@
       </div>
     </q-card>
 
-    <div class="row justify-end q-mb-sm q-gutter-x-sm">
-      <div class="col-2">
-        <q-select
-          v-model="collectionDriverFilter"
-          :options="sortedDriverOptions"
-          option-label="name"
-          option-value="name"
-          label="Driver"
-          outlined
-          dense
-          emit-value
-          map-options
-          class="bg-white"
-        />
+    <div class="row">
+      <div class="col-9 q-pa-sm" style="border: solid 1px">
+        <div class="row">
+          <div class="col">
+            <div>
+              <q-checkbox dense v-model="filters.clothings" label="Clothings" />
+            </div>
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.officeWear"
+                label="Office Wear"
+              />
+            </div>
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.casualWear"
+                label="Casual Wear"
+              />
+            </div>
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.culturalWear"
+                label="Cultural Wear"
+              />
+            </div>
+          </div>
+          <div class="col">
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.winterWear"
+                label="Winter Wear"
+              />
+            </div>
+            <div>
+              <q-checkbox dense v-model="filters.bedding" label="Bedding" />
+            </div>
+            <div>
+              <q-checkbox dense v-model="filters.curtains" label="Curtains" />
+            </div>
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.sofaCushionCovers"
+                label="Sofa/Cushion Covers"
+              />
+            </div>
+          </div>
+          <div class="col">
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.stuffToys"
+                label="Stuff Toys"
+              />
+            </div>
+            <div>
+              <q-checkbox dense v-model="filters.carpet" label="Carpet" />
+            </div>
+            <div>
+              <q-checkbox
+                dense
+                v-model="filters.accessories"
+                label="Accessories"
+              />
+            </div>
+            <div>
+              <q-checkbox dense v-model="filters.others" label="Others" />
+            </div>
+          </div>
+          <div class="col">
+            <div>
+              <q-checkbox dense v-model="filters.custom" label="Custom" />
+            </div>
+            <div><q-checkbox dense v-model="filters.rAndI" label="R&I" /></div>
+          </div>
+          <div class="col">
+            <q-btn
+              label="Find Category"
+              color="primary"
+              unelevated
+              dense
+              class="q-px-sm full-width"
+              @click=""
+            />
+            <q-btn
+              label="Show Not Ready"
+              color="primary"
+              unelevated
+              dense
+              class="q-px-sm full-width"
+              @click=""
+            />
+            <q-btn
+              label="Print Not Ready"
+              color="primary"
+              unelevated
+              dense
+              class="q-px-sm full-width"
+              @click=""
+            />
+          </div>
+        </div>
       </div>
-      <div class="col-2">
-        <q-select
-          v-model="tagStatusFilter"
-          :options="tagStatusOptions"
-          label="Tag Status"
-          outlined
-          dense
-          emit-value
-          map-options
-          class="bg-white"
-        />
-      </div>
-
-      <div class="col-3">
+      <div class="col-3 justify-end q-gutter-x-sm q-pl-md">
+        <!-- <q-select
+            v-model="collectionDriverFilter"
+            :options="sortedDriverOptions"
+            option-label="name"
+            option-value="name"
+            label="Driver"
+            outlined
+            dense
+            emit-value
+            map-options
+            class="bg-white"
+          /> -->
         <q-input
-          v-model="formattedCollectionStartDate"
+          v-model="formattedDeliveryStartDate"
           outlined
           dense
-          label="Collection Date"
+          label="Delivery Date"
           readonly
-          class="bg-white"
+          class="bg-white q-mb-xs"
         >
           <template v-slot:append>
             <q-icon name="event" class="cursor-pointer">
               <q-popup-proxy>
-                <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />
+                <q-date v-model="deliveryStartDate" mask="YYYY-MM-DD" />
               </q-popup-proxy>
             </q-icon>
             <q-icon
               name="close"
               class="cursor-pointer q-ml-sm"
-              @click="clearDate('collectionStartDate')"
+              @click="clearDate('deliveryStartDate')"
             />
           </template>
         </q-input>
-      </div>
-
-      <div class="col-3">
         <q-input
           class="search-transactions search-input"
           v-model="searchQuery"
@@ -193,7 +281,7 @@
     </div>
 
     <!-- Table Display -->
-    <div class="row-col-table">
+    <div class="row-col-table q-mt-md">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
         <div class="col text-weight-bolder q-py-sm">Order No</div>
@@ -356,6 +444,23 @@ const selectedMatchedOrders = ref([]);
 
 const collectionDriverFilter = ref(null);
 
+const filters = ref({
+  clothings: false,
+  officeWear: false,
+  casualWear: false,
+  culturalWear: false,
+  winterWear: false,
+  bedding: false,
+  curtains: false,
+  sofaCushionCovers: false,
+  stuffToys: false,
+  carpet: false,
+  accessories: false,
+  others: false,
+  custom: false,
+  rAndI: false,
+});
+
 const sortedDriverOptions = computed(() => {
   return [...transactionStore.driverOptions].sort((a, b) =>
     a.name.localeCompare(b.name)
@@ -387,7 +492,6 @@ watch([selectedDriver, selectedDate], () => {
   const driverName = selectedDriver.value.name;
   const selectedRawDate = selectedDate.value;
 
-
   matchedOrdersList.value = filteredOrders.value.filter((logistics, index) => {
     const hasMatchingDriver = logistics.collections?.some(
       (c) => c?.driver_name === driverName
@@ -399,17 +503,7 @@ watch([selectedDriver, selectedDate], () => {
 
     return hasMatchingDriver && hasMatchingDeliveryDate;
   });
-
 });
-
-
-const getStatusClass = (status) => {
-  if (!status) return "";
-  const formattedStatus = status.toLowerCase();
-  if (formattedStatus === "done") return "status-done";
-  if (formattedStatus === "to print") return "status-to-print";
-  return "";
-};
 
 // Fetch orders on mount
 onMounted(async () => {
@@ -465,21 +559,13 @@ const filteredOrders = computed(() => {
       (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
       (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
 
-    const searchMatch =
-      orderNo.includes(query) ||
-      customerName.includes(query) ||
-      tagStatus.includes(query);
+    const searchMatch = orderNo.includes(query) || customerName.includes(query);
 
     const driverMatch =
       !collectionDriverFilter.value ||
       collectionDriver === collectionDriverFilter.value;
 
-    return (
-      collectionMatch &&
-      deliveryMatch &&
-      searchMatch &&
-      driverMatch
-    );
+    return collectionMatch && deliveryMatch && searchMatch && driverMatch;
   });
 });
 
@@ -621,13 +707,13 @@ const printCustomTag = () => {
   container.style.margin = "0";
   container.style.padding = "0";
 
-for (let i = 0; i < pcsCount; i++) {
-  const clone = tag.cloneNode(true);
-  if (i > 0) {
-    clone.style.pageBreakBefore = "always";
+  for (let i = 0; i < pcsCount; i++) {
+    const clone = tag.cloneNode(true);
+    if (i > 0) {
+      clone.style.pageBreakBefore = "always";
+    }
+    container.appendChild(clone);
   }
-  container.appendChild(clone);
-}
 
   const options = {
     margin: 0,
@@ -655,5 +741,4 @@ for (let i = 0; i < pcsCount; i++) {
     })
     .catch(console.error);
 };
-
 </script>

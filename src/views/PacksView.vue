@@ -35,49 +35,49 @@
             Customer Details
           </div>
           <q-separator class="q-my-xs" />
-            <div class="row text-slip-row row-col-row" style="height: 100%">
-              <div class="col-6">
-                <span v-if="customer?.type == 'Contract'">Company Name:</span>
-                <span v-else>Customer Name:</span>
-              </div>
-              <div class="col-6">
-                <a
-                  class="text-weight-bold"
-                  @click.prevent="openCustomerTab(customer.id)"
-                  >{{ customer.name }}</a
-                >
-              </div>
+          <div class="row text-slip-row row-col-row" style="height: 100%">
+            <div class="col-6">
+              <span v-if="customer?.type == 'Contract'">Company Name:</span>
+              <span v-else>Customer Name:</span>
             </div>
-            <div class="row text-slip-row row-col-row">
-              <div class="col-6">
-                <div>Customer Type:</div>
-              </div>
-              <div class="col-6">
-                {{ customer?.type || "N/A"
-                }}<span v-if="customer.sub_type && customer.sub_type != '-'">
-                  - {{ customer.sub_type }}</span
-                >
-              </div>
+            <div class="col-6">
+              <a
+                class="text-weight-bold"
+                @click.prevent="openCustomerTab(customer.id)"
+                >{{ customer.name }}</a
+              >
             </div>
-            <div class="row text-slip-row row-col-row">
-              <div class="col-6">
-                <div>Contact No/s:</div>
-              </div>
-              <div class="col-6">
-                {{ customer?.contact_no1 || "-"
-                }}<span v-if="customer.contact_no2">
-                  / {{ customer?.contact_no2 || "-" }}</span
-                >
-              </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">
+              <div>Customer Type:</div>
             </div>
-            <div class="row text-slip-row row-col-row">
-              <div class="col-6">
-                <div>Email Address:</div>
-              </div>
-              <div class="col-6">
-                {{ customer?.email || "N/A" }}
-              </div>
+            <div class="col-6">
+              {{ customer?.type || "N/A"
+              }}<span v-if="customer.sub_type && customer.sub_type != '-'">
+                - {{ customer.sub_type }}</span
+              >
             </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">
+              <div>Contact No/s:</div>
+            </div>
+            <div class="col-6">
+              {{ customer?.contact_no1 || "-"
+              }}<span v-if="customer.contact_no2">
+                / {{ customer?.contact_no2 || "-" }}</span
+              >
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">
+              <div>Email Address:</div>
+            </div>
+            <div class="col-6">
+              {{ customer?.email || "N/A" }}
+            </div>
+          </div>
         </q-card>
       </div>
       <div class="col-4 q-pt-md" style="min-height: 100%">
@@ -281,47 +281,41 @@
           </div>
           <q-separator class="q-my-xs" />
           <q-card-section class="q-pb-sm">
-           <div class="row q-mb-xs items-center">
-  <div class="col-4 text-right q-mr-sm">
-    <div>Hang:</div>
-  </div>
-  <div class="col">
-    <q-input v-model="hang" dense outlined/>
-  </div>
-</div>
-<div class="row q-mb-xs items-center">
-  <div class="col-4 text-right q-mr-sm">
-    <div>Pack:</div>
-  </div>
-  <div class="col">
-    <q-input v-model="pack" dense outlined/>
-  </div>
-</div>
-<div class="row q-mb-xs items-center">
-  <div class="col-4 text-right q-mr-sm">
-    <div>Roll:</div>
-  </div>
-  <div class="col">
-    <q-input v-model="roll" dense outlined/>
-  </div>
-</div>
-<div class="row q-mb-xs items-center">
-  <div class="col-4 text-right q-mr-sm">
-    <div>Return:</div>
-  </div>
-  <div class="col">
-    <q-input v-model="ret" dense outlined/>
-  </div>
-</div>
+            <div class="row q-mb-xs text-center">
+              <div class="col q-mr-sm">
+                <div class="text-weight-bold q-mb-xs">Hang</div>
+                <div class="">
+                  <q-input v-model="hang" dense outlined/>
+                </div>
+              </div>
+              <div class="col q-mr-sm">
+                <div class="text-weight-bold q-mb-xs">Pack</div>
+                <div class="">
+                  <q-input v-model="pack" dense outlined />
+                </div>
+              </div>
+              <div class="col q-mr-sm">
+                <div class="text-weight-bold q-mb-xs">Roll</div>
+                <div class="">
+                  <q-input v-model="roll" dense outlined />
+                </div>
+              </div>
+              <div class="col q-mr-sm">
+                <div class="text-weight-bold q-mb-xs">Return</div>
+                <div class="">
+                  <q-input v-model="ret" dense outlined />
+                </div>
+              </div>
+            </div>
           </q-card-section>
-           <q-card-actions align="right" class="q-pa-none">
-        <q-btn
-          label="Save Details"
-          color="primary"
-          unelevated
-          @click="updatePackDetails"
-        />
-      </q-card-actions>
+          <q-card-actions align="right" class="q-pa-none">
+            <q-btn
+              label="Save Details"
+              color="primary"
+              unelevated
+              @click="updatePackDetails"
+            />
+          </q-card-actions>
         </q-card>
       </div>
     </div>
@@ -362,7 +356,7 @@
               <div class="col col-2 bordered text-center text-uppercase">
                 {{ transactions[index].category }}
               </div>
-              <div class="col col-1 bordered text-center">
+              <div class="col col-1 bordered text-center text-uppercase">
                 {{ transactions[index].pack_type }}
               </div>
               <div class="col col-2 bordered text-center">
@@ -734,25 +728,29 @@ const updateReadyStatus = async () => {
 };
 
 const hang = computed({
-  get: () => delivery.value?.hang || '',
-  set: (val) => { delivery.value.hang = val }
+  get: () => delivery.value?.hang || "",
+  set: (val) => {
+    delivery.value.hang = val;
+  },
 });
 
 const pack = computed({
-  get: () => delivery.value?.pack || '',
-  set: (val) => { delivery.value.pack = val }
+  get: () => delivery.value?.pack || "",
+  set: (val) => {
+    delivery.value.pack = val;
+  },
 });
 
 const roll = computed({
-  get: () => delivery.value?.roll || '',
-  set: (val) => { delivery.value.roll = val }
+  get: () => delivery.value?.roll || "",
+  set: (val) => {
+    delivery.value.roll = val;
+  },
 });
 
 const ret = ref(""); // 'return' field not defined; ref fallback
 
-const updatePackDetails = async () => {
-};
-
+const updatePackDetails = async () => {};
 </script>
 <style scoped>
 .order-banner {

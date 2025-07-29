@@ -618,6 +618,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         subtotal,
         category,
         tag_category,
+        pack_type
       } = item;
 
       const unitType = this.detectUnitType(unit);

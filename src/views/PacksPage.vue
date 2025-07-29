@@ -12,7 +12,7 @@
           :options="sortedDriverOptions"
           option-label="name"
           option-value="id"
-          label="Select Driver"
+          label="Select Delivery Driver"
           outlined
           dense
           class="q-pb-sm"
@@ -21,7 +21,7 @@
           v-model="formattedSelectedDate"
           outlined
           dense
-          label="Select Date"
+          label="Select Delivery Date"
           readonly
           class="q-pb-sm"
         >
@@ -209,7 +209,7 @@
               color="primary"
               unelevated
               dense
-              class="q-px-sm full-width"
+              class="full-width"
               @click=""
             />
             <q-btn
@@ -217,7 +217,7 @@
               color="primary"
               unelevated
               dense
-              class="q-px-sm full-width"
+              class="q-mt-xs full-width"
               @click=""
             />
             <q-btn
@@ -225,7 +225,7 @@
               color="primary"
               unelevated
               dense
-              class="q-px-sm full-width"
+              class="q-mt-xs full-width"
               @click=""
             />
           </div>
@@ -431,10 +431,7 @@ const pageSize = ref(10); // Number of records per page
 
 const searchQuery = ref(""); // Search input
 // Date Filters
-const collectionStartDate = ref(null);
-const collectionEndDate = ref(null);
 const deliveryStartDate = ref(null);
-const deliveryEndDate = ref(null);
 
 const selectedDriver = ref(null);
 const selectedDate = ref(null);
@@ -493,7 +490,7 @@ watch([selectedDriver, selectedDate], () => {
   const selectedRawDate = selectedDate.value;
 
   matchedOrdersList.value = filteredOrders.value.filter((logistics, index) => {
-    const hasMatchingDriver = logistics.collections?.some(
+    const hasMatchingDriver = logistics.deliveries?.some(
       (c) => c?.driver_name === driverName
     );
 
@@ -516,57 +513,40 @@ onMounted(async () => {
   }
 });
 
-// Format date display
-const formattedCollectionStartDate = computed(() =>
-  formatDate(collectionStartDate.value)
-);
-const formattedCollectionEndDate = computed(() =>
-  formatDate(collectionEndDate.value)
-);
 const formattedDeliveryStartDate = computed(() =>
   formatDate(deliveryStartDate.value)
-);
-const formattedDeliveryEndDate = computed(() =>
-  formatDate(deliveryEndDate.value)
 );
 
 // Clear Date Input
 const clearDate = (type) => {
-  if (type === "collectionStartDate") collectionStartDate.value = null;
-  if (type === "collectionEndDate") collectionEndDate.value = null;
   if (type === "deliveryStartDate") deliveryStartDate.value = null;
-  if (type === "deliveryEndDate") deliveryEndDate.value = null;
 };
 
 // Filter Orders Based on Search & Date Range
 const filteredOrders = computed(() => {
   const query = searchQuery.value.toLowerCase();
+  const selectedDeliveryDate = deliveryStartDate.value;
 
-  return orders.value.filter((logistics) => {
-    const orderNo = logistics.order?.order_no?.toLowerCase() || "";
-    const customerName = logistics.customer?.name?.toLowerCase() || "";
+  return orders.value
+    .filter((logistics) => {
+      const orderNo = logistics.order?.order_no?.toLowerCase() || "";
+      const customerName = logistics.customer?.name?.toLowerCase() || "";
+      const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
+      const collectionDriver = logistics.collections?.[0]?.driver_name || "";
 
-    const collectionDate = logistics.collections?.[0]?.collection_date || null;
-    const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
-    const collectionDriver = logistics.collections?.[0]?.driver_name || "";
+      const deliveryMatch = !selectedDeliveryDate || deliveryDate === selectedDeliveryDate;
+      const searchMatch = orderNo.includes(query) || customerName.includes(query);
+      const driverMatch =
+        !collectionDriverFilter.value ||
+        collectionDriver === collectionDriverFilter.value;
 
-    const collectionMatch =
-      (!collectionStartDate.value ||
-        collectionDate >= collectionStartDate.value) &&
-      (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
-
-    const deliveryMatch =
-      (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
-      (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
-
-    const searchMatch = orderNo.includes(query) || customerName.includes(query);
-
-    const driverMatch =
-      !collectionDriverFilter.value ||
-      collectionDriver === collectionDriverFilter.value;
-
-    return collectionMatch && deliveryMatch && searchMatch && driverMatch;
-  });
+      return deliveryMatch && searchMatch && driverMatch;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.deliveries?.[0]?.delivery_date || 0);
+      const dateB = new Date(b.deliveries?.[0]?.delivery_date || 0);
+      return dateB - dateA; // latest delivery date first
+    });
 });
 
 // Pagination: Get the paginated slice of orders
@@ -682,63 +662,4 @@ const generatePack = () => {
   window.open(url, "_blank");
 };
 
-const showCustomizeDialog = ref(false);
-const customPcs = ref(null);
-
-const openCustomizeDialog = () => {
-  showCustomizeDialog.value = true;
-};
-
-const printCustomTag = () => {
-  const tag = document.querySelector(".tags");
-  if (!tag) {
-    console.warn("No .tags element found.");
-    return;
-  }
-
-  const pcsCount = parseInt(customPcs.value, 10) || 1;
-  if (pcsCount <= 0) {
-    console.warn("pcsCount is 0 or less. Nothing to print.");
-    return;
-  }
-
-  const container = document.createElement("div");
-  container.style.display = "block";
-  container.style.margin = "0";
-  container.style.padding = "0";
-
-  for (let i = 0; i < pcsCount; i++) {
-    const clone = tag.cloneNode(true);
-    if (i > 0) {
-      clone.style.pageBreakBefore = "always";
-    }
-    container.appendChild(clone);
-  }
-
-  const options = {
-    margin: 0,
-    filename: `Custom_Tag_Print.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
-    jsPDF: { unit: "mm", format: [100, 12.7], orientation: "landscape" },
-    pagebreak: { mode: ["css", "legacy"] }, // key to support .html2pdf__page-break
-  };
-
-  html2pdf()
-    .set(options)
-    .from(container)
-    .toPdf()
-    .output("blob")
-    .then((blob) => {
-      const pdfUrl = URL.createObjectURL(blob);
-      const newWindow = window.open(pdfUrl, "_blank");
-      if (newWindow) {
-        setTimeout(() => {
-          newWindow.print();
-          newWindow.onafterprint = () => newWindow.close();
-        }, 500);
-      }
-    })
-    .catch(console.error);
-};
 </script>

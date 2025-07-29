@@ -41,7 +41,7 @@
           {{ dialogMessage }}
         </q-card-section>
         <q-card-actions align="center" class="q-pt-md">
-          <q-btn v-if="transactionSuccess" label="Generate Invoice" color="primary" @click="handleGenerateInvoice" />
+          <!-- <q-btn v-if="transactionSuccess" label="Generate Invoice" color="primary" @click="handleGenerateInvoice" /> -->
           <q-btn label="Close" color="secondary" @click="isDialogOpen = false" />
         </q-card-actions>
       </q-card>
@@ -68,9 +68,11 @@ const transactionSuccess = ref(false);
 // Submit Transaction function (moved from ReviewTab.vue)
 async function handleSubmit() {
   try {
+
+     await transactionStore.createWholeTransaction(); // Save transaction and get order number
+
     const orderNo = transactionStore.order_no;
-    
-    await transactionStore.createWholeTransaction(); // Save transaction and get order number
+       
     if (!orderNo) {
       throw new Error("Order number could not be retrieved.");
     }

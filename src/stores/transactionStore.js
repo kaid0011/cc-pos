@@ -2542,8 +2542,10 @@ export const useTransactionStore = defineStore("transactionStore", {
     async createWholeTransaction() {
       try {
         // Step 4: Create Order with logisticsId and get orderId
-        const { orderId } = await this.createOrder();
-        if (!orderId) throw new Error("Failed to create order");
+const { orderId, orderNo } = await this.createOrder();
+    if (!orderId || !orderNo) throw new Error("Failed to create order");
+
+        this.order_no = orderNo;
 
         // Step 1: Create Logistics and get logisticsId
         const logisticsId = await this.createLogistics(orderId);

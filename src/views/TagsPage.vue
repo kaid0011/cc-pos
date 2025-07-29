@@ -12,7 +12,7 @@
           :options="sortedDriverOptions"
           option-label="name"
           option-value="id"
-          label="Select Driver"
+          label="Select Collection Driver"
           outlined
           dense
           class="q-pb-sm"
@@ -21,7 +21,7 @@
           v-model="formattedSelectedDate"
           outlined
           dense
-          label="Select Date"
+          label="Select Collection Date"
           readonly
           class="q-pb-sm"
         >
@@ -256,11 +256,9 @@
     <div class="row justify-end q-mb-sm q-gutter-x-sm">
       <div class="col-2">
         <q-select
-          v-model="collectionDriverFilter"
-          :options="sortedDriverOptions"
-          option-label="name"
-          option-value="name"
-          label="Driver"
+          v-model="tagStatusFilter"
+          :options="tagStatusOptions"
+          label="Tag Status"
           outlined
           dense
           emit-value
@@ -268,11 +266,14 @@
           class="bg-white"
         />
       </div>
+
       <div class="col-2">
         <q-select
-          v-model="tagStatusFilter"
-          :options="tagStatusOptions"
-          label="Tag Status"
+          v-model="collectionDriverFilter"
+          :options="sortedDriverOptions"
+          option-label="name"
+          option-value="name"
+          label="Collection Driver"
           outlined
           dense
           emit-value
@@ -572,9 +573,6 @@ const pageSize = ref(10); // Number of records per page
 const searchQuery = ref(""); // Search input
 // Date Filters
 const collectionStartDate = ref(null);
-const collectionEndDate = ref(null);
-const deliveryStartDate = ref(null);
-const deliveryEndDate = ref(null);
 
 const selectedDriver = ref(null);
 const selectedDate = ref(null);
@@ -661,67 +659,37 @@ onMounted(async () => {
 const formattedCollectionStartDate = computed(() =>
   formatDate(collectionStartDate.value)
 );
-const formattedCollectionEndDate = computed(() =>
-  formatDate(collectionEndDate.value)
-);
-const formattedDeliveryStartDate = computed(() =>
-  formatDate(deliveryStartDate.value)
-);
-const formattedDeliveryEndDate = computed(() =>
-  formatDate(deliveryEndDate.value)
-);
 
 // Clear Date Input
 const clearDate = (type) => {
   if (type === "collectionStartDate") collectionStartDate.value = null;
-  if (type === "collectionEndDate") collectionEndDate.value = null;
-  if (type === "deliveryStartDate") deliveryStartDate.value = null;
-  if (type === "deliveryEndDate") deliveryEndDate.value = null;
 };
 
 // Filter Orders Based on Search & Date Range
 const filteredOrders = computed(() => {
   const query = searchQuery.value.toLowerCase();
+  const selectedCollectionDate = collectionStartDate.value;
 
-  return orders.value.filter((logistics) => {
-    const orderNo = logistics.order?.order_no?.toLowerCase() || "";
-    const customerName = logistics.customer?.name?.toLowerCase() || "";
-    const tagStatus =
-      logistics.order?.order_tags?.tag_status?.toLowerCase() || "";
+  return orders.value
+    .filter((logistics) => {
+      const orderNo = logistics.order?.order_no?.toLowerCase() || "";
+      const customerName = logistics.customer?.name?.toLowerCase() || "";
+      const collectionDate = logistics.collections?.[0]?.collection_date || null;
+      const collectionDriver = logistics.collections?.[0]?.driver_name || "";
 
-    const collectionDate = logistics.collections?.[0]?.collection_date || null;
-    const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
-    const collectionDriver = logistics.collections?.[0]?.driver_name || "";
+      const collectionMatch = !selectedCollectionDate || collectionDate === selectedCollectionDate;
+      const searchMatch = orderNo.includes(query) || customerName.includes(query);
+      const driverMatch =
+        !collectionDriverFilter.value ||
+        collectionDriver === collectionDriverFilter.value;
 
-    const collectionMatch =
-      (!collectionStartDate.value ||
-        collectionDate >= collectionStartDate.value) &&
-      (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
-
-    const deliveryMatch =
-      (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
-      (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
-
-    const searchMatch =
-      orderNo.includes(query) ||
-      customerName.includes(query) ||
-      tagStatus.includes(query);
-
-    const tagStatusMatch =
-      !tagStatusFilter.value || tagStatus === tagStatusFilter.value;
-
-    const driverMatch =
-      !collectionDriverFilter.value ||
-      collectionDriver === collectionDriverFilter.value;
-
-    return (
-      collectionMatch &&
-      deliveryMatch &&
-      searchMatch &&
-      tagStatusMatch &&
-      driverMatch
-    );
-  });
+      return collectionMatch && searchMatch && driverMatch;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.collections?.[0]?.collection_date || 0);
+      const dateB = new Date(b.collections?.[0]?.collection_date || 0);
+      return dateB - dateA;
+    });
 });
 
 // Pagination: Get the paginated slice of orders

@@ -27,5 +27,5 @@ myApp.use(pinia);
 
 // Use router
 myApp.use(router);
-
+   
 myApp.mount("#app");

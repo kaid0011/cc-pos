@@ -1,3 +1,4 @@
+<!-- File: src/views/TagsManagement.vue -->
 <template>
   <div class="full-container orders-history">
     <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
@@ -139,155 +140,88 @@
         </q-card>
       </div>
     </q-card>
-
-    <!-- Search & Date Filters -->
-    <!-- <div class="row justify-end q-mb-sm q-gutter-x-sm">
+    <div class="row justify-end q-mb-sm q-col-gutter-sm">
       <div class="col">
-        <q-input
-          v-model="formattedCollectionStartDate"
-          outlined
-          dense
-          label="Collection Start Date"
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy>
-                <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('collectionStartDate')"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <div class="col">
-        <q-input
-          v-model="formattedCollectionEndDate"
-          outlined
-          dense
-          label="Collection End Date"
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy>
-                <q-date v-model="collectionEndDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('collectionEndDate')"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <div class="col">
-        <q-input
-          v-model="formattedDeliveryStartDate"
-          outlined
-          dense
-          label="Delivery Start Date"
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy>
-                <q-date v-model="deliveryStartDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('deliveryStartDate')"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <div class="col">
-        <q-input
-          v-model="formattedDeliveryEndDate"
-          outlined
-          dense
-          label="Delivery End Date"
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy>
-                <q-date v-model="deliveryEndDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('deliveryEndDate')"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <div class="col">
-        <q-input
-          class="search-transactions search-input"
-          v-model="searchQuery"
-          outlined
-          dense
-          placeholder="Search Order No, Customer Name, Goods Status, Logistics Status, or Payment Status"
-          debounce="300"
-        >
-          <template v-slot:prepend>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </div>
-    </div> -->
-    <div class="row justify-end q-mb-sm q-gutter-x-sm">
-      <div class="col-2">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Logistics Status</div>
+        </div>
         <q-select
-          v-model="tagStatusFilter"
-          :options="tagStatusOptions"
-          label="Tag Status"
+          v-model="logisticsStatusFilter"
+          :options="logisticsStatusOptions"
           outlined
           dense
           emit-value
           map-options
           class="bg-white"
-        />
+        >
+          <template v-slot:append>
+            <q-icon
+              v-if="logisticsStatusFilter"
+              name="close"
+              class="cursor-pointer q-ml-sm"
+              @click.stop="logisticsStatusFilter = null"
+            />
+          </template>
+        </q-select>
+      </div>
+      <div class="col">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Tag Status</div>
+        </div>
+        <q-select
+          v-model="tagStatusFilter"
+          :options="tagStatusOptions"
+          outlined
+          dense
+          emit-value
+          map-options
+          class="bg-white"
+        >
+          <template v-slot:append>
+            <q-icon
+              v-if="tagStatusFilter"
+              name="close"
+              class="cursor-pointer q-ml-sm"
+              @click.stop="tagStatusFilter = null"
+            />
+          </template>
+        </q-select>
       </div>
 
-      <div class="col-2">
+      <div class="col">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Collection Driver</div>
+        </div>
         <q-select
           v-model="collectionDriverFilter"
           :options="sortedDriverOptions"
           option-label="name"
           option-value="name"
-          label="Collection Driver"
           outlined
           dense
           emit-value
           map-options
           class="bg-white"
-        />
+        >
+          <template v-slot:append>
+            <q-icon
+              v-if="collectionDriverFilter"
+              name="close"
+              class="cursor-pointer q-ml-sm"
+              @click.stop="collectionDriverFilter = null"
+            />
+          </template>
+        </q-select>
       </div>
 
-      <div class="col-3">
+      <div class="col">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Collection Date</div>
+        </div>
         <q-input
           v-model="formattedCollectionStartDate"
           outlined
           dense
-          label="Collection Date"
           readonly
           class="bg-white"
         >
@@ -306,13 +240,15 @@
         </q-input>
       </div>
 
-      <div class="col-3">
+      <div class="col">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Search Here...</div>
+        </div>
         <q-input
           class="search-transactions search-input"
           v-model="searchQuery"
           outlined
           dense
-          placeholder="Search here..."
           debounce="300"
         >
           <template v-slot:prepend>
@@ -325,11 +261,10 @@
     <!-- Table Display -->
     <div class="row-col-table">
       <!-- Table Header -->
-      <div class="row row-col-header q-px-md">
-        <div class="col text-weight-bolder q-py-sm">Order No</div>
-        <div class="col text-weight-bolder q-py-sm">Collection Details</div>
-        <div class="col text-weight-bolder q-py-sm">Delivery Details</div>
-        <div class="col text-weight-bolder q-py-sm">Customer Name</div>
+      <div class="row row-col-header q-px-md text-center">
+        <div class="col text-weight-bolder q-py-sm">Order Details</div>
+        <div class="col-4 text-weight-bolder q-py-sm">Logistics Details</div>
+        <div class="col text-weight-bolder q-py-sm">Customer Details</div>
         <div class="col text-weight-bolder q-py-sm">Tag Details</div>
       </div>
 
@@ -361,40 +296,113 @@
             </span>
             {{ getOrderDate(logistics) }}
           </div>
-        </div>
-        <div class="col bordered">
           <div>
             <span class="text-caption text-uppercase text-weight-bold">
-              Date: </span
-            >{{ getCollectionDate(logistics.collections) }}
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Time:
+              Urgency:
             </span>
-            {{ logistics.collections?.[0]?.collection_time || "N/A" }}
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Driver: </span
-            >{{ logistics.collections?.[0]?.driver_name || "N/A" }}
+            <span
+              :class="[
+                'text-uppercase',
+                'text-weight-bolder',
+                logistics.urgency?.toLowerCase?.() === 'urgent'
+                  ? 'text-purple'
+                  : logistics.urgency?.toLowerCase?.() === 'express'
+                  ? 'text-red'
+                  : 'text-caption',
+              ]"
+            >
+              {{ logistics.urgency || "default" }}
+            </span>
           </div>
         </div>
-        <div class="col bordered">
+        <div class="col-4 bordered" style="padding: 0">
           <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Date: </span
-            >{{ getDeliveryDate(logistics.deliveries) }}
+            <div
+              :class="[
+                'text-weight-bold',
+                'text-subtitle1',
+                'text-center',
+                'q-mb-sm',
+                'q-mx-sm',
+                'line-height-1',
+                'text-uppercase',
+                logisticsBadgeClass(logistics.logistics_status),
+              ]"
+              style="border-style: solid; border-width: 1px"
+            >
+              {{ logistics.logistics_status }}
+            </div>
           </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Time: </span
-            >{{ logistics.deliveries?.[0]?.delivery_time || "N/A" }}
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Driver: </span
-            >{{ logistics.deliveries?.[0]?.driver_name || "N/A" }}
+          <q-separator />
+          <div class="row" style="min-height: auto">
+            <div
+              class="col"
+                      :style="{
+                        order: isDeliveryFirst(logistics.logistics_status)
+                          ? 2
+                          : 1,
+                        borderRight: isDeliveryFirst(logistics.logistics_status)
+                          ? ''
+                          : '1px solid #c09f8b',
+                      }"
+            >
+              <div
+                class="text-uppercase text-weight-bolder text-pink-4 text-center"
+              >
+                Collection
+              </div>
+              <q-separator />
+              <div class="q-pa-sm">
+                <div>
+                  <span class="text-caption text-uppercase text-weight-bold">
+                    Date: </span
+                  >{{ getCollectionDate(logistics.collections) }}
+                </div>
+                <div>
+                  <span class="text-caption text-uppercase text-weight-bold">
+                    Time:
+                  </span>
+                  {{ logistics.collections?.[0]?.collection_time || "N/A" }}
+                </div>
+                <div>
+                  <span class="text-caption text-uppercase text-weight-bold">
+                    Driver: </span
+                  >{{ logistics.collections?.[0]?.driver_name || "N/A" }}
+                </div>
+              </div>
+            </div>
+            <div class="col"                      :style="{
+                        order: isDeliveryFirst(logistics.logistics_status)
+                          ? 1
+                          : 2,
+                        borderRight: isDeliveryFirst(logistics.logistics_status)
+                          ? '1px solid #c09f8b'
+                          : '',
+                      }">
+              <div
+                class="text-uppercase text-weight-bolder text-blue text-center"
+              >
+                Delivery
+              </div>
+              <q-separator />
+              <div class="q-pa-sm">
+                <div>
+                  <span class="text-caption text-uppercase text-weight-bold">
+                    Date: </span
+                  >{{ getDeliveryDate(logistics.deliveries) }}
+                </div>
+                <div>
+                  <span class="text-caption text-uppercase text-weight-bold">
+                    Time: </span
+                  >{{ logistics.deliveries?.[0]?.delivery_time || "N/A" }}
+                </div>
+                <div>
+                  <span class="text-caption text-uppercase text-weight-bold">
+                    Driver: </span
+                  >{{ logistics.deliveries?.[0]?.driver_name || "N/A" }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="col bordered">
@@ -407,31 +415,101 @@
             </a>
           </div>
           <div>
-            {{ logistics.customer?.contact_no1 || "-"
-            }}<span v-if="logistics.customer?.contact_no2">
-              / {{ logistics.customer?.contact_no2 || "-" }}
-            </span>
+            <template v-if="logistics.customer?.contact_no1 || logistics.customer?.contact_no2">
+              <span
+                v-if="logistics.customer?.contact_no1"
+                class="phone-link"
+                @click.stop
+              >
+                {{ logistics.customer?.contact_no1 }}
+                <q-popup-proxy transition-show="scale" transition-hide="scale">
+                  <q-list style="min-width: 220px">
+                    <q-item clickable v-ripple @click="callViaPhone(logistics.customer?.contact_no1)">
+                      <q-item-section avatar><q-icon name="call" /></q-item-section>
+                      <q-item-section>Call via phone</q-item-section>
+                    </q-item>
+                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.customer?.contact_no1)">
+                      <q-item-section avatar><q-icon name="chat" /></q-item-section>
+                      <q-item-section>Call via WhatsApp</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-popup-proxy>
+              </span>
+              <span v-if="logistics.customer?.contact_no2"> / </span>
+              <span
+                v-if="logistics.customer?.contact_no2"
+                class="phone-link"
+                @click.stop
+              >
+                {{ logistics.customer?.contact_no2 }}
+                <q-popup-proxy transition-show="scale" transition-hide="scale">
+                  <q-list style="min-width: 220px">
+                    <q-item clickable v-ripple @click="callViaPhone(logistics.customer?.contact_no2)">
+                      <q-item-section avatar><q-icon name="call" /></q-item-section>
+                      <q-item-section>Call via phone</q-item-section>
+                    </q-item>
+                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.customer?.contact_no2)">
+                      <q-item-section avatar><q-icon name="chat" /></q-item-section>
+                      <q-item-section>Call via WhatsApp</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-popup-proxy>
+              </span>
+            </template>
           </div>
 
-          <q-separator class="q-my-sm" />
-          <div class="mark-green text-caption text-uppercase">
+          <q-separator class="q-mt-sm" />
+          <div class="mark-yellow text-center text-uppercase">
             Contact Person
           </div>
+          <q-separator />
           <div>
             {{
               logistics.collections?.[0]?.contact_person?.name || "[NOT SET]"
             }}
           </div>
-          <div>
-            {{ logistics.collections?.[0]?.contact_person?.contact_no1 || "-"
-            }}<span
-              v-if="logistics.collections?.[0]?.contact_person?.contact_no2"
-            >
-              /
-              {{
-                logistics.collections?.[0]?.contact_person?.contact_no2 || "-"
-              }}
-            </span>
+         <div>
+            <template v-if="logistics.collections?.[0]?.contact_person?.contact_no1 || logistics.collections?.[0]?.contact_person?.contact_no2">
+              <span
+                v-if="logistics.collections?.[0]?.contact_person?.contact_no1"
+                class="phone-link"
+                @click.stop
+              >
+                {{ logistics.collections?.[0]?.contact_person?.contact_no1 }}
+                <q-popup-proxy transition-show="scale" transition-hide="scale">
+                  <q-list style="min-width: 220px">
+                    <q-item clickable v-ripple @click="callViaPhone(logistics.collections?.[0]?.contact_person?.contact_no1)">
+                      <q-item-section avatar><q-icon name="call" /></q-item-section>
+                      <q-item-section>Call via phone</q-item-section>
+                    </q-item>
+                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.collections?.[0]?.contact_person?.contact_no1)">
+                      <q-item-section avatar><q-icon name="chat" /></q-item-section>
+                      <q-item-section>Call via WhatsApp</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-popup-proxy>
+              </span>
+              <span v-if="logistics.collections?.[0]?.contact_person?.contact_no2"> / </span>
+              <span
+                v-if="logistics.collections?.[0]?.contact_person?.contact_no2"
+                class="phone-link"
+                @click.stop
+              >
+                {{ logistics.collections?.[0]?.contact_person?.contact_no2 }}
+                <q-popup-proxy transition-show="scale" transition-hide="scale">
+                  <q-list style="min-width: 220px">
+                    <q-item clickable v-ripple @click="callViaPhone(logistics.collections?.[0]?.contact_person?.contact_no2)">
+                      <q-item-section avatar><q-icon name="call" /></q-item-section>
+                      <q-item-section>Call via phone</q-item-section>
+                    </q-item>
+                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.collections?.[0]?.contact_person?.contact_no2)">
+                      <q-item-section avatar><q-icon name="chat" /></q-item-section>
+                      <q-item-section>Call via WhatsApp</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-popup-proxy>
+              </span>
+            </template>
           </div>
         </div>
         <div class="col bordered text-uppercase">
@@ -446,23 +524,13 @@
             />
           </div>
           <div
-            class="text-weight-bold text-subtitle1 text-center q-my-sm q-py-xs line-height-1 text-uppercase"
+            class="text-weight-bolder text-subtitle1 text-center q-my-sm q-py-xs line-height-1 text-uppercase"
             style="border-style: solid; border-width: 1px"
           >
             <span
               :class="getStatusClass(logistics.order?.order_tags?.tag_status)"
-              >{{ logistics.order?.order_tags?.tag_status || "-" }}</span
+              >{{ logistics.order?.order_tags?.tag_status || '-' }}</span
             >
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Timestamp: </span
-            >{{ logistics.order?.order_tags?.tag_timestamp || "-" }}
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Tag Changes: </span
-            >{{ logistics.order?.order_tags?.tag_changes || "-" }}
           </div>
         </div>
       </div>
@@ -478,7 +546,7 @@
       />
     </div>
   </div>
-  
+
   <q-dialog v-model="showCustomizeDialog" persistent>
     <q-card style="min-width: 400px">
       <q-card-section class="row items-center q-pb-none">
@@ -517,35 +585,35 @@
           <q-card flat class="tags" style="max-height: 46px">
             <div class="text-center row q-pa-xs">
               <div class="col">
-                <div>{{ customA || "0" }}</div>
+                <div>{{ customA || '0' }}</div>
                 <div>A</div>
               </div>
               <div class="col">
-                <div>{{ customB || "0" }}</div>
+                <div>{{ customB || '0' }}</div>
                 <div>B</div>
               </div>
               <div class="col">
-                <div>{{ customC || "0" }}</div>
+                <div>{{ customC || '0' }}</div>
                 <div>C</div>
               </div>
               <div class="col">
-                <div>{{ customD || "0" }}</div>
+                <div>{{ customD || '0' }}</div>
                 <div>D</div>
               </div>
               <div class="col">
-                <div>{{ customE || "0" }}</div>
+                <div>{{ customE || '0' }}</div>
                 <div>E</div>
               </div>
               <div class="col">
-                <div>{{ customF || "0" }}</div>
-                <div>F</div>
+                <div>{{ customF || '0' }}</div>
+                <divF></divF>
               </div>
               <div class="col q-mr-sm">
-                <div>{{ customG || "0" }}</div>
+                <div>{{ customG || '0' }}</div>
                 <div>G</div>
               </div>
               <div class="col-6 tag-details">
-                {{ customDescription || "-" }}
+                {{ customDescription || '-' }}
               </div>
             </div>
           </q-card>
@@ -561,16 +629,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
-import { useTransactionStore } from "@/stores/transactionStore";
-import html2pdf from "html2pdf.js";
+import { ref, onMounted, computed, watch } from 'vue';
+import { useTransactionStore } from '@/stores/transactionStore';
+import { openURL } from 'quasar';
+import html2pdf from 'html2pdf.js';
 
 const transactionStore = useTransactionStore();
 const orders = ref([]); // Stores fetched orders
 const currentPage = ref(1); // Current page for pagination
 const pageSize = ref(10); // Number of records per page
 
-const searchQuery = ref(""); // Search input
+const searchQuery = ref(''); // Search input
 // Date Filters
 const collectionStartDate = ref(null);
 
@@ -580,21 +649,58 @@ const selectedDate = ref(null);
 const formattedSelectedDate = computed(() => formatDate(selectedDate.value));
 const selectedMatchedOrders = ref([]);
 
-const customDescription = ref("");
-const customA = ref("");
-const customB = ref("");
-const customC = ref("");
-const customD = ref("");
-const customE = ref("");
-const customF = ref("");
-const customG = ref("");
+const customDescription = ref('');
+const customA = ref('');
+const customB = ref('');
+const customC = ref('');
+const customD = ref('');
+const customE = ref('');
+const customF = ref('');
+const customG = ref('');
+
+// --- SAME COLOR-CODING AS IN LogisticsManagement.vue ---
+const COLLECTION_STATUSES = new Set([
+  'collection arranged',
+  'collection completed',
+  'collection rescheduled',
+  'collection cancelled',
+]);
+
+const DELIVERY_STATUSES = new Set([
+  'delivery arranged',
+  'delivery completed',
+  'delivery postponed',
+  'delivery partial',
+]);
+
+function logisticsBadgeClass(status) {
+  const s = String(status || '').trim().toLowerCase();
+  if (COLLECTION_STATUSES.has(s)) return 'mark-bg-pink';
+  if (DELIVERY_STATUSES.has(s)) return 'mark-bg-blue';
+  return '';
+}
+// -------------------------------------------------------
+
+const logisticsStatusFilter = ref('collection completed');
+
+const logisticsStatusOptions = [
+  { label: 'Collection Arranged', value: 'collection arranged' },
+  { label: 'Collection Completed', value: 'collection completed' },
+  { label: 'Collection Rescheduled', value: 'collection rescheduled' },
+  { label: 'Collection Cancelled', value: 'collection cancelled' },
+  { label: 'Delivery Arranged', value: 'delivery arranged' },
+  { label: 'Delivery Completed', value: 'delivery completed' },
+  { label: 'Delivery Rescheduled', value: 'delivery rescheduled' },
+  { label: 'Delivery Partial Completed', value: 'delivery partial completed' },
+  { label: 'Delivery Partial Rescheduled', value: 'delivery partial rescheduled' },
+];
 
 const collectionDriverFilter = ref(null);
 
 const tagStatusFilter = ref(null);
 const tagStatusOptions = [
-  { label: "Printed", value: "printed" },
-  { label: "To Print", value: "to print" },
+  { label: 'Printed', value: 'printed' },
+  { label: 'To Print', value: 'to print' },
 ];
 
 const sortedDriverOptions = computed(() => {
@@ -637,11 +743,11 @@ watch([selectedDriver, selectedDate], () => {
 });
 
 const getStatusClass = (status) => {
-  if (!status) return "";
+  if (!status) return '';
   const formattedStatus = status.toLowerCase();
-  if (formattedStatus === "done") return "status-done";
-  if (formattedStatus === "to print") return "status-to-print";
-  return "";
+  if (formattedStatus === 'done') return 'status-done';
+  if (formattedStatus === 'to print') return 'status-to-print';
+  return '';
 };
 
 // Fetch orders on mount
@@ -651,7 +757,7 @@ onMounted(async () => {
     orders.value = result;
     await transactionStore.loadDrivers();
   } catch (error) {
-    console.error("Error on load:", error);
+    console.error('Error on load:', error);
   }
 });
 
@@ -662,7 +768,7 @@ const formattedCollectionStartDate = computed(() =>
 
 // Clear Date Input
 const clearDate = (type) => {
-  if (type === "collectionStartDate") collectionStartDate.value = null;
+  if (type === 'collectionStartDate') collectionStartDate.value = null;
 };
 
 // Filter Orders Based on Search & Date Range
@@ -672,18 +778,29 @@ const filteredOrders = computed(() => {
 
   return orders.value
     .filter((logistics) => {
-      const orderNo = logistics.order?.order_no?.toLowerCase() || "";
-      const customerName = logistics.customer?.name?.toLowerCase() || "";
-      const collectionDate = logistics.collections?.[0]?.collection_date || null;
-      const collectionDriver = logistics.collections?.[0]?.driver_name || "";
+      const orderNo = logistics.order?.order_no?.toLowerCase() || '';
+      const customerName = logistics.customer?.name?.toLowerCase() || '';
+      const collectionDate =
+        logistics.collections?.[0]?.collection_date || null;
+      const collectionDriver = logistics.collections?.[0]?.driver_name || '';
 
-      const collectionMatch = !selectedCollectionDate || collectionDate === selectedCollectionDate;
-      const searchMatch = orderNo.includes(query) || customerName.includes(query);
+      const statusMatch =
+        !logisticsStatusFilter.value ||
+        logistics.logistics_status === logisticsStatusFilter.value;
+      const collectionMatch =
+        !selectedCollectionDate || collectionDate === selectedCollectionDate;
+      const searchMatch =
+        orderNo.includes(query) || customerName.includes(query);
       const driverMatch =
         !collectionDriverFilter.value ||
         collectionDriver === collectionDriverFilter.value;
 
-      return collectionMatch && searchMatch && driverMatch;
+      const tagMatch =
+        !tagStatusFilter.value ||
+        (logistics.order?.order_tags?.tag_status || '').toLowerCase() ===
+          tagStatusFilter.value;
+
+      return collectionMatch && searchMatch && driverMatch && statusMatch && tagMatch;
     })
     .sort((a, b) => {
       const dateA = new Date(a.collections?.[0]?.collection_date || 0);
@@ -706,13 +823,13 @@ const totalPages = computed(() =>
 
 // Function to format dates
 const formatDate = (dateString) => {
-  if (!dateString) return "-";
+  if (!dateString) return '-';
   const date = new Date(dateString);
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   });
 };
 
@@ -722,20 +839,20 @@ const getOrderDate = (logistics) => {
 
 // Get collection date from collections array
 const getCollectionDate = (collections) => {
-  if (!collections || collections.length === 0) return "N/A";
+  if (!collections || collections.length === 0) return 'N/A';
   return formatDate(collections[0]?.collection_date);
 };
 
 // Get delivery date from deliveries array
 const getDeliveryDate = (deliveries) => {
-  if (!deliveries || deliveries.length === 0) return "N/A";
+  if (!deliveries || deliveries.length === 0) return 'N/A';
   return formatDate(deliveries[0]?.delivery_date);
 };
 
 // Open Customer Tab
 const openCustomerTab = (customerId) => {
   if (!customerId) return;
-  window.open(`/customers/${customerId}`, "_blank");
+  window.open(`/customers/${customerId}`, '_blank');
 };
 
 // Open Order Dialog and fetch transaction items
@@ -750,30 +867,30 @@ const openOrderDialog = async (logistics) => {
     transactionStore.setOrderNo(logistics.order.order_no);
     transactionStore.resetTransactionItems();
 
-    window.open(`/orders/read-${logistics.order.order_no}`, "_blank");
+    window.open(`/orders/read-${logistics.order.order_no}`, '_blank');
   } catch (error) {
-    console.error("Error opening order dialog:", error);
+    console.error('Error opening order dialog:', error);
   }
 };
 
 const viewTag = (order_no) => {
   const url = `/tags/${order_no}`;
-  window.open(url, "_blank");
+  window.open(url, '_blank');
 };
 
 const DRIVER_CODES = {
-  Ass: "Ass",
-  Ken: "Ken",
-  Ang: "Ang",
-  Pea: "Pea",
-  You: "You",
-  "Self-collect": "Sfc",
-  "Ng Soo Chong": "Nsc",
-  Chia: "Cha",
-  Des: "Des",
-  Cue: "Cue",
-  Are: "Are",
-  Ting: "Tin",
+  Ass: 'Ass',
+  Ken: 'Ken',
+  Ang: 'Ang',
+  Pea: 'Pea',
+  You: 'You',
+  'Self-collect': 'Sfc',
+  'Ng Soo Chong': 'Nsc',
+  Chia: 'Cha',
+  Des: 'Des',
+  Cue: 'Cue',
+  Are: 'Are',
+  Ting: 'Tin',
 };
 
 const matchedOrdersList = ref([]);
@@ -783,12 +900,12 @@ const generateTag = () => {
   const selectedRawDate = selectedDate.value;
 
   if (!driverName || !selectedRawDate) {
-    console.warn("Driver or Date not selected");
+    console.warn('Driver or Date not selected');
     return;
   }
 
   if (!selectedMatchedOrders.value.length) {
-    console.warn("No orders selected to generate tag.");
+    console.warn('No orders selected to generate tag.');
     return;
   }
 
@@ -799,10 +916,10 @@ const generateTag = () => {
     .map((logistics) => logistics.order?.order_no)
     .filter(Boolean);
 
-  const query = encodeURIComponent(selectedOrderNos.join(","));
+  const query = encodeURIComponent(selectedOrderNos.join(','));
   const url = `/tags/grp-${groupSlug}?orders=${query}`;
 
-  window.open(url, "_blank");
+  window.open(url, '_blank');
 };
 
 const generateInvoice = () => {
@@ -810,12 +927,12 @@ const generateInvoice = () => {
   const selectedRawDate = selectedDate.value;
 
   if (!driverName || !selectedRawDate) {
-    console.warn("Driver or Date not selected");
+    console.warn('Driver or Date not selected');
     return;
   }
 
   if (!selectedMatchedOrders.value.length) {
-    console.warn("No orders selected to generate invoice.");
+    console.warn('No orders selected to generate invoice.');
     return;
   }
 
@@ -826,10 +943,10 @@ const generateInvoice = () => {
     .map((logistics) => logistics.order?.order_no)
     .filter(Boolean);
 
-  const query = encodeURIComponent(selectedOrderNos.join(","));
+  const query = encodeURIComponent(selectedOrderNos.join(','));
   const url = `/invoice/grp-${groupSlug}?orders=${query}`;
 
-  window.open(url, "_blank");
+  window.open(url, '_blank');
 };
 
 const showCustomizeDialog = ref(false);
@@ -840,27 +957,27 @@ const openCustomizeDialog = () => {
 };
 
 const printCustomTag = () => {
-  const tag = document.querySelector(".tags");
+  const tag = document.querySelector('.tags');
   if (!tag) {
-    console.warn("No .tags element found.");
+    console.warn('No .tags element found.');
     return;
   }
 
   const pcsCount = parseInt(customPcs.value, 10) || 1;
   if (pcsCount <= 0) {
-    console.warn("pcsCount is 0 or less. Nothing to print.");
+    console.warn('pcsCount is 0 or less. Nothing to print.');
     return;
   }
 
-  const container = document.createElement("div");
-  container.style.display = "block";
-  container.style.margin = "0";
-  container.style.padding = "0";
+  const container = document.createElement('div');
+  container.style.display = 'block';
+  container.style.margin = '0';
+  container.style.padding = '0';
 
   for (let i = 0; i < pcsCount; i++) {
     const clone = tag.cloneNode(true);
     if (i > 0) {
-      clone.style.pageBreakBefore = "always";
+      clone.style.pageBreakBefore = 'always';
     }
     container.appendChild(clone);
   }
@@ -868,20 +985,20 @@ const printCustomTag = () => {
   const options = {
     margin: 0,
     filename: `Custom_Tag_Print.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
+    image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
-    jsPDF: { unit: "mm", format: [100, 12.7], orientation: "landscape" },
-    pagebreak: { mode: ["css", "legacy"] }, // key to support .html2pdf__page-break
+    jsPDF: { unit: 'mm', format: [100, 12.7], orientation: 'landscape' },
+    pagebreak: { mode: ['css', 'legacy'] }, // why: support .html2pdf__page-break
   };
 
   html2pdf()
     .set(options)
     .from(container)
     .toPdf()
-    .output("blob")
+    .output('blob')
     .then((blob) => {
       const pdfUrl = URL.createObjectURL(blob);
-      const newWindow = window.open(pdfUrl, "_blank");
+      const newWindow = window.open(pdfUrl, '_blank');
       if (newWindow) {
         setTimeout(() => {
           newWindow.print();
@@ -891,4 +1008,27 @@ const printCustomTag = () => {
     })
     .catch(console.error);
 };
+
+// tel/WhatsApp helpers (why: ensure correct URL formats)
+const sanitizeForTel = (raw) => String(raw || '').replace(/[^\d+]/g, '');
+const sanitizeForWhatsApp = (raw) => String(raw || '').replace(/\D/g, '');
+const callViaPhone = (raw) => {
+  const tel = sanitizeForTel(raw);
+  if (tel) openURL(`tel:${tel}`);
+};
+const callViaWhatsApp = (raw) => {
+  const wa = sanitizeForWhatsApp(raw);
+  if (wa) openURL(`https://wa.me/${wa}`);
+};
+
+// Which side goes first under "Logistics Details"?
+const isDeliveryFirst = (status) => {
+  const s = String(status || "")
+    .trim()
+    .toLowerCase();
+  if (DELIVERY_STATUSES.has(s) || s.startsWith("delivery")) return true;
+  // default & collection-* → collection first
+  return false;
+};
+
 </script>

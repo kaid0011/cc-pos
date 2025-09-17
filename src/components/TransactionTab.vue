@@ -81,31 +81,23 @@
     </div>
 
     <div class="right-container col-7">
-
       <div class="row q-gutter-x-md items-center text-p">
         <div class="col">
-          <div>
-            Order No:
-          </div></div>
+          <div>Order No:</div>
+        </div>
         <!-- Customer Name -->
         <div class="col">
-          <div>
-            Customer Name:
-          </div>
+          <div>Customer Name:</div>
         </div>
 
         <!-- Contact No -->
         <div class="col">
-          <div>
-            Contact Nos:
-          </div>
+          <div>Contact Nos:</div>
         </div>
 
         <!-- Email -->
         <div class="col">
-          <div>
-            Email:
-          </div>
+          <div>Email:</div>
         </div>
       </div>
       <div class="row q-gutter-x-md items-center text-p">
@@ -114,7 +106,8 @@
             <span class="text-summary">{{
               transactionStore.orderNo || "-"
             }}</span>
-          </div></div>
+          </div>
+        </div>
         <!-- Customer Name -->
         <div class="col">
           <div>
@@ -128,7 +121,14 @@
         <div class="col">
           <div>
             <span class="text-summary">
-              {{ transactionStore.selectedCustomer?.contact_no1 || "N/A" }}<span v-if="transactionStore.selectedCustomer?.contact_no2"> / {{ transactionStore.selectedCustomer?.contact_no2 || "-" }}</span></span>
+              {{ transactionStore.selectedCustomer?.contact_no1 || "N/A"
+              }}<span v-if="transactionStore.selectedCustomer?.contact_no2">
+                /
+                {{
+                  transactionStore.selectedCustomer?.contact_no2 || "-"
+                }}</span
+              ></span
+            >
           </div>
         </div>
 
@@ -176,7 +176,12 @@
               ${{ item.subtotal.toFixed(2) }}
             </div>
             <div class="col-1 col bordered">
-              <q-btn flat class="trash-icon" icon="delete" @click="removeItem(index)" />
+              <q-btn
+                flat
+                class="trash-icon"
+                icon="delete"
+                @click="notifyDelete(index)"
+              />
             </div>
           </div>
         </div>
@@ -191,7 +196,9 @@
           <div class="col-7 text-left q-pl-sm text-uppercase">Total</div>
           <div class="col-1 col bordered"></div>
           <div class="col-1 col bordered">{{ totalQuantity }}</div>
-          <div class="col-2 col bordered text-red-9">${{ totalAmount.toFixed(2) }}</div>
+          <div class="col-2 col bordered text-red-9">
+            ${{ totalAmount.toFixed(2) }}
+          </div>
           <div class="col-1"></div>
         </div>
       </div>
@@ -374,237 +381,251 @@
                 />
               </q-card-actions>
             </div>
-              <div class="right-item-dialog col-6">
-                <q-card flat class="card1">
-                  <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
-                    Instructions
-                  </div>
-                  <div class="row q-gutter-x-md">
-                    <div class="col-auto">
-                      <div>Enter Instructions:</div>
-                      <div class="q-pl-sm q-pt-sm">
-                        <div class="text-p">
-                          <span>
-                            <q-radio
-                              v-model="instructionsType"
-                              checked-icon="task_alt"
-                              unchecked-icon="panorama_fish_eye"
-                              val="onetime"
-                              dense
-                            />
-                          </span>
-                          One-time
-                        </div>
-                        <div class="text-p">
-                          <span>
-                            <q-radio
-                              v-model="instructionsType"
-                              checked-icon="task_alt"
-                              unchecked-icon="panorama_fish_eye"
-                              val="recurring"
-                              dense
-                            />
-                          </span>
-                          Recurring
-                        </div>
+            <div class="right-item-dialog col-6">
+              <q-card flat class="card1">
+                <div
+                  class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
+                >
+                  Instructions
+                </div>
+                <div class="row q-gutter-x-md">
+                  <div class="col-auto">
+                    <div>Enter Instructions:</div>
+                    <div class="q-pl-sm q-pt-sm">
+                      <div class="text-p">
+                        <span>
+                          <q-radio
+                            v-model="instructionsType"
+                            checked-icon="task_alt"
+                            unchecked-icon="panorama_fish_eye"
+                            val="onetime"
+                            dense
+                          />
+                        </span>
+                        One-time
+                      </div>
+                      <div class="text-p">
+                        <span>
+                          <q-radio
+                            v-model="instructionsType"
+                            checked-icon="task_alt"
+                            unchecked-icon="panorama_fish_eye"
+                            val="recurring"
+                            dense
+                          />
+                        </span>
+                        Recurring
                       </div>
                     </div>
-                    <div class="col">
-                      <textarea
-                        v-model="instructionsDesc"
-                        type="textarea"
-                        class="q-pa-sm instructions-desc full-width"
-                        placeholder="Enter instruction here..."
+                  </div>
+                  <div class="col">
+                    <textarea
+                      v-model="instructionsDesc"
+                      type="textarea"
+                      class="q-pa-sm instructions-desc full-width"
+                      placeholder="Enter instruction here..."
+                    />
+                    <div class="q-gutter-sm">
+                      <q-checkbox
+                        v-model="instructionsTo"
+                        val="cleaning"
+                        label="Cleaning"
+                        color="teal"
                       />
-                      <div class="q-gutter-sm">
-                        <q-checkbox
-                          v-model="instructionsTo"
-                          val="cleaning"
-                          label="Cleaning"
-                          color="teal"
-                        />
-                        <q-checkbox
-                          v-model="instructionsTo"
-                          val="packing"
-                          label="Packing"
-                          color="orange"
-                        />
-                        <q-checkbox
-                          v-model="instructionsTo"
-                          val="pickingsending"
-                          label="Picking/Sending"
-                          color="red"
-                        />
-                        <q-checkbox
-                          v-model="instructionsTo"
-                          val="admin"
-                          label="Admin"
-                          color="cyan"
-                        />
-                      </div>
-                      <q-btn
-                        color="primary"
-                        label="Add Instruction"
-                        class="float-right q-mt-sm"
-                        @click="addInstruction"
+                      <q-checkbox
+                        v-model="instructionsTo"
+                        val="packing"
+                        label="Packing"
+                        color="orange"
+                      />
+                      <q-checkbox
+                        v-model="instructionsTo"
+                        val="pickingsending"
+                        label="Picking/Sending"
+                        color="red"
+                      />
+                      <q-checkbox
+                        v-model="instructionsTo"
+                        val="admin"
+                        label="Admin"
+                        color="cyan"
                       />
                     </div>
+                    <q-btn
+                      color="primary"
+                      label="Add Instruction"
+                      class="float-right q-mt-sm"
+                      @click="addInstruction"
+                    />
                   </div>
-                </q-card>
+                </div>
+              </q-card>
 
-                <q-card flat class="card2 q-mt-md">
-                  <div v-if="transactionStore.displayInstructions.length > 0">
-                    <div
-                      v-for="displayInstruction in transactionStore.displayInstructions"
-                      :key="displayInstruction.id"
-                      class="row justify-between per-instruction q-mb-sm"
-                    >
-                      <div>
-                        <div class="text-p">
-                          <span>
-                            <q-icon
-                              name="circle"
-                              color="primary"
-                              size="8px"
-                              class="q-mr-sm q-ml-md"
-                            />
-                          </span>
-                          {{ displayInstruction.description }}
-                        </div>
-                        <div class="instruction-chips q-ml-lg">
-                          <q-chip
-                            square
-                            :color="
-                            displayInstruction.type === 'onetime' ? 'purple-10' : 'pink-10'
-                            "
-                            text-color="white"
-                            class="instructions-type"
-                          >
-                            {{
-                              displayInstruction.type === "onetime" ? "One-time" : "Recurring"
-                            }}
-                          </q-chip>
-                          <span> | </span>
-                          <q-chip
-                            v-for="section in displayInstruction.to"
-                            :key="section"
-                            :color="getSectionColor(section)"
-                            text-color="white"
-                            class="instructions-to"
-                          >
-                            {{ formatSectionLabel(section) }}
-                          </q-chip>
-                        </div>
+              <q-card flat class="card2 q-mt-md">
+                <div v-if="transactionStore.displayInstructions.length > 0">
+                  <div
+                    v-for="displayInstruction in transactionStore.displayInstructions"
+                    :key="displayInstruction.id"
+                    class="row justify-between per-instruction q-mb-sm"
+                  >
+                    <div>
+                      <div class="text-p">
+                        <span>
+                          <q-icon
+                            name="circle"
+                            color="primary"
+                            size="8px"
+                            class="q-mr-sm q-ml-md"
+                          />
+                        </span>
+                        {{ displayInstruction.description }}
+                      </div>
+                      <div class="instruction-chips q-ml-lg">
+                        <q-chip
+                          square
+                          :color="
+                            displayInstruction.type === 'onetime'
+                              ? 'purple-10'
+                              : 'pink-10'
+                          "
+                          text-color="white"
+                          class="instructions-type"
+                        >
+                          {{
+                            displayInstruction.type === "onetime"
+                              ? "One-time"
+                              : "Recurring"
+                          }}
+                        </q-chip>
+                        <span> | </span>
+                        <q-chip
+                          v-for="section in displayInstruction.to"
+                          :key="section"
+                          :color="getSectionColor(section)"
+                          text-color="white"
+                          class="instructions-to"
+                        >
+                          {{ formatSectionLabel(section) }}
+                        </q-chip>
                       </div>
                     </div>
                   </div>
-                  <q-separator class="q-mb-lg"/>
-                  <div v-if="transactionStore.instructions.length > 0">
-                    <div
-                      v-for="instruction in transactionStore.instructions"
-                      :key="instruction.id"
-                      class="row justify-between per-instruction q-mb-sm"
-                    >
-                      <div>
-                        <div class="text-p">
-                          <span>
-                            <q-icon
-                              name="circle"
-                              color="primary"
-                              size="8px"
-                              class="q-mr-sm q-ml-md"
-                            />
-                          </span>
-                          {{ instruction.description }}
-                        </div>
-                        <div class="instruction-chips q-ml-lg">
-                          <q-chip
-                            square
-                            :color="
-                              instruction.type === 'onetime' ? 'purple-10' : 'pink-10'
-                            "
-                            text-color="white"
-                            class="instructions-type"
-                          >
-                            {{
-                              instruction.type === "onetime" ? "One-time" : "Recurring"
-                            }}
-                          </q-chip>
-                          <span> | </span>
-                          <q-chip
-                            v-for="section in instruction.to"
-                            :key="section"
-                            :color="getSectionColor(section)"
-                            text-color="white"
-                            class="instructions-to"
-                          >
-                            {{ formatSectionLabel(section) }}
-                          </q-chip>
-                        </div>
+                </div>
+                <q-separator class="q-mb-lg" />
+                <div v-if="transactionStore.instructions.length > 0">
+                  <div
+                    v-for="instruction in transactionStore.instructions"
+                    :key="instruction.id"
+                    class="row justify-between per-instruction q-mb-sm"
+                  >
+                    <div>
+                      <div class="text-p">
+                        <span>
+                          <q-icon
+                            name="circle"
+                            color="primary"
+                            size="8px"
+                            class="q-mr-sm q-ml-md"
+                          />
+                        </span>
+                        {{ instruction.description }}
                       </div>
-                      <q-btn
+                      <div class="instruction-chips q-ml-lg">
+                        <q-chip
+                          square
+                          :color="
+                            instruction.type === 'onetime'
+                              ? 'purple-10'
+                              : 'pink-10'
+                          "
+                          text-color="white"
+                          class="instructions-type"
+                        >
+                          {{
+                            instruction.type === "onetime"
+                              ? "One-time"
+                              : "Recurring"
+                          }}
+                        </q-chip>
+                        <span> | </span>
+                        <q-chip
+                          v-for="section in instruction.to"
+                          :key="section"
+                          :color="getSectionColor(section)"
+                          text-color="white"
+                          class="instructions-to"
+                        >
+                          {{ formatSectionLabel(section) }}
+                        </q-chip>
+                      </div>
+                    </div>
+                    <q-btn
                       dense
                       flat
                       icon="delete"
                       color="red"
                       @click="openDeleteDialog('instruction', instruction.id)"
                     />
-                    </div>
                   </div>
-                  <div v-else class="text-center text-grey">No instructions added.</div>
-                </q-card>
+                </div>
+                <div v-else class="text-center text-grey">
+                  No instructions added.
+                </div>
+              </q-card>
 
-                <!-- Error Reporting Section -->
-                <q-card flat class="card3 q-mt-md">
-                  <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
-                    Error Reporting
+              <!-- Error Reporting Section -->
+              <q-card flat class="card3 q-mt-md">
+                <div
+                  class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
+                >
+                  Error Reporting
+                </div>
+                <div class="q-px-md">
+                  <div class="row items-center q-mb-sm">
+                    <div class="col-4">Select Category:</div>
+                    <div class="col-8">
+                      <q-select
+                        square
+                        dense
+                        outlined
+                        class="bg-white"
+                        :options="reportCategories"
+                        v-model="selectedCategory"
+                        label="Select Category"
+                        @update:model-value="updateSubCategories"
+                      />
+                    </div>
                   </div>
-                  <div class="q-px-md">
-                    <div class="row items-center q-mb-sm">
-                      <div class="col-4">Select Category:</div>
-                      <div class="col-8">
-                        <q-select
-                          square
-                          dense
-                          outlined
-                          class="bg-white"
-                          :options="reportCategories"
-                          v-model="selectedCategory"
-                          label="Select Category"
-                          @update:model-value="updateSubCategories"
-                        />
-                      </div>
+                  <div class="row items-center q-mb-sm">
+                    <div class="col-4">Select Sub-category:</div>
+                    <div class="col-8">
+                      <q-select
+                        square
+                        dense
+                        outlined
+                        class="bg-white"
+                        :options="filteredSubCategories"
+                        v-model="selectedSubCategory"
+                        label="Select Sub-category"
+                      />
                     </div>
-                    <div class="row items-center q-mb-sm">
-                      <div class="col-4">Select Sub-category:</div>
-                      <div class="col-8">
-                        <q-select
-                          square
-                          dense
-                          outlined
-                          class="bg-white"
-                          :options="filteredSubCategories"
-                          v-model="selectedSubCategory"
-                          label="Select Sub-category"
-                        />
-                      </div>
+                  </div>
+                  <div class="row items-center q-mb-sm">
+                    <div class="col-4">Enter Item Description:</div>
+                    <div class="col-8">
+                      <textarea
+                        v-model="reportDesc"
+                        type="textarea"
+                        class="q-pa-sm report-desc full-width"
+                        placeholder="Enter item description here..."
+                      />
                     </div>
-                    <div class="row items-center q-mb-sm">
-                      <div class="col-4">Enter Item Description:</div>
-                      <div class="col-8">
-                        <textarea
-                          v-model="reportDesc"
-                          type="textarea"
-                          class="q-pa-sm report-desc full-width"
-                          placeholder="Enter item description here..."
-                        />
-                      </div>
-                    </div>
-                    <div class="row items-center q-mb-sm">
-                      <div class="col-4">Attach Photo (Optional):</div>
-                      <div class="col-8">
-                        <!-- File Uploader -->
-                        <!-- <q-uploader
+                  </div>
+                  <div class="row items-center q-mb-sm">
+                    <div class="col-4">Attach Photo (Optional):</div>
+                    <div class="col-8">
+                      <!-- File Uploader -->
+                      <!-- <q-uploader
                           ref="uploader"
                           accept="image/*"
                           label="Attach a photo"
@@ -612,109 +633,123 @@
                           @added="handleFileUpload"
                           style="max-width: 300px"
                         /> -->
-                        <!-- Capture Photo Button -->
-                        <q-btn
-                        outline
-                          color="primary"
-                          label="Click Here to Capture Photo"
-                          dense
-                          class="outline-btn q-mt-sm"
-                          @click="openCameraDialog"
-                        />
-                        <!-- Remove Photo Button -->
-                        <q-btn
-                          dense
-                          flat
-                          icon="delete"
-                          color="red"
-                          v-if="uploadedPhotoUrl"
-                          @click="clearUploadedPhoto"
-                          label="Remove Photo"
-                          class="q-mt-xs"
-                        />
-                        <!-- Display Captured Photo -->
-                        <q-img
-                          v-if="uploadedPhotoUrl"
-                          :src="uploadedPhotoUrl"
-                          class="q-mt-sm"
-                          style="max-width: 300px; height: auto;"
-                        />
-                      </div>
-                    
-                      <!-- Camera Dialog -->
-                      <q-dialog v-model="isCameraDialogOpen" persistent>
-                        <q-card style="max-width: 500px;">
-                          <q-card-section class="dialog-header">
-                            <div class="text-h6">Capture Photo</div>
-                          </q-card-section>
-                          <q-card-section class="dialog-body">
-                            <!-- Add a ref to link the video element -->
-                            <video ref="videoElement" autoplay playsinline disablePictureInPicture class="camera-feed styled-camera"></video>
-                            <div align="right" class="q-mt-md">
-                              <q-btn label="Close" color="negative" @click="closeCameraDialog" />
-                              <q-btn color="primary" class="q-ml-sm" label="Capture" @click="capturePhoto" />
-                            </div>
-                          </q-card-section>
-                        </q-card>
-                      </q-dialog>
-                      
-                    </div>
-                    
-                  </div>
-                  <div class="row">
-                    <div class="full-width">
+                      <!-- Capture Photo Button -->
                       <q-btn
+                        outline
                         color="primary"
-                        label="Add Report"
-                        class="float-right q-mt-sm"
-                        @click="addErrorReport"
+                        label="Click Here to Capture Photo"
+                        dense
+                        class="outline-btn q-mt-sm"
+                        @click="openCameraDialog"
+                      />
+                      <!-- Remove Photo Button -->
+                      <q-btn
+                        dense
+                        flat
+                        icon="delete"
+                        color="red"
+                        v-if="uploadedPhotoUrl"
+                        @click="clearUploadedPhoto"
+                        label="Remove Photo"
+                        class="q-mt-xs"
+                      />
+                      <!-- Display Captured Photo -->
+                      <q-img
+                        v-if="uploadedPhotoUrl"
+                        :src="uploadedPhotoUrl"
+                        class="q-mt-sm"
+                        style="max-width: 300px; height: auto"
                       />
                     </div>
-                  </div>
-                </q-card>
 
-                <q-card flat class="card4 q-mt-md">
-                  <div v-if="transactionStore.reports.length > 0">
-                    <div
-                      v-for="report in transactionStore.reports"
-                      :key="report.id"
-                      class="row justify-between per-report"
-                    >
-                      <div>
-                        <div class="text-p">
-                          <span>
-                            <q-icon
-                              name="circle"
-                              color="primary"
-                              size="8px"
-                              class="q-mr-sm q-ml-md"
+                    <!-- Camera Dialog -->
+                    <q-dialog v-model="isCameraDialogOpen" persistent>
+                      <q-card style="max-width: 500px">
+                        <q-card-section class="dialog-header">
+                          <div class="text-h6">Capture Photo</div>
+                        </q-card-section>
+                        <q-card-section class="dialog-body">
+                          <!-- Add a ref to link the video element -->
+                          <video
+                            ref="videoElement"
+                            autoplay
+                            playsinline
+                            disablePictureInPicture
+                            class="camera-feed styled-camera"
+                          ></video>
+                          <div align="right" class="q-mt-md">
+                            <q-btn
+                              label="Close"
+                              color="negative"
+                              @click="closeCameraDialog"
                             />
-                          </span>
-                          {{ report.description }}
-                        </div>
-                        <div class="q-ml-xl text-weight-bold text-red">
-                          {{ report.category }} - {{ report.sub_category }}
-                        </div>
-                        <q-img
+                            <q-btn
+                              color="primary"
+                              class="q-ml-sm"
+                              label="Capture"
+                              @click="capturePhoto"
+                            />
+                          </div>
+                        </q-card-section>
+                      </q-card>
+                    </q-dialog>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="full-width">
+                    <q-btn
+                      color="primary"
+                      label="Add Report"
+                      class="float-right q-mt-sm"
+                      @click="addErrorReport"
+                    />
+                  </div>
+                </div>
+              </q-card>
+
+              <q-card flat class="card4 q-mt-md">
+                <div v-if="transactionStore.reports.length > 0">
+                  <div
+                    v-for="report in transactionStore.reports"
+                    :key="report.id"
+                    class="row justify-between per-report"
+                  >
+                    <div>
+                      <div class="text-p">
+                        <span>
+                          <q-icon
+                            name="circle"
+                            color="primary"
+                            size="8px"
+                            class="q-mr-sm q-ml-md"
+                          />
+                        </span>
+                        {{ report.description }}
+                      </div>
+                      <div class="q-ml-xl text-weight-bold text-red">
+                        {{ report.category }} - {{ report.sub_category }}
+                      </div>
+                      <q-img
                         v-if="report.image"
                         :src="report.image"
                         class="q-mt-sm q-ml-lg"
                         style="max-width: 200px; height: auto"
                       />
-                      
-                      </div>
-                      <q-btn
+                    </div>
+                    <q-btn
                       dense
                       flat
                       icon="delete"
                       color="red"
                       @click="openDeleteDialog('report', report.id)"
                     />
-                    </div>
                   </div>
-                  <div v-else class="text-center text-grey">No error reports added.</div>
-                </q-card>
-              </div>
+                </div>
+                <div v-else class="text-center text-grey">
+                  No error reports added.
+                </div>
+              </q-card>
+            </div>
           </div>
         </q-card-section>
       </q-card>
@@ -1017,7 +1052,9 @@
 
             <div class="right-item-dialog col-6">
               <q-card flat class="card1">
-                <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
+                <div
+                  class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
+                >
                   Instructions
                 </div>
                 <div class="row q-gutter-x-md">
@@ -1116,13 +1153,17 @@
                         <q-chip
                           square
                           :color="
-                          displayInstruction.type === 'onetime' ? 'purple-10' : 'pink-10'
+                            displayInstruction.type === 'onetime'
+                              ? 'purple-10'
+                              : 'pink-10'
                           "
                           text-color="white"
                           class="instructions-type"
                         >
                           {{
-                            displayInstruction.type === "onetime" ? "One-time" : "Recurring"
+                            displayInstruction.type === "onetime"
+                              ? "One-time"
+                              : "Recurring"
                           }}
                         </q-chip>
                         <span> | </span>
@@ -1139,7 +1180,7 @@
                     </div>
                   </div>
                 </div>
-                <q-separator class="q-mb-lg"/>
+                <q-separator class="q-mb-lg" />
                 <div v-if="transactionStore.instructions.length > 0">
                   <div
                     v-for="instruction in transactionStore.instructions"
@@ -1162,13 +1203,17 @@
                         <q-chip
                           square
                           :color="
-                            instruction.type === 'onetime' ? 'purple-10' : 'pink-10'
+                            instruction.type === 'onetime'
+                              ? 'purple-10'
+                              : 'pink-10'
                           "
                           text-color="white"
                           class="instructions-type"
                         >
                           {{
-                            instruction.type === "onetime" ? "One-time" : "Recurring"
+                            instruction.type === "onetime"
+                              ? "One-time"
+                              : "Recurring"
                           }}
                         </q-chip>
                         <span> | </span>
@@ -1184,20 +1229,24 @@
                       </div>
                     </div>
                     <q-btn
-                    dense
-                    flat
-                    icon="delete"
-                    color="red"
-                    @click="openDeleteDialog('instruction', instruction.id)"
-                  />
+                      dense
+                      flat
+                      icon="delete"
+                      color="red"
+                      @click="openDeleteDialog('instruction', instruction.id)"
+                    />
                   </div>
                 </div>
-                <div v-else class="text-center text-grey">No instructions added.</div>
+                <div v-else class="text-center text-grey">
+                  No instructions added.
+                </div>
               </q-card>
 
               <!-- Error Reporting Section -->
               <q-card flat class="card3 q-mt-md">
-                <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
+                <div
+                  class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
+                >
                   Error Reporting
                 </div>
                 <div class="q-px-md">
@@ -1255,7 +1304,7 @@
                       /> -->
                       <!-- Capture Photo Button -->
                       <q-btn
-                      outline
+                        outline
                         color="primary"
                         label="Click Here to Capture Photo"
                         dense
@@ -1278,29 +1327,42 @@
                         v-if="uploadedPhotoUrl"
                         :src="uploadedPhotoUrl"
                         class="q-mt-sm"
-                        style="max-width: 300px; height: auto;"
+                        style="max-width: 300px; height: auto"
                       />
                     </div>
-                  
+
                     <!-- Camera Dialog -->
                     <q-dialog v-model="isCameraDialogOpen" persistent>
-                      <q-card style="max-width: 500px;">
+                      <q-card style="max-width: 500px">
                         <q-card-section class="dialog-header">
                           <div class="text-h6">Capture Photo</div>
                         </q-card-section>
                         <q-card-section class="dialog-body">
                           <!-- Add a ref to link the video element -->
-                          <video ref="videoElement" autoplay playsinline disablePictureInPicture class="camera-feed styled-camera"></video>
+                          <video
+                            ref="videoElement"
+                            autoplay
+                            playsinline
+                            disablePictureInPicture
+                            class="camera-feed styled-camera"
+                          ></video>
                           <div align="right" class="q-mt-md">
-                            <q-btn label="Close" color="negative" @click="closeCameraDialog" />
-                            <q-btn color="primary" class="q-ml-sm" label="Capture" @click="capturePhoto" />
+                            <q-btn
+                              label="Close"
+                              color="negative"
+                              @click="closeCameraDialog"
+                            />
+                            <q-btn
+                              color="primary"
+                              class="q-ml-sm"
+                              label="Capture"
+                              @click="capturePhoto"
+                            />
                           </div>
                         </q-card-section>
                       </q-card>
                     </q-dialog>
-                    
                   </div>
-                  
                 </div>
                 <div class="row">
                   <div class="full-width">
@@ -1337,23 +1399,24 @@
                         {{ report.category }} - {{ report.sub_category }}
                       </div>
                       <q-img
-                      v-if="report.image"
-                      :src="report.image"
-                      class="q-mt-sm q-ml-lg"
-                      style="max-width: 200px; height: auto"
-                    />
-                    
+                        v-if="report.image"
+                        :src="report.image"
+                        class="q-mt-sm q-ml-lg"
+                        style="max-width: 200px; height: auto"
+                      />
                     </div>
                     <q-btn
-                    dense
-                    flat
-                    icon="delete"
-                    color="red"
-                    @click="openDeleteDialog('report', report.id)"
-                  />
+                      dense
+                      flat
+                      icon="delete"
+                      color="red"
+                      @click="openDeleteDialog('report', report.id)"
+                    />
                   </div>
                 </div>
-                <div v-else class="text-center text-grey">No error reports added.</div>
+                <div v-else class="text-center text-grey">
+                  No error reports added.
+                </div>
               </q-card>
             </div>
           </div>
@@ -1483,12 +1546,12 @@
               </div>
 
               <!-- Total Weight in Kilograms -->
-<div class="row items-center">
-  <div class="text-weight-bold text-uppercase">Total Weight:</div>
-  <span>
-    <div class="text-p">{{ convertWeightToKg() }} kg</div>
-  </span>
-</div>
+              <div class="row items-center">
+                <div class="text-weight-bold text-uppercase">Total Weight:</div>
+                <span>
+                  <div class="text-p">{{ convertWeightToKg() }} kg</div>
+                </span>
+              </div>
 
               <div class="row items-center">
                 <div class="text-weight-bold text-uppercase">Total Price:</div>
@@ -1513,7 +1576,9 @@
 
             <div class="right-item-dialog col-6">
               <q-card flat class="card1">
-                <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
+                <div
+                  class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
+                >
                   Instructions
                 </div>
                 <div class="row q-gutter-x-md">
@@ -1612,13 +1677,17 @@
                         <q-chip
                           square
                           :color="
-                          displayInstruction.type === 'onetime' ? 'purple-10' : 'pink-10'
+                            displayInstruction.type === 'onetime'
+                              ? 'purple-10'
+                              : 'pink-10'
                           "
                           text-color="white"
                           class="instructions-type"
                         >
                           {{
-                            displayInstruction.type === "onetime" ? "One-time" : "Recurring"
+                            displayInstruction.type === "onetime"
+                              ? "One-time"
+                              : "Recurring"
                           }}
                         </q-chip>
                         <span> | </span>
@@ -1635,7 +1704,7 @@
                     </div>
                   </div>
                 </div>
-                <q-separator class="q-mb-lg"/>
+                <q-separator class="q-mb-lg" />
                 <div v-if="transactionStore.instructions.length > 0">
                   <div
                     v-for="instruction in transactionStore.instructions"
@@ -1658,13 +1727,17 @@
                         <q-chip
                           square
                           :color="
-                            instruction.type === 'onetime' ? 'purple-10' : 'pink-10'
+                            instruction.type === 'onetime'
+                              ? 'purple-10'
+                              : 'pink-10'
                           "
                           text-color="white"
                           class="instructions-type"
                         >
                           {{
-                            instruction.type === "onetime" ? "One-time" : "Recurring"
+                            instruction.type === "onetime"
+                              ? "One-time"
+                              : "Recurring"
                           }}
                         </q-chip>
                         <span> | </span>
@@ -1680,20 +1753,24 @@
                       </div>
                     </div>
                     <q-btn
-                    dense
-                    flat
-                    icon="delete"
-                    color="red"
-                    @click="openDeleteDialog('instruction', instruction.id)"
-                  />
+                      dense
+                      flat
+                      icon="delete"
+                      color="red"
+                      @click="openDeleteDialog('instruction', instruction.id)"
+                    />
                   </div>
                 </div>
-                <div v-else class="text-center text-grey">No instructions added.</div>
+                <div v-else class="text-center text-grey">
+                  No instructions added.
+                </div>
               </q-card>
 
               <!-- Error Reporting Section -->
               <q-card flat class="card3 q-mt-md">
-                <div class="text-p text-center text-uppercase text-weight-bold q-mb-sm">
+                <div
+                  class="text-p text-center text-uppercase text-weight-bold q-mb-sm"
+                >
                   Error Reporting
                 </div>
                 <div class="q-px-md">
@@ -1751,7 +1828,7 @@
                       /> -->
                       <!-- Capture Photo Button -->
                       <q-btn
-                      outline
+                        outline
                         color="primary"
                         label="Click Here to Capture Photo"
                         dense
@@ -1774,29 +1851,42 @@
                         v-if="uploadedPhotoUrl"
                         :src="uploadedPhotoUrl"
                         class="q-mt-sm"
-                        style="max-width: 300px; height: auto;"
+                        style="max-width: 300px; height: auto"
                       />
                     </div>
-                  
+
                     <!-- Camera Dialog -->
                     <q-dialog v-model="isCameraDialogOpen" persistent>
-                      <q-card style="max-width: 500px;">
+                      <q-card style="max-width: 500px">
                         <q-card-section class="dialog-header">
                           <div class="text-h6">Capture Photo</div>
                         </q-card-section>
                         <q-card-section class="dialog-body">
                           <!-- Add a ref to link the video element -->
-                          <video ref="videoElement" autoplay playsinline disablePictureInPicture class="camera-feed styled-camera"></video>
+                          <video
+                            ref="videoElement"
+                            autoplay
+                            playsinline
+                            disablePictureInPicture
+                            class="camera-feed styled-camera"
+                          ></video>
                           <div align="right" class="q-mt-md">
-                            <q-btn label="Close" color="negative" @click="closeCameraDialog" />
-                            <q-btn color="primary" class="q-ml-sm" label="Capture" @click="capturePhoto" />
+                            <q-btn
+                              label="Close"
+                              color="negative"
+                              @click="closeCameraDialog"
+                            />
+                            <q-btn
+                              color="primary"
+                              class="q-ml-sm"
+                              label="Capture"
+                              @click="capturePhoto"
+                            />
                           </div>
                         </q-card-section>
                       </q-card>
                     </q-dialog>
-                    
                   </div>
-                  
                 </div>
                 <div class="row">
                   <div class="full-width">
@@ -1833,23 +1923,24 @@
                         {{ report.category }} - {{ report.sub_category }}
                       </div>
                       <q-img
-                      v-if="report.image"
-                      :src="report.image"
-                      class="q-mt-sm q-ml-lg"
-                      style="max-width: 200px; height: auto"
-                    />
-                    
+                        v-if="report.image"
+                        :src="report.image"
+                        class="q-mt-sm q-ml-lg"
+                        style="max-width: 200px; height: auto"
+                      />
                     </div>
                     <q-btn
-                    dense
-                    flat
-                    icon="delete"
-                    color="red"
-                    @click="openDeleteDialog('report', report.id)"
-                  />
+                      dense
+                      flat
+                      icon="delete"
+                      color="red"
+                      @click="openDeleteDialog('report', report.id)"
+                    />
                   </div>
                 </div>
-                <div v-else class="text-center text-grey">No error reports added.</div>
+                <div v-else class="text-center text-grey">
+                  No error reports added.
+                </div>
               </q-card>
             </div>
           </div>
@@ -1861,25 +1952,33 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-icon name="warning" color="red" size="32px" />
-          <div class="q-ml-sm text-h6">Are you sure you want to delete this item?</div>
+          <div class="q-ml-sm text-h6">
+            Are you sure you want to delete this item?
+          </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn label="Cancel" color="primary" @click="isDeleteDialogOpen = false" />
+          <q-btn
+            label="Cancel"
+            color="primary"
+            @click="isDeleteDialogOpen = false"
+          />
           <q-btn label="Delete" color="negative" @click="confirmDeleteItem" />
         </q-card-actions>
       </q-card>
     </q-dialog>
-    
   </div>
 </template>
 
 <script setup>
+import { useQuasar } from "quasar";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { fetchAllErrorItems } from "@/../supabase/api/error_list.js";
 import debounce from "lodash.debounce";
 
 import OthersComponent from "./OthersComponent.vue";
+
+const $q = useQuasar();
 
 const transactionStore = useTransactionStore();
 const transactionItems = computed(() => transactionStore.transactionItems);
@@ -1990,12 +2089,10 @@ onMounted(async () => {
     await transactionStore.loadItems();
     await transactionStore.generateOrderNo();
     orderNo.value = transactionStore.orderNo; // Set directly for testing
-
   } catch (error) {
     console.error("Error initializing transaction:", error);
   }
 });
-
 
 // Watch for unit changes to reset incompatible inputs
 watch(unitSize, (newUnit) => {
@@ -2093,7 +2190,6 @@ const totalWeightPrice = computed(() => {
   return (weightInKg * pricePerKg).toFixed(2);
 });
 
-
 // Helper function to get price per square foot based on process type
 function getPricePerSqft() {
   if (process.value === "laundry")
@@ -2108,13 +2204,15 @@ function getPricePerSqft() {
 
 // Helper function to get price per unit based on process type
 function getPricePerWeight() {
-  if (process.value === "laundry") return selectedItem.value?.laundry_price || 0;
-  if (process.value === "dryclean") return selectedItem.value?.dryclean_price || 0;
-  if (process.value === "pressing") return selectedItem.value?.pressing_price || 0;
+  if (process.value === "laundry")
+    return selectedItem.value?.laundry_price || 0;
+  if (process.value === "dryclean")
+    return selectedItem.value?.dryclean_price || 0;
+  if (process.value === "pressing")
+    return selectedItem.value?.pressing_price || 0;
   if (process.value === "others") return selectedItem.value?.others_price || 0;
   return 0; // Default price
 }
-
 
 // Conversion factor for cm to ft
 const CM_TO_FT = 0.0328084;
@@ -2272,8 +2370,7 @@ function addItemToTransactionTable() {
     pieces: selectedItem.value.pieces,
     subtotal: 0, // Calculated below based on type
     category: selectedItem.value.category,
-    tag_category: selectedItem.value.tag_category
-
+    tag_category: selectedItem.value.tag_category,
   };
 
   // Handle size-based items
@@ -2419,7 +2516,9 @@ function addInstruction() {
 
 function deleteInstruction(id) {
   // Check if the instruction exists in the store
-  const instructionIndex = transactionStore.instructions.findIndex((instruction) => instruction.id === id);
+  const instructionIndex = transactionStore.instructions.findIndex(
+    (instruction) => instruction.id === id
+  );
   if (instructionIndex > -1) {
     // Remove the instruction from the transaction store
     transactionStore.instructions.splice(instructionIndex, 1);
@@ -2428,7 +2527,6 @@ function deleteInstruction(id) {
     console.error(`Instruction with ID ${id} not found.`);
   }
 }
-
 
 function addErrorReport() {
   if (reportDesc.value && selectedCategory.value && selectedSubCategory.value) {
@@ -2457,7 +2555,9 @@ function addErrorReport() {
 
 function deleteReport(id) {
   // Check if the report exists in the store
-  const reportIndex = transactionStore.reports.findIndex((report) => report.id === id);
+  const reportIndex = transactionStore.reports.findIndex(
+    (report) => report.id === id
+  );
   if (reportIndex > -1) {
     // Remove the report from the transaction store
     transactionStore.reports.splice(reportIndex, 1);
@@ -2466,7 +2566,6 @@ function deleteReport(id) {
     console.error(`Report with ID ${id} not found.`);
   }
 }
-
 
 // Load report categories and sub-categories on mount
 onMounted(async () => {
@@ -2479,7 +2578,6 @@ onMounted(async () => {
     updateSubCategories(selectedCategory.value);
   }
 });
-
 
 // Function to update sub-categories based on the selected category
 async function updateSubCategories(category) {
@@ -2622,27 +2720,54 @@ function clearUploadedPhoto() {
   closeCameraDialog(); // Ensure the camera is closed
 }
 
-const isDeleteDialogOpen = ref(false);
-const deleteTarget = ref({ type: null, id: null }); // Store the type (instruction or report) and id
+function notifyDelete(index) {
+  const item = transactionStore.transactionItems[index];
+  if (!item) return;
 
-function openDeleteDialog(type, id) {
-  deleteTarget.value = { type, id };
-  isDeleteDialogOpen.value = true;
+  const name = item.name || "Item";
+  const processLabel = formatProcessText(item.process);
+  const priceLabel = formatPriceWithUnit(item.price, item.unit);
+  const qty = Number(item.quantity ?? 0);
+  const subtotal = Number(item.subtotal ?? 0).toFixed(2);
+
+  $q.notify({
+    classes: "bg-grey-11 text-dark",
+    html: true,
+    position: "center",
+    timeout: 0,
+    multiLine: true,
+    // Sized container wraps the whole dialog content
+    message: `
+      <div style="min-width: 460px; max-width: 92vw;">
+        <div class="text-h6 bg-primary text-uppercase text-white q-pa-sm text-weight-bold row items-center">
+          <q-icon class="fa-solid fa-triangle-exclamation fa-lg text-warning q-mr-sm"></q-icon>
+          <span>Confirm delete item</span>
+        </div>
+        <div class="q-pa-md">
+          <div class="text-black text-h6 text-weight-bold">${name}</div>
+          <div class="all-border q-mt-sm text-grey-9">
+            <div>Process: ${processLabel}</div>
+            <div>Price: ${priceLabel}</div>
+            <div>Qty: ${qty}</div>
+            <div>Subtotal: $${subtotal}</div>
+          </div>
+        </div>
+      </div>
+    `,
+    actions: [
+      { label: "Cancel", 
+        unelevated: true,
+        class: "bg-secondary text-white", },
+      {
+        label: "Delete",
+        unelevated: true,
+        class: "q-ml-sm bg-negative text-white",
+        handler: () => removeItem(index),
+      },
+    ],
+  });
 }
 
-// Reuse the existing openDeleteDialog and confirmDeleteItem for instructions and reports.
-function confirmDeleteItem() {
-  const { type, id } = deleteTarget.value;
-
-  if (type === "instruction") {
-    deleteInstruction(id);
-  } else if (type === "report") {
-    deleteReport(id);
-  }
-
-  isDeleteDialogOpen.value = false;
-  deleteTarget.value = { type: null, id: null };
-}
 
 const removeItem = (index) => {
   if (index >= 0 && index < transactionStore.transactionItems.length) {

@@ -18,7 +18,6 @@ export const useTransactionStore = defineStore("transactionStore", {
     addressOptions: [],
     driverOptions: [],
     timeOptions: [],
-    jobOptions: [],
     selectedCustomer: null,
     selectedDeliveryId: null,
     selectedCollectionId: null,
@@ -403,25 +402,6 @@ export const useTransactionStore = defineStore("transactionStore", {
         console.error("Unexpected error fetching time options:", error);
       }
     },
-    async loadJobOptions() {
-      try {
-        const { data, error } = await supabase
-          .from("options_job_types")
-          .select("type");
-
-        if (error) {
-          console.error("Error fetching time options:", error);
-          return;
-        }
-
-        // Map and sort time options alphabetically
-        this.jobOptions = data.map((option) => `${option.type}`);
-
-        console.log("Sorted Job Type Options:", this.jobOptions);
-      } catch (error) {
-        console.error("Unexpected error fetching job type options:", error);
-      }
-    },
     // Load recurring instructions for a specific customer
     async loadRecurringInstructions(customerId) {
       try {
@@ -618,7 +598,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         subtotal,
         category,
         tag_category,
-        pack_type
+        pack_type,
       } = item;
 
       const unitType = this.detectUnitType(unit);
@@ -636,7 +616,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           unit,
           category,
           tag_category,
-          pack_type
+          pack_type,
         };
         this.transactionItems = [...this.transactionItems, newItem]; // Add directly
         return;
@@ -667,7 +647,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             unit,
             category,
             tag_category,
-            pack_type
+            pack_type,
           };
           this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
         }
@@ -695,7 +675,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             unit,
             category,
             tag_category,
-            pack_type
+            pack_type,
           };
           this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
         }
@@ -1685,13 +1665,15 @@ export const useTransactionStore = defineStore("transactionStore", {
           id,
           name,
           contact_no1,
-          contact_no2
+          contact_no2,
+          email
         ),
         logistics (
           id,
           customer_id,
           job_type,
           logistics_status,
+          urgency,
           order_id,
           orders (
             id,
@@ -1702,6 +1684,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               paid_amount
             ),
             order_production (
+            id,
               ready_by,
               goods_status,
               no_packets,
@@ -1735,6 +1718,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           id: collection.id,
           created_at: collection.created_at,
           logistics_status: collection.logistics?.logistics_status || null,
+          urgency: collection.logistics?.urgency,
           remarks: collection.remarks,
           contact_person_id: collection.contact_person_id,
           address: collection.address,
@@ -1775,6 +1759,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 name: collection.customer_contact_persons.name,
                 contact_no1: collection.customer_contact_persons.contact_no1,
                 contact_no2: collection.customer_contact_persons.contact_no2,
+                email: collection.customer_contact_persons.email,
               }
             : null,
           order_payments: collection.logistics?.orders?.order_payments[0]
@@ -1789,6 +1774,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             : null,
           order_production: collection.logistics?.orders?.order_production[0]
             ? {
+                id: collection.logistics?.orders?.order_production[0].id,
                 goods_status:
                   collection.logistics?.orders?.order_production[0]
                     .goods_status,
@@ -1827,14 +1813,14 @@ export const useTransactionStore = defineStore("transactionStore", {
             date_delivered,
             delivery_date,
             delivery_time,
-            no_bags,
             logistics_id,
             driver_name,
             customer_contact_persons (
               id,
               name,
               contact_no1,
-              contact_no2
+              contact_no2 ,
+              email
             ),
             logistics (
             id,
@@ -1873,7 +1859,6 @@ export const useTransactionStore = defineStore("transactionStore", {
           date_delivered: delivery.date_delivered,
           delivery_date: delivery.delivery_date,
           delivery_time: delivery.delivery_time,
-          no_bags: delivery.no_bags,
           logistics_id: delivery.logistics_id,
           job_type: delivery.logistics?.job_type,
           // order_no: delivery.logistics?.orders?.order_no || null,
@@ -1895,6 +1880,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 name: delivery.customer_contact_persons.name,
                 contact_no1: delivery.customer_contact_persons.contact_no1,
                 contact_no2: delivery.customer_contact_persons.contact_no2,
+                email: delivery.customer_contact_persons.email,
               }
             : null,
         }));
@@ -1916,6 +1902,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               id,
               job_type,
               logistics_status,
+              urgency,
               orders (
                 id,
                 order_no,
@@ -1930,7 +1917,8 @@ export const useTransactionStore = defineStore("transactionStore", {
                   id,
                   name,
                   contact_no1,
-                  contact_no2
+                  contact_no2,
+                  email
                 )
               ),
               collections (
@@ -1948,7 +1936,10 @@ export const useTransactionStore = defineStore("transactionStore", {
                 ),
                 contact_persons (
                   id,
-                  name
+                  name,
+                  contact_no1,
+                  contact_no2,
+                  email
                 )
               ),
               deliveries (
@@ -1966,7 +1957,10 @@ export const useTransactionStore = defineStore("transactionStore", {
                 ),
                 contact_persons (
                   id,
-                  name
+                  name,
+                  contact_no1,
+                  contact_no2,
+                  email
                 )
               )
             `
@@ -1983,6 +1977,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         return data.map((logistics) => ({
           logistics_id: logistics.id,
           job_type: logistics.job_type,
+          urgency: logistics.urgency,
           logistics_status: logistics.logistics_status,
           orders:
             logistics.orders?.map((order) => ({
@@ -2000,6 +1995,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                     name: order.customers.name,
                     contact_no1: order.customers.contact_no1,
                     contact_no2: order.customers.contact_no2,
+                    email: order.customers.email,
                   }
                 : null,
             })) || [], // ✅ Ensure it's always an array
@@ -2020,6 +2016,9 @@ export const useTransactionStore = defineStore("transactionStore", {
                 ? {
                     id: collection.contact_persons.id,
                     name: collection.contact_persons.name,
+                    contact_no1: collection.contact_persons.contact_no1,
+                    contact_no2: collection.contact_persons.contact_no2,
+                    email: collection.contact_persons.email,
                   }
                 : null,
             })) || [], // ✅ Ensure collections is always an array
@@ -2040,6 +2039,9 @@ export const useTransactionStore = defineStore("transactionStore", {
                 ? {
                     id: delivery.contact_persons.id,
                     name: delivery.contact_persons.name,
+                    contact_no1: delivery.contact_persons.contact_no1,
+                    contact_no2: delivery.contact_persons.contact_no2,
+                    email: delivery.contact_persons.email,
                   }
                 : null,
             })) || [], // ✅ Ensure deliveries is always an array
@@ -2073,11 +2075,13 @@ export const useTransactionStore = defineStore("transactionStore", {
             tag_changes
           ),
           order_production (
+          id,
             ready_by,
             goods_status,
             no_packets,
             no_hangers,
-            no_rolls
+            no_rolls,
+            no_returns
           ),
           order_invoices (
             invoice_no,
@@ -2088,7 +2092,12 @@ export const useTransactionStore = defineStore("transactionStore", {
           id,
           name,
           contact_no1,
-          contact_no2
+          contact_no2,
+          email,
+          customer_credits (
+            online_package,
+            other_credits
+          )
         ),
         logistics_collections (
           id,
@@ -2098,11 +2107,13 @@ export const useTransactionStore = defineStore("transactionStore", {
           no_bags,
           driver_name,
           status,
+          address,
           customer_contact_persons (
             id,
             name,
             contact_no1,
-            contact_no2
+            contact_no2,
+            email
           )
         ),
         logistics_deliveries (
@@ -2112,11 +2123,13 @@ export const useTransactionStore = defineStore("transactionStore", {
           delivery_time,
           driver_name,
           status,
+          address,
           customer_contact_persons (
             id,
             name,
             contact_no1,
-            contact_no2
+            contact_no2,
+            email
           )
         )
       `
@@ -2160,6 +2173,12 @@ export const useTransactionStore = defineStore("transactionStore", {
                 name: logistics.customers.name,
                 contact_no1: logistics.customers.contact_no1,
                 contact_no2: logistics.customers.contact_no2,
+                email: logistics.customers.email,
+                customer_credits: Array.isArray(
+                  logistics.customers.customer_credits
+                )
+                  ? logistics.customers.customer_credits[0] || null
+                  : logistics.customers.customer_credits || null,
               }
             : null,
           collections:
@@ -2169,12 +2188,14 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time: c.collection_time,
               no_bags: c.no_bags,
               driver_name: c.driver_name,
+              address: c.address,
               contact_person: c.customer_contact_persons
                 ? {
                     id: c.customer_contact_persons.id,
                     name: c.customer_contact_persons.name,
                     contact_no1: c.customer_contact_persons.contact_no1,
                     contact_no2: c.customer_contact_persons.contact_no2,
+                    email: c.customer_contact_persons.email,
                   }
                 : null,
             })) || [],
@@ -2184,12 +2205,14 @@ export const useTransactionStore = defineStore("transactionStore", {
               delivery_date: d.delivery_date,
               delivery_time: d.delivery_time,
               driver_name: d.driver_name,
+              address: d.address,
               contact_person: d.customer_contact_persons
                 ? {
                     id: d.customer_contact_persons.id,
                     name: d.customer_contact_persons.name,
                     contact_no1: d.customer_contact_persons.contact_no1,
                     contact_no2: d.customer_contact_persons.contact_no2,
+                    email: d.customer_contact_persons.email,
                   }
                 : null,
             })) || [],
@@ -2362,7 +2385,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         .from("logistics_deliveries")
         .select(
           `
-          id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status, created_at, created_by, driver_name, no_bags,
+          id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status, created_at, created_by, driver_name,
           customer_contact_persons ( id, name, contact_no1, contact_no2 ),
           logistics ( logistics_status )
         `
@@ -2424,7 +2447,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         orders!inner(order_no, id, created_at, 
           order_payments(id, payment_status, paid_amount, total_amount, deposit),
           order_tags(tag_status, tag_changes),
-          order_production(ready_by, goods_status, no_packets, no_hangers, no_rolls),
+          order_production(ready_by, goods_status, no_packets, no_hangers, no_rolls, no_returns),
           order_invoices(invoice_no, created_at)
         ),
         customers(id, name, contact_no1, contact_no2, email, type, sub_type,
@@ -2542,8 +2565,8 @@ export const useTransactionStore = defineStore("transactionStore", {
     async createWholeTransaction() {
       try {
         // Step 4: Create Order with logisticsId and get orderId
-const { orderId, orderNo } = await this.createOrder();
-    if (!orderId || !orderNo) throw new Error("Failed to create order");
+        const { orderId, orderNo } = await this.createOrder();
+        if (!orderId || !orderNo) throw new Error("Failed to create order");
 
         this.order_no = orderNo;
 
@@ -2622,7 +2645,7 @@ const { orderId, orderNo } = await this.createOrder();
 
     async updateLogistics(logisticsId, updateData) {
       try {
-        // 1. Fetch existing logistics record for archiving
+        // 1. Fetch existing logistics record for archiving & merging
         const { data: logisticsData, error: fetchError } = await supabase
           .from("logistics")
           .select(
@@ -2634,28 +2657,31 @@ const { orderId, orderNo } = await this.createOrder();
         if (fetchError) throw fetchError;
         if (!logisticsData) throw new Error("Logistics record not found.");
 
-        // 2. Archive to logistics_history
+        // 2. Archive to history
         const { id, ...rest } = logisticsData;
         const { error: insertError } = await supabase
           .from("logistics_history")
           .insert([{ ...rest, logistics_id: id }]);
-
         if (insertError) throw insertError;
 
-        // 3. Add system-generated values manually
-        const session = await supabase.auth.getSession();
-        const userId = session?.data?.session?.user?.id;
-
-        const enrichedUpdate = {
-          ...updateData,
-          created_at: new Date().toISOString(),
-          created_by: userId,
+        // 3. Merge existing data with updateData
+        const mergedUpdate = {
+          logistics_status:
+            updateData.logistics_status ?? logisticsData.logistics_status,
+          job_type: updateData.job_type ?? logisticsData.job_type,
+          urgency: updateData.urgency ?? logisticsData.urgency,
         };
 
-        // 4. Update logistics row
+        // 4. Add system-generated values
+        const session = await supabase.auth.getSession();
+        const userId = session?.data?.session?.user?.id;
+        mergedUpdate.created_at = new Date().toISOString();
+        mergedUpdate.created_by = userId;
+
+        // 5. Update logistics row
         const { error: updateError } = await supabase
           .from("logistics")
-          .update(enrichedUpdate)
+          .update(mergedUpdate)
           .eq("id", logisticsId);
 
         if (updateError) throw updateError;
@@ -2666,53 +2692,47 @@ const { orderId, orderNo } = await this.createOrder();
         return false;
       }
     },
+    async updateProduction(productionId, updateData) {
+      if (!productionId) throw new Error("productionId is required");
 
-    async updateProduction(orderId, updateData) {
-      try {
-        // 1. Fetch current production row
-        const { data: prodData, error: fetchError } = await supabase
-          .from("order_production")
-          .select(
-            "id, ready_by, goods_status, no_packets, no_hangers, no_rolls, created_at, created_by"
-          )
-          .eq("order_id", orderId)
-          .single();
+      // fetch current row
+      const { data: current, error: fetchErr } = await supabase
+        .from("order_production")
+        .select("*")
+        .eq("id", productionId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
 
-        if (fetchError) throw fetchError;
-        if (!prodData) throw new Error("Production record not found.");
+      // archive to history (exclude order_id, use order_production_id)
+      if (current) {
+        const { id: opId, order_id, ...rest } = current; // remove order_id
+        const historyRow = { ...rest, order_production_id: opId };
 
-        // 2. Archive to order_production_history
-        const { id, ...rest } = prodData;
-        const { error: insertError } = await supabase
+        const { error: histErr } = await supabase
           .from("order_production_history")
-          .insert([{ ...rest, order_production_id: id }]);
-
-        if (insertError) throw insertError;
-
-        // 3. Get current user ID
-        const session = await supabase.auth.getSession();
-        const userId = session?.data?.session?.user?.id;
-
-        // 4. Prepare update payload
-        const enrichedUpdate = {
-          ...updateData,
-          created_at: new Date().toISOString(),
-          created_by: userId,
-        };
-
-        // 5. Update the production record
-        const { error: updateError } = await supabase
-          .from("order_production")
-          .update(enrichedUpdate)
-          .eq("order_id", orderId);
-
-        if (updateError) throw updateError;
-
-        return true;
-      } catch (error) {
-        console.error("❌ Error updating production:", error);
-        return false;
+          .insert([historyRow]);
+        if (histErr) throw histErr;
       }
+
+      // get session user id
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id ?? null;
+      const nowIso = new Date().toISOString();
+
+      // update live row with audit fields
+      const payload = {
+        ...updateData,
+        created_at: nowIso,
+        created_by: userId,
+      };
+
+      const { error: updateErr } = await supabase
+        .from("order_production")
+        .update(payload)
+        .eq("id", productionId);
+      if (updateErr) throw updateErr;
+
+      return true;
     },
 
     // in store
@@ -2884,10 +2904,10 @@ const { orderId, orderNo } = await this.createOrder();
             {
               order_id: orderId,
               ready_by: this.readyBy,
-              goods_status: "none",
-              no_packets: null,
-              no_hangers: null,
-              no_rolls: null,
+              goods_status: "NOT READY",
+              no_packets: 0,
+              no_hangers: 0,
+              no_rolls: 0,
             },
           ])
           .select("id")
@@ -2975,7 +2995,7 @@ const { orderId, orderNo } = await this.createOrder();
             category: item.category,
             tag_category: item.tag_category,
             unit: item.unit,
-            pack_type: item.pack_type
+            pack_type: item.pack_type,
           };
 
           console.log(
@@ -3141,6 +3161,137 @@ const { orderId, orderNo } = await this.createOrder();
 
       if (error) throw error;
     },
-    
+
+    async updateOrderProductionGoodsStatus(order_id, goods_status) {
+      const { error } = await supabase
+        .from("order_production")
+        .update({ goods_status })
+        .eq("order_id", order_id);
+
+      if (error) throw error;
+    },
+
+    async updateOrderPackingDetails(
+      orderId,
+      { no_rolls, no_packets, no_hangers, no_returns }
+    ) {
+      const { error } = await supabase
+        .from("order_production")
+        .update({
+          no_rolls,
+          no_packets,
+          no_hangers,
+          no_returns,
+        })
+        .eq("order_id", orderId);
+
+      if (error) {
+        throw error;
+      }
+    },
+
+// stores/transactionStore.(ts|js)
+async fetchCollectionsForCustomer(customerId) {
+  const { data, error } = await supabase
+    .from('logistics')
+    .select(`
+      id, logistics_status, urgency, customer_id, order_id,
+
+      customers:customer_id (
+        id, name, contact_no1, contact_no2, email,
+        customer_credits ( online_package, other_credits )
+      ),
+
+      orders (
+        id, order_no, created_at,
+        order_payments (            
+                total_amount, paid_amount, payment_status ),
+        order_production (   
+          ready_by, no_hangers, no_packets, no_rolls, goods_status
+        )
+      ),
+
+      logistics_collections (
+        collection_date, collection_time, address, driver_name,
+        customer_contact_persons ( name, contact_no1, contact_no2, email )
+      ),
+
+      logistics_deliveries (
+        delivery_date, delivery_time, address, driver_name,
+        customer_contact_persons ( name, contact_no1, contact_no2, email )
+      )
+    `)
+    .eq('customer_id', customerId)
+    .order('collection_date', { foreignTable: 'logistics_collections', ascending: false })
+    .order('delivery_date',   { foreignTable: 'logistics_deliveries',   ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+},
+
+// Inside transactionStore
+async fetchOrdersByCustomerId(customerId) {
+  const { data, error } = await supabase
+    .from('logistics')
+    .select(`
+           id, logistics_status, urgency, customer_id, order_id,
+
+      customers:customer_id (
+        id, name, contact_no1, contact_no2, email,
+        customer_credits ( online_package, other_credits )
+      ),
+
+      orders (
+        id, order_no, created_at,
+        order_payments (            
+                total_amount, paid_amount, payment_status ),
+        order_production (   
+          ready_by, no_hangers, no_packets, no_rolls, goods_status
+        )
+      ),
+
+      logistics_collections (
+        collection_date, collection_time, address, driver_name, status,
+        customer_contact_persons ( name, contact_no1, contact_no2, email )
+      ),
+
+      logistics_deliveries (
+        delivery_date, delivery_time, address, driver_name, status,
+        customer_contact_persons ( name, contact_no1, contact_no2, email )
+      )
+    `)
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching orders by customer:', error);
+    throw error;
+  }
+
+  return data;
+},
+
+async fetchStatusByCustomerId(customerId) {
+  const { data, error } = await supabase
+    .from('logistics')
+    .select(`id, customer_id, logistics_status,
+      orders ( 
+        order_no,
+        order_payments ( payment_status ),
+        order_production ( goods_status )
+      )
+    `)
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching orders by customer:', error);
+    throw error;
+  }
+
+  return data;
+},
+
+
   },
 });

@@ -245,30 +245,7 @@
                 {{ goodsStatus }}
               </div>
             </div>
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>No. of Packets:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ noPackets }}
-              </div>
-            </div>
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>No. of Hangers:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ noHangers }}
-              </div>
-            </div>
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>No. of Rolls:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ noRolls }}
-              </div>
-            </div>
+            
           </q-card-section>
         </q-card>
       </div>
@@ -285,25 +262,25 @@
               <div class="col q-mr-sm">
                 <div class="text-weight-bold q-mb-xs">Hang</div>
                 <div class="">
-                  <q-input v-model="hang" dense outlined/>
+                  <q-input v-model="noHangers" dense outlined />
                 </div>
               </div>
               <div class="col q-mr-sm">
                 <div class="text-weight-bold q-mb-xs">Pack</div>
                 <div class="">
-                  <q-input v-model="pack" dense outlined />
+                  <q-input v-model="noPackets" dense outlined />
                 </div>
               </div>
               <div class="col q-mr-sm">
                 <div class="text-weight-bold q-mb-xs">Roll</div>
                 <div class="">
-                  <q-input v-model="roll" dense outlined />
+                  <q-input v-model="noRolls" dense outlined />
                 </div>
               </div>
               <div class="col q-mr-sm">
                 <div class="text-weight-bold q-mb-xs">Return</div>
                 <div class="">
-                  <q-input v-model="ret" dense outlined />
+                  <q-input v-model="noReturns" dense outlined />
                 </div>
               </div>
             </div>
@@ -375,7 +352,11 @@
                 ${{ transactions[index].subtotal.toFixed(2) }}
               </div>
               <div class="col col-1 bordered text-center">
-                <q-checkbox v-model="item.ready_status" size="md" dense />
+                <q-checkbox
+                  v-model="transactions[index].ready_status"
+                  size="md"
+                  dense
+                />
               </div>
             </div>
           </div>
@@ -480,7 +461,7 @@ onMounted(async () => {
         tx.order_transaction_items.forEach((item) => {
           transactions.value.push({
             ...item,
-            ready: item.ready ?? false,
+            ready_status: item.ready_status === true,
           });
         });
       } else {
@@ -606,6 +587,18 @@ const noRolls = computed({
   },
 });
 
+const noReturns = computed({
+  get() {
+    return order.value.order_production?.no_returns || "";
+  },
+  set(val) {
+    if (!order.value.order_production) {
+      order.value.order_production = {};
+    }
+    order.value.order_production.no_returns = val;
+  },
+});
+
 // Computed properties for totals
 const totalPcs = computed(() =>
   transactions.value.reduce((acc, item) => acc + computedPcs(item), 0)
@@ -701,56 +694,82 @@ const updateReadyStatus = async () => {
   try {
     const updates = transactions.value.map((item) => ({
       id: item.id,
-      ready: item.ready_status || false,
+      ready_status: item.ready_status === true,
     }));
 
+    // Save item checkbox states
     await Promise.all(
-      updates.map((update) =>
-        transactionStore.updateTransactionReady(update.id, update.ready)
-      )
+      updates.map((u) => transactionStore.updateTransactionReady(u.id, u.ready_status))
     );
+
+    // 🔎 Compute goods_status
+    const total = transactions.value.length;
+    const checked = transactions.value.filter((t) => t.ready_status === true).length;
+
+    let nextStatus = "NOT READY";
+    if (total > 0) {
+      if (checked === 0) nextStatus = "NOT READY";
+      else if (checked === total) nextStatus = "READY";
+      else nextStatus = "PARTIAL READY";
+    }
+
+    // 💾 Persist to order_production
+    await transactionStore.updateOrderProductionGoodsStatus(order.value.id, nextStatus);
+
+    // 🖥️ Update local reactive state so UI shows the new value immediately
+    if (!order.value.order_production) order.value.order_production = {};
+    order.value.order_production.goods_status = nextStatus;
 
     Notify.create({
       type: "positive",
-      message: "Ready status updated successfully!",
+      message: "Ready status & goods status updated!",
       icon: "check_circle",
       timeout: 2500,
     });
   } catch (error) {
-    console.error("❌ Error updating ready status:", error);
+    console.error("❌ Error updating ready/goods status:", error);
     Notify.create({
       type: "negative",
-      message: "Failed to update ready status.",
+      message: "Failed to update statuses.",
       icon: "error",
       timeout: 3500,
     });
   }
 };
 
-const hang = computed({
-  get: () => delivery.value?.hang || "",
-  set: (val) => {
-    delivery.value.hang = val;
-  },
-});
+const updatePackDetails = async () => {
+  try {
+    if (!order.value.id) {
+      throw new Error("Order ID is missing");
+    }
 
-const pack = computed({
-  get: () => delivery.value?.pack || "",
-  set: (val) => {
-    delivery.value.pack = val;
-  },
-});
+    const data = {
+      no_rolls: noRolls.value || "",
+      no_hangers: noHangers.value || "",
+      no_packets: noPackets.value || "",
+      no_returns: noReturns.value || "",
+    };
 
-const roll = computed({
-  get: () => delivery.value?.roll || "",
-  set: (val) => {
-    delivery.value.roll = val;
-  },
-});
+    await transactionStore.updateOrderPackingDetails(order.value.id, data);
 
-const ret = ref(""); // 'return' field not defined; ref fallback
+    Notify.create({
+      type: "positive",
+      message: "Packing details updated successfully!",
+      icon: "check_circle",
+      timeout: 2500,
+    });
+  } catch (error) {
+    console.error("❌ Failed to update packing details:", error);
+    Notify.create({
+      type: "negative",
+      message: "Failed to update packing details.",
+      icon: "error",
+      timeout: 3500,
+    });
+  }
+};
 
-const updatePackDetails = async () => {};
+
 </script>
 <style scoped>
 .order-banner {

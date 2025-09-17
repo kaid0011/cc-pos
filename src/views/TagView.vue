@@ -2,15 +2,15 @@
   <div class="tags-view-container">
     <div class="row justify-center q-col-gutter-md q-pa-md">
       <div class="col-auto">
-        <q-btn color="primary" @click="downloadTagPDF">
-          Download Tag Slip PDF
+        <q-btn color="primary" unelevated @click="PrintTag"> Print Tags </q-btn>
+      </div>
+      <div class="col-auto">
+        <q-btn color="accent" unelevated @click="PrintTagPDF"> Print Tag Slip </q-btn>
+      </div>
+      <div class="col-auto">
+        <q-btn color="secondary" unelevated @click="downloadTagPDF">
+          Download Tag Slip
         </q-btn>
-      </div>
-      <div class="col-auto">
-        <q-btn color="primary" @click="PrintTagPDF"> Print Tag Slip PDF </q-btn>
-      </div>
-      <div class="col-auto">
-        <q-btn color="primary" @click="PrintTag"> Print Tags </q-btn>
       </div>
     </div>
     <div class="row justify-center q-mb-lg">
@@ -54,11 +54,13 @@
           <div class="row justify-between q-pa-md">
             <div class="col text-subtitle1">
               <div class="">
-                Customer Name:
+                <span class="text-subtitle2 text-uppercase">
+                  Customer Name:
+                </span>
                 <span class="text-summary">{{ customer?.name || "N/A" }}</span>
               </div>
               <div class="">
-                Contact Nos:
+                <span class="text-subtitle2 text-uppercase"> Contact No/s: </span>
                 <span class="text-summary"
                   >{{ customer?.contact_no1 || "N/A"
                   }}<span v-if="customer?.contact_no2">
@@ -66,29 +68,58 @@
                   ></span
                 >
               </div>
+              <div>
+                <span class="text-subtitle2 text-uppercase"> Urgency: </span>
+                <span
+                  :class="[
+                    'text-uppercase',
+                    'text-summary',
+                    logistics.urgency?.toLowerCase?.() === 'urgent'
+                      ? 'text-purple'
+                      : logistics.urgency?.toLowerCase?.() === 'express'
+                      ? 'text-red'
+                      : 'text-caption',
+                  ]"
+                >
+                  {{ logistics.urgency || "default" }}
+                </span>
+              </div>
               <div class="">
-                Ready By:
+                <span class="text-subtitle2 text-uppercase"> Ready By: </span>
                 <span class="text-summary">{{ readyByFormatted }}</span>
               </div>
               <div class="">
-                No. of Bags:
+                <span class="text-subtitle2 text-uppercase">
+                  No. of Bags:
+                </span>
                 <span class="text-summary">{{ collection?.no_bags || 0 }}</span>
               </div>
               <div class="">
-                Total Amount:
+                <span class="text-subtitle2 text-uppercase">
+                  Total Amount:
+                </span>
                 <span class="text-summary"
                   >${{ order?.order_payment?.total_amount.toFixed(2) }}</span
                 >
               </div>
               <div class="">
-                Notes:
+                <span class="text-subtitle2 text-uppercase"> Notes: </span>
                 <span class="text-summary">{{ "N/A" }}</span>
               </div>
             </div>
             <div class="col-auto">
-              <q-card flat class="tags row justify-between text-center">
+<div style="border: solid black 1px;">
+              <q-card flat class="tags row items-center no-wrap justify-between text-center">
                 <div class="col-auto">
-                  <div class="tag-urgency">{{ tagUrgency }}</div>
+                  <div
+                    class="tag-urgency"
+                    v-if="
+                      logistics?.urgency?.toLowerCase() === 'urgent' ||
+                      logistics?.urgency?.toLowerCase() === 'express'
+                    "
+                  >
+                    {{ tagUrgency }}
+                  </div>
                 </div>
                 <div class="col-auto">
                   <div class="row text-center">
@@ -140,11 +171,22 @@
                   {{ formattedTagDetails }}
                 </div>
                 <div class="col-auto">
+                                    <qrcode-vue
+                v-if="order?.order_no"
+                :value="order.order_no"
+                :size="40"
+                level="H"
+                class="q-mt-xs"
+                render-as="svg"
+              />
+                </div>
+                <div class="col-auto">
                   <div class="tag-pcs">
                     {{ totalPcs }}
                   </div>
                 </div>
               </q-card>
+</div>
             </div>
           </div>
           <!-- Transaction Table -->
@@ -484,7 +526,7 @@ const formattedTagDetails = computed(() => {
   const collectionDate = formatDate(collection.value?.collection_date);
   const deliveryDate = formatDate(delivery.value?.delivery_date);
   const orderNoLast5 = order.value?.order_no?.slice(-5) || "N/A";
-  return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
+  return `${collectionDate}-${orderNoLast5}-${deliveryDate}`;
 });
 
 const downloadTagPDF = () => {
@@ -611,7 +653,7 @@ async function PrintTag() {
       },
       jsPDF: {
         unit: "mm",
-        format: [100, 12.7], // 100mm × 12.7mm per page
+        format: [105, 12.7], // 100mm × 12.7mm per page
         orientation: "landscape",
       },
       pagebreak: { mode: ["avoid-all", "css"] }, // Fixes extra blank pages

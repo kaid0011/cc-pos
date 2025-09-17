@@ -350,6 +350,8 @@
       </div>
     </div>
 
+    <LogisticsTableByCustomer :customer-id="customerDetails.id" />
+
     <AddContactPersonDialog
       v-model="showAddContactPersonDialog"
       @contact-added="handleContactAdded"
@@ -580,6 +582,8 @@ import UpdateAddressDialog from "@/components/dialogs/UpdateAddressDialog.vue";
 import DeleteConfirmationDialog from "@/components/dialogs/DeleteConfirmationDialog.vue";
 import UpdateCustomerDialog from "@/components/dialogs/UpdateCustomerDialog.vue";
 import CreateCollectionTab from "@/components/CreateCollectionTab.vue";
+
+import LogisticsTableByCustomer from '@/components/LogisticsTableByCustomer.vue';
 
 const transactionStore = useTransactionStore();
 const $q = useQuasar();

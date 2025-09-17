@@ -241,7 +241,7 @@ body {
 
 .row-col-row {
   border-bottom-style: solid;
-  border-width: 1px;
+  border-width: 3px;
   border-color: #c09f8b;
   padding-top: 0.5em;
   padding-bottom: 0.5em;
@@ -301,7 +301,13 @@ mark-blue {
   background-color: #a9caff;
   color: black;
 }
-
+.mark-brown {
+  background-color: #f9ce96;
+  color: black;
+  font-weight: 800;
+  padding-right: 5px;
+  padding-left: 5px;
+}
 .mark-yellow {
   background-color: #ffdc12;
   color: black;
@@ -332,6 +338,14 @@ mark-blue {
 
 .mark-bg-blue {
   background-color: #a9caff;
+}
+
+.mark-bg-green {
+  background-color: #a7fd65;
+}
+
+.mark-bg-red {
+  background-color: #f26767;
 }
 
 /* instruction card */
@@ -662,14 +676,10 @@ textarea {
 
 .status-done {
   color: green;
-  font-weight: bold;
-  text-transform: uppercase;
 }
 
 .status-to-print {
   color: red;
-  font-weight: bold;
-  text-transform: uppercase;
 }
 
 .editable-field {
@@ -766,12 +776,11 @@ textarea {
 }
 
 .tags {
-  width: 100mm;
+  width: 105mm;
   height: 0.5in;
   page-break-before: avoid; /* Prevents empty pages */
   page-break-inside: avoid; /* Avoids content breaking */
   align-items: center;
-  border: solid black 1px;
   border-radius: 0;
 }
 
@@ -796,7 +805,7 @@ textarea {
   border-right: 0;
   border-radius: 30% 0 0 30%;
   height: 25px;
-  width: 25px;
+  width: 20px;
 }
 
 .tag-urgency {
@@ -804,7 +813,7 @@ textarea {
   border-left: 0;
   border-radius: 0 30% 30% 0;
   height: 25px;
-  width: 25px;
+  width: 20px;
 }
 
 .window-height {
@@ -874,3 +883,64 @@ textarea {
 .plain-border {
   border: 1px solid #000 !important;
 }
+
+
+.phone-link {
+  text-decoration: underline;  /* why: affordance that it's interactive */
+  cursor: pointer;
+  user-select: none;
+  color: #7600ca;
+}
+.email-link {
+  text-decoration: underline;  /* why: affordance that it's interactive */
+  cursor: pointer;
+  user-select: none;
+  color: #007b79;
+}
+
+.menu-header {
+  background: #e5e5e5;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #555;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.submenu-item {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.submenu-active:hover {
+  background-color: #ddf1f6 !important; /* Quasar yellow-5 */
+  border-radius: 4px;
+  font-weight: bold;
+}
+.submenu-item:hover{
+    background-color: #ddf1f6 !important; /* Quasar yellow-5 */
+cursor: pointer;
+}
+.submenu-item.submenu-active {
+  border-right: 3px solid var(--q-primary);
+  color: var(--q-primary);
+  font-weight: 600; /* optional, makes active text bolder */
+  background-color: rgba(0, 0, 0, 0.04); /* optional subtle highlight */
+}
+
+.submenu-item.submenu-active .q-icon {
+  color: var(--q-primary);
+}
+
+.submenu-disabled {
+  color: #a5a5a5;
+}
+
+.under-dev {
+  font-size: 12px;
+  font-style: italic;
+  color: #b0b0b0;
+}
+
+.hover-drawer {
+  transition: width 0.25s ease-in-out; /* smooth expand/collapse */
+}
+

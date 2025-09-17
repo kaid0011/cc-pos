@@ -22,7 +22,9 @@
                 / {{ selectedCustomer.contact_no2 || "-" }}</span
               >
             </div>
-            <div v-if="selectedCustomer.email" class="text-summary">{{ selectedCustomer.email }}</div>
+            <div v-if="selectedCustomer.email" class="text-summary">
+              {{ selectedCustomer.email }}
+            </div>
           </div>
         </div>
       </q-card-section>
@@ -146,33 +148,33 @@
             <div class="dialog-label">
               Colection Driver<span class="dialog-asterisk">*</span>
             </div>
-<q-select
-  v-model="transactionStore.selectedCollectionDriver"
-  :options="sortedDriverOptions"
-  label="Select Collection Driver"
-  outlined
-  dense
-  clearable
-  class="q-mb-xs bg-white"
-/>
-
+            <q-select
+              v-model="transactionStore.selectedCollectionDriver"
+              :options="sortedDriverOptions"
+              label="Select Collection Driver"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
           </div>
           <div class="row q-col-gutter-xs">
             <div class="col">
               <div class="dialog-label">
                 Job Type<span class="dialog-asterisk">*</span>
               </div>
-              <q-select
-                v-model="transactionStore.jobType"
-                :options="transactionStore.jobOptions"
-                option-label="label"
-                option-value="value"
-                label="Select Job Type"
-                outlined
-                dense
-                clearable
-                class="q-mb-xs bg-white"
-              />
+             <q-select
+  v-model="transactionStore.jobType"
+  :options="jobOptions"
+  option-label="label"
+  option-value="value"
+  label="Select Job Type"
+  outlined
+  dense
+  clearable
+  class="q-mb-xs bg-white"
+/>
+
             </div>
             <div class="col">
               <div class="dialog-label">
@@ -189,19 +191,7 @@
           </div>
           <div>
             <div class="dialog-label">
-              Urgency<span class="dialog-asterisk"></span>
-            </div>
-            <q-input
-              v-model="transactionStore.jobUrgency"
-              label="Urgency"
-              outlined
-              dense
-              class="q-mb-xs bg-white"
-            />
-          </div>
-          <div>
-            <div class="dialog-label">
-              Remarks<span class="dialog-asterisk"></span>
+              Collection Remarks<span class="dialog-asterisk"></span>
             </div>
             <q-input
               v-model="transactionStore.collectionRemarks"
@@ -340,20 +330,19 @@
             <div class="dialog-label">
               Delivery Driver<span class="dialog-asterisk"></span>
             </div>
-           <q-select
-  v-model="transactionStore.selectedDeliveryDriver"
-  :options="sortedDriverOptions"
-  label="Select Delivery Driver"
-  outlined
-  dense
-  clearable
-  class="q-mb-xs bg-white"
-/>
-
+            <q-select
+              v-model="transactionStore.selectedDeliveryDriver"
+              :options="sortedDriverOptions"
+              label="Select Delivery Driver"
+              outlined
+              dense
+              clearable
+              class="q-mb-xs bg-white"
+            />
           </div>
           <div>
             <div class="dialog-label">
-              Remarks<span class="dialog-asterisk"></span>
+              Delivery Remarks<span class="dialog-asterisk"></span>
             </div>
             <q-input
               v-model="transactionStore.deliveryRemarks"
@@ -390,7 +379,9 @@
   <q-dialog v-model="showConfirmation">
     <q-card>
       <q-card-section class="dialog-header">
-        <div class="text-body1 text-uppercase text-weight-bold">Confirm Reset</div>
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Confirm Reset
+        </div>
       </q-card-section>
 
       <q-card-section class="dialog-body">
@@ -430,10 +421,20 @@ const transactionStore = useTransactionStore();
 const showAddContactPersonDialog = ref(false);
 const showAddAddressDialog = ref(false);
 
+// Local, hard-coded job types (label/value pair for <q-select>)
+const jobOptions = [
+  { label: "Laundry",               value: "LAUNDRY" },
+  { label: "R&I",                   value: "RI" },
+  { label: "R&I Quotation",         value: "RI_QUOTATION" },
+  { label: "Onsite Carpet Cleaning",value: "ONSITE_CARPET_CLEANING" },
+  { label: "Onsite Quotation",      value: "ONSITE_QUOTATION" },
+  { label: "Onsite Sofa Cleaning",  value: "ONSITE_SOFA_CLEANING" },
+  { label: "Others",                value: "OTHERS" }
+];
+
 onMounted(async () => {
   await transactionStore.loadDrivers();
   await transactionStore.loadTimeOptions();
-  await transactionStore.loadJobOptions();
 });
 
 // Auto-update delivery date when collection date changes
@@ -461,7 +462,6 @@ watch(
   }
 );
 
-
 const selectedCustomer = computed(() => transactionStore.selectedCustomer);
 
 // Trigger an immediate update for contactOptions when the selected customer changes
@@ -474,7 +474,6 @@ const sortedDriverOptions = computed(() => {
     .map((driver) => driver.name)
     .sort((a, b) => a.localeCompare(b));
 });
-
 
 const handleCheckboxChange = (type, value) => {
   if (type === "collection") {
@@ -546,16 +545,15 @@ const updateOptions = async () => {
     transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
     transactionStore.ready_by = addWorkingDays(new Date(), 7);
 
-contactOptions.value = transactionStore.contactOptions.map((contact) => ({
-  id: contact.id,
-  name: contact.name,
-  contact_no1: contact.contact_no1,
-  contact_no2: contact.contact_no2,
-  label: `${contact.name} - ${contact.contact_no1 || ""}${
-    contact.contact_no2 ? ` / ${contact.contact_no2}` : ""
-  }`,
-}));
-
+    contactOptions.value = transactionStore.contactOptions.map((contact) => ({
+      id: contact.id,
+      name: contact.name,
+      contact_no1: contact.contact_no1,
+      contact_no2: contact.contact_no2,
+      label: `${contact.name} - ${contact.contact_no1 || ""}${
+        contact.contact_no2 ? ` / ${contact.contact_no2}` : ""
+      }`,
+    }));
 
     addressOptions.value = transactionStore.addressOptions.map((address) => ({
       id: address.id,

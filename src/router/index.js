@@ -108,15 +108,6 @@ const routes = [
     },
   },
   {
-    path: "/payment/:order_no",
-    name: "PaymentPage",
-    component: PaymentPage,
-    meta: {
-      requiresAuth: true,
-      roles: ["admin"],
-    },
-  },
-  {
     path: "/tags",
     name: "Tags",
     component: TagsPage,
@@ -225,9 +216,18 @@ const routes = [
     },
   },
   {
-    path: "/payments",
+    path: "/finance/payments",
     name: "Payments",
     component: PaymentsPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
+  {
+    path: "/finance/payments/:order_no",
+    name: "PaymentPage",
+    component: PaymentPage,
     meta: {
       requiresAuth: true,
       roles: ["admin"],

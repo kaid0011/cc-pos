@@ -2,15 +2,15 @@
   <div class="tags-view-container">
     <div class="row justify-center q-col-gutter-md q-pa-md">
       <div class="col-auto">
-        <q-btn color="primary" @click="downloadTagPDF"
-          >Download Tag Slip PDF</q-btn
-        >
+        <q-btn color="primary" unelevated @click="PrintTag"> Print Tags </q-btn>
       </div>
       <div class="col-auto">
-        <q-btn color="primary" @click="PrintTagPDF">Print Tag Slip PDF</q-btn>
+        <q-btn color="accent" unelevated @click="PrintTagPDF"> Print Tag Slip </q-btn>
       </div>
       <div class="col-auto">
-        <q-btn color="primary" @click="PrintTag">Print Tags</q-btn>
+        <q-btn color="secondary" unelevated @click="downloadTagPDF">
+          Download Tag Slip
+        </q-btn>
       </div>
     </div>
 
@@ -61,13 +61,17 @@
           <div class="row justify-between q-pa-md">
             <div class="col text-subtitle1">
               <div>
-                Customer Name:
+                <span class="text-subtitle2 text-uppercase"
+                  >Customer Name:</span
+                >
                 <span class="text-summary">{{
                   logistics.customer?.name || "N/A"
                 }}</span>
               </div>
               <div>
-                Contact Nos:
+                <span class="text-subtitle2 text-uppercase">
+                  Contact No/s:
+                </span>
                 <span class="text-summary"
                   >{{ logistics.customer?.contact_no1 || "N/A"
                   }}<span v-if="logistics.customer?.contact_no2">
@@ -75,14 +79,64 @@
                   ></span
                 >
               </div>
-              <div>Ready By: <span class="text-summary">N/A</span></div>
-              <div>No. of Bags: <span class="text-summary">N/A</span></div>
-              <div>Notes: <span class="text-summary">N/A</span></div>
+              <div>
+                <span class="text-subtitle2 text-uppercase"> Urgency: </span>
+                <span
+                  :class="[
+                    'text-uppercase',
+                    'text-summary',
+                    logistics.urgency?.toLowerCase?.() === 'urgent'
+                      ? 'text-purple'
+                      : logistics.urgency?.toLowerCase?.() === 'express'
+                      ? 'text-red'
+                      : 'text-caption',
+                  ]"
+                >
+                  {{ logistics.urgency || "default" }}
+                </span>
+              </div>
+              <div class="">
+                <span class="text-subtitle2 text-uppercase"> Ready By: </span>
+                <span class="text-summary">{{
+                  readyByFormatted(logistics)
+                }}</span>
+              </div>
+              <div class="">
+                <span class="text-subtitle2 text-uppercase">
+                  No. of Bags:
+                </span>
+                <span class="text-summary">{{ collection?.no_bags || 0 }}</span>
+              </div>
+              <div class="">
+                <span class="text-subtitle2 text-uppercase">
+                  Total Amount:
+                </span>
+                <span class="text-summary"
+                  >${{
+                    order?.order_payment?.total_amount.toFixed(2) || "0.00"
+                  }}</span
+                >
+              </div>
+              <div>
+                <span class="text-subtitle2 text-uppercase"> Notes: </span>
+                <span class="text-summary">N/A</span>
+              </div>
             </div>
             <div class="col-auto">
+<div style="  border: solid black 1px;
+">
               <q-card flat class="tags row justify-between text-center">
-                                <div class="col-auto">
-                  <div class="tag-urgency">U</div>
+                <div class="col-auto">
+                  <div
+                    class="tag-urgency"
+                    v-if="
+                      ['urgent', 'express'].includes(
+                        logistics.urgency?.toLowerCase?.()
+                      )
+                    "
+                  >
+                    {{ getTagUrgency(logistics.urgency) }}
+                  </div>
                 </div>
                 <div class="col-auto">
                   <div class="row">
@@ -131,7 +185,17 @@
                   </div>
                 </div>
                 <div class="col-auto tag-details text-weight-bold">
-                    {{ logistics.formattedTagDetails }}
+                  {{ logistics.formattedTagDetails }}
+                </div>
+                  <div class="col-auto">
+                    <qrcode-vue
+                      v-if="logistics.order?.order_no"
+                      :value="logistics.order?.order_no"
+                      :size="40"
+                      level="H"
+                      class="q-mt-xs"
+                      render-as="svg"
+                    />
                   </div>
                 <div class="col-auto">
                   <div class="tag-pcs">
@@ -139,6 +203,7 @@
                   </div>
                 </div>
               </q-card>
+</div>
             </div>
           </div>
 
@@ -272,7 +337,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useTransactionStore } from "@/stores/transactionStore";
 import QrcodeVue from "qrcode.vue";
@@ -358,9 +423,7 @@ onMounted(async () => {
         const collectionDate = formatDate(
           orderDetails.collection?.collection_date
         );
-        const deliveryDate = formatDate(
-          orderDetails.delivery?.delivery_date
-        );
+        const deliveryDate = formatDate(orderDetails.delivery?.delivery_date);
         const orderNoLast5 = orderDetails.order?.order_no?.slice(-5) || "N/A";
         return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
       })();
@@ -383,6 +446,19 @@ onMounted(async () => {
   }
 });
 
+const readyByFormatted = (logistics) => {
+  const rawDate = logistics?.order?.order_production?.ready_by;
+  if (!rawDate) return "N/A";
+
+  const date = new Date(rawDate);
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 const formatDate = (date) => {
   if (!date) return "N/A";
   const parsed = new Date(date);
@@ -391,6 +467,13 @@ const formatDate = (date) => {
   const d = parsed.getDate().toString().padStart(2, "0");
   const m = (parsed.getMonth() + 1).toString().padStart(2, "0");
   return `${w}${m}${d}`;
+};
+
+const getTagUrgency = (urgency) => {
+  const value = urgency?.toLowerCase?.() || "";
+  if (value === "urgent") return "U";
+  if (value === "express") return "E";
+  return "";
 };
 
 const downloadTagPDF = () => {
@@ -580,7 +663,7 @@ const PrintTag = () => {
     filename: `Tags_Print_Group.pdf`,
     image: { type: "jpeg", quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
-    jsPDF: { unit: "mm", format: [100, 12.7], orientation: "landscape" },
+    jsPDF: { unit: "mm", format: [105, 12.7], orientation: "landscape" },
     pagebreak: { mode: ["avoid-all", "css"] },
   };
 
@@ -601,7 +684,6 @@ const PrintTag = () => {
     })
     .catch(console.error);
 };
-
 </script>
 
 <style scoped>

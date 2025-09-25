@@ -1,6 +1,6 @@
 import { supabase } from "@/../supabase/config.js";
 import { defineStore } from "pinia";
-import { fetchAllItems } from "@/../supabase/api/item_list.js";
+// import { fetchAllItems } from "@/../supabase/api/item_list.js";
 import { getLastOrderIdForDate } from "@/../supabase/api/orders.js";
 import { fetchAllCustomers } from "@/../supabase/api/customers.js";
 // import { fetchContactPersons } from "@/../supabase/api/contacts.js";

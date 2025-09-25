@@ -1,15 +1,19 @@
 <template>
   <div class="full-container items-management">
-    <!-- Search and Add Button Row -->
-    <div class="row items-center justify-between q-mb-sm">
-      <div class="search-container">
+    <!-- 🔍 Search + Pricing Group Selector -->
+    <div class="row items-center justify-between q-mb-md">
+      <!-- Search -->
+      <div class="col-3">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Search here...</div>
+        </div>
         <q-input
           v-model="searchQuery"
           placeholder="Search items..."
           square
           dense
           outlined
-          class="search-input"
+          class="search-input col-6"
         >
           <template v-slot:prepend>
             <q-icon name="search" />
@@ -17,871 +21,730 @@
           <template v-slot:append>
             <q-icon
               name="close"
-              @click="searchQuery = ''"
               class="cursor-pointer"
+              @click="searchQuery = ''"
             />
           </template>
         </q-input>
       </div>
 
-      <q-btn
-        class="main-button"
-        color="primary"
-        icon="add"
-        @click="showAddItemDialog = true"
-        label="Add Item"
-      />
-    </div>
-
-    <!-- Items List -->
-    <div class="row-col-table">
-      <div class="row row-col-header text-center q-px-md text-weight-bold">
-        <div class="col-2 bordered text-weight-bolder">Name</div>
-        <div class="col-2 bordered text-weight-bolder">Category</div>
-        <div class="col-1 bordered text-weight-bolder">Laundry</div>
-        <div class="col-1 bordered text-weight-bolder">Dry Clean</div>
-        <div class="col-1 bordered text-weight-bolder">Pressing</div>
-        <div class="col-1 bordered text-weight-bolder">Others</div>
-        <div class="col-1 bordered text-weight-bolder">Pcs</div>
-        <div class="col-1 bordered text-weight-bolder">Unit</div>
-        <div class="col bordered text-weight-bolder">Actions</div>
-      </div>
-
-      <div
-        v-if="paginatedItems.length === 0"
-        class="text-center text-grey q-pa-lg text-h6"
-      >
-        No items found.
-      </div>
-
-      <div
-        v-else
-        v-for="item in paginatedItems"
-        :key="item.id"
-        class="row row-col-row q-mx-md"
-      >
-        <div class="col-2 bordered">{{ item.name }}</div>
-        <div class="col-2 bordered text-center">
-          {{ capitalizeWords(item.category) }}
-          <span v-if="item.sub_category"
-            >- {{ capitalizeWords(item.sub_category) }}</span
-          >
-        </div>
-        <div class="col-1 bordered text-center">
-          {{ item.laundry_price ? `$ ${item.laundry_price.toFixed(2)}` : "" }}
-        </div>
-        <div class="col-1 bordered text-center">
-          {{ item.dryclean_price ? `$ ${item.dryclean_price.toFixed(2)}` : "" }}
-        </div>
-        <div class="col-1 bordered text-center">
-          {{ item.pressing_price ? `$ ${item.pressing_price.toFixed(2)}` : "" }}
-        </div>
-        <div class="col-1 bordered text-center">
-          {{ item.others_price ? `$ ${item.others_price.toFixed(2)}` : "" }}
-        </div>
-        <div class="col-1 bordered text-center">{{ item.pieces }}</div>
-        <div class="col-1 bordered text-center">{{ item.unit }}</div>
-        <div class="col bordered text-center actions">
-          <q-btn
-            dense
-            label="Update"
-            color="primary"
-            class="main-button q-ma-xs q-px-sm"
-            @click="openUpdateDialog(item)"
-          />
-          <q-btn
-            dense
-            label="Delete"
-            color="negative"
-            class="negative-button q-ma-xs q-px-sm"
-            @click="openDeleteDialog(item)"
-          />
-        </div>
-      </div>
-    </div>
-    <!-- Pagination Controls -->
-    <div class="row justify-end items-center q-my-md q-col-gutter-x-sm">
-      <div class="col-auto row items-center">
-        <div class="text-weight-bold text-subtitle1 q-mr-sm">
-          Items per page:
+      <!-- Pricing Group -->
+      <div class="col-3">
+        <div class="dialog-label">
+          <div class="text-weight-bold text-subtitle2">Select Pricing Group</div>
         </div>
         <q-select
-          v-model="rowsPerPage"
-          :options="[5, 10, 15, 20, 50, 75, 100]"
-          dense
+          v-model="activeGroup"
+          :options="pricingGroups.map((g) => ({ label: g.name, value: g.id }))"
           outlined
+          dense
           emit-value
           map-options
-          style="
-            font-size: 12px;
-            padding: 0;
-            margin: 0;
-            background-color: white;
-            border-radius: 5px;
-          "
-        />
-      </div>
-      <div class="col-auto">
-        <q-pagination
-          v-model="currentPage"
-          :max="totalPages"
-          max-pages="7"
-          boundary-numbers
-          direction-links
-          input
+          label="Select Pricing Group"
+          clearable
+          @clear="resetToDefaultGroup"
         />
       </div>
     </div>
-    <!-- Add Item Dialog -->
-    <q-dialog
-      v-model="showAddItemDialog"
-      @before-show="resetForm"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
-    >
-      <q-card class="input-dialog">
-        <q-card-section class="dialog-header">
-          <q-btn
-            icon="close"
-            flat
-            dense
-            round
-            class="absolute-top-right q-ma-sm"
-            @click="showAddItemDialog = false"
-          />
-          <div class="text-body1 text-uppercase text-weight-bold">
-            Add New Item
-          </div>
-        </q-card-section>
-        <q-card-section class="dialog-body">
-          <!-- Add Item Form -->
-          <q-form @submit="addItem">
-            <div>
-              <div class="dialog-label">
-                Item Name<span
-                  class="dialog-asterisk"
-                  >*</span
-                >
-              </div>
-              <q-input
-                v-model="newItem.name"
-                label="Enter item name here"
-                class="dialog-inputs"
-                outlined
-                :rules="[(val) => !!val || 'Item name is required']"
-              />
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col">
-                <div class="dialog-label">
-                  Category<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-select
-                  v-model="selectedCategory"
-                  :options="categories"
-                  label="Select a category"
-                  outlined
-                  emit-value
-                  map-options
-                  :rules="[(val) => !!val || 'Category is required']"
-                  @update:model-value="onCategoryChange"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Sub-Category<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-select
-                  v-model="selectedSubCategory"
-                  :options="subCategories"
-                  label="Select a sub-category"
-                  outlined
-                  emit-value
-                  map-options
-                  :disable="subCategories.length === 0"
-                  :rules="[(val) => !!val || 'Sub-category is required']"
-                />
-              </div>
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col">
-                <div class="dialog-label">
-                  Laundry Price
-                </div>
-                <q-input
-                  v-model="newItem.laundry_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Dry Clean Price
-                </div>
-                <q-input
-                  v-model="newItem.dryclean_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Pressing Price
-                </div>
-                <q-input
-                  v-model="newItem.pressing_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Others Price
-                </div>
-                <q-input
-                  v-model="newItem.others_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col">
-                <div class="dialog-label">
-                  Unit<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-select
-                  v-model="selectedUnit"
-                  :options="units"
-                  label="Select a unit"
-                  emit-value
-                  map-options
-                  outlined
-                  :rules="[(val) => !!val || 'Unit is required']"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Pieces<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-input
-                  v-model.number="pieces"
-                  label="Enter number of pieces"
-                  type="number"
-                  min="1"
-                  outlined
-                  :rules="[
-                    (val) => !!val || 'Pieces is required',
-                    (val) => val > 0 || 'Must be greater than 0',
-                  ]"
-                />
-              </div>
-            </div>
-            <q-card-actions align="right">
-              <q-btn
-                unelevated
-                color="primary"
-                class="dialog-button"
-                type="submit"
-                label="Add Item"
-              />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
 
-    <!-- Update Item Dialog -->
-    <q-dialog
-      v-model="showUpdateItemDialog"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
+    <!-- Category Tabs -->
+    <q-tabs
+      v-if="
+        categoriesByGroup[activeGroup] && categoriesByGroup[activeGroup].length
+      "
+      v-model="activeCategory[activeGroup]"
+      dense
+      class="bg-grey-3 text-dark shadow-1"
+      align="justify"
     >
-      <q-card class="input-dialog">
-        <q-card-section class="dialog-header">
-          <q-btn
-            icon="close"
-            flat
-            dense
-            round
-            class="absolute-top-right q-ma-sm"
-            @click="showUpdateItemDialog = false"
-          />
-          <div class="text-body1 text-uppercase text-weight-bold">
-            Update Item
-          </div>
-        </q-card-section>
-        <q-card-section class="dialog-body">
-          <!-- Update Item Form -->
-          <q-form @submit="updateItem">
-            <div>
-              <div class="dialog-label">
-                Item Name<span
-                  class="dialog-asterisk"
-                  >*</span
-                >
-              </div>
-              <q-input
-                v-model="selectedItem.name"
-                label="Enter item name here"
-                outlined
-                :rules="[(val) => !!val || 'Item name is required']"
-              />
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col">
-                <div class="dialog-label">
-                  Category<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-select
-                  v-model="selectedCategory"
-                  :options="categories"
-                  label="Select a category"
-                  outlined
-                  emit-value
-                  map-options
-                  :rules="[(val) => !!val || 'Category is required']"
-                  @update:model-value="onCategoryChange"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Sub-Category<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-select
-                  v-model="selectedSubCategory"
-                  :options="subCategories"
-                  label="Select a sub-category"
-                  outlined
-                  emit-value
-                  map-options
-                  :rules="[(val) => !!val || 'Sub-category is required']"
-                  :disable="subCategories.length === 0"
-                />
-              </div>
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col">
-                <div class="dialog-label">
-                  Laundry Price<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-input
-                  v-model="selectedItem.laundry_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Dry Clean Price<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-input
-                  v-model="selectedItem.dryclean_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Pressing Price<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-input
-                  v-model="selectedItem.pressing_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Others Price<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-input
-                  v-model="selectedItem.others_price"
-                  type="number"
-                  dense
-                  outlined
-                  :rules="[
-                    (val) => val === null || val >= 0 || 'Must be 0 or greater',
-                  ]"
-                />
-              </div>
-            </div>
-            <div class="row q-col-gutter-md">
-              <div class="col">
-                <div class="dialog-label">
-                  Unit<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-select
-                  v-model="selectedUnit"
-                  label="Select a unit"
-                  outlined
-                  :rules="[(val) => !!val || 'Unit is required']"
-                  :options="units"
-                />
-              </div>
-              <div class="col">
-                <div class="dialog-label">
-                  Pieces<span
-                    class="dialog-asterisk"
-                    >*</span
-                  >
-                </div>
-                <q-input
-                  v-model="selectedItem.pieces"
-                  type="number"
-                  label="Enter number of pieces"
-                  outlined
-                  :rules="[
-                    (val) => !!val || 'Pieces is required',
-                    (val) => val > 0 || 'Must be greater than 0',
-                  ]"
-                />
-              </div>
-            </div>
-            <q-card-actions align="right">
-              <q-btn
-                unelevated
-                color="primary"
-                class="dialog-button"
-                type="submit"
-                label="Update Item"
-              />
-            </q-card-actions>
-          </q-form>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+      <q-tab
+        v-for="cat in categoriesByGroup[activeGroup]"
+        :key="cat"
+        :name="cat"
+        :label="`${capitalizeWords(cat)} (${getCategoryCount(
+          activeGroup,
+          cat
+        )})`"
+        class="q-py-sm"
+      />
+    </q-tabs>
 
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog
-      v-model="showDeleteItemDialog"
-      persistent
-      transition-show="slide-down"
-      transition-hide="slide-up"
+    <!-- Category Panels -->
+    <q-tab-panels
+      v-if="
+        categoriesByGroup[activeGroup] && categoriesByGroup[activeGroup].length
+      "
+      v-model="activeCategory[activeGroup]"
+      animated
     >
-      <q-card class="delete-dialog">
-        <q-card-section class="dialog-header">
-          <div class="text-body1 text-uppercase text-weight-bold">
-            <span>
-              <q-icon name="warning" size="md" color="orange" class="q-mr-sm" />
-            </span>Delete Item
-          </div>
-        </q-card-section>
-        <q-card-section class="dialog-body">
-          <p>Are you sure you want to delete this item?</p>
-          <q-card-actions align="right">
-            <q-btn
-              unelevated
+      <q-tab-panel
+        v-for="cat in categoriesByGroup[activeGroup]"
+        :key="cat"
+        :name="cat"
+        class="q-pa-none"
+      >
+        <!-- Table Header -->
+        <div class="row row-col-header text-center q-px-md text-weight-bold">
+          <div class="col bordered">Name</div>
+          <div class="col-2 bordered">Sub Category</div>
+          <div class="col-2 bordered">Service Prices</div>
+          <div class="col-1 bordered">Pcs</div>
+          <div class="col-1 bordered">Unit</div>
+          <div class="col-2 bordered">Actions</div>
+        </div>
+
+        <!-- No Items -->
+        <div
+          v-if="filteredItems(activeGroup, cat).length === 0"
+          class="text-center text-grey q-pa-lg text-h6 bg-grey-1"
+        >
+          No items found.
+        </div>
+
+        <!-- Items -->
+        <div
+          v-else
+          v-for="(item, idx) in filteredItems(activeGroup, cat)"
+          :key="item.id"
+          class="row row-col-row"
+          :class="[idx % 2 === 0 ? 'bg-white' : 'bg-grey-1']"
+        >
+          <!-- Item Name -->
+          <div class="col bordered">
+            {{ item.name }}
+            <q-badge
+              v-if="!item.is_active"
               color="negative"
-              class="dialog-button"
-              label="No"
-              @click="showDeleteItemDialog = false"
-            ></q-btn>
+              label="Inactive"
+              class="q-ml-sm"
+            />
+          </div>
+
+          <!-- Sub Category -->
+          <div class="col-2 bordered">
+            {{ capitalizeWords(item.sub_category) }}
+          </div>
+
+          <!-- Service Prices -->
+          <div class="col-2 bordered">
+            <div
+              v-for="(rate, idx) in resolveServicePrices(item)"
+              :key="rate.service_type"
+            >
+              {{ capitalizeWords(rate.service_type) }}:
+              <span class="text-weight-bold text-red-9">
+                ${{ rate.price.toFixed(2) }}
+              </span>
+              <q-separator
+                v-if="idx < resolveServicePrices(item).length - 1"
+                class="q-my-xs"
+              />
+            </div>
+          </div>
+
+          <!-- Pieces -->
+          <div class="col-1 bordered text-center">{{ item.pieces }}</div>
+
+          <!-- Unit -->
+          <div class="col-1 bordered text-center">{{ item.unit }}</div>
+
+          <!-- Actions -->
+          <div class="col-2 bordered text-center">
             <q-btn
               unelevated
+              dense
+              class="col-12 full-width q-px-sm q-mb-xs"
+              label="Update"
               color="primary"
-              class="dialog-button"
-              label="Yes"
-              @click="deleteItem"
-            ></q-btn>
-          </q-card-actions>
+              @click="openUpdateDialog(item)"
+              :disable="!item.is_active"
+            />
+            <q-btn
+              unelevated
+              class="col-12 full-width q-px-sm"
+              dense
+              :label="item.is_active ? 'Deactivate' : 'Reactivate'"
+              :color="item.is_active ? 'negative' : 'positive'"
+              @click="
+                item.is_active
+                  ? openDeactivateDialog(item)
+                  : openReactivateDialog(item)
+              "
+            />
+          </div>
+        </div>
+      </q-tab-panel>
+    </q-tab-panels>
+
+    <!-- ✅ Update Item Dialog -->
+<q-dialog v-model="showUpdateItemDialog" persistent>
+  <q-card class="input-dialog">
+    <q-card-section class="dialog-header">
+      <q-btn
+        icon="close"
+        flat
+        dense
+        round
+        class="absolute-top-right q-ma-sm"
+        @click="showUpdateItemDialog = false"
+      />
+      <div class="text-body1 text-uppercase text-weight-bold">
+        Update Item
+      </div>
+    </q-card-section>
+
+    <q-card-section class="dialog-body">
+      <q-form @submit="updateItem">
+        <!-- Name -->
+        <q-input
+          v-model="selectedItem.name"
+          label="Item Name"
+          outlined
+          dense
+          class="q-mb-md"
+        />
+
+<!-- Category -->
+<q-select
+  v-model="selectedItem.category"
+  :options="categoryOptions"
+  label="Category"
+  outlined
+  dense
+  emit-value
+  map-options
+  class="q-mb-md"
+  @update:model-value="(val) => {
+    selectedItem.sub_category = null;  
+    loadSubCategoryOptions(val);     
+  }"
+/>
+
+<!-- Sub Category -->
+<q-select
+  v-model="selectedItem.sub_category"
+  :options="subCategoryOptions"
+  label="Sub Category"
+  outlined
+  dense
+  emit-value
+  map-options
+  class="q-mb-md"
+  :disable="!selectedItem.category"
+/>
+
+
+        <!-- Unit -->
+        <q-select
+          v-model="selectedItem.unit"
+          :options="unitOptions"
+          label="Unit"
+          outlined
+          dense
+          emit-value
+          map-options
+          class="q-mb-md"
+        />
+
+        <!-- Pieces -->
+        <q-input
+          v-model.number="selectedItem.pieces"
+          label="Pieces"
+          type="number"
+          outlined
+          dense
+          class="q-mb-md"
+        />
+
+        <!-- Service Prices -->
+        <div class="q-mb-md">
+          <div class="dialog-label">Service Prices</div>
+          <div
+            v-for="(rate, idx) in selectedItem.servicePrices"
+            :key="idx"
+            class="row q-col-gutter-md q-mb-sm items-center"
+          >
+            <div class="col-5">
+              <q-select
+                v-model="selectedItem.servicePrices[idx].service_type"
+                :options="getAvailableServiceTypeOptions(idx)"
+                label="Service Type"
+                outlined
+                dense
+                emit-value
+                map-options
+              />
+            </div>
+            <div class="col-5">
+              <q-input
+                v-model.number="selectedItem.servicePrices[idx].price"
+                type="number"
+                outlined
+                dense
+                label="Price"
+              />
+            </div>
+            <div class="col-2 text-right">
+              <q-btn
+                dense
+                flat
+                round
+                icon="delete"
+                color="negative"
+                @click="markServiceRowDeleted(idx)"
+              />
+            </div>
+          </div>
+          <q-btn
+            flat
+            dense
+            icon="add"
+            label="Add Service Type"
+            color="primary"
+            @click="addServiceRowUpdate"
+          />
+        </div>
+
+        <!-- Actions -->
+        <q-card-actions align="between">
+          <q-btn
+            color="negative"
+            outline
+            label="Delete Item"
+            @click="openDeleteItemDialog"
+          />
+          <q-btn color="primary" type="submit" label="Update Item" />
+        </q-card-actions>
+      </q-form>
+    </q-card-section>
+  </q-card>
+</q-dialog>
+
+    <!-- ✅ Deactivate / Reactivate Dialogs -->
+    <q-dialog v-model="showDeactivateItemDialog" persistent>
+      <q-card>
+        <q-card-section class="text-h6">Deactivate Item</q-card-section>
+        <q-card-section>
+          Are you sure you want to deactivate this item?
         </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="showDeactivateItemDialog = false" />
+          <q-btn color="negative" label="Deactivate" @click="deactivateItemAction" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="showReactivateItemDialog" persistent>
+      <q-card>
+        <q-card-section class="text-h6">Reactivate Item</q-card-section>
+        <q-card-section>
+          Are you sure you want to reactivate this item?
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="showReactivateItemDialog = false" />
+          <q-btn color="positive" label="Reactivate" @click="reactivateItemAction" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- ✅ Delete Confirmation -->
+    <q-dialog v-model="showDeleteItemDialog" persistent>
+      <q-card>
+        <q-card-section class="text-h6 text-negative">Delete Item</q-card-section>
+        <q-card-section>
+          ⚠️ This will permanently delete <b>{{ selectedItem.name }}</b> and its
+          prices. Continue?
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="showDeleteItemDialog = false" />
+          <q-btn color="negative" label="Delete" @click="deleteItemAction" />
+        </q-card-actions>
       </q-card>
     </q-dialog>
   </div>
 </template>
 
+
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, onMounted } from "vue";
 import { useQuasar } from "quasar";
+import { supabase } from "@/../supabase/config.js";
 import {
-  fetchAllItems,
+  fetchPricingGroups,
+  fetchItemsByGroup,
   createItem,
   updateItems,
-  deleteItems,
+  deactivateItem,
+  reactivateItem,
+  deleteItem,
 } from "@/../supabase/api/item_list.js";
 
-// Define reactive variables
-const items = ref([]);
-const searchQuery = ref(""); // Added search query state
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
-const showAddItemDialog = ref(false);
-const showUpdateItemDialog = ref(false);
-const showDeleteItemDialog = ref(false);
-
-const newItem = ref({
-  name: "",
-  category: "",
-  sub_category: "",
-  laundry_price: null,
-  dryclean_price: null,
-  pressing_price: null,
-  others_price: null,
-  pieces: null,
-  unit: "", // Added unit field
-});
-const selectedItem = ref({
-  id: null,
-  name: "",
-  category: "",
-  sub_category: "",
-  laundry_price: null,
-  dryclean_price: null,
-  pressing_price: null,
-  others_price: null,
-  pieces: null,
-  unit: "", // Added unit field
-});
-const itemToDelete = ref(null);
-
-const selectedCategory = ref("clothings");
-const selectedSubCategory = ref("");
-const selectedUnit = ref("");
-const pieces = ref(1);
-
-const categories = [
-  { label: "Clothings", value: "clothings" },
-  { label: "Beddings", value: "beddings" },
-  { label: "Upholsteries", value: "upholsteries" },
-  { label: "Miscellaneous", value: "miscellaneous" },
-  { label: "Onsite Cleaning", value: "onsite cleaning" },
-];
-
-const allSubCategories = {
-  clothings: [
-    { label: "Casual Attire", value: "casual attire" },
-    { label: "Heritage Attire", value: "heritage attire" },
-    { label: "Winter Wear", value: "winter wear" },
-    { label: "Accessories", value: "accessories" },
-  ],
-  beddings: [
-    { label: "Bed Linens", value: "bed linens" },
-    { label: "Bath Essentials", value: "bath essentials" },
-    { label: "Snuggle Essentials", value: "snuggle essentials" },
-  ],
-  upholsteries: [
-    { label: "Curtains/blinds", value: "curtains/blinds" },
-    { label: "Cushions", value: "cushions" },
-    { label: "Carpets", value: "carpets" },
-  ],
-  miscellaneous: [],
-  "onsite cleaning": [
-    { label: "Mattress Cleaning", value: "mattress cleaning" },
-    { label: "Sofa Cleaning", value: "sofa cleaning" },
-    { label: "Curtain/blinds Cleaning", value: "curtain/blinds cleaning" },
-    { label: "Baby Car Seat Cleaning", value: "baby car seat cleaning" },
-    { label: "Dining Chair Cleaning", value: "dining chair cleaning" },
-    { label: "Carpet/rug Cleaning", value: "carpet/rug cleaning" },
-    { label: "Stroller/pram Cleaning", value: "stroller/pram cleaning" },
-    {
-      label: "Working/computer Chair Cleaning",
-      value: "working/computer chair cleaning",
-    },
-  ],
-};
-
-const units = [
-  { label: "Piece (pc)", value: "pc" },
-  { label: "Kilogram (kg)", value: "kg" },
-  { label: "Square Foot (sqft)", value: "sqft" },
-];
-
-const subCategories = ref(allSubCategories["clothings"]);
-
-function onCategoryChange(category) {
-  selectedSubCategory.value = "";
-  subCategories.value = allSubCategories[category] || [];
-}
-
-// Quasar utilities
 const $q = useQuasar();
 
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * rowsPerPage.value;
-  const end = start + rowsPerPage.value;
-  return filteredItems.value.slice(start, end);
-});
+// State
+const pricingGroups = ref([]);
+const activeGroup = ref(null);
+const itemsByGroup = ref({});
+const searchQuery = ref("");
+const showAddItemDialog = ref(false);
+const showUpdateItemDialog = ref(false);
+const showDeactivateItemDialog = ref(false);
+const showReactivateItemDialog = ref(false);
+const itemToDeactivate = ref(null);
+const itemToReactivate = ref(null);
+const newItem = ref({});
+const selectedItem = ref({});
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredItems.value.length / rowsPerPage.value) || 1;
-});
+// Each group will have its own active category
+const activeCategory = ref({});
+const categoriesByGroup = ref({});
+const itemsByGroupAndCategory = ref({});
 
-watch(rowsPerPage, () => {
-  currentPage.value = 1;
-});
-
-// Computed property for filtered items
-const filteredItems = computed(() => {
-  let filtered = items.value;
-
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase();
-    filtered = filtered.filter((item) =>
-      Object.values(item).some((val) =>
-        String(val).toLowerCase().includes(q)
-      )
-    );
-  }
-
-  return filtered.slice().sort((a, b) => {
-    const catA = a.category?.toLowerCase() || "";
-    const catB = b.category?.toLowerCase() || "";
-    if (catA !== catB) return catA.localeCompare(catB);
-
-    const subA = a.sub_category?.toLowerCase() || "";
-    const subB = b.sub_category?.toLowerCase() || "";
-    if (subA !== subB) return subA.localeCompare(subB);
-
-    const nameA = a.name?.toLowerCase() || "";
-    const nameB = b.name?.toLowerCase() || "";
-    return nameA.localeCompare(nameB);
-  });
-});
-
-// Fetch items on component mount
 onMounted(async () => {
-  await fetchItems();
+  pricingGroups.value = await fetchPricingGroups();
+
+  if (pricingGroups.value.length > 0) {
+    const defaultGroup = pricingGroups.value.find((g) => g.name === "Default");
+    activeGroup.value = defaultGroup ? defaultGroup.id : pricingGroups.value[0].id;
+
+    await refreshItemsForAllGroups();
+  }
+
+  await loadCategoryOptions();
 });
 
-// Helper function to set empty inputs to null
-const cleanItem = (item) => {
-  Object.keys(item).forEach((key) => {
-    if (item[key] === "") {
-      item[key] = null;
-    }
+function filteredItems(groupId, category) {
+  const items = itemsByGroup.value[groupId] || [];
+  const query = (searchQuery.value ?? "").toString().toLowerCase();
+
+  return items.filter((item) => {
+    const matchesCategory =
+      (item.category && item.category.trim() !== ""
+        ? item.category
+        : "Uncategorized") === category;
+    const matchesSearch =
+      !query ||
+      item.name.toLowerCase().includes(query) ||
+      (item.sub_category || "").toLowerCase().includes(query);
+
+    // ✅ Check if it has at least one price
+    const hasPrices = resolveServicePrices(item).length > 0;
+
+    return matchesCategory && matchesSearch && hasPrices;
   });
-};
+}
 
-// Function to fetch all items
-const fetchItems = async () => {
-  try {
-    const fetchedItems = await fetchAllItems();
-    if (fetchedItems) {
-      items.value = fetchedItems;
-    } else {
-      items.value = [];
-    }
-  } catch (error) {
-    console.error("Error fetching items:", error);
-    $q.notify({ type: "negative", message: "Failed to fetch items" });
-  }
-};
+function getCategoryCount(groupId, category) {
+  return filteredItems(groupId, category).length;
+}
 
-function getTagCategory(subCategory) {
-  const subCat = subCategory?.toLowerCase() || "";
+// Lifecycle
+onMounted(async () => {
+  await loadGroupsAndItems();
+});
 
-  if (
-    ["casual attire", "heritage attire", "winter wear", "accessories"].includes(
-      subCat
-    )
-  ) {
-    return "clothing";
-  } else if (["bed linens", "bath essentials"].includes(subCat)) {
-    return "bedding";
-  } else if (subCat === "snuggle essentials") {
-    return "stuffed toy";
-  } else if (subCat === "curtains/blinds") {
-    return "curtain";
-  } else if (subCat === "cushions") {
-    return "sofa";
-  } else if (subCat === "carpets") {
-    return "carpet";
-  } else {
-    return "others";
+// Get current logged-in user email
+async function getCurrentUserEmail() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.email || "unknown";
+}
+
+// Fetch groups + their items
+async function loadGroupsAndItems() {
+  pricingGroups.value = await fetchPricingGroups();
+  if (pricingGroups.value.length > 0) {
+    activeGroup.value = pricingGroups.value[0].id;
+    await refreshItemsForAllGroups();
   }
 }
 
+async function refreshItemsForAllGroups() {
+  for (const group of pricingGroups.value) {
+    const items = await fetchItemsByGroup(group.id);
+
+    // group items by category
+    const groupedByCategory = {};
+    items.forEach((item) => {
+      const category =
+        item.category && item.category.trim() !== ""
+          ? item.category
+          : "Uncategorized";
+      if (!groupedByCategory[category]) {
+        groupedByCategory[category] = [];
+      }
+      groupedByCategory[category].push(item);
+    });
+
+    categoriesByGroup.value[group.id] = Object.keys(groupedByCategory);
+    activeCategory.value[group.id] = categoriesByGroup.value[group.id][0];
+    itemsByGroupAndCategory.value[group.id] = groupedByCategory;
+    itemsByGroup.value[group.id] = items; // store raw items too
+  }
+}
+
+// Add Item
 const addItem = async () => {
   try {
-    newItem.value.category = selectedCategory.value;
-    newItem.value.sub_category = selectedSubCategory.value;
-    newItem.value.unit = selectedUnit.value;
-    newItem.value.pieces = pieces.value;
+    const userEmail = await getCurrentUserEmail();
+    await createItem(newItem.value, activeGroup.value, userEmail);
 
-    // Now simply call the helper function
-    newItem.value.tag_category = getTagCategory(selectedSubCategory.value);
-
-    normalizePriceFields(newItem.value);
-
-    const cleanedNewItem = { ...newItem.value };
-    cleanItem(cleanedNewItem);
-
-    await createItem(cleanedNewItem);
     $q.notify({ type: "positive", message: "Item added successfully" });
     showAddItemDialog.value = false;
-    await fetchItems();
+    await refreshItemsForAllGroups();
   } catch (error) {
-    console.error("Error adding item:", error);
-    $q.notify({ type: "negative", message: "Failed to add item" });
+    console.error(error);
+
+    // Handle duplicate name error
+    if (error.message?.includes("duplicate key value")) {
+      $q.notify({
+        type: "warning",
+        message: `Item "${newItem.value.name}" already exists. Please use a different name.`,
+      });
+    } else {
+      $q.notify({ type: "negative", message: "Failed to add item" });
+    }
   }
 };
 
-function getUnitOption(unitValue) {
-  return units.find((u) => u.value === unitValue) || { label: "", value: "" };
-}
-
-// Function to open update item dialog with selected item data
-const openUpdateDialog = (item) => {
-  selectedItem.value = { ...item };
-
-  selectedCategory.value = item.category || "clothings";
-  subCategories.value = allSubCategories[selectedCategory.value] || [];
-  selectedSubCategory.value = item.sub_category || "";
-
-  selectedUnit.value = getUnitOption(item.unit); // map value to {label, value}
-
-  showUpdateItemDialog.value = true;
-};
-
-// Function to update an item
+// Update Item
 const updateItem = async () => {
   try {
-    // Always update tag_category before submitting
-    selectedItem.value.tag_category = getTagCategory(
-      selectedItem.value.sub_category
-    );
+    const userEmail = await getCurrentUserEmail();
 
-    normalizePriceFields(selectedItem.value);
+    const payload = {
+      ...selectedItem.value,
+      servicePrices: selectedItem.value.servicePrices || [],
+      deletedServiceTypes: selectedItem.value.deletedServiceTypes || [],
+    };
 
-    const cleanedItem = { ...selectedItem.value };
-    cleanItem(cleanedItem);
+    await updateItems(payload, activeGroup.value, userEmail);
 
-    // selectedItem.value.unit = selectedUnit.value?.value || "";
-    await updateItems(cleanedItem);
     $q.notify({ type: "positive", message: "Item updated successfully" });
     showUpdateItemDialog.value = false;
-    await fetchItems();
+    await refreshItemsForAllGroups();
   } catch (error) {
-    console.error("Error updating item:", error);
+    console.error(error);
     $q.notify({ type: "negative", message: "Failed to update item" });
   }
 };
 
-// Function to open delete confirmation dialog
-const openDeleteDialog = (item) => {
-  itemToDelete.value = item;
-  showDeleteItemDialog.value = true;
-};
-
-// Function to delete an item
-const deleteItem = async () => {
+// Deactivate Item
+const deactivateItemAction = async () => {
   try {
-    await deleteItems(itemToDelete.value.id);
-    $q.notify({ type: "positive", message: "Item deleted successfully" });
-    showDeleteItemDialog.value = false;
-    await fetchItems();
+    const userEmail = await getCurrentUserEmail();
+    await deactivateItem(
+      itemToDeactivate.value.id,
+      activeGroup.value,
+      userEmail
+    );
+    $q.notify({ type: "positive", message: "Item deactivated" });
+    showDeactivateItemDialog.value = false;
+    await refreshItemsForAllGroups();
   } catch (error) {
-    console.error("Error deleting item:", error);
-    $q.notify({ type: "negative", message: "Failed to delete item" });
+    $q.notify({ type: "negative", message: "Failed to deactivate item" });
   }
 };
 
-function resetForm() {
-  // Reset UI bindings
-  selectedCategory.value = "clothings";
-  selectedSubCategory.value = "";
-  selectedUnit.value = "";
-  pieces.value = 1;
-
-  // Reset newItem fields
-  newItem.value = {
-    name: "",
-    category: "",
-    sub_category: "",
-    laundry_price: null,
-    dryclean_price: null,
-    pressing_price: null,
-    others_price: null,
-    pieces: null,
-    unit: "",
-    tag_category: "",
-  };
-
-  // Reset subcategories list
-  subCategories.value = allSubCategories["clothings"];
-}
+// Reactivate Item
+const reactivateItemAction = async () => {
+  try {
+    const userEmail = await getCurrentUserEmail();
+    await reactivateItem(
+      itemToReactivate.value.id,
+      activeGroup.value,
+      userEmail
+    );
+    $q.notify({ type: "positive", message: "Item reactivated" });
+    showReactivateItemDialog.value = false;
+    await refreshItemsForAllGroups();
+  } catch (error) {
+    console.error(error);
+    $q.notify({ type: "negative", message: "Failed to reactivate item" });
+  }
+};
 
 function capitalizeWords(str) {
   if (!str) return "";
   return str
     .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
 
-function normalizePriceFields(item) {
-  const priceFields = [
-    "laundry_price",
-    "dryclean_price",
-    "pressing_price",
-    "others_price",
-  ];
-  priceFields.forEach((key) => {
-    if (item[key] === 0) item[key] = null;
-  });
+const openUpdateDialog = (item) => {
+  selectedItem.value = { ...item };
+
+  // Build servicePrices from pricing_group_rates of the active group
+  if (item.pricing_group_rates && item.pricing_group_rates.length > 0) {
+    selectedItem.value.servicePrices = item.pricing_group_rates
+      .filter((rate) => rate.group_id === activeGroup.value) // only active group
+      .map((rate) => ({
+        service_type: rate.service_type,
+        price: rate.price,
+      }));
+  } else {
+    selectedItem.value.servicePrices = [];
+  }
+
+  showUpdateItemDialog.value = true;
+};
+
+const openDeactivateDialog = (item) => {
+  itemToDeactivate.value = item;
+  showDeactivateItemDialog.value = true;
+};
+
+const openReactivateDialog = (item) => {
+  itemToReactivate.value = item;
+  showReactivateItemDialog.value = true;
+};
+
+const serviceTypeOptions = [
+  { label: "Laundry", value: "laundry" },
+  { label: "Dry Clean", value: "dry clean" },
+  { label: "Pressing", value: "pressing" },
+  { label: "Others", value: "others" },
+];
+
+function resetForm() {
+  newItem.value = {
+    name: "",
+    category: "",
+    sub_category: "",
+    unit: "",
+    pieces: 1,
+    servicePrices: [{ service_type: "laundry", price: 0 }],
+  };
+}
+
+function addServiceRow() {
+  if (!newItem.value.servicePrices) {
+    newItem.value.servicePrices = [];
+  }
+  newItem.value.servicePrices.push({ service_type: null, price: 0 });
+}
+
+const categoryOptions = ref([]);
+const subCategoryOptions = ref([]);
+const unitOptions = ref([
+  { label: "Piece (pc)", value: "pc" },
+  { label: "Kilogram (kg)", value: "kg" },
+  { label: "Square Foot (sqft)", value: "sqft" },
+]);
+
+onMounted(async () => {
+  await loadCategoryOptions();
+});
+
+async function loadCategoryOptions() {
+  const { data, error } = await supabase
+    .from("pricing_items")
+    .select("category")
+    .neq("category", "")
+    .order("category", { ascending: true });
+
+  if (!error && data) {
+    const unique = [...new Set(data.map((row) => row.category))];
+    categoryOptions.value = unique.map((c) => ({
+      label: capitalizeWords(c),
+      value: c,
+    }));
+  }
+}
+
+async function loadSubCategoryOptions(category) {
+  const { data, error } = await supabase
+    .from("pricing_items")
+    .select("sub_category")
+    .eq("category", category)
+    .neq("sub_category", "")
+    .order("sub_category", { ascending: true });
+
+  if (!error && data) {
+    const unique = [...new Set(data.map((row) => row.sub_category))];
+    subCategoryOptions.value = unique.map((sc) => ({
+      label: capitalizeWords(sc),
+      value: sc,
+    }));
+  }
+}
+
+function markServiceRowDeleted(index) {
+  const removed = selectedItem.value.servicePrices[index];
+  if (removed && removed.service_type) {
+    if (!selectedItem.value.deletedServiceTypes) {
+      selectedItem.value.deletedServiceTypes = [];
+    }
+    selectedItem.value.deletedServiceTypes.push(removed.service_type);
+  }
+  selectedItem.value.servicePrices.splice(index, 1);
+}
+
+function addServiceRowUpdate() {
+  if (!selectedItem.value.servicePrices) {
+    selectedItem.value.servicePrices = [];
+  }
+  selectedItem.value.servicePrices.push({ service_type: null, price: 0 });
+}
+
+function getAvailableServiceTypeOptions(currentIdx) {
+  const usedTypes = selectedItem.value.servicePrices
+    .map((rate, idx) => (idx !== currentIdx ? rate.service_type : null))
+    .filter(Boolean);
+
+  return serviceTypeOptions.filter((opt) => !usedTypes.includes(opt.value));
+}
+
+const showDeleteItemDialog = ref(false);
+
+const openDeleteItemDialog = () => {
+  showDeleteItemDialog.value = true;
+};
+
+const deleteItemAction = async () => {
+  try {
+    const userEmail = await getCurrentUserEmail();
+
+    // find group name by activeGroup id
+    const activeGroupObj = pricingGroups.value.find(
+      (g) => g.id === activeGroup.value
+    );
+    const groupName = activeGroupObj?.name || "Unknown Group";
+
+    const success = await deleteItem(selectedItem.value, groupName, userEmail);
+
+    if (success) {
+      $q.notify({ type: "positive", message: "Item deleted successfully" });
+      showDeleteItemDialog.value = false;
+      showUpdateItemDialog.value = false;
+      await refreshItemsForAllGroups();
+    }
+  } catch (error) {
+    console.error(error);
+    $q.notify({ type: "negative", message: "Failed to delete item" });
+  }
+};
+
+function resolveServicePrices(item) {
+  const activeGroupId = activeGroup.value;
+
+  if (!activeGroupId) return [];
+
+  // ✅ Only show prices belonging to the active group
+  return (item.pricing_group_rates || [])
+    .filter((rate) => rate.group_id === activeGroupId)
+    .map((rate) => ({
+      service_type: rate.service_type,
+      price: rate.price || 0,
+    }));
+}
+
+function resetToDefaultGroup() {
+  const defaultGroup = pricingGroups.value.find((g) => g.name === "Default");
+  if (defaultGroup) {
+    activeGroup.value = defaultGroup.id;
+  }
 }
 </script>

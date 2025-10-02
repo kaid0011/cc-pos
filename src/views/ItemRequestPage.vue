@@ -1,10 +1,10 @@
 <template>
   <div class="row justify-center page-title-header text-uppercase">
-    List of Items
+    List of Item Requests
   </div>
-    <ItemsManager />
+        <ItemRequests />
 </template>
 
 <script setup>
-import ItemsManager from "@/components/ItemsManager.vue";
+import ItemRequests from "@/components/ItemRequests.vue";
 </script>

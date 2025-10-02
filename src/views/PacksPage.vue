@@ -1,9 +1,8 @@
 <template>
+  <div class="row justify-center page-title-header text-uppercase">
+    Packs Management
+  </div>
   <div class="full-container orders-history">
-    <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
-      Packs Management
-    </div>
-
     <q-card class="row preview-card q-mb-md">
       <!-- Generate Tag Section -->
       <div class="col-5 q-pa-md">
@@ -129,7 +128,7 @@
         <div class="row">
           <div class="col">
             <div>
-              <q-checkbox dense v-model="filters.clothings" label="Clothings" />
+              <q-checkbox dense v-model="filters.clothings" label="clothings" />
             </div>
             <div>
               <q-checkbox

@@ -1,10 +1,9 @@
 <template>
+  <div class="row justify-center page-title-header text-uppercase">
+    List of Orders
+  </div>
   <div class="full-container orders-history">
-    <div class="text-h6 text-center text-uppercase text-weight-bolder q-mb-md">
-      Order Management
-    </div>
-
-    <!-- Search & Date Filters -->
+     <!-- Search & Date Filters -->
     <div class="row justify-end q-mb-md q-gutter-x-sm">
       <!-- Collection Start Date -->
       <div class="col">

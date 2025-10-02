@@ -23,6 +23,7 @@ import InvoicesPage from "@/views/InvoicesPage.vue";
 import InvoiceView from "@/views/InvoiceView.vue";
 import InvoiceGroupView from "@/views/InvoiceGroupView.vue";
 import ItemsPage from "@/views/ItemsPage.vue";
+import ItemRequestPage from "@/views/ItemRequestPage.vue";
 import PaymentsPage from "@/views/PaymentsPage.vue";
 
 const routes = [
@@ -210,6 +211,15 @@ const routes = [
     path: "/items",
     name: "Items",
     component: ItemsPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin", "csr"],
+    },
+  },
+  {
+    path: "/items/requests",
+    name: "ItemRequestPage",
+    component: ItemRequestPage,
     meta: {
       requiresAuth: true,
       roles: ["admin", "csr"],

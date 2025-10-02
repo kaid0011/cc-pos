@@ -2,11 +2,70 @@ import { supabase } from '../config.js';
 
 // Fetch all customers
 export async function fetchAllCustomers() {
-  let { data: customers, error } = await supabase
-    .from('customers')
-    .select('*');
+  const { data: customers, error } = await supabase
+    .from("customers")
+    .select(`
+      *,
+      customer_credits(*),
+      logistics (
+        id,
+        logistics_status,
+        order_id,
+        orders (
+          id,
+          created_at,
+          order_payments(total_amount, paid_amount)
+        )
+      )
+    `);
+
   if (error) throw new Error(error.message);
-  return customers;
+
+  return customers.map(c => {
+    let totalAmount = 0;
+    let totalPaid = 0;
+    const orderIds = new Set();
+    const activeOrderIds = new Set();
+    let lastOrderDate = null;
+    let lastOrderId = null;
+
+    c.logistics?.forEach(l => {
+      const order = l.orders;
+      if (order?.id) {
+        orderIds.add(order.id);
+
+        // track last order date + id
+        if (order.created_at) {
+          const orderDate = new Date(order.created_at);
+          if (!lastOrderDate || orderDate > new Date(lastOrderDate)) {
+            lastOrderDate = orderDate;
+            lastOrderId = order.id;
+          }
+        }
+
+        // check payments
+        order.order_payments?.forEach(p => {
+          totalAmount += p.total_amount ?? 0;
+          totalPaid += p.paid_amount ?? 0;
+        });
+
+        // active orders via logistics status
+        if (l.logistics_status !== "Delivery Completed") {
+          activeOrderIds.add(order.id);
+        }
+      }
+    });
+
+    return {
+      ...c,
+      total_amount: totalAmount,
+      paid_amount: totalPaid,
+      orders_count: orderIds.size,
+      active_orders_count: activeOrderIds.size,
+      last_order_date: lastOrderDate,
+      last_order_id: lastOrderId, // ✅ add order id for navigation
+    };
+  });
 }
 
 // Create a new customer and return the inserted data

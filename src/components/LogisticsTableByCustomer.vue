@@ -1,9 +1,4 @@
 <template>
-  <div class="q-mt-xl">
-    <div class="text-h6 text-weight-bolder text-uppercase q-mb-md text-center">
-      Customer Logistics History
-    </div>
-
     <div v-if="loading" class="q-pa-md text-center">
       <q-spinner-dots color="primary" size="2em" />
     </div>
@@ -803,7 +798,6 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 

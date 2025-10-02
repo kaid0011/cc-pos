@@ -208,6 +208,7 @@ export const useTransactionStore = defineStore("transactionStore", {
               price_remarks: newCustomer.price_remarks || null,
               accounting_remarks: newCustomer.accounting_remarks || null,
               other_remarks: newCustomer.other_remarks || null,
+              pricing_group_id: newCustomer.pricing_group_id || null,
             },
           ])
           .select();

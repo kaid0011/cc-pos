@@ -8,7 +8,7 @@ export const fetchPricingGroups = async () => {
   try {
     const { data, error } = await supabase
       .from("pricing_groups")
-      .select("id, name")
+      .select("id, name");
 
     if (error) throw error;
     return data || [];
@@ -25,45 +25,54 @@ export const fetchItemsByGroup = async (groupId) => {
   try {
     const { data, error } = await supabase
       .from("pricing_items")
-      .select(`
+      .select(
+        `
         id,
         name,
         category,
         sub_category,
         unit,
         pieces,
-        is_active,
+      tag_category,
+      pack_type,
+      turnaround_time,
         pricing_group_rates (
           id,
+          pricing_group_id,
           service_type,
           price,
-          group_id
+          is_active,
+          applicable_days
         )
-      `)
+      `
+      )
+      .eq("pricing_group_rates.pricing_group_id", groupId) // optional filter
       .order("category", { ascending: true })
       .order("sub_category", { ascending: true })
       .order("name", { ascending: true });
 
     if (error) throw error;
 
-    return data.map((item) => {
-      const groupPrices = {};
-      (item.pricing_group_rates || []).forEach((rate) => {
-        if (!groupPrices[rate.group_id]) groupPrices[rate.group_id] = {};
-        groupPrices[rate.group_id][rate.service_type] = rate.price || 0;
-      });
-
-      return {
-        ...item,
-        groupPrices,
-      };
-    });
+    return data.map((item) => ({
+      ...item,
+      pricing_group_rates: (item.pricing_group_rates || []).map((rate) => ({
+        ...rate,
+        applicable_days: Array.isArray(rate.applicable_days)
+          ? rate.applicable_days
+          : (() => {
+              try {
+                return JSON.parse(rate.applicable_days || "[]");
+              } catch {
+                return [];
+              }
+            })(),
+      })),
+    }));
   } catch (err) {
     console.error("Error fetching items:", err.message);
     return [];
   }
 };
-
 
 // ----------------------
 // Create new item
@@ -82,15 +91,20 @@ export const createItem = async (newItem, groupId, changedBy) => {
     // Insert the item
     const { data: itemData, error: itemError } = await client
       .from("pricing_items")
-      .insert([{
-        name: newItem.name,
-        category: newItem.category,
-        sub_category: newItem.sub_category,
-        unit: newItem.unit,
-        pieces: newItem.pieces,
-        is_active: true,
-      }])
-      .select("id, name, category, sub_category, unit, pieces")
+      .insert([
+        {
+          name: newItem.name,
+          category: newItem.category,
+          sub_category: newItem.sub_category,
+          unit: newItem.unit,
+          pieces: newItem.pieces,
+      tag_category: newItem.tag_category,
+      pack_type: newItem.pack_type,
+      turnaround_time: newItem.turnaround_time,
+          is_active: true,
+        },
+      ])
+      .select("id, name, category, sub_category, unit, pieces, tag_category, pack_type, turnaround_time")
       .single();
     if (itemError) throw itemError;
 
@@ -98,11 +112,13 @@ export const createItem = async (newItem, groupId, changedBy) => {
 
     // Insert service prices
     const serviceRates = (newItem.servicePrices || [])
-      .filter(r => r?.service_type && r.price !== undefined && r.price !== null)
-      .map(r => ({
+      .filter(
+        (r) => r?.service_type && r.price !== undefined && r.price !== null
+      )
+      .map((r) => ({
         item_id: itemId,
-        group_id: groupId,
-        service_type: r.service_type || '',
+        pricing_group_id: groupId,
+        service_type: r.service_type || "",
         price: r.price,
       }));
 
@@ -115,8 +131,10 @@ export const createItem = async (newItem, groupId, changedBy) => {
 
     // ---- AUDIT (names only, include price) ----
     const auditRows = (newItem.servicePrices || [])
-      .filter(r => r?.service_type && r.price !== undefined && r.price !== null)
-      .map(r => ({
+      .filter(
+        (r) => r?.service_type && r.price !== undefined && r.price !== null
+      )
+      .map((r) => ({
         item_name: itemData.name,
         group_name: group.name,
         field_name: "create",
@@ -149,10 +167,23 @@ export const createItem = async (newItem, groupId, changedBy) => {
 // ----------------------
 // Update item (manual check for rates + audit logging)
 // ----------------------
+
 export const updateItems = async (item, groupId, changedBy) => {
   const client = supabase;
+
+  // helpers for days
+  const canonDays = (arr) => {
+    const a = Array.isArray(arr) ? arr.map((s) => String(s).toLowerCase()) : [];
+    if (a.includes("all")) return ["all"];
+    const order = ["mon", "tue", "wed", "thu", "fri", "sat", "sun", "holiday"];
+    const uniq = [...new Set(a)];
+    return uniq.sort((x, y) => order.indexOf(x) - order.indexOf(y));
+  };
+  const sameDays = (a, b) =>
+    JSON.stringify(canonDays(a)) === JSON.stringify(canonDays(b));
+
   try {
-    // Fetch group with name
+    // fetch group (for logs)
     const { data: group, error: groupError } = await client
       .from("pricing_groups")
       .select("id, name")
@@ -160,7 +191,7 @@ export const updateItems = async (item, groupId, changedBy) => {
       .single();
     if (groupError) throw groupError;
 
-    // Get existing item before update
+    // current item (for logs)
     const { data: existing, error: fetchError } = await client
       .from("pricing_items")
       .select("*")
@@ -168,132 +199,250 @@ export const updateItems = async (item, groupId, changedBy) => {
       .single();
     if (fetchError) throw fetchError;
 
-    const updates = {
+    const itemUpdates = {
       name: item.name,
       category: item.category,
       sub_category: item.sub_category,
       unit: item.unit,
       pieces: item.pieces,
+      tag_category: item.tag_category,
+      pack_type: item.pack_type,
+      turnaround_time: item.turnaround_time
     };
 
     const logs = [];
 
-    // Non-price fields → no service_type
-    for (const [field, newVal] of Object.entries(updates)) {
+    // audit changes for item fields
+    for (const [field, newVal] of Object.entries(itemUpdates)) {
       if (existing[field] !== newVal) {
-        logs.push({
-          item_name: item.name,          // ✅ always use NEW name for clarity
-          group_name: group.name,
-          field_name: field,
-          service_type: null,
-          old_value: existing[field] !== null ? String(existing[field]) : null,
-          new_value: newVal !== null ? String(newVal) : null,
-          changed_by: changedBy,
-        });
-      }
-    }
-
-    // Update item record
-    const { error: updateError } = await client
-      .from("pricing_items")
-      .update(updates)
-      .eq("id", item.id);
-    if (updateError) throw updateError;
-
-    // Service rates
-    const serviceRates = [
-      { service_type: "laundry", price: item.laundry_price },
-      { service_type: "dry clean", price: item.dryclean_price },
-      { service_type: "pressing", price: item.pressing_price },
-      { service_type: "others", price: item.others_price },
-    ];
-
-// Service rates from payload
-for (const rate of item.servicePrices) {
-  if (rate.price !== null && rate.price !== undefined) {
-    const { data: oldRate, error: findError } = await client
-      .from("pricing_group_rates")
-      .select("id, price")
-      .eq("item_id", item.id)
-      .eq("group_id", groupId)
-      .eq("service_type", rate.service_type)
-      .maybeSingle();
-    if (findError) throw findError;
-
-    if (oldRate) {
-      if (oldRate.price !== rate.price) {
-        await client
-          .from("pricing_group_rates")
-          .update({ price: rate.price })
-          .eq("id", oldRate.id);
-
         logs.push({
           item_name: item.name,
           group_name: group.name,
-          field_name: "price",
-          service_type: rate.service_type,
-          old_value: String(oldRate.price),
-          new_value: String(rate.price),
+          field_name: field,
+          service_type: null,
+          old_value: existing[field] != null ? String(existing[field]) : null,
+          new_value: newVal != null ? String(newVal) : null,
           changed_by: changedBy,
         });
       }
-    } else {
-      await client.from("pricing_group_rates").insert({
-        item_id: item.id,
-        group_id: groupId,
-        service_type: rate.service_type,
-        price: rate.price,
-      });
-
-      logs.push({
-        item_name: item.name,
-        group_name: group.name,
-        field_name: "price",
-        service_type: rate.service_type,
-        old_value: null,
-        new_value: String(rate.price),
-        changed_by: changedBy,
-      });
     }
-  }
-}
 
+    // update item row
+    const { error: updateError } = await client
+      .from("pricing_items")
+      .update(itemUpdates)
+      .eq("id", item.id);
+    if (updateError) throw updateError;
 
-    // inside updateItems, after serviceRates handling:
-if (item.deletedServiceTypes && item.deletedServiceTypes.length > 0) {
-  for (const serviceType of item.deletedServiceTypes) {
-    // fetch old value before delete
+    // handle service rates (price, is_active, applicable_days)
+    for (const rate of item.servicePrices || []) {
+      const cleanedDays = canonDays(rate.applicable_days);
+      if (rate.id) {
+        // existing row — update by id
+        const { data: oldRate, error: findError } = await client
+          .from("pricing_group_rates")
+          .select(
+            "id, item_id, pricing_group_id, service_type, price, is_active, applicable_days"
+          )
+          .eq("id", rate.id)
+          .single();
+        if (findError) throw findError;
+
+        // 🔧 normalize applicable_days
+        let oldDays;
+        try {
+          oldDays = Array.isArray(oldRate.applicable_days)
+            ? oldRate.applicable_days
+            : JSON.parse(oldRate.applicable_days || "[]");
+        } catch {
+          oldDays = [];
+        }
+
+        const updates = {};
+        let changed = false;
+
+        if (oldRate.price !== rate.price) {
+          updates.price = rate.price;
+          changed = true;
+          logs.push({
+            item_name: item.name,
+            group_name: group.name,
+            field_name: "price",
+            service_type: rate.service_type,
+            old_value: String(oldRate.price),
+            new_value: String(rate.price),
+            changed_by: changedBy,
+          });
+        }
+
+        if (oldRate.is_active !== rate.is_active) {
+          updates.is_active = rate.is_active;
+          changed = true;
+          logs.push({
+            item_name: item.name,
+            group_name: group.name,
+            field_name: "is_active",
+            service_type: rate.service_type,
+            old_value: String(oldRate.is_active),
+            new_value: String(rate.is_active),
+            changed_by: changedBy,
+          });
+        }
+
+        if (!sameDays(oldDays, cleanedDays)) {
+          updates.applicable_days = cleanedDays;
+          changed = true;
+          logs.push({
+            item_name: item.name,
+            group_name: group.name,
+            field_name: "applicable_days",
+            service_type: rate.service_type,
+            old_value: JSON.stringify(oldDays),
+            new_value: JSON.stringify(cleanedDays),
+            changed_by: changedBy,
+          });
+        }
+
+        if (changed) {
+          const updatePayload = { ...updates };
+
+          console.log("🔧 pricing_group_rates UPDATE → id:", oldRate.id, {
+            before: oldRate,
+            updates: updatePayload,
+          });
+
+          const { error: rateUpdateErr } = await client
+            .from("pricing_group_rates")
+            .update(updatePayload)
+            .eq("id", oldRate.id);
+          if (rateUpdateErr) throw rateUpdateErr;
+
+          const { data: after } = await client
+            .from("pricing_group_rates")
+            .select(
+              "id, item_id, pricing_group_id, service_type, price, is_active, applicable_days"
+            )
+            .eq("id", oldRate.id)
+            .single();
+
+          console.log("✅ pricing_group_rates UPDATED → id:", oldRate.id, {
+            after,
+          });
+        } else {
+          console.log("ℹ️ No changes for rate id", oldRate.id);
+        }
+      } else {
+        // new row — insert
+        const insertPayload = {
+          item_id: item.id,
+          pricing_group_id: groupId,
+          service_type: rate.service_type,
+          price: rate.price,
+          is_active: rate.is_active ?? true,
+          applicable_days: cleanedDays.length ? cleanedDays : ["all"],
+        };
+
+        console.log("➕ pricing_group_rates INSERT", insertPayload);
+
+        const { data: inserted, error: insertError } = await client
+          .from("pricing_group_rates")
+          .insert(insertPayload)
+          .select(
+            "id, item_id, pricing_group_id, service_type, price, is_active, applicable_days"
+          )
+          .single();
+        if (insertError) throw insertError;
+
+        console.log("✅ Inserted rate row:", inserted);
+
+        // let caller/UI know the new id
+        rate.id = inserted.id;
+
+        // audit
+        logs.push(
+          {
+            item_name: item.name,
+            group_name: group.name,
+            field_name: "price",
+            service_type: rate.service_type,
+            old_value: null,
+            new_value: String(rate.price),
+            changed_by: changedBy,
+          },
+          {
+            item_name: item.name,
+            group_name: group.name,
+            field_name: "is_active",
+            service_type: rate.service_type,
+            old_value: null,
+            new_value: String(rate.is_active ?? true),
+            changed_by: changedBy,
+          },
+          {
+            item_name: item.name,
+            group_name: group.name,
+            field_name: "applicable_days",
+            service_type: rate.service_type,
+            old_value: null,
+            new_value: JSON.stringify(insertPayload.applicable_days),
+            changed_by: changedBy,
+          }
+        );
+      }
+    }
+
+    // deleted service types (optional; unchanged from your flow)
+  // deleted service rates (by id instead of service_type)
+if (item.deletedServiceIds && item.deletedServiceIds.length > 0) {
+  for (const rateId of item.deletedServiceIds) {
     const { data: oldRate } = await client
       .from("pricing_group_rates")
-      .select("id, price")
-      .eq("item_id", item.id)
-      .eq("group_id", groupId)
-      .eq("service_type", serviceType)
+      .select("id, price, is_active, applicable_days")
+      .eq("id", rateId)
       .maybeSingle();
 
     if (oldRate) {
-      // delete from DB
-      await client
-        .from("pricing_group_rates")
-        .delete()
-        .eq("id", oldRate.id);
-
-      // log deletion
-      logs.push({
-        item_name: item.name,
-        group_name: group.name,
-        field_name: "price",
-        service_type: serviceType,
-        old_value: String(oldRate.price),
-        new_value: null,
-        changed_by: changedBy,
+      console.log("🗑 pricing_group_rates DELETE → id:", oldRate.id, {
+        before: oldRate,
       });
+
+      await client.from("pricing_group_rates").delete().eq("id", oldRate.id);
+
+      logs.push(
+        {
+          item_name: item.name,
+          group_name: group.name,
+          field_name: "price",
+          service_type: oldRate.service_type,
+          old_value: String(oldRate.price),
+          new_value: null,
+          changed_by: changedBy,
+        },
+        {
+          item_name: item.name,
+          group_name: group.name,
+          field_name: "is_active",
+          service_type: oldRate.service_type,
+          old_value: String(oldRate.is_active),
+          new_value: null,
+          changed_by: changedBy,
+        },
+        {
+          item_name: item.name,
+          group_name: group.name,
+          field_name: "applicable_days",
+          service_type: oldRate.service_type,
+          old_value: JSON.stringify(oldRate.applicable_days || []),
+          new_value: null,
+          changed_by: changedBy,
+        }
+      );
     }
   }
 }
 
 
-    // Insert audit logs if any
+    // audit logs
     if (logs.length > 0) {
       const { error: auditError } = await client
         .from("pricing_audit_log")
@@ -303,7 +452,7 @@ if (item.deletedServiceTypes && item.deletedServiceTypes.length > 0) {
 
     return true;
   } catch (err) {
-    console.error("Error updating item:", err.message);
+    console.error("❌ Error updating item:", err.message);
     throw err;
   }
 };
@@ -332,15 +481,17 @@ export const deactivateItem = async (itemId, groupId, changedBy) => {
     if (updateError) throw updateError;
 
     // Log
-    await client.from("pricing_audit_log").insert([{
-      item_id: itemId,
-      group_id: groupId,
-      field_name: "is_active",
-      service_type: null,
-      old_value: String(existing.is_active),
-      new_value: "false",
-      changed_by: changedBy,
-    }]);
+    await client.from("pricing_audit_log").insert([
+      {
+        item_id: itemId,
+        pricing_group_id: groupId,
+        field_name: "is_active",
+        service_type: null,
+        old_value: String(existing.is_active),
+        new_value: "false",
+        changed_by: changedBy,
+      },
+    ]);
 
     return true;
   } catch (err) {
@@ -368,15 +519,17 @@ export const reactivateItem = async (itemId, groupId, changedBy) => {
 
     if (updateError) throw updateError;
 
-    await client.from("pricing_audit_log").insert([{
-      item_id: itemId,
-      group_id: groupId,
-      field_name: "is_active",
-      service_type: null,
-      old_value: String(existing.is_active),
-      new_value: "true",
-      changed_by: changedBy,
-    }]);
+    await client.from("pricing_audit_log").insert([
+      {
+        item_id: itemId,
+        pricing_group_id: groupId,
+        field_name: "is_active",
+        service_type: null,
+        old_value: String(existing.is_active),
+        new_value: "true",
+        changed_by: changedBy,
+      },
+    ]);
 
     return true;
   } catch (err) {
@@ -416,20 +569,25 @@ export const deleteItem = async (item, groupName, changedBy) => {
       sub_category: item.sub_category,
       unit: item.unit,
       pieces: item.pieces,
+      tag_category: item.tag_category,
+      pack_type: item.pack_type,
+      turnaround_time: item.turnaround_time,
       servicePrices: item.servicePrices || [],
       is_active: item.is_active,
     };
 
     // Audit log (no IDs, only names)
-    await client.from("pricing_audit_log").insert([{
-      item_name: item.name,
-      group_name: groupName,
-      field_name: "delete",
-      service_type: null,
-      old_value: JSON.stringify(oldValue),
-      new_value: null,
-      changed_by: changedBy || "system",
-    }]);
+    await client.from("pricing_audit_log").insert([
+      {
+        item_name: item.name,
+        group_name: groupName,
+        field_name: "delete",
+        service_type: null,
+        old_value: JSON.stringify(oldValue),
+        new_value: null,
+        changed_by: changedBy || "system",
+      },
+    ]);
 
     return true;
   } catch (err) {

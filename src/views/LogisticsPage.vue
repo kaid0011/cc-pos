@@ -1,5 +1,7 @@
-<!-- File: src/views/LogisticsManagement.vue -->
 <template>
+  <div class="row justify-center page-title-header text-uppercase">
+Logistics Management
+  </div>
   <div class="full-container logistics-management">
     <!-- Weekly Summary Section -->
     <q-card flat class="q-mb-lg q-pa-md">

@@ -2232,11 +2232,11 @@ onMounted(async () => {
 
 // Options and Category Data
 const categoryOptions = [
-  "Clothings",
-  "Beddings",
-  "Upholsteries",
-  "Miscellaneous",
-  "Onsite Cleaning",
+  "clothings",
+  "beddings",
+  "upholsteries",
+  "miscellaneous",
+  "onsite cleaning",
   "New Item",
 ];
 const priceTypeOptions = ["Current", "TBA", "Custom"];

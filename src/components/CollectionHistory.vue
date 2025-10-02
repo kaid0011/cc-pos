@@ -1,25 +1,25 @@
 <template>
   <div class="logistics-management">
-<div class="q-px-md flex items-center justify-between bg-brown-4 text-white q-pa-sm">
-  <div class="text-h6 text-uppercase text-weight-bold">
-    Collection History
-  </div>
-<q-btn
-  dense
-  flat
-  round
-  :icon="showHistory ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
-  @click="showHistory = !showHistory"
-/>
-</div>
+    <div
+      class="q-px-md flex items-center justify-between bg-brown-4 text-white q-pa-sm"
+    >
+      <div class="text-h6 text-uppercase text-weight-bold">
+        Collection History
+      </div>
+      <q-btn
+        dense
+        flat
+        round
+        :icon="showHistory ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
+        @click="showHistory = !showHistory"
+      />
+    </div>
 
     <div class="row-col-table" v-if="showHistory">
       <!-- Table Header -->
       <div class="row row-col-header q-px-md">
         <div class="col bordered q-py-sm text-weight-bold">Date</div>
-        <div class="col bordered q-py-sm text-weight-bold">
-          Contact Person
-        </div>
+        <div class="col bordered q-py-sm text-weight-bold">Contact Person</div>
         <div class="col bordered q-py-sm text-weight-bold">Address</div>
         <div class="col bordered q-py-sm text-weight-bold">No. of Bags</div>
         <div class="col q-py-sm text-weight-bold">Remarks</div>
@@ -61,8 +61,12 @@
           </div>
         </div>
         <div class="col bordered">
-          <div>{{ transaction.customer_contact_persons?.name || "[NOT SET]" }}</div>
-          <div>{{ transaction.customer_contact_persons?.contact_no1 || "-" }}</div>
+          <div>
+            {{ transaction.customer_contact_persons?.name || "[NOT SET]" }}
+          </div>
+          <div>
+            {{ transaction.customer_contact_persons?.contact_no1 || "-" }}
+          </div>
           <div v-if="transaction.customer_contact_persons?.contact_no2">
             {{ transaction.customer_contact_persons?.contact_no2 || "-" }}
           </div>
@@ -120,16 +124,15 @@ const formatTimestamp = (dateString) => {
 
   return date.toLocaleString("en-GB", {
     weekday: "short", // "Thu"
-    day: "2-digit",   // "30"
+    day: "2-digit", // "30"
     month: "2-digit", // "01"
-    year: "numeric",  // "2025"
-    hour: "2-digit",  // "02"
-    minute: "2-digit",// "15"
-    second: "2-digit",// "45"
-    hour12: true      // "AM/PM"
+    year: "numeric", // "2025"
+    hour: "2-digit", // "02"
+    minute: "2-digit", // "15"
+    second: "2-digit", // "45"
+    hour12: true, // "AM/PM"
   });
 };
-
 
 onMounted(async () => {
   try {

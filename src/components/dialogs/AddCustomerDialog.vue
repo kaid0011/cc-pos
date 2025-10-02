@@ -97,6 +97,25 @@
                 class="dialog-inputs"
               />
             </div>
+          </div>
+          <div class="row q-col-gutter-md">
+            <div class="col">
+              <div class="dialog-label">
+                Pricing Group:<span class="dialog-asterisk">*</span>
+              </div>
+              <q-select
+                v-model="selectedPricingGroup"
+                :options="pricingGroupOptions"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                label="Select Pricing Group"
+                outlined
+                :rules="[(val) => !!val || 'Pricing Group is required']"
+                class="dialog-inputs"
+              />
+            </div>
             <div class="col">
               <div class="dialog-label">
                 Recommended By:<span class="dialog-asterisk"></span>
@@ -162,7 +181,7 @@
 
           <q-card-actions align="right">
             <q-btn
-            unelevated
+              unelevated
               class="dialog-button"
               label="Add New Customer"
               color="primary"
@@ -179,6 +198,7 @@
 import { ref, watch, onMounted } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { useQuasar } from "quasar";
+import { fetchPricingGroups } from "@/../supabase/api/item_list.js";
 
 const $q = useQuasar();
 
@@ -191,6 +211,10 @@ const isOpen = ref(props.modelValue);
 // Selected Values
 const selectedType = ref(null);
 const selectedSubType = ref(null);
+
+// New refs
+const selectedPricingGroup = ref(null);
+const pricingGroupOptions = ref([]);
 
 // Ensure customer.type & sub_type match selected dropdowns
 watch([selectedType, selectedSubType], ([newType, newSubType]) => {
@@ -222,6 +246,7 @@ const customer = ref({
   price_remarks: "",
   accounting_remarks: "",
   other_remarks: "",
+    pricing_group_id: null,
   created_at: "",
 });
 
@@ -235,6 +260,9 @@ const handleAddCustomer = async () => {
     customer.value.sub_type = selectedSubType.value
       ? selectedSubType.value.value
       : "";
+
+    // ✅ assign pricing_group_id directly (already just an ID)
+    customer.value.pricing_group_id = selectedPricingGroup.value;
 
     await transactionStore.createCustomer(customer.value);
 
@@ -272,9 +300,12 @@ const resetCustomerForm = () => {
     price_remarks: "",
     accounting_remarks: "",
     other_remarks: "",
+    pricing_group_id: null,
+    created_at: "",
   };
   selectedType.value = null;
   selectedSubType.value = null;
+  selectedPricingGroup.value = null;
   filteredSubTypes.value = [];
 };
 
@@ -304,7 +335,6 @@ const fetchCustomerTypes = async () => {
 };
 
 watch(selectedType, (newType) => {
-
   // Check if newType is not null before accessing .value
   if (newType && newType.value) {
     filteredSubTypes.value = subTypeMapping.value[newType.value] || [];
@@ -315,8 +345,8 @@ watch(selectedType, (newType) => {
   selectedSubType.value = null; // Reset sub-type when type changes
 });
 
-// Fetch types when component loads
-onMounted(() => {
-  fetchCustomerTypes();
+onMounted(async () => {
+  await fetchCustomerTypes();
+  pricingGroupOptions.value = await fetchPricingGroups();
 });
 </script>

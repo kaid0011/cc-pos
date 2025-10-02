@@ -1,4 +1,7 @@
 <template>
+  <div class="row justify-center page-title-header text-uppercase">
+    List of Customers
+  </div>
   <div class="full-container customers-management">
     <div class="row items-center justify-between q-mb-sm">
       <div class="search-container">
@@ -34,110 +37,158 @@
     </div>
 
     <!-- Tab Panels for Customers -->
-    <q-tabs v-model="activeTab" align="justify" class="tab-header">
-      <q-tab name="all" class="text-weight-bold text-subtitle1 tab-divider"
-        >All Customers</q-tab
-      >
-      <q-tab name="contract" class="text-weight-bold text-subtitle1 tab-divider"
-        >Contract Customers</q-tab
-      >
-      <q-tab
-        name="non-contract"
-        class="text-weight-bold text-subtitle1 tab-divider"
+    <q-tabs
+      v-model="activeTab"
+      dense
+      class="bg-grey-2 text-dark q-mb-md"
+      align="justify"
+    >
+      <q-tab name="all" class="tab-bordered">All Customers</q-tab>
+      <q-tab name="contract" class="tab-bordered">Contract Customers</q-tab>
+      <q-tab name="non-contract" class="tab-bordered"
         >Non-Contract Customers</q-tab
       >
     </q-tabs>
 
-<q-tab-panels v-model="activeTab" animated>
-  <q-tab-panel
-    v-for="(tab, index) in tabConfig"
-    :key="index"
-    :name="tab.name"
-    class="q-pa-none"
-  >
-    <div class="row-col-table">
-      <div class="row row-col-header q-px-md">
-        <div class="col bordered text-weight-bold">Name</div>
-        <div class="col bordered text-weight-bold">Address</div>
-        <div class="col bordered text-weight-bold">Contact Nos</div>
-        <div class="col bordered text-weight-bold">Email</div>
-        <div class="col bordered text-weight-bold">Remarks</div>
-        <div class="col bordered text-weight-bold">Actions</div>
-      </div>
-
-      <template v-if="tab.data.length > 0">
-        <div
-          v-for="customer in tab.data"
-          :key="customer.id"
-          class="row row-col-row q-mx-md"
-        >
-          <div class="col bordered">
-            <div>
-              <a @click.prevent="openCustomerTab(customer.id)"
-                class="text-weight-bold text-subtitle1"
-              >
-                {{ customer.name }}
-              </a>
+    <q-tab-panels v-model="activeTab" animated>
+      <q-tab-panel
+        v-for="(tab, index) in tabConfig"
+        :key="index"
+        :name="tab.name"
+        class="q-pa-none"
+      >
+        <div class="row-col-table">
+          <div class="row row-col-header text-center items-center">
+            <div class="col header-bordered flex flex-center">Name</div>
+            <div class="col header-bordered flex flex-center">
+              Contact Details
             </div>
-            <div>{{ customer.type }}</div>
+            <div class="col header-bordered flex flex-center">
+              Orders Summary
+            </div>
+            <div class="col header-bordered flex flex-center">
+              Payments Summary
+            </div>
+            <div class="col-2 header-bordered flex flex-center">Actions</div>
           </div>
 
-          <div class="col bordered">
-            <ul
-              v-if="customer.addresses?.length"
-              class="q-mt-none q-pl-md"
+          <template v-if="tab.data.length > 0">
+            <div
+              v-for="customer in tab.data"
+              :key="customer.id"
+              class="row row-col-row"
             >
-              <li v-for="address in customer.addresses" :key="address.id">
-                {{ address.block_no }} {{ address.road_name }}
-                {{ address.unit_no }} {{ address.building_name }}
-                {{ address.postal_code }}<span
-                  v-if="address.additional_info.length != 0"
-                >, ({{ address.additional_info }})</span>
-              </li>
-            </ul>
-            <span v-else>No Address Available</span>
-          </div>
+              <div class="col bordered">
+                <div>
+                  <a
+                    @click.prevent="openCustomerTab(customer.id)"
+                    class="text-weight-bold text-subtitle1 line-height-1"
+                  >
+                    {{ customer.name }}
+                  </a>
+                </div>
+                <div>{{ customer.type }}</div>
+              </div>
 
-          <div class="col bordered">
-            <div>{{ customer.contact_no1 || "N/A" }}</div>
-            <div v-if="customer.contact_no2">
-              {{ customer.contact_no2 || "-" }}
+              <div class="col bordered">
+                <div>{{ customer.contact_no1 || "N/A" }}</div>
+                <div v-if="customer.contact_no2">
+                  {{ customer.contact_no2 || "-" }}
+                </div>
+                <div>{{ customer.email }}</div>
+              </div>
+              <!-- <div class="col bordered">
+                <ul v-if="customer.addresses?.length" class="line-height-1">
+                  <li v-for="address in customer.addresses" :key="address.id">
+                    {{ address.block_no }} {{ address.road_name }}
+                    {{ address.unit_no }} {{ address.building_name }}
+                    {{ address.postal_code
+                    }}<span v-if="address.additional_info.length != 0"
+                      >, ({{ address.additional_info }})</span
+                    >
+                  </li>
+                </ul>
+                <span v-else>No Address Available</span>
+              </div> -->
+
+              <div class="col bordered">
+                <div>
+                  Total Orders:
+                  <span class="text-weight-bold">{{
+                    customer.orders_count
+                  }}</span>
+                </div>
+                <div>
+                  Active Orders:
+                  <span class="text-weight-bold">{{
+                    customer.active_orders_count
+                  }}</span>
+                </div>
+                <div>
+                  Last Order:
+                  <span
+                    v-if="customer.last_order_id"
+                    class="text-weight-bold"
+                    style="text-decoration: underline"
+                  >
+                    <a
+                      href="#"
+                      class="text-primary cursor-pointer"
+                      @click.prevent="openOrderTab(customer.last_order_id)"
+                    >
+                      {{
+                        new Date(customer.last_order_date).toLocaleDateString()
+                      }}
+                    </a>
+                  </span>
+                  <span v-else>N/A</span>
+                </div>
+              </div>
+
+              <div class="col bordered">
+                <div>
+                  Outstanding Balance:
+                  <span class="text-weight-bold text-red-8 text-subtitle1">{{
+                    getOutstandingBalance(customer)
+                  }}</span>
+                </div>
+                <div>
+                  Current Credits:
+                  <span class="text-weight-bold text-green-9 text-subtitle1">{{
+                    getTotalCredits(customer)
+                  }}</span>
+                </div>
+              </div>
+
+              <div class="col-2 bordered actions">
+                <q-btn
+                  unelevated
+                  dense
+                  label="Create Collection"
+                  color="primary"
+                  class="main-button q-ma-xs q-px-sm full-width"
+                  @click="openCollectionDialog(customer)"
+                />
+                <q-btn
+                  unelevated
+                  dense
+                  label="Create Transaction"
+                  color="primary"
+                  class="main-button q-ma-xs q-px-sm full-width"
+                  @click="navigateToPOS(customer)"
+                />
+              </div>
             </div>
-          </div>
+          </template>
 
-          <div class="col bordered">{{ customer.email }}</div>
-          <div class="col bordered">{{ customer.remarks }}</div>
-
-          <div class="col bordered actions">
-            <q-btn
-              unelevated
-              dense
-              label="Create Collection"
-              color="primary"
-              class="main-button q-ma-xs q-px-sm"
-              @click="openCollectionDialog(customer)"
-            />
-            <q-btn
-              unelevated
-              dense
-              label="Create Transaction"
-              color="primary"
-              class="main-button q-ma-xs q-px-sm"
-              @click="navigateToPOS(customer)"
-            />
-          </div>
+          <template v-else>
+            <div class="text-center q-pa-lg text-grey text-h6">
+              No customers found.
+            </div>
+          </template>
         </div>
-      </template>
-
-      <template v-else>
-        <div class="text-center q-pa-lg text-grey text-h6">
-          No customers found.
-        </div>
-      </template>
-    </div>
-  </q-tab-panel>
-</q-tab-panels>
-
+      </q-tab-panel>
+    </q-tab-panels>
 
     <AddCustomerDialog
       v-model="showAddCustomerDialog"
@@ -200,123 +251,92 @@ const showCreateCollectionDialog = ref(false);
 
 onMounted(async () => {
   try {
-    // Load all customers
-    await transactionStore.loadCustomers();
-
-    // Fetch all addresses in one query
-    const allAddresses = await transactionStore.fetchAllAddresses();
-
-    // Map addresses to their corresponding customers
-    const addressMap = allAddresses.reduce((map, address) => {
-      if (!map[address.customer_id]) {
-        map[address.customer_id] = [];
-      }
-      map[address.customer_id].push(address);
-      return map;
-    }, {});
-
-    // Assign addresses to customers
-    transactionStore.customers.forEach((customer) => {
-      customer.addresses = addressMap[customer.id] || [];
-    });
+    await transactionStore.loadCustomers(); // Only customers with credits, no addresses
   } catch (error) {
-    console.error("Error loading customers or addresses:", error);
+    console.error("Error loading customers:", error);
   }
 });
 
+function getTotalCredits(customer) {
+  const credit = customer.customer_credits?.[0];
+  const online = credit?.online_package ?? 0;
+  const other = credit?.other_credits ?? 0;
+  return online + other;
+}
+
+function getOutstandingBalance(customer) {
+  const total = customer.total_amount ?? 0;
+  const paid = customer.paid_amount ?? 0;
+  return total - paid;
+}
+
 const tabConfig = computed(() => [
-  {
-    name: 'all',
-    data: filteredCustomersWithAddress.value,
-  },
-  {
-    name: 'contract',
-    data: contractCustomers.value,
-  },
-  {
-    name: 'non-contract',
-    data: nonContractCustomers.value,
-  },
+  { name: "all", data: filteredCustomers.value },
+  { name: "contract", data: contractCustomers.value },
+  { name: "non-contract", data: nonContractCustomers.value },
 ]);
 
-// Computed property for filtered customers
-const filteredCustomersWithAddress = computed(() => {
+const filteredCustomers = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
-
   if (!query) return transactionStore.customers;
 
-  return transactionStore.customers.filter((customer) => {
-    const inAddresses = (customer.addresses || []).some((address) => {
-      return (
-        address.block_no?.toLowerCase().includes(query) ||
-        address.road_name?.toLowerCase().includes(query) ||
-        address.unit_no?.toLowerCase().includes(query) ||
-        address.building_name?.toLowerCase().includes(query) ||
-        address.postal_code?.toLowerCase().includes(query) ||
-        address.additional_info?.toLowerCase().includes(query)
-      );
-    });
-
-    return (
-      customer.name.toLowerCase().includes(query) ||
-      customer.contact_no1?.toLowerCase().includes(query) ||
-      customer.contact_no2?.toLowerCase().includes(query) ||
-      customer.email?.toLowerCase().includes(query) ||
-      customer.type?.toLowerCase().includes(query) ||
-      inAddresses
-    );
-  });
+  return transactionStore.customers.filter((customer) =>
+    [
+      customer.name,
+      customer.contact_no1,
+      customer.contact_no2,
+      customer.email,
+      customer.type,
+    ].some((field) => field?.toLowerCase().includes(query))
+  );
 });
 
-// Handle viewing a customer (for navigation or modal display)
-const viewCustomer = (customer) => {
-  const url = router.resolve({
-    name: "CustomerView",
-    params: { id: customer.id },
-  }).href;
+const contractCustomers = computed(() =>
+  filteredCustomers.value
+    .filter((customer) => customer.type === "Contract")
+    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+);
+
+const nonContractCustomers = computed(() =>
+  filteredCustomers.value.filter((customer) => customer.type !== "Contract")
+);
+
+const openCustomerTab = (customerId) => {
+  const url = `/customers/${customerId}`;
   window.open(url, "_blank");
 };
 
 const handleCustomerAdded = async () => {
-  console.log("Customer successfully added");
   showAddCustomerDialog.value = false;
   await transactionStore.loadCustomers();
 };
 
 const navigateToPOS = (customer) => {
-  try {
-    // Set only the customer details in the transaction store
-    transactionStore.setSelectedCustomer({
-      id: customer.id,
-      name: customer.name,
-      contact_no1: customer.contact_no1,
-      contact_no2: customer.contact_no2,
-      email: customer.email,
-      remarks: customer.remarks,
-      payment_type: customer.payment_type,
-    });
+  transactionStore.setSelectedCustomer({
+    id: customer.id,
+    name: customer.name,
+    contact_no1: customer.contact_no1,
+    contact_no2: customer.contact_no2,
+    email: customer.email,
+    remarks: customer.remarks,
+    payment_type: customer.payment_type,
+  });
 
-    // Navigate to POS page
-const routeData = router.resolve({ name: "Pos" });
-    window.open(routeData.href, "_blank");
-  } catch (error) {
-    console.error("Error navigating to POS:", error);
-  }
+  const routeData = router.resolve({ name: "Pos" });
+  window.open(routeData.href, "_blank");
 };
 
 const openCollectionDialog = (customer) => {
-  transactionStore.setSelectedCustomer(customer); // Set the selected customer in the store
+  transactionStore.setSelectedCustomer(customer);
   showCreateCollectionDialog.value = true;
 };
 
 async function createCollection() {
   try {
-    // Call the store function to create the collection
     const logisticsId = await transactionStore.createLogistics();
     await transactionStore.createCollection(logisticsId);
     await transactionStore.createDelivery(logisticsId);
 
-    // Show success dialog
     $q.dialog({
       title: "Collection Created",
       message: "Collection created successfully!",
@@ -324,7 +344,6 @@ async function createCollection() {
       color: "positive",
     });
 
-    // Reset the fields
     transactionStore.selectedCollectionContact = null;
     transactionStore.selectedDeliveryContact = null;
     transactionStore.selectedCollectionAddress = null;
@@ -334,12 +353,9 @@ async function createCollection() {
     transactionStore.collectionRemarks = "";
     transactionStore.deliveryRemarks = "";
 
-    // Close the dialog
     showCreateCollectionDialog.value = false;
   } catch (error) {
     console.error("Error submitting collection:", error.message);
-
-    // Show error dialog
     $q.dialog({
       title: "Error",
       message: "Failed to create collection. Please try again.",
@@ -351,21 +367,8 @@ async function createCollection() {
 
 const activeTab = ref("all");
 
-const contractCustomers = computed(() => {
-  return filteredCustomersWithAddress.value
-    .filter((customer) => customer.type === "Contract")
-    .slice()
-    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-});
-
-const nonContractCustomers = computed(() => {
-  return filteredCustomersWithAddress.value.filter(
-    (customer) => customer.type !== "Contract"
-  );
-});
-
-const openCustomerTab = (customerId) => {
-  const url = `/customers/${customerId}`;
-  window.open(url, "_blank"); // Open in a new tab
+const openOrderTab = (orderId) => {
+  const url = `/orders/${orderId}`;
+  window.open(url, "_blank");
 };
 </script>

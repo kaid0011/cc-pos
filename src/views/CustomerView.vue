@@ -68,6 +68,14 @@
               <strong>Customer Since:</strong>
               {{ formatDate(customerDetails.created_at) }}
             </div>
+            <div>
+              <strong>Status: </strong>
+              <span
+                :class="isActiveClass"
+                class="text-uppercase text-weight-bold"
+                >{{ isActiveLabel }}</span
+              >
+            </div>
           </div>
         </div>
 
@@ -155,178 +163,206 @@
     </div>
 
     <div class="page-2-container">
-<div class="row">
-      <div class="col show-addresses q-ma-xs">
-        <q-btn
-          unelevated
-          :icon="showAddresses ? 'arrow_drop_up' : 'arrow_drop_down'"
-          label="Show Addresses"
-          class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
-          @click="toggleAddresses"
-        />
-        <div v-if="showAddresses" class="q-pa-md addresses-container">
-          <div class="row items-center justify-end">
-            <q-btn
-              flat
-              dense
-              icon="add"
-              color="primary"
-              class="q-mb-sm text-weight-bold"
-              @click="showAddAddressDialog = true"
-              label="Add Address"
-            />
-          </div>
-
-          <!-- Addresses Data -->
-          <div class="row-col-table">
-            <!-- Table Header -->
-            <div class="row row-col-header q-px-xs text-center">
-              <div class="col col-6 bordered text-weight-bolder">Address</div>
-              <div class="col col-3 bordered text-weight-bolder">Remarks</div>
-              <div class="col col-3 bordered text-weight-bolder">Actions</div>
-            </div>
-
-            <!-- Table Rows -->
-            <div
-              v-for="address in addresses"
-              :key="address.id"
-              class="row row-col-row q-mx-md"
-            >
-              <div class="col col-6 bordered">
-                {{ address.block_no }} {{ address.road_name }}
-                {{ address.unit_no }} {{ address.building_name }}
-                {{ address.postal_code
-                }}<span v-if="address.additional_info.length != 0"
-                  >, ({{ address.additional_info }})</span
-                >
-              </div>
-              <div class="col col-3 bordered">
-                {{ address.remarks || "-" }}
-              </div>
-              <div class="col col-3 bordered actions">
-                <q-btn
-                  dense
-                  unelevated
-                  label="Update"
-                  color="primary"
-                  class="main-button q-ma-xs q-px-sm"
-                  @click="openUpdateDialog(address, 'address')"
-                />
-
-                <q-btn
-                  dense
-                  unelevated
-                  label="Delete"
-                  color="negative"
-                  class="negative-button q-ma-xs q-px-sm"
-                  @click="openDeleteDialog(address, 'address')"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col show-contact-person q-ma-xs">
-        <q-btn
-          unelevated
-          :icon="showContactPersons ? 'arrow_drop_up' : 'arrow_drop_down'"
-          label="Show Contact Persons"
-          class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
-          @click="toggleContactPersons"
-        />
-        <div
-          v-if="showContactPersons"
-          class="q-pa-md contact-persons-container"
-        >
-          <div class="row items-bottom justify-between">
-            <!-- Search Field -->
-            <div class="search-container q-pt-none">
-              <q-input
-                v-model="searchQuery"
-                placeholder="Search contact person..."
-                square
+      <div class="row">
+        <!-- Addresses -->
+        <div class="col show-addresses q-ma-xs">
+          <q-btn
+            unelevated
+            :icon="showAddresses ? 'arrow_drop_up' : 'arrow_drop_down'"
+            label="Show Addresses"
+            class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
+            @click="toggleAddresses"
+          />
+          <div v-if="showAddresses" class="q-pa-md addresses-container">
+            <div class="row items-center justify-end">
+              <q-btn
+                flat
                 dense
-                outlined
-                class="search-input"
+                icon="add"
+                color="primary"
+                class="q-mb-sm text-weight-bold"
+                @click="showAddAddressDialog = true"
+                label="Add Address"
+              />
+            </div>
+
+            <div class="">
+              <!-- Header -->
+              <div
+                class="row row-col-header text-center items-stretch line-height-1"
               >
-                <template v-slot:prepend>
-                  <q-icon name="search" />
-                </template>
-
-                <template v-slot:append>
-                  <q-icon
-                    name="close"
-                    @click="searchQuery = ''"
-                    class="cursor-pointer"
-                  />
-                </template>
-              </q-input>
-            </div>
-            <!-- Add Contact Person Button -->
-            <q-btn
-              flat
-              dense
-              icon="add"
-              color="primary"
-              class="text-weight-bold"
-              @click="showAddContactPersonDialog = true"
-              label="Add Contact Person"
-            />
-          </div>
-
-          <!-- Contact Persons Data -->
-          <div class="row-col-table q-mt-sm">
-            <!-- Table Header -->
-            <div class="row row-col-header q-px-xs text-center">
-              <div class="col bordered text-weight-bolder">Name</div>
-              <div class="col bordered text-weight-bolder">Contact No</div>
-              <!-- <div class="col col-2 bordered">Contact No 2</div> -->
-              <div class="col bordered text-weight-bolder">Email</div>
-              <div class="col bordered text-weight-bolder">Remarks</div>
-              <div class="col bordered text-weight-bolder">Actions</div>
-            </div>
-
-            <!-- Table Rows -->
-            <div
-              v-for="person in filteredContactPersons"
-              :key="person.id"
-              class="row row-col-row q-mx-md"
-            >
-              <div class="col bordered">{{ person.name }}</div>
-              <div class="col bordered">
-                <div>{{ person.contact_no1 }}</div>
-                <div v-if="person.contact_no2?.length != 0">
-                  {{ person.contact_no2 }}
+                <div class="col col-6 header-bordered flex flex-center">
+                  Address
+                </div>
+                <div class="col col-3 header-bordered flex flex-center">
+                  Remarks
+                </div>
+                <div class="col col-3 header-bordered flex flex-center">
+                  Actions
                 </div>
               </div>
-              <!-- <div class="col col-2 bordered">{{ person.contact_no2 }}</div> -->
-              <div class="col bordered">{{ person.email }}</div>
-              <div class="col bordered">{{ person.remarks }}</div>
-              <div class="col bordered actions">
-                <q-btn
-                  dense
-                  unelevated
-                  label="Update"
-                  color="primary"
-                  class="main-button q-ma-xs q-px-sm"
-                  @click="openUpdateDialog(person, 'contact')"
-                />
 
-                <q-btn
+              <!-- Rows -->
+              <template v-if="addresses && addresses.length">
+                <div
+                  v-for="address in addresses"
+                  :key="address.id"
+                  class="row row-col-row bg-white"
+                >
+                  <div class="col col-6 bordered">
+                    {{ address.block_no || "" }} {{ address.road_name || "" }}
+                    {{ address.unit_no || "" }}
+                    {{ address.building_name || "" }}
+                    {{ address.postal_code || "" }}
+                    <span
+                      v-if="
+                        address.additional_info &&
+                        address.additional_info.length
+                      "
+                    >
+                      , ({{ address.additional_info }})
+                    </span>
+                  </div>
+                  <div class="col col-3 bordered">
+                    {{ address.remarks || "-" }}
+                  </div>
+                  <div class="col col-3 bordered actions">
+                    <q-btn
+                      dense
+                      unelevated
+                      label="Update"
+                      color="primary"
+                      class="main-button q-ma-xs q-px-sm"
+                      @click="openUpdateDialog(address, 'address')"
+                    />
+                    <!-- <q-btn
+                      dense
+                      unelevated
+                      label="Delete"
+                      color="negative"
+                      class="negative-button q-ma-xs q-px-sm"
+                      @click="openDeleteDialog(address, 'address')"
+                    /> -->
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="row row-col-row bg-white">
+                  <div class="col-12 bordered text-center q-pa-sm">
+                    No address available
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Persons -->
+        <div class="col show-contact-person q-ma-xs">
+          <q-btn
+            unelevated
+            :icon="showContactPersons ? 'arrow_drop_up' : 'arrow_drop_down'"
+            label="Show Contact Persons"
+            class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
+            @click="toggleContactPersons"
+          />
+          <div
+            v-if="showContactPersons"
+            class="q-pa-md contact-persons-container"
+          >
+            <div class="row items-bottom justify-between">
+              <div class="search-container q-pt-none">
+                <q-input
+                  v-model="searchQuery"
+                  placeholder="Search contact person..."
+                  square
                   dense
-                  unelevated
-                  label="Delete"
-                  color="negative"
-                  class="negative-button q-ma-xs q-px-sm"
-                  @click="openDeleteDialog(person, 'contact')"
-                />
+                  outlined
+                  class="search-input"
+                >
+                  <template v-slot:prepend><q-icon name="search" /></template>
+                  <template v-slot:append>
+                    <q-icon
+                      name="close"
+                      @click="searchQuery = ''"
+                      class="cursor-pointer"
+                    />
+                  </template>
+                </q-input>
               </div>
+              <q-btn
+                flat
+                dense
+                icon="add"
+                color="primary"
+                class="text-weight-bold"
+                @click="showAddContactPersonDialog = true"
+                label="Add Contact Person"
+              />
+            </div>
+
+            <div class="q-mt-sm">
+              <!-- Header -->
+              <div
+                class="row row-col-header text-center text-weight-bold items-stretch line-height-1"
+              >
+                <div class="col header-bordered flex flex-center">Name</div>
+                <div class="col header-bordered flex flex-center">
+                  Contact Details
+                </div>
+                <div class="col header-bordered flex flex-center">Remarks</div>
+              </div>
+
+              <!-- Rows -->
+              <template
+                v-if="filteredContactPersons && filteredContactPersons.length"
+              >
+                <div
+                  v-for="person in filteredContactPersons"
+                  :key="person.id"
+                  class="row row-col-row bg-white"
+                >
+                  <div class="col bordered"><div>{{ person.name || "-" }}</div>
+                     <div>
+                    <q-btn
+                      dense
+                      outline
+                      label="Update"
+                      color="primary"
+                      class="main-button q-mt-xs q-px-md"
+                      @click="openUpdateDialog(person, 'contact')"
+                    />
+                    <!-- <q-btn
+                      dense
+                      unelevated
+                      label="Delete"
+                      color="negative"
+                      class="negative-button q-ma-xs q-px-sm"
+                      @click="openDeleteDialog(person, 'contact')"
+                    /> -->
+                  </div>
+                  </div>
+                  <div class="col bordered">
+                    <div>{{ person.contact_no1 || "-" }}</div>
+                    <div v-if="person.contact_no2">
+                      {{ person.contact_no2 }}
+                    </div>
+                    <div v-if="person.email">{{ person.email }}</div>
+                  </div>
+                  <div class="col bordered">{{ person.remarks || "-" }}</div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="row row-col-row bg-white">
+                  <div class="col-12 bordered text-center q-pa-sm">
+                    No contact person
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </div>
       </div>
-</div>
     </div>
 
     <div class="page-1-container text-subtitle1">
@@ -963,14 +999,28 @@ const fetchCreatorNames = async () => {
 
   userNamesMap.value = nameMap;
 };
+
+const toBoolean = (v) => {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (typeof v === "string")
+    return ["1", "true", "yes", "y"].includes(v.trim().toLowerCase());
+  return false;
+};
+
+const isActive = computed(() => toBoolean(customerDetails.value?.is_active));
+const isActiveLabel = computed(() => (isActive.value ? "active" : "inactive"));
+const isActiveClass = computed(() =>
+  isActive.value ? "text-green-9" : "text-red-8"
+);
 </script>
 
 <style scoped>
- .p-exception {
+.p-exception {
   padding: 0 !important;
- }
+}
 
-  .p-min {
+.p-min {
   padding: 2rem !important;
- }
+}
 </style>

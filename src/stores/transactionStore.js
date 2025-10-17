@@ -256,108 +256,30 @@ export const useTransactionStore = defineStore("transactionStore", {
         throw error;
       }
     },
-    async loadContactOptions(customerId = null) {
-      try {
-        let customerContacts = [];
-        let defaultContact = null;
+    async loadContactOptions(customerId) {
+      // why: contacts are 0..N per customer; array result avoids PGRST116
+      const { data, error } = await supabase
+        .from("customer_contact_persons")
+        .select("id,name,contact_no1,contact_no2,email")
+        .eq("customer_id", customerId) // <- FIX: use customer_id, not id
+        .order("name", { ascending: true });
 
-        // Fetch customer-specific contact persons
-        if (customerId) {
-          const { data, error } = await supabase
-            .from("customer_contact_persons")
-            .select("id, name, contact_no1, contact_no2, email")
-            .eq("customer_id", customerId);
-
-          if (error) throw error;
-          customerContacts = data || [];
-        }
-
-        // Fetch the default contact person (id=1)
-        const { data: defaultData, error: defaultError } = await supabase
-          .from("customer_contact_persons")
-          .select("id, name, contact_no1, contact_no2, email")
-          .eq("id", 1)
-          .single();
-
-        if (!defaultError) {
-          defaultContact = defaultData; // Use default contact if found
-        }
-
-        // Merge and deduplicate contacts
-        const contacts = defaultContact
-          ? [defaultContact, ...customerContacts]
-          : customerContacts;
-
-        this.contactOptions = contacts.filter(
-          (contact, index, self) =>
-            index === self.findIndex((c) => c.id === contact.id)
-        );
-      } catch (error) {
-        console.error("Error loading contact options:", error);
-        this.contactOptions = [];
-      }
+      if (error) throw error;
+      this.contactOptions = Array.isArray(data) ? data : [];
     },
 
-    async loadAddressOptions(customerId = null) {
-      try {
-        let customerAddresses = [];
-        let defaultAddress = null;
+    // addresses
+    async loadAddressOptions(customerId) {
+      const { data, error } = await supabase
+        .from("customer_address")
+        .select(
+          "id,block_no,road_name,building_name,postal_code,unit_no,additional_info,remarks"
+        )
+        .eq("customer_id", customerId) // <- FIX: use customer_id, not id
+        .order("road_name", { ascending: true });
 
-        // Fetch customer-specific addresses
-        if (customerId) {
-          const { data, error } = await supabase
-            .from("customer_address")
-            .select(
-              "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
-            )
-            .eq("customer_id", customerId);
-
-          if (error) throw error;
-          customerAddresses = data || [];
-        }
-
-        // Fetch the default address (id=1)
-        const { data: defaultData, error: defaultError } = await supabase
-          .from("customer_address")
-          .select(
-            "id, block_no, road_name, building_name, postal_code, unit_no, additional_info, remarks"
-          )
-          .eq("id", 1)
-          .single();
-
-        if (!defaultError) {
-          defaultAddress = defaultData; // Use default address if found
-        }
-
-        // Merge and deduplicate addresses
-        const addresses = defaultAddress
-          ? [defaultAddress, ...customerAddresses]
-          : customerAddresses;
-
-        this.addressOptions = addresses
-          .filter(
-            (address, index, self) =>
-              index === self.findIndex((c) => c.id === address.id)
-          )
-          .map(
-            ({
-              block_no,
-              road_name,
-              unit_no,
-              building_name,
-              postal_code,
-              additional_info,
-            }) =>
-              `${block_no} ${road_name} ${unit_no} ${building_name}, ${postal_code} ${
-                additional_info || ""
-              }`.trim()
-          );
-
-        console.log("Address options loaded:", this.addressOptions);
-      } catch (error) {
-        console.error("Error loading address options:", error);
-        this.addressOptions = [];
-      }
+      if (error) throw error;
+      this.addressOptions = Array.isArray(data) ? data : [];
     },
 
     async loadDrivers() {
@@ -1096,24 +1018,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       if (insertError) throw insertError;
     },
 
-    async setSelectedCustomer(customer) {
-      this.selectedCustomer = customer;
-
-      // Load addresses and contact persons for the selected customer
-      try {
-        this.addressOptions = await this.loadAddressOptions(customer.id);
-        this.contactPersons = await this.fetchContactPersons(customer.id);
-      } catch (error) {
-        console.error("Error loading customer details:", error);
-        this.addressOptions = [];
-        this.contactPersons = [];
-      }
-
-      // Reset selected contacts
-      this.selectedDeliveryContact = "";
-      this.selectedCollectionContact = "";
-    },
-
     setSelectedCollectionAddress(address) {
       this.selectedCollectionAddress = address; // Set the selected collection address
     },
@@ -1652,16 +1556,14 @@ export const useTransactionStore = defineStore("transactionStore", {
             `
         id,
         created_at,
-        status,
-        remarks,
+        collection_remarks,
         contact_person_id,
-        address,
-        date_collected,
+        address_id,
         collection_date,
         collection_time,
         no_bags,
         logistics_id,
-        driver_name,
+        driver_id,
         customer_contact_persons (
           id,
           name,
@@ -1709,7 +1611,6 @@ export const useTransactionStore = defineStore("transactionStore", {
         )
       `
           )
-          .eq("status", "active")
           .order("logistics_id", { ascending: true })
           .order("created_at", { ascending: false });
 
@@ -1720,11 +1621,10 @@ export const useTransactionStore = defineStore("transactionStore", {
           created_at: collection.created_at,
           logistics_status: collection.logistics?.logistics_status || null,
           urgency: collection.logistics?.urgency,
-          remarks: collection.remarks,
+          collection_remarks: collection.collection_remarks,
           contact_person_id: collection.contact_person_id,
-          address: collection.address,
-          driver_name: collection.driver_name,
-          date_collected: collection.date_collected,
+          address_id: collection.address_id,
+          driver_id: collection.driver_id,
           collection_date: collection.collection_date,
           collection_time: collection.collection_time,
           no_bags: collection.no_bags,
@@ -1807,15 +1707,13 @@ export const useTransactionStore = defineStore("transactionStore", {
             `
             id,
             created_at,
-            status,
-            remarks,
+            delivery_remarks,
             contact_person_id,
-            address,
-            date_delivered,
+            address_id,
             delivery_date,
             delivery_time,
             logistics_id,
-            driver_name,
+            driver_id,
             customer_contact_persons (
               id,
               name,
@@ -1840,7 +1738,6 @@ export const useTransactionStore = defineStore("transactionStore", {
             )
           `
           )
-          .eq("status", "active") // Fetch only active deliveries
           .order("logistics_id", { ascending: true })
           .order("created_at", { ascending: false }); // Ensure latest version comes first
 
@@ -1853,11 +1750,10 @@ export const useTransactionStore = defineStore("transactionStore", {
           id: delivery.id,
           created_at: delivery.created_at,
           logistics_status: delivery.logistics?.logistics_status,
-          remarks: delivery.remarks,
+          delivery_remarks: delivery.delivery_remarks,
           contact_person_id: delivery.contact_person_id,
-          address: delivery.address,
-          driver_name: delivery.driver_name,
-          date_delivered: delivery.date_delivered,
+          address_id: delivery.address_id,
+          driver_id: delivery.driver_id,
           delivery_date: delivery.delivery_date,
           delivery_time: delivery.delivery_time,
           logistics_id: delivery.logistics_id,
@@ -2106,9 +2002,18 @@ export const useTransactionStore = defineStore("transactionStore", {
           collection_date,
           collection_time,
           no_bags,
-          driver_name,
-          status,
-          address,
+          driver_id,
+          address_id,
+          customer_address (
+            id,
+            road_name,
+            postal_code,
+            unit_no,
+            building_name,
+            additional_info,
+            block_no,
+            remarks
+          ),
           customer_contact_persons (
             id,
             name,
@@ -2122,9 +2027,18 @@ export const useTransactionStore = defineStore("transactionStore", {
           logistics_id,
           delivery_date,
           delivery_time,
-          driver_name,
-          status,
-          address,
+          driver_id,
+          address_id,
+          customer_address (
+            id,
+            road_name,
+            postal_code,
+            unit_no,
+            building_name,
+            additional_info,
+            block_no,
+            remarks
+          ),
           customer_contact_persons (
             id,
             name,
@@ -2135,8 +2049,6 @@ export const useTransactionStore = defineStore("transactionStore", {
         )
       `
           )
-          .eq("logistics_collections.status", "active")
-          .eq("logistics_deliveries.status", "active")
           .order("id", { ascending: true });
 
         if (error) throw error;
@@ -2188,8 +2100,20 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_date: c.collection_date,
               collection_time: c.collection_time,
               no_bags: c.no_bags,
-              driver_name: c.driver_name,
-              address: c.address,
+              driver_id: c.driver_id,
+              address_id: c.address_id,
+              address: c.customer_address
+                ? {
+                    id: c.customer_address.id,
+                    block_no: c.customer_address.block_no,
+                    road_name: c.customer_address.road_name,
+                    unit_no: c.customer_address.unit_no,
+                    building_name: c.customer_address.building_name,
+                    postal_code: c.customer_address.postal_code,
+                    additional_info: c.customer_address.additional_info,
+                    remarks: c.customer_address.remarks,
+                  }
+                : null,
               contact_person: c.customer_contact_persons
                 ? {
                     id: c.customer_contact_persons.id,
@@ -2205,8 +2129,20 @@ export const useTransactionStore = defineStore("transactionStore", {
               id: d.id,
               delivery_date: d.delivery_date,
               delivery_time: d.delivery_time,
-              driver_name: d.driver_name,
-              address: d.address,
+              driver_id: d.driver_id,
+              address_id: d.address_id,
+              address: d.customer_address
+                ? {
+                    id: d.customer_address.id,
+                    block_no: d.customer_address.block_no,
+                    road_name: d.customer_address.road_name,
+                    unit_no: d.customer_address.unit_no,
+                    building_name: d.customer_address.building_name,
+                    postal_code: d.customer_address.postal_code,
+                    additional_info: d.customer_address.additional_info,
+                    remarks: d.customer_address.remarks,
+                  }
+                : null,
               contact_person: d.customer_contact_persons
                 ? {
                     id: d.customer_contact_persons.id,
@@ -2333,13 +2269,12 @@ export const useTransactionStore = defineStore("transactionStore", {
         .from("logistics_collections")
         .select(
           `
-          id, logistics_id, collection_date, collection_time, remarks, address, date_collected, status, created_at, created_by, driver_name, no_bags,
+          id, logistics_id, collection_date, collection_time, collection_remarks, address_id, created_at, created_by, driver_id, no_bags,
           customer_contact_persons ( id, name, contact_no1, contact_no2 ),
           logistics ( logistics_status )
         `
         )
-        .eq("logistics_id", logisticsId)
-        .eq("status", "active");
+        .eq("logistics_id", logisticsId);
 
       if (error) {
         console.error("Error fetching collections:", error);
@@ -2354,7 +2289,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         .from("logistics_collections")
         .select(
           `
-          id, logistics_id, collection_date, collection_time, remarks, address, date_collected, status, created_at, created_by, driver_name, no_bags,
+          id, logistics_id, collection_date, collection_time, collection_remarks, address_id, created_at, created_by, driver_id, no_bags,
           customer_contact_persons ( id, name, contact_no1, contact_no2 ),
           logistics ( logistics_status )
         `
@@ -2386,7 +2321,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         .from("logistics_deliveries")
         .select(
           `
-          id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status, created_at, created_by, driver_name,
+          id, logistics_id, delivery_date, delivery_time, delivery_remarks, address_id, created_at, created_by, driver_id,
           customer_contact_persons ( id, name, contact_no1, contact_no2 ),
           logistics ( logistics_status )
         `
@@ -2407,7 +2342,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         .from("logistics_deliveries")
         .select(
           `
-          id, logistics_id, delivery_date, delivery_time, remarks, address, date_delivered, status, created_at, created_by, driver_name,
+          id, logistics_id, delivery_date, delivery_time, delivery_remarks, address, created_at, created_by, driver_id,
           customer_contact_persons ( id, name, contact_no1, contact_no2 ),
           logistics ( logistics_status )
         `
@@ -2455,13 +2390,11 @@ export const useTransactionStore = defineStore("transactionStore", {
           schedule_remarks, price_remarks, accounting_remarks, other_remarks, billing_address,
           customer_credits(online_package, other_credits)
         ),
-        logistics_collections:logistics_collections(status, id, logistics_id, collection_date, collection_time, address, driver_name, remarks, no_bags, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks)),
-        logistics_deliveries:logistics_deliveries(status, id, logistics_id, delivery_date, delivery_time, address, driver_name, remarks, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks))
+        logistics_collections:logistics_collections(status, id, logistics_id, collection_date, collection_time, address_id, driver_id, collection_remarks, no_bags, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks)),
+        logistics_deliveries:logistics_deliveries(status, id, logistics_id, delivery_date, delivery_time, address_id, driver_id, delivery_remarks, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks))
         `
           )
           .eq("orders.order_no", orderNo)
-          .eq("logistics_collections.status", "active")
-          .eq("logistics_deliveries.status", "active")
           .single();
 
         if (error) throw error;
@@ -2747,16 +2680,18 @@ export const useTransactionStore = defineStore("transactionStore", {
                 this.selectedCollectionContact?.id ??
                 fallback.contact_person_id ??
                 null,
-              address:
-                this.selectedCollectionAddress ?? fallback.address ?? null,
+              address_id:
+                this.selectedCollectionAddress?.id ??
+                fallback.address_id ??
+                null,
               collection_date:
                 this.collectionDate ?? fallback.collection_date ?? null,
               collection_time:
                 this.collectionTime ?? fallback.collection_time ?? null,
-              remarks: this.collectionRemarks ?? fallback.remarks ?? null,
-              driver_name: this.selectedCollectionDriver ?? null,
+              collection_remarks:
+                this.collectionRemarks ?? fallback.collection_remarks ?? null,
+              driver_id: this.selectedCollectionDriver?.id ?? null,
               no_bags: this.collectionNoBags ?? fallback.no_bags ?? null,
-              status: "active",
               logistics_id: logisticsId,
             },
           ]);
@@ -2810,14 +2745,15 @@ export const useTransactionStore = defineStore("transactionStore", {
                 this.selectedDeliveryContact?.id ??
                 fallback.contact_person_id ??
                 null,
-              address: this.selectedDeliveryAddress ?? fallback.address ?? null,
+              address_id:
+                this.selectedDeliveryAddress?.id ?? fallback.address_id ?? null,
               delivery_date:
                 this.deliveryDate ?? fallback.delivery_date ?? null,
               delivery_time:
                 this.deliveryTime ?? fallback.delivery_time ?? null,
-              remarks: this.deliveryRemarks ?? fallback.remarks ?? null,
-              driver_name: this.selectedDeliveryDriver ?? mnull,
-              status: "active",
+              delivery_remarks:
+                this.deliveryRemarks ?? fallback.delivery_remarks ?? null,
+              driver_id: this.selectedDeliveryDriver?.id ?? null,
               logistics_id: logisticsId,
             },
           ]);
@@ -3191,11 +3127,12 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-// stores/transactionStore.(ts|js)
-async fetchCollectionsForCustomer(customerId) {
-  const { data, error } = await supabase
-    .from('logistics')
-    .select(`
+    // stores/transactionStore.(ts|js)
+    async fetchCollectionsForCustomer(customerId) {
+      const { data, error } = await supabase
+        .from("logistics")
+        .select(
+          `
       id, logistics_status, urgency, customer_id, order_id,
 
       customers:customer_id (
@@ -3213,28 +3150,36 @@ async fetchCollectionsForCustomer(customerId) {
       ),
 
       logistics_collections (
-        collection_date, collection_time, address, driver_name,
+        collection_date, collection_time, address_id, driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       ),
 
       logistics_deliveries (
-        delivery_date, delivery_time, address, driver_name,
+        delivery_date, delivery_time, address_id, driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       )
-    `)
-    .eq('customer_id', customerId)
-    .order('collection_date', { foreignTable: 'logistics_collections', ascending: false })
-    .order('delivery_date',   { foreignTable: 'logistics_deliveries',   ascending: false });
+    `
+        )
+        .eq("customer_id", customerId)
+        .order("collection_date", {
+          foreignTable: "logistics_collections",
+          ascending: false,
+        })
+        .order("delivery_date", {
+          foreignTable: "logistics_deliveries",
+          ascending: false,
+        });
 
-  if (error) throw error;
-  return data ?? [];
-},
+      if (error) throw error;
+      return data ?? [];
+    },
 
-// Inside transactionStore
-async fetchOrdersByCustomerId(customerId) {
-  const { data, error } = await supabase
-    .from('logistics')
-    .select(`
+    // Inside transactionStore
+    async fetchOrdersByCustomerId(customerId) {
+      const { data, error } = await supabase
+        .from("logistics")
+        .select(
+          `
            id, logistics_status, urgency, customer_id, order_id,
 
       customers:customer_id (
@@ -3252,47 +3197,48 @@ async fetchOrdersByCustomerId(customerId) {
       ),
 
       logistics_collections (
-        collection_date, collection_time, address, driver_name, status,
+        collection_date, collection_time, address_id, driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       ),
 
       logistics_deliveries (
-        delivery_date, delivery_time, address, driver_name, status,
+        delivery_date, delivery_time, address_id, driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       )
-    `)
-    .eq('customer_id', customerId)
-    .order('created_at', { ascending: false });
+    `
+        )
+        .eq("customer_id", customerId)
+        .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error('Error fetching orders by customer:', error);
-    throw error;
-  }
+      if (error) {
+        console.error("Error fetching orders by customer:", error);
+        throw error;
+      }
 
-  return data;
-},
+      return data;
+    },
 
-async fetchStatusByCustomerId(customerId) {
-  const { data, error } = await supabase
-    .from('logistics')
-    .select(`id, customer_id, logistics_status,
+    async fetchStatusByCustomerId(customerId) {
+      const { data, error } = await supabase
+        .from("logistics")
+        .select(
+          `id, customer_id, logistics_status,
       orders ( 
         order_no,
         order_payments ( payment_status ),
         order_production ( goods_status )
       )
-    `)
-    .eq('customer_id', customerId)
-    .order('created_at', { ascending: false });
+    `
+        )
+        .eq("customer_id", customerId)
+        .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error('Error fetching orders by customer:', error);
-    throw error;
-  }
+      if (error) {
+        console.error("Error fetching orders by customer:", error);
+        throw error;
+      }
 
-  return data;
-},
-
-
+      return data;
+    },
   },
 });

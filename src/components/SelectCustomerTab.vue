@@ -1,4 +1,3 @@
-<!-- filepath: src/components/CustomerList.vue -->
 <template>
   <div>
     <div class="text-uppercase text-weight-bold text-center q-mb-sm">
@@ -242,22 +241,13 @@ const showAddCustomerDialog = ref(false);
 const filteredCustomers = ref([]);
 
 const filterCustomers = (term) => {
-  const searchLower = term.toLowerCase();
-  filteredCustomers.value = transactionStore.customers.filter((customer) => {
-    return (
-      customer.name.toLowerCase().includes(searchLower) ||
-      (customer.contact_no1 &&
-        customer.contact_no1.toLowerCase().includes(searchLower)) ||
-      (customer.contact_no2 &&
-        customer.contact_no2.toLowerCase().includes(searchLower)) ||
-      (customer.email && customer.email.toLowerCase().includes(searchLower))
-    );
-  });
+  const q = (term || "").toLowerCase();
+  filteredCustomers.value = (transactionStore.customers || []).filter((c) =>
+    [(c.name || ""), (c.contact_no1 || ""), (c.contact_no2 || ""), (c.email || "")]
+      .some((v) => v.toLowerCase().includes(q))
+  );
 };
-
-watch(searchTerm, (newVal) => {
-  filterCustomers(newVal);
-});
+watch(searchTerm, (v) => filterCustomers(v));
 
 onMounted(async () => {
   await transactionStore.loadCustomers();
@@ -283,17 +273,6 @@ const selectCustomer = async (customer) => {
     transactionStore.deliveryRemarks = null;
 
     await transactionStore.setSelectedCustomer(customer);
-
-    if (customer?.id) {
-      await transactionStore.fetchRecurringInstructions(customer.id);
-      console.log(
-        "Loaded instructions for the selected customer:",
-        transactionStore.displayInstructions
-      );
-    }
-
-    await updateOptions();
-    console.log("Customer selected successfully:", customer);
   } catch (error) {
     console.error("Error selecting customer:", error);
   }
@@ -301,63 +280,20 @@ const selectCustomer = async (customer) => {
 
 const handleCustomerAdded = async () => {
   showAddCustomerDialog.value = false;
-  await updateOptions();
+  await transactionStore.loadCustomers();
+  await enrichCustomersWithPendings();
+  filterCustomers(searchTerm.value);
 };
 
-const updateOptions = async () => {
-  try {
-    const customerId = transactionStore.selectedCustomer?.id || null;
-    await Promise.all([
-      transactionStore.loadContactOptions(customerId),
-      transactionStore.loadAddressOptions(customerId),
-      transactionStore.loadDrivers(),
-    ]);
-  } catch (error) {
-    console.error("Error updating options:", error);
-  }
-};
-
-/**
- * Keep only characters that tel: accepts. Avoids dialer failures.
- */
+// tel/wa/email helpers
 const sanitizeForTel = (raw) => String(raw || "").replace(/[^\d+]/g, "");
-
-/**
- * WhatsApp requires an international number with digits only (no +, spaces, or dashes).
- * If your data is local format, consider normalizing upstream.
- */
 const sanitizeForWhatsApp = (raw) => String(raw || "").replace(/\D/g, "");
-
-const callViaPhone = (rawNumber) => {
-  const tel = sanitizeForTel(rawNumber);
-  if (!tel) return;
-  openURL(`tel:${tel}`);
-};
-
-const callViaWhatsApp = (rawNumber) => {
-  const wa = sanitizeForWhatsApp(rawNumber);
-  if (!wa) return;
-  openURL(`https://wa.me/${wa}`);
-};
-
-// --- Email helpers ---
+const callViaPhone = (rawNumber) => { const tel = sanitizeForTel(rawNumber); if (tel) openURL(`tel:${tel}`); };
+const callViaWhatsApp = (rawNumber) => { const wa = sanitizeForWhatsApp(rawNumber); if (wa) openURL(`https://wa.me/${wa}`); };
 const sanitizeEmail = (raw) => String(raw || "").trim();
+const composeEmail = (rawEmail) => { const email = sanitizeEmail(rawEmail); if (email) openURL(`mailto:${email}`); };
+const copyEmail = async (rawEmail) => { const email = sanitizeEmail(rawEmail); if (!email) return; try { await copyToClipboard(email); } catch (e) { console.error("Copy failed", e); } };
 
-const composeEmail = (rawEmail) => {
-  const email = sanitizeEmail(rawEmail);
-  if (!email) return;
-  openURL(`mailto:${email}`);
-};
-
-const copyEmail = async (rawEmail) => {
-  const email = sanitizeEmail(rawEmail);
-  if (!email) return;
-  try {
-    await copyToClipboard(email);
-  } catch (e) {
-    console.error("Copy failed", e);
-  }
-};
 
 const showPendingsDialog = ref(false);
 const selectedPerOrderRows = ref([]);
@@ -401,7 +337,7 @@ const tabLabels = computed(() => {
         label: `${t.baseLabel} (${count})`,
       };
     })
-    .filter((t) => t.count > 0); // 👈 hide tabs with 0
+    .filter((t) => t.count > 0);
 });
 
 // Color map for chips
@@ -425,9 +361,7 @@ const pendingColor = (code) => {
 };
 
 const perOrderColumns = [
-  // { name: 'logistics_id',    label: 'Logistics ID',    field: 'logistics_id',    align: 'left' },
   { name: "order_no", label: "Order No", field: "order_no", align: "left" },
-  // { name: 'code',            label: 'Code',            field: 'code',            align: 'left' },
   {
     name: "goods_status",
     label: "Goods Status",
@@ -481,7 +415,7 @@ const enrichCustomersWithPendings = async () => {
             const goods = prod?.goods_status?.toString().trim().toLowerCase();
             const payst = pay?.payment_status?.toString().trim().toLowerCase();
             const logisticsId = log?.id;
-            const orderNo = order?.order_no || "-"; // 👈 fallback
+            const orderNo = order?.order_no || "-"; 
 
             const isCollectionState =
               logisticsStatus === "collection arranged" ||
@@ -537,7 +471,7 @@ const enrichCustomersWithPendings = async () => {
                     logisticsStatus,
                     orderNo
                   )
-                ); // 👈 standardized
+                ); 
               }
             }
             if (

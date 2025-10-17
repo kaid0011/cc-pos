@@ -1,3 +1,4 @@
+<!-- src/components/AddCustomerDialog.vue -->
 <template>
   <q-dialog v-model="isOpen" persistent>
     <q-card style="min-width: 70em">
@@ -16,9 +17,7 @@
       </q-card-section>
       <q-card-section class="dialog-body">
         <q-form @submit.prevent="handleAddCustomer">
-          <div
-            class="text-center text-h6 text-weight-bold text-uppercase q-mb-md"
-          >
+          <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-md">
             Customer Details
           </div>
 
@@ -65,15 +64,23 @@
               />
             </div>
           </div>
+
           <div class="row q-col-gutter-md">
             <div class="col">
               <div class="dialog-label">
                 Contact No:<span class="dialog-asterisk">*</span>
               </div>
               <q-input
-                v-model="customer.contact_no1"
+                :model-value="customer.contact_no1"
+                @update:model-value="(v) => enforceDigits(v, 'contact_no1')"
+                @keydown="onDigitsKeydown"
                 outlined
-                :rules="[(val) => !!val || 'Contact No. is required']"
+                type="tel"
+                inputmode="numeric"
+                :rules="[
+                  (val) => !!val || 'Contact No. is required',
+                  (val) => /^\d+$/.test(val) || 'Numbers only',
+                ]"
                 class="dialog-inputs"
               />
             </div>
@@ -82,8 +89,15 @@
                 Alternative Contact No:<span class="dialog-asterisk"></span>
               </div>
               <q-input
-                v-model="customer.contact_no2"
+                :model-value="customer.contact_no2"
+                @update:model-value="(v) => enforceDigits(v, 'contact_no2')"
+                @keydown="onDigitsKeydown"
                 outlined
+                type="tel"
+                inputmode="numeric"
+                :rules="[
+                  (val) => val === '' || /^\d+$/.test(val) || 'Numbers only',
+                ]"
                 class="dialog-inputs"
               />
             </div>
@@ -98,6 +112,7 @@
               />
             </div>
           </div>
+
           <div class="row q-col-gutter-md">
             <div class="col">
               <div class="dialog-label">
@@ -128,10 +143,9 @@
               />
             </div>
           </div>
+
           <q-separator class="q-my-md" />
-          <div
-            class="text-center text-h6 text-weight-bold text-uppercase q-mb-sm"
-          >
+          <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-sm">
             Remarks
           </div>
           <div class="row q-col-gutter-md q-mb-md">
@@ -216,24 +230,7 @@ const selectedSubType = ref(null);
 const selectedPricingGroup = ref(null);
 const pricingGroupOptions = ref([]);
 
-// Ensure customer.type & sub_type match selected dropdowns
-watch([selectedType, selectedSubType], ([newType, newSubType]) => {
-  customer.value.type = newType && newType.value ? newType.value : ""; // Update customer type
-  customer.value.sub_type =
-    newSubType && newSubType.value ? newSubType.value : ""; // Update customer sub-type
-});
-
-// Sync `isOpen` with `modelValue` from parent
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    isOpen.value = newValue;
-    if (newValue) {
-      setCreatedAt(); // Set the timestamp when opening the dialog
-    }
-  }
-);
-
+// Customer state
 const customer = ref({
   name: "",
   contact_no1: "",
@@ -246,39 +243,65 @@ const customer = ref({
   price_remarks: "",
   accounting_remarks: "",
   other_remarks: "",
-    pricing_group_id: null,
+  pricing_group_id: null,
   created_at: "",
 });
 
+// --- DIGIT-ONLY HELPERS ---
+// Why: hard-block keys + sanitize pastes/IME for strict numeric input.
+const allowedControlKeys = new Set([
+  "Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+  "Home", "End", "Tab"
+]);
+
+const onDigitsKeydown = (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // allow copy/paste/undo shortcuts
+  if (allowedControlKeys.has(e.key)) return;
+  if (e.key >= "0" && e.key <= "9") return;
+  e.preventDefault();
+};
+
+const enforceDigits = (val, field) => {
+  const digits = (val ?? "").toString().replace(/\D+/g, "");
+  if (customer.value[field] !== digits) {
+    customer.value[field] = digits;
+  }
+};
+
+// Ensure customer.type & sub_type match selected dropdowns
+watch([selectedType, selectedSubType], ([newType, newSubType]) => {
+  customer.value.type = newType && newType.value ? newType.value : "";
+  customer.value.sub_type = newSubType && newSubType.value ? newSubType.value : "";
+});
+
+// Sync `isOpen` with `modelValue` from parent
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    isOpen.value = newValue;
+    if (newValue) setCreatedAt();
+  }
+);
+
 const setCreatedAt = () => {
-  customer.value.created_at = new Date().toISOString(); // Set UTC timestamp
+  customer.value.created_at = new Date().toISOString();
 };
 
 const handleAddCustomer = async () => {
   try {
     customer.value.type = selectedType.value ? selectedType.value.value : "";
-    customer.value.sub_type = selectedSubType.value
-      ? selectedSubType.value.value
-      : "";
-
-    // ✅ assign pricing_group_id directly (already just an ID)
+    customer.value.sub_type = selectedSubType.value ? selectedSubType.value.value : "";
     customer.value.pricing_group_id = selectedPricingGroup.value;
 
     await transactionStore.createCustomer(customer.value);
 
-    $q.notify({
-      type: "positive",
-      message: "Customer added successfully!",
-    });
+    $q.notify({ type: "positive", message: "Customer added successfully!" });
 
     emit("customer-added");
     closeDialog();
   } catch (error) {
     console.error("Error adding customer:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to add customer. Please try again.",
-    });
+    $q.notify({ type: "negative", message: "Failed to add customer. Please try again." });
   }
 };
 
@@ -317,32 +340,20 @@ const filteredSubTypes = ref([]);
 const fetchCustomerTypes = async () => {
   try {
     const response = await transactionStore.fetchCustomerTypes();
-
-    // Populate type options
-    typeOptions.value = response.customerTypes.map((type) => ({
-      label: type,
-      value: type,
-    }));
-
-    // Assign sub-type mapping
+    typeOptions.value = response.customerTypes.map((type) => ({ label: type, value: type }));
     subTypeMapping.value = response.subTypeMapping;
-
-    // console.log("Type Options:", typeOptions.value);
-    // console.log("Sub-Type Mapping:", subTypeMapping.value);
   } catch (error) {
     console.error("Error fetching customer types:", error);
   }
 };
 
 watch(selectedType, (newType) => {
-  // Check if newType is not null before accessing .value
   if (newType && newType.value) {
     filteredSubTypes.value = subTypeMapping.value[newType.value] || [];
   } else {
     filteredSubTypes.value = [];
   }
-
-  selectedSubType.value = null; // Reset sub-type when type changes
+  selectedSubType.value = null;
 });
 
 onMounted(async () => {

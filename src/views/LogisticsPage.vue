@@ -1,6 +1,6 @@
 <template>
   <div class="row justify-center page-title-header text-uppercase">
-Logistics Management
+    Logistics Management
   </div>
   <div class="full-container logistics-management">
     <!-- Weekly Summary Section -->
@@ -71,12 +71,12 @@ Logistics Management
 
         <!-- Driver-Based Rows -->
         <div
-          v-for="driver in drivers"
-          :key="driver"
+          v-for="driverId in drivers"
+          :key="driverId"
           class="row text-center items-center bg-grey-3 q-pa-sm all-border"
           style="padding: 0.5em"
         >
-          <div class="col text-weight-bold">{{ driver }}</div>
+          <div class="col text-weight-bold">{{ displayDriver(driverId) }}</div>
           <div
             v-for="(day, index) in daysOfWeek"
             :key="'cd' + index"
@@ -84,28 +84,28 @@ Logistics Management
           >
             <template
               v-if="
-                driverTransactionCounts[driver] &&
-                driverTransactionCounts[driver][day]
+                driverTransactionCounts[driverId] &&
+                driverTransactionCounts[driverId][day]
               "
             >
               <span
                 :class="
                   getTransactionClass(
-                    driverTransactionCounts[driver][day].collections
+                    driverTransactionCounts[driverId][day].collections
                   )
                 "
               >
-                C: {{ driverTransactionCounts[driver][day].collections }}
+                C: {{ driverTransactionCounts[driverId][day].collections }}
               </span>
               |
               <span
                 :class="
                   getTransactionClass(
-                    driverTransactionCounts[driver][day].deliveries
+                    driverTransactionCounts[driverId][day].deliveries
                   )
                 "
               >
-                D: {{ driverTransactionCounts[driver][day].deliveries }}
+                D: {{ driverTransactionCounts[driverId][day].deliveries }}
               </span>
             </template>
             <template v-else> C: 0 | D: 0 </template>
@@ -221,23 +221,23 @@ Logistics Management
             visible
           >
             <q-tab
-              v-for="driver in driverTabs"
-              :key="driver"
-              :name="driver"
+              v-for="driverId in driverTabs"
+              :key="driverId"
+              :name="driverId"
               :class="{
-                'active-tab': activeDriverTab === driver,
+                'active-tab': activeDriverTab === driverId,
                 'text-weight-bold tab-divider': true,
               }"
               class="q-py-none q-px-sm"
             >
-              {{ driver }} ({{
-                getTransactionsByDriver(driver).filter(
+              {{ displayDriver(driverId) }} ({{
+                getTransactionsByDriver(driverId).filter(
                   (t) => t.type === "collection"
                 ).length
               }}
               :
               {{
-                getTransactionsByDriver(driver).filter(
+                getTransactionsByDriver(driverId).filter(
                   (t) => t.type === "delivery"
                 ).length
               }})
@@ -249,25 +249,25 @@ Logistics Management
       <q-tab-panels v-model="activeDriverTab" animated>
         <!-- Dynamic Driver Panels -->
         <q-tab-panel
-          v-for="driver in driverTabs"
-          :key="driver"
-          :name="driver"
+          v-for="driverId in driverTabs"
+          :key="driverId"
+          :name="driverId"
           class="q-pa-none"
         >
           <!-- Table Display -->
           <div class="row-col-table">
             <!-- Table Header -->
-            <div class="row row-col-header q-px-md text-center">
-              <div class="col bordered q-py-sm text-weight-bolder">
+            <div class="row row-col-header text-center items-center">
+              <div class="col header-bordered flex flex-center">
                 Order Details
               </div>
-              <div class="col-5 bordered q-py-sm text-weight-bolder">
+              <div class="col-5 header-bordered flex flex-center">
                 Logistics Details
               </div>
-              <div class="col bordered q-py-sm text-weight-bolder">
+              <div class="col header-bordered flex flex-center">
                 Production Details
               </div>
-              <div class="col bordered q-py-sm text-weight-bolder">
+              <div class="col header-bordered flex flex-center">
                 Payment Status
               </div>
             </div>
@@ -294,7 +294,7 @@ Logistics Management
                 :key="`${logistics.logistics_id || logistics.id || index}-${
                   order?.id ?? 'placeholder'
                 }-${idx}`"
-                class="row row-col-row q-px-md line-height-1"
+                class="row row-col-row line-height-1"
               >
                 <!-- ORDER DETAILS COLUMN -->
                 <div class="col bordered">
@@ -465,7 +465,7 @@ Logistics Management
 
                 <!-- LOGISTICS DETAILS COLUMN -->
                 <div class="col-5 bordered" style="padding: 0">
-                  <div class="row justify-between q-mx-sm q-mb-sm">
+                  <div class="row justify-between q-mx-sm q-my-xs">
                     <div
                       class="col flex flex-center"
                       :class="[
@@ -553,12 +553,16 @@ Logistics Management
                           <span
                             :class="{
                               'mark-yellow text-weight-bolder':
-                                normalizeName(
-                                  logistics.collections?.[0]?.driver_name
-                                ) === normalizeName(activeDriverTab),
+                                String(
+                                  logistics.collections?.[0]?.driver_id ?? ''
+                                ) === String(activeDriverTab),
                             }"
                           >
-                            {{ logistics.collections?.[0]?.driver_name || "-" }}
+                            {{
+                              getDriverName(
+                                logistics.collections?.[0]?.driver_id
+                              ) || "-"
+                            }}
                           </span>
                         </div>
                         <div>
@@ -566,7 +570,9 @@ Logistics Management
                             class="text-caption text-uppercase text-weight-bold"
                           >
                             Address: </span
-                          >{{ logistics.collections?.[0]?.address || "-" }}
+                          >{{
+                            formatAddress(logistics.collections?.[0]?.address)
+                          }}
                         </div>
                       </div>
 
@@ -785,12 +791,16 @@ Logistics Management
                           <span
                             :class="{
                               'mark-yellow text-weight-bolder':
-                                normalizeName(
-                                  logistics.deliveries?.[0]?.driver_name
-                                ) === normalizeName(activeDriverTab),
+                                String(
+                                  logistics.deliveries?.[0]?.driver_id ?? ''
+                                ) === String(activeDriverTab),
                             }"
                           >
-                            {{ logistics.deliveries?.[0]?.driver_name || "-" }}
+                            {{
+                              getDriverName(
+                                logistics.deliveries?.[0]?.driver_id
+                              ) || "-"
+                            }}
                           </span>
                         </div>
                         <div>
@@ -798,7 +808,9 @@ Logistics Management
                             class="text-caption text-uppercase text-weight-bold"
                           >
                             Address: </span
-                          >{{ logistics.deliveries?.[0]?.address || "-" }}
+                          >{{
+                            formatAddress(logistics.deliveries?.[0]?.address)
+                          }}
                         </div>
                       </div>
                       <q-separator />
@@ -970,7 +982,7 @@ Logistics Management
 
                 <!-- PRODUCTION DETAILS COLUMN -->
                 <div class="col bordered" style="padding-top: 0">
-                  <div class="row justify-between q-mx-sm q-mb-sm">
+                  <div class="row justify-between q-mx-sm q-my-xs">
                     <div
                       class="col flex flex-center"
                       :class="[
@@ -1015,7 +1027,7 @@ Logistics Management
                       ) || "-"
                     }}
                   </div>
-                  <q-separator class="q-ma-sm" />
+                  <q-separator class="q-my-sm" />
                   <div v-if="logistics.collections?.[0]?.no_bags">
                     <span
                       class="text-caption text-uppercase text-weight-bold q-mr-xs"
@@ -1074,7 +1086,7 @@ Logistics Management
 
                 <!-- PAYMENT COLUMN -->
                 <div class="col bordered" style="padding-top: 0">
-                  <div class="row justify-between q-mx-sm q-mb-sm">
+                  <div class="row justify-between q-mx-sm q-my-xs">
                     <div
                       class="col flex flex-center"
                       :class="[
@@ -1136,7 +1148,7 @@ Logistics Management
                       getCustomerCredits(logistics.customer)
                     }}</span>
                   </div>
-                  <q-separator class="q-ma-sm" />
+                  <q-separator class="q-my-sm" />
                   <div>
                     <span
                       class="text-caption text-uppercase text-weight-bold q-mr-xs"
@@ -1546,7 +1558,6 @@ Logistics Management
 
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
-import { useRouter } from "vue-router";
 import { useQuasar, openURL, copyToClipboard } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 import CreateCollectionTab from "@/components/CustomerTab.vue";
@@ -1561,10 +1572,10 @@ import autoTable from "jspdf-autotable";
 
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
-const router = useRouter();
 
 // STATE
 const searchQuery = ref("");
+const DRIVER_NOT_SET = "[NOT SET]";
 const activeDriverTab = ref("");
 const selectedFilterDate = ref(new Date().toISOString().split("T")[0]);
 const selectedGenerateDate = ref(new Date().toISOString().split("T")[0]);
@@ -1643,6 +1654,21 @@ const sortedDriverOptions = computed(() => {
   );
 });
 
+const driverMapById = computed(() => {
+  const map = new Map();
+  (transactionStore.driverOptions || []).forEach((d) => {
+    if (d?.id != null)
+      map.set(String(d.id), (d.name || "").trim() || DRIVER_NOT_SET);
+  });
+  return map;
+});
+const getDriverName = (id) =>
+  driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
+const displayDriver = (driverIdOrNotSet) =>
+  driverIdOrNotSet === DRIVER_NOT_SET
+    ? DRIVER_NOT_SET
+    : getDriverName(driverIdOrNotSet);
+
 const toggleWeeklySummary = () => {
   showWeeklySummary.value = !showWeeklySummary.value;
 };
@@ -1654,7 +1680,6 @@ onMounted(async () => {
   if (driverTabs.value.length > 0) {
     activeDriverTab.value = driverTabs.value[0];
   }
-
   try {
     const raw = await transactionStore.fetchAllOrdersSimple();
     allOrders.value = normalizeOrders(raw);
@@ -1679,9 +1704,7 @@ const toISODate = (d) => {
   return `${y}-${m}-${day}`;
 };
 
-const normalizeName = (s) => (s || "").trim().toLowerCase();
-const sameDriver = (a, b) => normalizeName(a) === normalizeName(b);
-const isNotSetTab = (tab) => tab === "[NOT SET]";
+const isNotSetTab = (tab) => tab === DRIVER_NOT_SET;
 
 function decorateOrder(order) {
   const op =
@@ -1808,15 +1831,21 @@ const getEffectiveDateISO = (t) => {
   };
 };
 
-const getEffectiveDriverNames = (t) => {
-  const names = [];
-  if (t?.collections?.[0]?.driver_name) {
-    names.push(normalizeName(t.collections[0].driver_name));
-  }
-  if (t?.deliveries?.[0]?.driver_name) {
-    names.push(normalizeName(t.deliveries[0].driver_name));
-  }
-  return names.filter(Boolean);
+const getEffectiveDriverIds = (t) => {
+  const ids = [];
+  const cId = t?.collections?.[0]?.driver_id;
+  const dId = t?.deliveries?.[0]?.driver_id;
+  if (cId != null && cId !== "") ids.push(String(cId));
+  if (dId != null && dId !== "") ids.push(String(dId));
+  return ids;
+};
+
+const hasUnsetDriver = (t) => {
+  const cId = t?.collections?.[0]?.driver_id;
+  const dId = t?.deliveries?.[0]?.driver_id;
+  const noC = cId == null || cId === "";
+  const noD = dId == null || dId === "";
+  return noC || noD;
 };
 
 // FILTERING (search + date + driver tab)
@@ -1825,23 +1854,23 @@ const filteredOrders = computed(() => {
   const targetISO = selectedFilterDate.value
     ? toISODate(selectedFilterDate.value)
     : null;
-  const driver = activeDriverTab.value;
+  const driverId = activeDriverTab.value;
 
   const list = (allOrders.value || [])
     .filter((log) => {
       const customerName = log.customer?.name?.toLowerCase?.() || "";
       const orderNo = log.order?.order_no?.toLowerCase?.() || "";
       const status = log.logistics_status?.toLowerCase?.() || "";
-      const colDriver = log.collections?.[0]?.driver_name || "";
-      const delDriver = log.deliveries?.[0]?.driver_name || "";
+      const colDriverId = log.collections?.[0]?.driver_id;
+      const delDriverId = log.deliveries?.[0]?.driver_id;
 
       const matchesSearch =
         !query ||
         customerName.includes(query) ||
         orderNo.includes(query) ||
         status.includes(query) ||
-        normalizeName(colDriver).includes(query) ||
-        normalizeName(delDriver).includes(query);
+        getDriverName(colDriverId).toLowerCase().includes(query) ||
+        getDriverName(delDriverId).toLowerCase().includes(query);
 
       const txISO = getEffectiveDateISO(log);
       const matchesDate = targetISO
@@ -1849,13 +1878,12 @@ const filteredOrders = computed(() => {
         : true;
 
       let matchesDriver = true;
-      if (driver) {
-        const effectiveDrivers = getEffectiveDriverNames(log);
-        if (isNotSetTab(driver)) {
-          matchesDriver = effectiveDrivers.length === 0;
+      if (driverId) {
+        if (isNotSetTab(driverId)) {
+          matchesDriver = hasUnsetDriver(log);
         } else {
-          const d = normalizeName(driver);
-          matchesDriver = effectiveDrivers.includes(d);
+          const effectiveIds = getEffectiveDriverIds(log);
+          matchesDriver = effectiveIds.includes(String(driverId));
         }
       }
 
@@ -1888,19 +1916,17 @@ const totalPages = computed(
   () => Math.ceil(filteredOrders.value.length / pageSize.value) || 1
 );
 
-// DRIVER TABS
 const driverTabs = computed(() => {
-  const driverNames = transactionStore.driverOptions.map(
-    (d) => d.name?.trim().toLowerCase() || "[not set]"
-  );
-  const uniqueSorted = [...new Set(driverNames)]
-    .filter((n) => n !== "[not set]")
-    .sort((a, b) => a.localeCompare(b));
-  return [...uniqueSorted, "[NOT SET]"];
+  const ids = (transactionStore.driverOptions || [])
+    .filter((d) => d?.id != null)
+    .map((d) => String(d.id));
+  const unique = [...new Set(ids)];
+  unique.sort((a, b) => displayDriver(a).localeCompare(displayDriver(b)));
+  return [...unique, DRIVER_NOT_SET];
 });
 
 // Counts per driver used in tab header (collection vs delivery)
-const getTransactionsByDriver = (driverName) => {
+const getTransactionsByDriver = (driverIdOrNotSet) => {
   const query = searchQuery.value?.toLowerCase?.() || "";
   const targetISO = selectedFilterDate.value
     ? toISODate(selectedFilterDate.value)
@@ -1930,21 +1956,21 @@ const getTransactionsByDriver = (driverName) => {
     if (c)
       items.push({
         type: "collection",
-        driver_name: c.driver_name || "",
+        driver_id: c.driver_id ?? null,
         date: c.collection_date,
       });
     if (d)
       items.push({
         type: "delivery",
-        driver_name: d.driver_name || "",
+        driver_id: d.driver_id ?? null,
         date: d.delivery_date,
       });
   });
 
-  if (isNotSetTab(driverName)) {
-    return items.filter((t) => !normalizeName(t.driver_name));
+  if (isNotSetTab(driverIdOrNotSet)) {
+    return items.filter((t) => !t.driver_id && t.driver_id !== 0);
   }
-  return items.filter((t) => sameDriver(t.driver_name, driverName));
+  return items.filter((t) => String(t.driver_id) === String(driverIdOrNotSet));
 };
 
 // Weekly summary counts computed from orders
@@ -1998,19 +2024,19 @@ const formattedWeekDates = computed(() => {
 });
 
 const drivers = computed(() => {
-  const allDriverNames = transactionStore.driverOptions.map(
-    (d) => d.name?.trim() || "[NOT SET]"
-  );
-  const uniqueNames = new Set(allDriverNames);
-  uniqueNames.add("[NOT SET]");
-  return Array.from(uniqueNames);
+  const allIds = (transactionStore.driverOptions || [])
+    .filter((d) => d?.id != null)
+    .map((d) => String(d.id));
+  const unique = new Set(allIds);
+  unique.add(DRIVER_NOT_SET);
+  return Array.from(unique);
 });
 
 const driverTransactionCounts = computed(() => {
   const counts = {};
   const start = new Date(startOfWeek.value);
-  drivers.value.forEach((driver) => {
-    counts[driver] = {};
+  drivers.value.forEach((driverIdOrNotSet) => {
+    counts[driverIdOrNotSet] = {};
     daysOfWeek.forEach((day, index) => {
       const dayDate = new Date(start);
       dayDate.setDate(dayDate.getDate() + index);
@@ -2018,29 +2044,32 @@ const driverTransactionCounts = computed(() => {
 
       const colCount = (allOrders.value || []).filter((log) => {
         const c = log.collections?.[0];
-        const driverName = c?.driver_name || "";
+        const cId = c?.driver_id;
         const date = toISODate(c?.collection_date);
         return (
           date === iso &&
-          (isNotSetTab(driver)
-            ? !normalizeName(driverName)
-            : sameDriver(driverName, driver))
+          (isNotSetTab(driverIdOrNotSet)
+            ? cId == null || cId === ""
+            : String(cId) === String(driverIdOrNotSet))
         );
       }).length;
 
       const delCount = (allOrders.value || []).filter((log) => {
         const d = log.deliveries?.[0];
-        const driverName = d?.driver_name || "";
+        const dId = d?.driver_id;
         const date = toISODate(d?.delivery_date);
         return (
           date === iso &&
-          (isNotSetTab(driver)
-            ? !normalizeName(driverName)
-            : sameDriver(driverName, driver))
+          (isNotSetTab(driverIdOrNotSet)
+            ? dId == null || dId === ""
+            : String(dId) === String(driverIdOrNotSet))
         );
       }).length;
 
-      counts[driver][day] = { collections: colCount, deliveries: delCount };
+      counts[driverIdOrNotSet][day] = {
+        collections: colCount,
+        deliveries: delCount,
+      };
     });
   });
   return counts;
@@ -2212,7 +2241,7 @@ const generateDriverSchedule = () => {
     const d = log.deliveries?.[0];
     if (
       c &&
-      c.driver_name === selectedDriver.name &&
+      String(c.driver_id) === String(selectedDriver.id) &&
       toISODate(c.collection_date) === toISODate(generatedDate)
     ) {
       items.push({
@@ -2227,7 +2256,7 @@ const generateDriverSchedule = () => {
     }
     if (
       d &&
-      d.driver_name === selectedDriver.name &&
+      String(d.driver_id) === String(selectedDriver.id) &&
       toISODate(d.delivery_date) === toISODate(generatedDate)
     ) {
       items.push({
@@ -2736,4 +2765,19 @@ const isDeliveryFirst = (status) => {
   // default & collection-* → collection first
   return false;
 };
+
+function formatAddress(addr) {
+  if (!addr) return "-";
+  const main = [addr.block_no, addr.road_name, addr.unit_no, addr.building_name]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" ");
+  const postal = (addr.postal_code ?? "").toString().trim();
+  const line = [main, postal].filter(Boolean).join(", ");
+  const extra = [addr.additional_info, addr.remarks]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" — ");
+  return extra ? `${line} (${extra})` : line || "-";
+}
 </script>

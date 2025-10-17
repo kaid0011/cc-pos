@@ -1,3 +1,4 @@
+<!-- src/components/UpdateCustomerDialog.vue -->
 <template>
   <q-dialog v-model="isOpen" persistent>
     <q-card style="min-width: 70em">
@@ -14,11 +15,10 @@
           Update Customer
         </div>
       </q-card-section>
+
       <q-card-section class="dialog-body">
         <q-form @submit.prevent="handleUpdateCustomer">
-          <div
-            class="text-center text-h6 text-weight-bold text-uppercase q-mb-md"
-          >
+          <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-md">
             Customer Details
           </div>
 
@@ -35,6 +35,7 @@
                 class="dialog-inputs"
               />
             </div>
+
             <div class="col-3">
               <div class="dialog-label">
                 Customer Type:<span class="dialog-asterisk">*</span>
@@ -50,6 +51,7 @@
                 class="dialog-inputs"
               />
             </div>
+
             <div class="col-3">
               <div class="dialog-label">
                 Customer Sub-Type:<span class="dialog-asterisk">*</span>
@@ -65,38 +67,52 @@
               />
             </div>
           </div>
+
           <div class="row q-col-gutter-x-sm">
             <div class="col">
               <div class="dialog-label">
                 Contact No:<span class="dialog-asterisk">*</span>
               </div>
               <q-input
-                v-model="customer.contact_no1"
+                :model-value="customer.contact_no1"
+                @update:model-value="(v) => enforceDigits(v, 'contact_no1')"
+                @keydown="onDigitsKeydown"
                 outlined
-                :rules="[(val) => !!val || 'Contact No. is required']"
+                type="tel"
+                inputmode="numeric"
+                :rules="[
+                  (val) => !!val || 'Contact No. is required',
+                  (val) => /^\d+$/.test(val) || 'Numbers only',
+                ]"
                 class="dialog-inputs"
               />
             </div>
+
             <div class="col">
               <div class="dialog-label">
                 Alternative Contact No:<span class="dialog-asterisk"></span>
               </div>
               <q-input
-                v-model="customer.contact_no2"
+                :model-value="customer.contact_no2"
+                @update:model-value="(v) => enforceDigits(v, 'contact_no2')"
+                @keydown="onDigitsKeydown"
                 outlined
+                type="tel"
+                inputmode="numeric"
+                :rules="[
+                  (val) => val === '' || /^\d+$/.test(val) || 'Numbers only',
+                ]"
                 class="dialog-inputs"
               />
             </div>
+
             <div class="col">
               <div class="dialog-label">
                 E-mail Address:<span class="dialog-asterisk"></span>
               </div>
-              <q-input
-                v-model="customer.email"
-                outlined
-                class="dialog-inputs"
-              />
+              <q-input v-model="customer.email" outlined class="dialog-inputs" />
             </div>
+
             <div class="col">
               <div class="dialog-label">
                 Recommended By:<span class="dialog-asterisk"></span>
@@ -109,12 +125,12 @@
               />
             </div>
           </div>
+
           <q-separator class="q-my-md" />
-          <div
-            class="text-center text-h6 text-weight-bold text-uppercase q-mb-sm"
-          >
+          <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-sm">
             Remarks
           </div>
+
           <div class="row q-col-gutter-md q-mb-md">
             <div class="col">
               <div class="dialog-label">Schedule Remarks:</div>
@@ -137,6 +153,7 @@
               />
             </div>
           </div>
+
           <div class="row q-col-gutter-md q-mb-md">
             <div class="col">
               <div class="dialog-label">Accounting Remarks:</div>
@@ -162,7 +179,7 @@
 
           <q-card-actions align="right">
             <q-btn
-            unelevated
+              unelevated
               class="dialog-button"
               label="Update Customer"
               color="primary"
@@ -178,7 +195,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
-import { useQuasar } from 'quasar';
+import { useQuasar } from "quasar";
 
 const $q = useQuasar();
 
@@ -197,8 +214,9 @@ const typeOptions = ref([]);
 const subTypeMapping = ref({});
 const filteredSubTypes = ref([]);
 
-// Computed customer data from store
+// Customer data
 const customer = ref({
+  id: undefined,
   name: "",
   contact_no1: "",
   contact_no2: "",
@@ -213,28 +231,45 @@ const customer = ref({
   created_at: "",
 });
 
+// --- DIGIT-ONLY HELPERS ---
+// Why: ensure strict numeric-only input and sanitize pastes/IME.
+const allowedControlKeys = new Set([
+  "Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+  "Home", "End", "Tab"
+]);
 
-// Watch for changes in customer type selection
+const onDigitsKeydown = (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // keep shortcuts
+  if (allowedControlKeys.has(e.key)) return;
+  if (e.key >= "0" && e.key <= "9") return;
+  e.preventDefault();
+};
+
+const enforceDigits = (val, field) => {
+  const digits = (val ?? "").toString().replace(/\D+/g, "");
+  if (customer.value[field] !== digits) {
+    customer.value[field] = digits;
+  }
+};
+
+// Keep filtered sub-types in sync
 watch(selectedType, (newType) => {
   if (newType) {
     filteredSubTypes.value = subTypeMapping.value[newType.value] || [];
   } else {
     filteredSubTypes.value = [];
   }
-  // Keep the sub-type pre-selected if it exists in the filtered options
   selectedSubType.value =
     filteredSubTypes.value.find((st) => st.value === customer.value.sub_type) ||
     null;
 });
 
-// Watch for changes in parent `modelValue`
+// Sync with parent open/close
 watch(
   () => props.modelValue,
   (newValue) => {
     isOpen.value = newValue;
-    if (newValue) {
-      initializeForm(); // Reset form and load dropdowns
-    }
+    if (newValue) initializeForm();
   }
 );
 
@@ -243,8 +278,7 @@ const fetchCustomerTypes = async () => {
   try {
     const response = await transactionStore.fetchCustomerTypes();
     typeOptions.value = response.customerTypes.map((type) => ({
-      label: type,
-      value: type,
+      label: type, value: type
     }));
     subTypeMapping.value = response.subTypeMapping;
   } catch (error) {
@@ -252,21 +286,23 @@ const fetchCustomerTypes = async () => {
   }
 };
 
-// Initialize form when the dialog opens
+// Initialize form and sanitize existing numbers
 const initializeForm = async () => {
   await fetchCustomerTypes();
 
   if (transactionStore.selectedCustomer) {
-    // Deep copy to prevent mutation of store state
     customer.value = { ...transactionStore.selectedCustomer };
   }
+
+  // sanitize pre-filled numbers coming from backend/store
+  enforceDigits(customer.value.contact_no1, "contact_no1");
+  enforceDigits(customer.value.contact_no2, "contact_no2");
 
   // Set type dropdown value
   selectedType.value = typeOptions.value.find(
     (t) => t.value === customer.value.type
   ) || null;
 
-  // Set filtered sub-types and sub-type selection
   if (selectedType.value) {
     filteredSubTypes.value =
       subTypeMapping.value[selectedType.value.value] || [];
@@ -280,8 +316,7 @@ const initializeForm = async () => {
   }
 };
 
-
-// Handle customer update
+// Update
 const handleUpdateCustomer = async () => {
   try {
     if (!customer.value.id) {
@@ -305,7 +340,7 @@ const handleUpdateCustomer = async () => {
   }
 };
 
-// Close dialog
+// Close
 const closeDialog = () => {
   emit("update:modelValue", false);
 };

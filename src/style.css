@@ -337,7 +337,7 @@ mark-blue {
 .mark-yellow {
   background-color: #ffdc12;
   color: black;
-  font-weight: 800;
+  font-weight: 600;
   padding-right: 5px;
   padding-left: 5px;
 }
@@ -460,7 +460,8 @@ textarea {
 }
 
 .row-col-table {
-  background-color: #fff1e6;
+  /* background-color: #fff1e6; */
+  background-color: #ffffff;
 }
 
 .text-link {
@@ -872,6 +873,7 @@ textarea {
 .invoices-page,
 .items-management {
   padding: 2em !important;
+  background-color: #ffe0cd;
 }
 
 .logistics-management {
@@ -1002,7 +1004,7 @@ textarea {
 
 .subheadline {
   padding: 0.5rem 2rem !important;
-  background-color: #fff2e9;
+  background-color: #e6fbff;
   border-radius: 100px;
   margin-bottom: 1rem;
 }

@@ -1,3 +1,4 @@
+<!-- File: src/components/CreateCollectionTab.vue -->
 <template>
   <div class="selected-customer" v-if="selectedCustomer">
     <q-card flat class="customer-card q-pa-sm text-p">
@@ -19,8 +20,8 @@
             <div class="text-summary">
               {{ selectedCustomer.contact_no1
               }}<span v-if="selectedCustomer.contact_no2">
-                / {{ selectedCustomer.contact_no2 || "-" }}</span
-              >
+                / {{ selectedCustomer.contact_no2 || "-" }}
+              </span>
             </div>
             <div v-if="selectedCustomer.email" class="text-summary">
               {{ selectedCustomer.email }}
@@ -31,7 +32,7 @@
     </q-card>
 
     <div class="row contact-selection q-mt-md q-col-gutter-x-md">
-      <!-- Collection Section -->
+      <!-- Collection -->
       <div class="col">
         <q-card flat class="customer-card q-pa-md">
           <div
@@ -40,14 +41,6 @@
             For Collection
           </div>
           <q-separator class="q-mb-md" />
-          <!-- <q-checkbox
-            v-model="transactionStore.useCcCollection"
-            @update:model-value="
-              (value) => handleCheckboxChange('collection', value)
-            "
-            label="Self-collect"
-            class="row full-width q-mb-sm"
-          /> -->
 
           <q-btn
             outline
@@ -65,13 +58,14 @@
             @click="showAddAddressDialog = true"
             class="outline-btn q-ml-sm q-mb-sm q-px-sm"
           />
+
           <div>
             <div class="dialog-label">
               Contact Person<span class="dialog-asterisk">*</span>
             </div>
             <q-select
               v-model="transactionStore.selectedCollectionContact"
-              :options="contactOptions || []"
+              :options="contactOptionsUi"
               option-label="label"
               option-value="id"
               label="Select Collection Contact"
@@ -81,13 +75,14 @@
               class="q-mb-xs bg-white"
             />
           </div>
+
           <div>
             <div class="dialog-label">
               Collection Address<span class="dialog-asterisk">*</span>
             </div>
             <q-select
               v-model="transactionStore.selectedCollectionAddress"
-              :options="transactionStore.addressOptions"
+              :options="addressOptionsUi"
               option-label="label"
               option-value="id"
               label="Select Collection Address"
@@ -97,7 +92,7 @@
               class="q-mb-xs bg-white"
             />
           </div>
-          <!-- Collection Dates -->
+
           <div class="row q-col-gutter-xs">
             <div class="col">
               <div class="dialog-label">
@@ -110,7 +105,7 @@
                 readonly
                 class="q-mb-xs bg-white"
               >
-                <template v-slot:append>
+                <template #append>
                   <q-icon name="event" class="cursor-pointer">
                     <q-popup-proxy>
                       <q-date
@@ -144,13 +139,15 @@
               />
             </div>
           </div>
+
           <div>
             <div class="dialog-label">
               Colection Driver<span class="dialog-asterisk">*</span>
             </div>
             <q-select
               v-model="transactionStore.selectedCollectionDriver"
-              :options="sortedDriverOptions"
+              :options="driverOptionsUi"
+              option-label="name"
               label="Select Collection Driver"
               outlined
               dense
@@ -158,23 +155,25 @@
               class="q-mb-xs bg-white"
             />
           </div>
+
           <div class="row q-col-gutter-xs">
             <div class="col">
               <div class="dialog-label">
                 Job Type<span class="dialog-asterisk">*</span>
               </div>
-             <q-select
-  v-model="transactionStore.jobType"
-  :options="jobOptions"
-  option-label="label"
-  option-value="value"
-  label="Select Job Type"
-  outlined
-  dense
-  clearable
-  class="q-mb-xs bg-white"
-/>
-
+              <q-select
+                v-model="transactionStore.jobType"
+                :options="jobOptions"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                label="Select Job Type"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+              />
             </div>
             <div class="col">
               <div class="dialog-label">
@@ -189,10 +188,9 @@
               />
             </div>
           </div>
+
           <div>
-            <div class="dialog-label">
-              Collection Remarks<span class="dialog-asterisk"></span>
-            </div>
+            <div class="dialog-label">Collection Remarks</div>
             <q-input
               v-model="transactionStore.collectionRemarks"
               label="Remarks"
@@ -201,6 +199,7 @@
               class="q-mb-xs bg-white"
             />
           </div>
+
           <q-btn
             outline
             dense
@@ -212,7 +211,7 @@
         </q-card>
       </div>
 
-      <!-- Delivery Section -->
+      <!-- Delivery -->
       <div class="col">
         <q-card flat class="customer-card q-pa-md">
           <div
@@ -221,14 +220,6 @@
             For Delivery
           </div>
           <q-separator class="q-mb-md" />
-          <!-- <q-checkbox
-            :model-value="transactionStore.useCcDelivery"
-            @update:model-value="
-              (value) => handleCheckboxChange('delivery', value)
-            "
-            label="Self-pickup"
-            class="row full-width q-mb-sm"
-          /> -->
 
           <q-btn
             outline
@@ -246,13 +237,12 @@
             @click="showAddAddressDialog = true"
             class="outline-btn q-ml-sm q-mb-sm q-px-sm"
           />
+
           <div>
-            <div class="dialog-label">
-              Contact Person<span class="dialog-asterisk"></span>
-            </div>
+            <div class="dialog-label">Contact Person</div>
             <q-select
               v-model="transactionStore.selectedDeliveryContact"
-              :options="contactOptions || []"
+              :options="contactOptionsUi"
               option-label="label"
               option-value="id"
               label="Select Delivery Contact"
@@ -262,13 +252,12 @@
               class="q-mb-xs bg-white"
             />
           </div>
+
           <div>
-            <div class="dialog-label">
-              Address<span class="dialog-asterisk"></span>
-            </div>
+            <div class="dialog-label">Address</div>
             <q-select
               v-model="transactionStore.selectedDeliveryAddress"
-              :options="transactionStore.addressOptions"
+              :options="addressOptionsUi"
               option-label="label"
               option-value="id"
               label="Select Delivery Address"
@@ -279,7 +268,6 @@
             />
           </div>
 
-          <!-- Delivery Dates -->
           <div class="row q-col-gutter-sm">
             <div class="col-6">
               <div class="dialog-label">
@@ -292,7 +280,7 @@
                 readonly
                 class="q-mb-xs bg-white"
               >
-                <template v-slot:append>
+                <template #append>
                   <q-icon name="event" class="cursor-pointer">
                     <q-popup-proxy>
                       <q-date
@@ -310,9 +298,7 @@
               </q-input>
             </div>
             <div class="col-6">
-              <div class="dialog-label">
-                Delivery Time<span class="dialog-asterisk"></span>
-              </div>
+              <div class="dialog-label">Delivery Time</div>
               <q-select
                 v-model="transactionStore.deliveryTime"
                 :options="transactionStore.timeOptions"
@@ -326,13 +312,13 @@
               />
             </div>
           </div>
+
           <div>
-            <div class="dialog-label">
-              Delivery Driver<span class="dialog-asterisk"></span>
-            </div>
+            <div class="dialog-label">Delivery Driver</div>
             <q-select
               v-model="transactionStore.selectedDeliveryDriver"
-              :options="sortedDriverOptions"
+              :options="driverOptionsUi"
+              option-label="name"
               label="Select Delivery Driver"
               outlined
               dense
@@ -340,10 +326,9 @@
               class="q-mb-xs bg-white"
             />
           </div>
+
           <div>
-            <div class="dialog-label">
-              Delivery Remarks<span class="dialog-asterisk"></span>
-            </div>
+            <div class="dialog-label">Delivery Remarks</div>
             <q-input
               v-model="transactionStore.deliveryRemarks"
               label="Remarks"
@@ -352,6 +337,7 @@
               class="q-mb-xs bg-white"
             />
           </div>
+
           <q-btn
             outline
             dense
@@ -369,13 +355,11 @@
     v-model="showAddContactPersonDialog"
     @contact-added="handleContactAdded"
   />
-
   <AddAddressDialog
     v-model="showAddAddressDialog"
     @address-added="handleAddressAdded"
   />
 
-  <!-- Confirmation Dialog -->
   <q-dialog v-model="showConfirmation">
     <q-card>
       <q-card-section class="dialog-header">
@@ -383,13 +367,11 @@
           Confirm Reset
         </div>
       </q-card-section>
-
       <q-card-section class="dialog-body">
         <p>
           Are you sure you want to reset this section? This action cannot be
           undone.
         </p>
-
         <q-card-actions align="right">
           <q-btn
             class="dialog-button"
@@ -412,7 +394,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watchEffect, watch } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import AddContactPersonDialog from "@/components/dialogs/AddContactDialog.vue";
 import AddAddressDialog from "@/components/dialogs/AddAddressDialog.vue";
@@ -421,82 +403,167 @@ const transactionStore = useTransactionStore();
 const showAddContactPersonDialog = ref(false);
 const showAddAddressDialog = ref(false);
 
-// Local, hard-coded job types (label/value pair for <q-select>)
 const jobOptions = [
-  { label: "Laundry",               value: "LAUNDRY" },
-  { label: "R&I",                   value: "RI" },
-  { label: "R&I Quotation",         value: "RI_QUOTATION" },
-  { label: "Onsite Carpet Cleaning",value: "ONSITE_CARPET_CLEANING" },
-  { label: "Onsite Quotation",      value: "ONSITE_QUOTATION" },
-  { label: "Onsite Sofa Cleaning",  value: "ONSITE_SOFA_CLEANING" },
-  { label: "Others",                value: "OTHERS" }
+  { label: "Laundry", value: "laundry" },
+  { label: "R&I", value: "ri" },
+  { label: "R&I Quotation", value: "ri_quotation" },
+  { label: "Onsite Carpet Cleaning", value: "onsite_carpet_cleaning" },
+  { label: "Onsite Quotation", value: "onsite_quotation" },
+  { label: "Onsite Sofa Cleaning", value: "onsite_sofa_cleaning" },
+  { label: "Others", value: "others" },
 ];
 
 onMounted(async () => {
   await transactionStore.loadDrivers();
   await transactionStore.loadTimeOptions();
+  hardResetForm();
+  updateUrgency();
 });
 
-// Auto-update delivery date when collection date changes
+const MS_DAY = 86_400_000;
+
+function workingDays(collectionYmd, deliveryYmd) {
+  if (!collectionYmd || !deliveryYmd) return null;
+  const s = new Date(collectionYmd);
+  const e = new Date(deliveryYmd);
+  if (isNaN(s) || isNaN(e)) return null;
+
+  let d = new Date(s.getTime() + MS_DAY);
+  let count = 0;
+  while (d.getTime() <= e.getTime()) {
+    const day = d.getDay();           
+    if (day !== 0 && day !== 6) count++; 
+    d = new Date(d.getTime() + MS_DAY);
+  }
+  return count;
+}
+
+function computeUrgency(collectionDate, deliveryDate) {
+  const wd = workingDays(collectionDate, deliveryDate);
+  if (wd == null) return "default";
+  if (wd < 4) return "express";
+  if (wd <= 5) return "urgent";
+  return "default";
+}
+
+function updateUrgency() {
+  const wd = workingDays(transactionStore.collectionDate, transactionStore.deliveryDate);
+  const level = computeUrgency(transactionStore.collectionDate, transactionStore.deliveryDate);
+  transactionStore.jobUrgency = level;
+}
+
+watch(
+  () => [transactionStore.collectionDate, transactionStore.deliveryDate],
+  updateUrgency,
+  { immediate: true }
+);
+
 watch(
   () => transactionStore.collectionDate,
   (newDate) => {
-    if (newDate) {
-      const newDeliveryDate = addWorkingDays(newDate, 7);
-      transactionStore.deliveryDate = newDeliveryDate;
-    }
+    if (newDate) transactionStore.deliveryDate = addWorkingDays(newDate, 7);
   }
 );
 
-// auto update order_no based on collection driver
 watch(
   () => transactionStore.selectedCollectionDriver,
-  async (newDriver, oldDriver) => {
-    if (newDriver && newDriver !== oldDriver) {
+  async (n, o) => {
+    if (n && n !== o) {
       try {
         transactionStore.order_no = await transactionStore.generateOrderNo();
-      } catch (error) {
-        console.error("Failed to generate order number:", error);
+      } catch (e) {
+        console.error("Failed to generate order number:", e);
       }
     }
   }
 );
 
+watch(
+  () => transactionStore.selectedCustomer?.id,
+  (id) => {
+    if (!id) return;
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    transactionStore.collectionDate = todayStr;
+    transactionStore.deliveryDate = addWorkingDays(today, 7);
+    transactionStore.ready_by = addWorkingDays(today, 7);
+    updateUrgency();
+  },
+  { immediate: true }
+);
+
 const selectedCustomer = computed(() => transactionStore.selectedCustomer);
 
-// Trigger an immediate update for contactOptions when the selected customer changes
-const contactOptions = ref([]);
-const addressOptions = ref([]);
-const driverOptions = ref([]);
+watch(
+  () => transactionStore.selectedCustomer?.id,
+  (id) => {
+    if (!id) return;
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    transactionStore.collectionDate = todayStr;
+    transactionStore.deliveryDate = addWorkingDays(today, 7);
+    transactionStore.ready_by = addWorkingDays(today, 7);
+  },
+  { immediate: true }
+);
 
-const sortedDriverOptions = computed(() => {
-  return transactionStore.driverOptions
-    .map((driver) => driver.name)
-    .sort((a, b) => a.localeCompare(b));
-});
+const contactOptionsUi = computed(() =>
+  (transactionStore.contactOptions || []).map((c) => ({
+    id: c.id,
+    label: `${c.name} - ${c.contact_no1 || ""}${
+      c.contact_no2 ? ` / ${c.contact_no2}` : ""
+    }`,
+    name: c.name,
+    contact_no1: c.contact_no1,
+    contact_no2: c.contact_no2,
+    email: c.email,
+  }))
+);
 
-const handleCheckboxChange = (type, value) => {
-  if (type === "collection") {
-    transactionStore.useCcCollection = value;
-    transactionStore.toggleUseCcCollection(value); // Call store logic
-    // console.log(`Self-collect checkbox updated: ${value}`);
-  } else if (type === "delivery") {
-    transactionStore.useCcDelivery = value;
-    transactionStore.toggleUseCcDelivery(value); // Call store logic
-    // console.log(`Self-pickup checkbox updated: ${value}`);
-  }
-};
+const addressOptionsUi = computed(() =>
+  (transactionStore.addressOptions || []).map((a) => ({
+    id: a.id,
+    label: `${a.block_no} ${a.road_name} ${a.unit_no} ${a.building_name}, ${a.postal_code}`,
+  }))
+);
+
+const driverOptionsUi = computed(() =>
+  (transactionStore.driverOptions || [])
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+);
 
 const handleContactAdded = async () => {
-  console.log("Contact person successfully added");
   showAddContactPersonDialog.value = false;
-  await updateOptions(); // Refresh contact list
+  const id = transactionStore.selectedCustomer?.id;
+  if (id) await transactionStore.loadContactOptions(id);
 };
 
 const handleAddressAdded = async () => {
-  console.log("Address successfully added");
   showAddAddressDialog.value = false;
-  await updateOptions(); // Refresh address list
+  const id = transactionStore.selectedCustomer?.id;
+  if (id) await transactionStore.loadAddressOptions(id);
+};
+
+function addWorkingDays(startDate, workingDays) {
+  const date = new Date(startDate);
+  while (workingDays > 0) {
+    date.setDate(date.getDate() + 1);
+    if (date.getDay() !== 0 && date.getDay() !== 6) workingDays--;
+  }
+  return date.toISOString().split("T")[0];
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return "--/--/----";
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return "--/--/----";
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 };
 
 const formattedCollectionDate = computed(() =>
@@ -506,78 +573,9 @@ const formattedDeliveryDate = computed(() =>
   formatDate(transactionStore.deliveryDate)
 );
 
-function addWorkingDays(startDate, workingDays) {
-  let date = new Date(startDate);
-  while (workingDays > 0) {
-    date.setDate(date.getDate() + 1); // Move to the next day
-    // Check if it's a weekday (Monday to Friday)
-    if (date.getDay() !== 0 && date.getDay() !== 6) {
-      workingDays--;
-    }
-  }
-  return date.toISOString().split("T")[0]; // Return date in YYYY-MM-DD format
-}
+const showConfirmation = ref(false);
+const actionToConfirm = ref(null);
 
-// Function to format dates as "Thu, 30/01/2025"
-const formatDate = (dateString) => {
-  if (!dateString) return "--/--/----"; // If the date is missing or null, return "--/--/----"
-
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "--/--/----"; // If the date is invalid, return "--/--/----"
-
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short", // "Thu"
-    day: "2-digit", // "30"
-    month: "2-digit", // "01"
-    year: "numeric", // "2025"
-  });
-};
-
-const updateOptions = async () => {
-  try {
-    const customerId = transactionStore.selectedCustomer?.id || null;
-    await Promise.all([
-      transactionStore.loadContactOptions(customerId),
-      transactionStore.loadAddressOptions(customerId),
-    ]);
-
-    transactionStore.collectionDate = new Date().toISOString().split("T")[0];
-    transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
-    transactionStore.ready_by = addWorkingDays(new Date(), 7);
-
-    contactOptions.value = transactionStore.contactOptions.map((contact) => ({
-      id: contact.id,
-      name: contact.name,
-      contact_no1: contact.contact_no1,
-      contact_no2: contact.contact_no2,
-      label: `${contact.name} - ${contact.contact_no1 || ""}${
-        contact.contact_no2 ? ` / ${contact.contact_no2}` : ""
-      }`,
-    }));
-
-    addressOptions.value = transactionStore.addressOptions.map((address) => ({
-      id: address.id,
-      label: `${address.block_no} ${address.road_name} ${address.unit_no} ${address.building_name}, ${address.postal_code}`,
-    }));
-
-    driverOptions.value = transactionStore.driverOptions.map((driver) => ({
-      id: driver.id,
-      label: `${driver.name} - ${driver.contact_no1 || ""}`,
-    }));
-  } catch (error) {
-    console.error("Error updating options:", error);
-  }
-};
-
-onMounted(async () => {
-  await updateOptions();
-});
-
-watchEffect(() => {
-  updateOptions();
-});
-
-// Function to Clear Date Input
 const clearDate = (dateType) => {
   switch (dateType) {
     case "collectionDate":
@@ -587,9 +585,9 @@ const clearDate = (dateType) => {
       transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
       break;
   }
+  updateUrgency();
 };
 
-// Reset Collection Inputs
 const resetCollection = () => {
   transactionStore.selectedCollectionContact = null;
   transactionStore.selectedCollectionAddress = null;
@@ -598,9 +596,9 @@ const resetCollection = () => {
   transactionStore.selectedCollectionDriver = null;
   transactionStore.collectionRemarks = "";
   transactionStore.ready_by = addWorkingDays(new Date(), 7);
+  updateUrgency();
 };
 
-// Reset Delivery Inputs
 const resetDelivery = () => {
   transactionStore.selectedDeliveryContact = null;
   transactionStore.selectedDeliveryAddress = null;
@@ -608,25 +606,45 @@ const resetDelivery = () => {
   transactionStore.deliveryTime = null;
   transactionStore.selectedDeliveryDriver = null;
   transactionStore.deliveryRemarks = "";
+  updateUrgency();
 };
 
-// Confirmation State
-const showConfirmation = ref(false);
-const actionToConfirm = ref(null);
-
-// Confirm Reset Action
 const confirmReset = (section) => {
   actionToConfirm.value = section;
   showConfirmation.value = true;
 };
 
-// Perform the Confirmed Action
 const confirmAction = () => {
-  if (actionToConfirm.value === "collection") {
-    resetCollection();
-  } else if (actionToConfirm.value === "delivery") {
-    resetDelivery();
-  }
+  if (actionToConfirm.value === "collection") resetCollection();
+  else if (actionToConfirm.value === "delivery") resetDelivery();
   showConfirmation.value = false;
 };
+
+watch(
+  () => transactionStore.selectedCustomer?.id,
+  (id, oldId) => {
+    if (!id || id === oldId) return;
+    hardResetForm();
+  }
+);
+
+function hardResetForm() {
+  transactionStore.useCcCollection = false;
+  transactionStore.useCcDelivery = false;
+  transactionStore.order_no = null;
+  transactionStore.jobType = null;         
+  transactionStore.collectionNoBags = null; 
+
+  resetCollection();
+  resetDelivery();
+
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
+  transactionStore.collectionDate = todayStr;
+  transactionStore.deliveryDate = addWorkingDays(today, 7);
+  transactionStore.ready_by = addWorkingDays(today, 7);
+
+  updateUrgency();
+}
+
 </script>

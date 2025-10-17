@@ -28,7 +28,7 @@
 
     <!-- Pricing Group -->
     <div class="col flex column justify-between">
-      <!-- <div class="dialog-label text-weight-bold text-subtitle2">
+      <div class="dialog-label text-weight-bold text-subtitle2">
             Select Pricing Group
           </div>
         <q-select
@@ -40,7 +40,7 @@
           map-options
           clearable
           @clear="resetToDefaultGroup"
-        /> -->
+        />
     </div>
 
     <!-- Button -->

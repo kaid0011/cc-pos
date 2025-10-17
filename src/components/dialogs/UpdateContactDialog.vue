@@ -33,19 +33,34 @@
                 Contact No:<span class="dialog-asterisk">*</span>
               </div>
               <q-input
-                v-model="contact.contact_no1"
+                :model-value="contact.contact_no1"
+                @update:model-value="(v) => enforceDigits(v, 'contact_no1')"
+                @keydown="onDigitsKeydown"
                 outlined
+                type="tel"
+                inputmode="numeric"
+                :rules="[
+                  (val) => !!val || 'Contact No. is required',
+                  (val) => /^\d+$/.test(val) || 'Numbers only',
+                ]"
                 class="dialog-inputs"
-                :rules="[(val) => !!val || 'Contact No. is required']"
               />
             </div>
+
             <div class="col">
               <div class="dialog-label">
                 Alternative Contact No:<span class="dialog-asterisk"></span>
               </div>
               <q-input
-                v-model="contact.contact_no2"
+                :model-value="contact.contact_no2"
+                @update:model-value="(v) => enforceDigits(v, 'contact_no2')"
+                @keydown="onDigitsKeydown"
                 outlined
+                type="tel"
+                inputmode="numeric"
+                :rules="[
+                  (val) => val === '' || /^\d+$/.test(val) || 'Numbers only',
+                ]"
                 class="dialog-inputs"
               />
             </div>
@@ -127,4 +142,31 @@ const handleUpdateContact = async () => {
 const closeDialog = () => {
   emit("update:modelValue", false);
 };
+
+const allowedControlKeys = new Set([
+  "Backspace",
+  "Delete",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
+  "Tab",
+]);
+
+const onDigitsKeydown = (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // keep shortcuts
+  if (allowedControlKeys.has(e.key)) return;
+  if (e.key >= "0" && e.key <= "9") return;
+  e.preventDefault();
+};
+
+const enforceDigits = (val, field) => {
+  const digits = (val ?? "").toString().replace(/\D+/g, "");
+  if (contact.value[field] !== digits) {
+    contact.value[field] = digits;
+  }
+};
+
 </script>

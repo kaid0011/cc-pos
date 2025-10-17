@@ -139,7 +139,7 @@ const fullMenu = [
     icon: "groups",
     roles: ["csr", "admin", "owner"],
     submenus: [
-      { label: "Customer Profiles", icon: "person", route: "/customers" },
+      { label: "Customers List", icon: "person", route: "/customers" },
     ],
   },
   {

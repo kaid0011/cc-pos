@@ -1,43 +1,46 @@
 <template>
   <q-card class="slip-card text-weight-bold">
-    <div class="text-subtitle1 text-uppercase text-weight-bolder">Collection Details</div>
+    <div class="text-subtitle1 text-uppercase text-weight-bolder">
+      Collection Details
+    </div>
     <q-separator class="q-my-xs" />
 
-<div class="row q-col-gutter-sm">
+    <div class="row q-col-gutter-sm">
       <div class="col text-slip-row">
-      Contact Person:
-      <q-select
-        v-model="transactionStore.selectedCollectionContact"
-        :options="contactOptions"
-        option-label="name"
-        option-value="id"
-        outlined
-        dense
-        clearable
-        class="q-mb-sm bg-white"
-      />
-    </div>
+        Contact Person:<span class="dialog-asterisk">*</span>
+        <q-select
+          v-model="transactionStore.selectedCollectionContact"
+          :options="contactOptions"
+          option-label="name"
+          outlined
+          required
+          dense
+          clearable
+          class="q-mb-sm bg-white"
+        />
+      </div>
 
-    <div class="col text-slip-row">
-      Contact Nos:
-      <q-input
-        v-model="formattedCollectionContactNos"
-        disable
-        outlined
-        dense
-        class="q-mb-sm bg-white"
-      />
+      <div class="col text-slip-row">
+        Contact Nos:<span class="dialog-asterisk">*</span>
+        <q-input
+          v-model="formattedCollectionContactNos"
+          disable
+          required
+          outlined
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
     </div>
-</div>
 
     <div class="text-slip-row">
-      Address:
+      Address:<span class="dialog-asterisk">*</span>
       <q-select
         v-model="transactionStore.selectedCollectionAddress"
-        :options="transactionStore.addressOptions"
-        option-label="label"
-        option-value="id"
+        :options="addressOptions"
+        option-label="__label"
         outlined
+        required
         dense
         clearable
         class="q-mb-sm bg-white"
@@ -45,61 +48,74 @@
     </div>
 
     <div class="row q-col-gutter-sm">
-<div class="col text-slip-row">
-      Collection Date:
-      <q-input
-        v-model="formattedCollectionDate"
-        outlined
-        dense
-        readonly
-        class="q-mb-sm bg-white"
-      >
-        <template v-slot:append>
-          <q-icon name="event" class="cursor-pointer">
-            <q-popup-proxy>
-              <q-date v-model="transactionStore.collectionDate" mask="YYYY-MM-DD" />
-            </q-popup-proxy>
-          </q-icon>
-        </template>
-      </q-input>
+      <div class="col text-slip-row">
+        Collection Date:<span class="dialog-asterisk">*</span>
+        <q-input
+          v-model="formattedCollectionDate"
+          outlined
+          dense
+          required
+          readonly
+          class="q-mb-sm bg-white"
+        >
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy>
+                <q-date
+                  v-model="transactionStore.collectionDate"
+                  mask="YYYY-MM-DD"
+                />
+              </q-popup-proxy>
+            </q-icon>
+          </template>
+        </q-input>
+      </div>
+
+      <div class="col text-slip-row">
+        Collection Time:<span class="dialog-asterisk">*</span>
+        <q-select
+          v-model="transactionStore.collectionTime"
+          :options="timeOptions"
+          option-label="label"
+          option-value="id"
+          emit-value
+          map-options
+          required
+          outlined
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
     </div>
 
-    <div class="col text-slip-row">
-      Collection Time:
-      <q-select
-        v-model="transactionStore.collectionTime"
-        :options="timeOptions"
-        option-label="label"
-        option-value="id"
-        outlined
-        dense
-        class="q-mb-sm bg-white"
-      />
-    </div>
-    </div>
+    <div class="row q-col-gutter-sm">
+      <div class="col text-slip-row">
+        Collection Driver:<span class="dialog-asterisk">*</span>
+        <q-select
+          v-model="transactionStore.selectedCollectionDriver"
+          :options="sortedDriverOptions"
+          option-label="name"
+          option-value="id"
+          emit-value
+          map-options
+          outlined
+          required
+          dense
+          class="q-mb-sm bg-white"
+        />
+      </div>
 
-<div class="row q-col-gutter-sm">
-    <div class="col text-slip-row">
-      Collection Driver:
-      <q-select
-        v-model="transactionStore.selectedCollectionDriver"
-        :options="sortedDriverOptions"
-        option-label="name"
-        outlined
-        dense
-        class="q-mb-sm bg-white"
-      />
+      <div class="col text-slip-row">
+        No.of Bags:<span class="dialog-asterisk">*</span>
+        <q-input
+          v-model="transactionStore.collectionNoBags"
+          outlined
+          dense
+          required
+          class="q-mb-sm bg-white"
+        />
+      </div>
     </div>
-        <div class="col text-slip-row">
-      No.of Bags:
-      <q-input
-        v-model="transactionStore.collectionNoBags"
-        outlined
-        dense
-        class="q-mb-sm bg-white"
-      />
-    </div>
-</div>
 
     <div class="text-slip-row">
       Remarks:
@@ -129,112 +145,153 @@ import { useTransactionStore } from "@/stores/transactionStore";
 import { useQuasar } from "quasar";
 
 const $q = useQuasar();
-
 const transactionStore = useTransactionStore();
 
-const driverOptions = ref([]);
 const timeOptions = ref([]);
 const contactOptions = ref([]);
 const addressOptions = ref([]);
 
-const sortedDriverOptions = computed(() => {
-  return [...transactionStore.driverOptions].sort((a, b) =>
+const sortedDriverOptions = computed(() =>
+  [...transactionStore.driverOptions].sort((a, b) =>
     a.name.localeCompare(b.name)
-  );
-});
+  )
+);
 
-onMounted(async () => {
-  await transactionStore.loadDrivers();
-  await transactionStore.loadTimeOptions();
+// ---------- helpers ----------
+const buildAddressLabel = (a) => {
+  if (!a) return "";
+  const main = [a.block_no, a.road_name, a.unit_no, a.building_name]
+    .map((v) => String(v ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const postal = String(a.postal_code ?? "").trim();
+  const extra = String(a.additional_info ?? "").trim();
+  return [[main, postal].filter(Boolean).join(", "), extra ? `(${extra})` : ""]
+    .filter(Boolean)
+    .join(" ");
+};
 
-  timeOptions.value = transactionStore.timeOptions;
+const findById = (arr, id) =>
+  arr.find((o) => String(o.id) === String(id)) || null;
 
-  console.log("Mounted - Driver Options:", driverOptions.value);
-  console.log("Mounted - Time Options:", timeOptions.value);
-
-  if (transactionStore.selectedCustomer?.id) {
-    console.log("Mounted - Customer ID Found:", transactionStore.selectedCustomer.id);
-    await updateOptions(transactionStore.selectedCustomer.id);
-  } else {
-    console.log("Mounted - No Customer Selected");
+// ---------- options (contacts/addresses/time/drivers) ----------
+async function updateOptions(customerId) {
+  if (!customerId) {
+    contactOptions.value = [];
+    addressOptions.value = [];
+    return;
   }
+  await Promise.all([
+    transactionStore.loadContactOptions(customerId),
+    transactionStore.loadAddressOptions(customerId),
+  ]);
+
+  contactOptions.value = (transactionStore.contactOptions || []).map((c) => ({
+    ...c,
+    label: `${c.name}${c.contact_no1 ? " - " + c.contact_no1 : ""}`,
+  }));
+
+  addressOptions.value = (transactionStore.addressOptions || []).map((a) => ({
+    ...a,
+    __label: buildAddressLabel(a), // used by option-label="__label"
+  }));
+}
+
+// ---------- main hydration from logisticsId ----------
+async function initFromLogisticsId(logisticsId) {
+  if (!logisticsId) return;
+
+  // base lookups
+  await Promise.all([
+    transactionStore.loadDrivers(),
+    transactionStore.loadTimeOptions(),
+  ]);
+  timeOptions.value = transactionStore.timeOptions || [];
+
+  // 1) fetch the current collection row
+  const rows = await transactionStore.fetchCollectionByLogisticsId(logisticsId);
+  const col = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!col) return;
+
+  // 2) ensure options for the selected customer are loaded
+  const customerId = transactionStore.selectedCustomer?.id || null;
+  await updateOptions(customerId);
+
+  // 3) map address_id → address option object
+  const addrObj = findById(addressOptions.value, col.address_id);
+
+  // 4) contact comes already joined as customer_contact_persons
+  const contactObj = col.customer_contact_persons
+    ? {
+        ...col.customer_contact_persons,
+        label: `${col.customer_contact_persons.name}${
+          col.customer_contact_persons.contact_no1
+            ? " - " + col.customer_contact_persons.contact_no1
+            : ""
+        }`,
+      }
+    : null;
+
+  // 5) hydrate store fields used by the inputs
+  transactionStore.selectedCollectionId = col.id || null;
+  transactionStore.selectedCollectionContact = contactObj || null;
+  transactionStore.selectedCollectionAddress = addrObj || null;
+
+  // driver/time selects use emit-value+map-options → set to IDs/values
+  transactionStore.selectedCollectionDriver = col.driver_id ?? null;
+  transactionStore.collectionTime = col.collection_time ?? null;
+
+  // dates/remarks/bags
+  transactionStore.collectionDate =
+    (col.collection_date || "").slice(0, 10) || null;
+  transactionStore.collectionNoBags = col.no_bags ?? null;
+
+  // NOTE: your fetch column is "collection_remarks"
+  transactionStore.collectionRemarks = col.collection_remarks ?? null;
+}
+
+// ---------- watches / lifecycle ----------
+onMounted(async () => {
+  // hydrate when dialog mounts
+  await initFromLogisticsId(transactionStore.logisticsId);
 });
 
+// rehydrate if parent switches the logistics we’re editing
+watch(
+  () => transactionStore.logisticsId,
+  async (id) => {
+    await initFromLogisticsId(id);
+  }
+);
+
+// keep your 7-working-days rule for default delivery date
 watch(
   () => transactionStore.collectionDate,
   (newDate) => {
     if (newDate) {
-      const newDeliveryDate = addWorkingDays(newDate, 7);
-      transactionStore.deliveryDate = newDeliveryDate;
+      transactionStore.deliveryDate = addWorkingDays(newDate, 7);
     }
   }
 );
 
-watch(
-  () => transactionStore.selectedCustomer?.id,
-  async (newCustomerId) => {
-    console.log("Watch - Customer ID Changed:", newCustomerId);
-    if (newCustomerId) await updateOptions(newCustomerId);
-    else {
-      contactOptions.value = [];
-      addressOptions.value = [];
-      console.log("Watch - Cleared contact/address options");
-    }
-  }
-);
-
+// ---------- misc ----------
 function addWorkingDays(startDate, workingDays) {
   let date = new Date(startDate);
   while (workingDays > 0) {
-    date.setDate(date.getDate() + 1); // Move to the next day
-    // Check if it's a weekday (Monday to Friday)
-    if (date.getDay() !== 0 && date.getDay() !== 6) {
-      workingDays--;
-    }
+    date.setDate(date.getDate() + 1);
+    if (date.getDay() !== 0 && date.getDay() !== 6) workingDays--;
   }
-  return date.toISOString().split("T")[0]; // Return date in YYYY-MM-DD format
+  return date.toISOString().split("T")[0];
 }
 
-async function updateOptions(customerId) {
-  try {
-    console.log("Fetching contact/address options for Customer ID:", customerId);
-    await Promise.all([
-      transactionStore.loadContactOptions(customerId),
-      transactionStore.loadAddressOptions(customerId),
-    ]);
-
-    console.log("Raw contact options:", transactionStore.contactOptions);
-    console.log("Raw address options:", transactionStore.addressOptions);
-
-    contactOptions.value = transactionStore.contactOptions.map((contact) => ({
-      id: contact.id,
-      name: contact.name,
-      contact_no1: contact.contact_no1,
-      contact_no2: contact.contact_no2,
-      label: `${contact.name} - ${contact.contact_no1}`,
-    }));
-
-    addressOptions.value = transactionStore.addressOptions.map((address) => ({
-      id: address.id,
-      label: `${address.block_no} ${address.road_name} ${address.unit_no} ${address.building_name}, ${address.postal_code} (${address?.additional_info || ""})`,
-    }));
-
-    console.log("Formatted contact options:", contactOptions.value);
-    console.log("Formatted address options:", addressOptions.value);
-  } catch (err) {
-    console.error("Failed to load contact/address options", err);
-    contactOptions.value = [];
-    addressOptions.value = [];
-  }
-}
-
-const formattedCollectionDate = computed(() => formatDate(transactionStore.collectionDate));
-
+const formattedCollectionDate = computed(() =>
+  formatDate(transactionStore.collectionDate)
+);
 function formatDate(dateString) {
   if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "N/A";
-  return date.toLocaleDateString("en-GB", {
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return "N/A";
+  return d.toLocaleDateString("en-GB", {
     weekday: "short",
     day: "2-digit",
     month: "2-digit",
@@ -244,44 +301,54 @@ function formatDate(dateString) {
 
 const formattedCollectionContactNos = computed({
   get() {
-    const contact = transactionStore.selectedCollectionContact;
-    if (!contact) return "-";
-    const contact1 = contact.contact_no1 || "-";
-    const contact2 = contact.contact_no2;
-    return contact2 ? `${contact1} / ${contact2}` : contact1;
+    const c = transactionStore.selectedCollectionContact;
+    if (!c) return "-";
+    const c1 = c.contact_no1 || "-";
+    const c2 = c.contact_no2;
+    return c2 ? `${c1} / ${c2}` : c1;
   },
   set(value) {
     if (!transactionStore.selectedCollectionContact) {
       transactionStore.selectedCollectionContact = {};
     }
-    const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    transactionStore.selectedCollectionContact.contact_no1 = contact1 || "";
-    transactionStore.selectedCollectionContact.contact_no2 = contact2 || null;
+    const [c1, c2] = String(value)
+      .split(" / ")
+      .map((s) => s.trim());
+    transactionStore.selectedCollectionContact.contact_no1 = c1 || "";
+    transactionStore.selectedCollectionContact.contact_no2 = c2 || null;
   },
 });
 
 async function updateCollection() {
-  if (!transactionStore.selectedCollectionId) {
-    $q.notify({
-      type: "negative",
-      message: "No collection selected for update.",
-    });
+  const id = transactionStore.selectedCollectionId;
+  if (!id) {
+    $q.notify({ type: "negative", message: "No collection selected for update." });
     return;
   }
 
+  // Normalize values coming from selects (could be id or object)
+  const contact = transactionStore.selectedCollectionContact;
+  const address = transactionStore.selectedCollectionAddress;
+  const driver  = transactionStore.selectedCollectionDriver;
+
+  const updateData = {
+    collection_date:     transactionStore.collectionDate || null,
+    collection_time:     transactionStore.collectionTime || null,
+    collection_remarks:  transactionStore.collectionRemarks || null,
+    no_bags:             transactionStore.collectionNoBags ?? null,
+
+    // IDs: accept either raw id or object with id
+    contact_person_id:   contact?.id ?? contact ?? null,
+    address_id:          address?.id ?? address ?? null,
+    driver_id:           driver?.id ?? driver ?? null,
+  };
+
   try {
-    await transactionStore.updateCollection(transactionStore.selectedCollectionId);
-    $q.notify({
-      type: "positive",
-      message: "Collection updated successfully.",
-    });
-    
+    await transactionStore.updateCollection(id, updateData);
+    $q.notify({ type: "positive", message: "Collection updated successfully." });
   } catch (error) {
     console.error("Update collection failed:", error);
-    $q.notify({
-      type: "negative",
-      message: "Failed to update collection. Please try again.",
-    });
+    $q.notify({ type: "negative", message: "Failed to update collection. Please try again." });
   }
 }
 

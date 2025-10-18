@@ -322,17 +322,18 @@
                   :key="person.id"
                   class="row row-col-row bg-white"
                 >
-                  <div class="col bordered"><div>{{ person.name || "-" }}</div>
-                     <div>
-                    <q-btn
-                      dense
-                      outline
-                      label="Update"
-                      color="primary"
-                      class="main-button q-mt-xs q-px-md"
-                      @click="openUpdateDialog(person, 'contact')"
-                    />
-                    <!-- <q-btn
+                  <div class="col bordered">
+                    <div>{{ person.name || "-" }}</div>
+                    <div>
+                      <q-btn
+                        dense
+                        outline
+                        label="Update"
+                        color="primary"
+                        class="main-button q-mt-xs q-px-md"
+                        @click="openUpdateDialog(person, 'contact')"
+                      />
+                      <!-- <q-btn
                       dense
                       unelevated
                       label="Delete"
@@ -340,7 +341,7 @@
                       class="negative-button q-ma-xs q-px-sm"
                       @click="openDeleteDialog(person, 'contact')"
                     /> -->
-                  </div>
+                    </div>
                   </div>
                   <div class="col bordered">
                     <div>{{ person.contact_no1 || "-" }}</div>
@@ -417,29 +418,43 @@
       </div>
     </div>
 
-    <div class="page-2-container">
-      <div class="row justify-center">
-        <span
-          class="subheadline text-h6 text-weight-bolder text-uppercase text-center"
+    <div class="page-2-container page-2-exception">
+      <div>
+        <q-tabs
+          v-model="activeTab"
+          class="text-primary customer-element-tabs"
+          align="left"
+          narrow-indicator
+          outside-arrows
+          mobile-arrows
         >
-          Logistics History
-        </span>
+          <q-tab
+            name="logistics"
+            label="Logistics History"
+            icon="local_shipping"
+          />
+          <q-tab
+            name="pricelist"
+            label="Customer Price List"
+            icon="price_change"
+          />
+        </q-tabs>
+        <q-separator />
+        <q-tab-panels v-model="activeTab" class="customer-element-panels" animated keep-alive>
+          <q-tab-panel name="logistics">
+            <LogisticsTableByCustomer :customer-id="customerDetails.id" />
+          </q-tab-panel>
+
+          <q-tab-panel name="pricelist">
+            <ItemsManager
+              :default-group-id="customerDetails.pricing_group_id"
+            />
+          </q-tab-panel>
+        </q-tab-panels>
       </div>
-      <LogisticsTableByCustomer :customer-id="customerDetails.id" />
     </div>
 
-    <div class="page-1-container">
-      <div class="row justify-center">
-        <span
-          class="subheadline text-h6 text-weight-bolder text-uppercase text-center"
-        >
-          Customer Price List
-        </span>
-      </div>
-      <ItemsManager :default-group-id="customerDetails.pricing_group_id" />
-    </div>
-
-    <div class="page-2-container text-subtitle1">
+    <div class="page-1-container text-subtitle1">
       <div class="row justify-center">
         <span
           class="subheadline text-h6 text-weight-bolder text-uppercase text-center"
@@ -732,6 +747,7 @@ const addresses = ref([]);
 const contactPersons = ref([]);
 const selectedAddress = ref({});
 const searchQuery = ref("");
+const activeTab = ref("logistics");
 
 onMounted(async () => {
   await loadCustomerData();
@@ -1022,5 +1038,9 @@ const isActiveClass = computed(() =>
 
 .p-min {
   padding: 2rem !important;
+}
+
+.page-2-exception {
+  padding: 10px !important;
 }
 </style>

@@ -977,7 +977,7 @@ textarea {
 }
 
 .price-border {
-  border: 2px solid #1C768F;
+  border: 2px solid #1c768f;
 }
 
 .page-title-header {
@@ -1007,4 +1007,13 @@ textarea {
   background-color: #e6fbff;
   border-radius: 100px;
   margin-bottom: 1rem;
+}
+
+.customer-element-tabs {
+  background-color: #fff1e6;
+}
+
+
+.customer-element-panels {
+  background-color: #fff1e6;
 }

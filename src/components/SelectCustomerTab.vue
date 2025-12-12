@@ -52,7 +52,16 @@
         class="row customer-row"
         @click="selectCustomer(customer)"
       >
-        <div class="col-4">{{ customer.name }}</div>
+        <div class="col-4">
+          <a
+            class="line-height-1"
+            @click.stop.prevent="openCustomerTab(customer.id)"
+            href="#"
+            role="button"
+          >
+            {{ customer.name }}
+          </a>
+        </div>
 
         <div class="col-4">
           <!-- Contact No 1 -->
@@ -180,50 +189,50 @@
           <q-btn icon="close" flat round dense v-close-popup />
         </q-card-section>
 
-<q-card-section>
+        <q-card-section>
           <q-tabs v-model="pendingsActiveTab" class="text-primary" dense>
-          <q-tab
-            v-for="t in tabLabels"
-            :key="t.code"
-            :name="t.code"
-            :label="t.label"
-            :class="['q-mx-xs', 'text-grey-9', `bg-${pendingColor(t.code)}`]"
-          />
-        </q-tabs>
-        <q-separator />
+            <q-tab
+              v-for="t in tabLabels"
+              :key="t.code"
+              :name="t.code"
+              :label="t.label"
+              :class="['q-mx-xs', 'text-grey-9', `bg-${pendingColor(t.code)}`]"
+            />
+          </q-tabs>
+          <q-separator />
 
-        <q-tab-panels v-model="pendingsActiveTab" animated>
-          <q-tab-panel v-for="t in tabLabels" :key="t.code" :name="t.code">
-            <q-table
-              flat
-              dense
-              :rows="selectedPerOrderRows.filter((r) => r.code === t.code)"
-              :columns="perOrderColumns"
-              row-key="rowKey"
-              hide-pagination
-              :rows-per-page-options="[0]"
-            >
-              <template #body-cell-code="props">
-                <q-td :props="props">
-                  <q-chip
-                    dense
-                    flat
-                    class="text-weight-bold"
-                    :color="pendingColor(props.row.code)"
-                  >
-                    {{ props.row.code }}
-                  </q-chip>
-                </q-td>
-              </template>
-              <template #no-data>
-                <div class="full-width text-center text-grey">
-                  No {{ t.baseLabel }} found.
-                </div>
-              </template>
-            </q-table>
-          </q-tab-panel>
-        </q-tab-panels>
-</q-card-section>
+          <q-tab-panels v-model="pendingsActiveTab" animated>
+            <q-tab-panel v-for="t in tabLabels" :key="t.code" :name="t.code">
+              <q-table
+                flat
+                dense
+                :rows="selectedPerOrderRows.filter((r) => r.code === t.code)"
+                :columns="perOrderColumns"
+                row-key="rowKey"
+                hide-pagination
+                :rows-per-page-options="[0]"
+              >
+                <template #body-cell-code="props">
+                  <q-td :props="props">
+                    <q-chip
+                      dense
+                      flat
+                      class="text-weight-bold"
+                      :color="pendingColor(props.row.code)"
+                    >
+                      {{ props.row.code }}
+                    </q-chip>
+                  </q-td>
+                </template>
+                <template #no-data>
+                  <div class="full-width text-center text-grey">
+                    No {{ t.baseLabel }} found.
+                  </div>
+                </template>
+              </q-table>
+            </q-tab-panel>
+          </q-tab-panels>
+        </q-card-section>
       </q-card>
     </q-dialog>
   </div>
@@ -243,8 +252,12 @@ const filteredCustomers = ref([]);
 const filterCustomers = (term) => {
   const q = (term || "").toLowerCase();
   filteredCustomers.value = (transactionStore.customers || []).filter((c) =>
-    [(c.name || ""), (c.contact_no1 || ""), (c.contact_no2 || ""), (c.email || "")]
-      .some((v) => v.toLowerCase().includes(q))
+    [
+      c.name || "",
+      c.contact_no1 || "",
+      c.contact_no2 || "",
+      c.email || "",
+    ].some((v) => v.toLowerCase().includes(q))
   );
 };
 watch(searchTerm, (v) => filterCustomers(v));
@@ -288,12 +301,28 @@ const handleCustomerAdded = async () => {
 // tel/wa/email helpers
 const sanitizeForTel = (raw) => String(raw || "").replace(/[^\d+]/g, "");
 const sanitizeForWhatsApp = (raw) => String(raw || "").replace(/\D/g, "");
-const callViaPhone = (rawNumber) => { const tel = sanitizeForTel(rawNumber); if (tel) openURL(`tel:${tel}`); };
-const callViaWhatsApp = (rawNumber) => { const wa = sanitizeForWhatsApp(rawNumber); if (wa) openURL(`https://wa.me/${wa}`); };
+const callViaPhone = (rawNumber) => {
+  const tel = sanitizeForTel(rawNumber);
+  if (tel) openURL(`tel:${tel}`);
+};
+const callViaWhatsApp = (rawNumber) => {
+  const wa = sanitizeForWhatsApp(rawNumber);
+  if (wa) openURL(`https://wa.me/${wa}`);
+};
 const sanitizeEmail = (raw) => String(raw || "").trim();
-const composeEmail = (rawEmail) => { const email = sanitizeEmail(rawEmail); if (email) openURL(`mailto:${email}`); };
-const copyEmail = async (rawEmail) => { const email = sanitizeEmail(rawEmail); if (!email) return; try { await copyToClipboard(email); } catch (e) { console.error("Copy failed", e); } };
-
+const composeEmail = (rawEmail) => {
+  const email = sanitizeEmail(rawEmail);
+  if (email) openURL(`mailto:${email}`);
+};
+const copyEmail = async (rawEmail) => {
+  const email = sanitizeEmail(rawEmail);
+  if (!email) return;
+  try {
+    await copyToClipboard(email);
+  } catch (e) {
+    console.error("Copy failed", e);
+  }
+};
 
 const showPendingsDialog = ref(false);
 const selectedPerOrderRows = ref([]);
@@ -415,7 +444,7 @@ const enrichCustomersWithPendings = async () => {
             const goods = prod?.goods_status?.toString().trim().toLowerCase();
             const payst = pay?.payment_status?.toString().trim().toLowerCase();
             const logisticsId = log?.id;
-            const orderNo = order?.order_no || "-"; 
+            const orderNo = order?.order_no || "-";
 
             const isCollectionState =
               logisticsStatus === "collection arranged" ||
@@ -471,7 +500,7 @@ const enrichCustomersWithPendings = async () => {
                     logisticsStatus,
                     orderNo
                   )
-                ); 
+                );
               }
             }
             if (
@@ -553,7 +582,10 @@ const enrichCustomersWithPendings = async () => {
   transactionStore.customers = updated;
   filterCustomers(searchTerm.value);
 };
-
+const openCustomerTab = (customerId) => {
+  if (!customerId) return;
+  window.open(`/customers/${customerId}`, "_blank");
+};
 const makeRow = (
   code,
   logistics_id,

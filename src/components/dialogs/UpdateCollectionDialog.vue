@@ -73,18 +73,19 @@
 
       <div class="col text-slip-row">
         Collection Time:<span class="dialog-asterisk">*</span>
-        <q-select
-          v-model="transactionStore.collectionTime"
-          :options="timeOptions"
-          option-label="label"
-          option-value="id"
-          emit-value
-          map-options
-          required
-          outlined
-          dense
-          class="q-mb-sm bg-white"
-        />
+<q-select
+  v-model="transactionStore.collectionTime"
+  :options="timeOptionsUi"
+  option-label="label"
+  option-value="value"
+  emit-value
+  map-options
+  label="Select Collection Time"
+  outlined
+  dense
+  clearable
+  class="q-mb-xs bg-white"
+/>
       </div>
     </div>
 
@@ -346,10 +347,28 @@ async function updateCollection() {
   try {
     await transactionStore.updateCollection(id, updateData);
     $q.notify({ type: "positive", message: "Collection updated successfully." });
+    
   } catch (error) {
     console.error("Update collection failed:", error);
     $q.notify({ type: "negative", message: "Failed to update collection. Please try again." });
   }
 }
+const timeOptionsUi = computed(() => {
+  // support both array and { time: [...] }
+  const raw = Array.isArray(transactionStore.timeOptions)
+    ? transactionStore.timeOptions
+    : Array.isArray(transactionStore.timeOptions?.time)
+      ? transactionStore.timeOptions.time
+      : [];
 
+  return raw.map((t) => {
+    if (typeof t === "string") {
+      return { label: t, value: t };
+    }
+    // object case: accept common keys and fallbacks
+    const label = t.label ?? t.value ?? t.time ?? "";
+    const value = t.value ?? t.time ?? t.label ?? "";
+    return { label, value };
+  });
+});
 </script>

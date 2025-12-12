@@ -126,17 +126,19 @@
               <div class="dialog-label">
                 Collection Time<span class="dialog-asterisk">*</span>
               </div>
-              <q-select
-                v-model="transactionStore.collectionTime"
-                :options="transactionStore.timeOptions"
-                option-label="label"
-                option-value="value"
-                label="Select Collection Time"
-                outlined
-                dense
-                clearable
-                class="q-mb-xs bg-white"
-              />
+             <q-select
+  v-model="transactionStore.collectionTime"
+  :options="timeOptionsUi"
+  option-label="label"
+  option-value="value"
+  emit-value
+  map-options
+  label="Select Collection Time"
+  outlined
+  dense
+  clearable
+  class="q-mb-xs bg-white"
+/>
             </div>
           </div>
 
@@ -299,17 +301,19 @@
             </div>
             <div class="col-6">
               <div class="dialog-label">Delivery Time</div>
-              <q-select
-                v-model="transactionStore.deliveryTime"
-                :options="transactionStore.timeOptions"
-                option-label="label"
-                option-value="value"
-                label="Select Delivery Time"
-                outlined
-                dense
-                clearable
-                class="q-mb-xs bg-white"
-              />
+             <q-select
+  v-model="transactionStore.deliveryTime"
+  :options="timeOptionsUi"
+  option-label="label"
+  option-value="value"
+  emit-value
+  map-options
+  label="Select Delivery Time"
+  outlined
+  dense
+  clearable
+  class="q-mb-xs bg-white"
+/>
             </div>
           </div>
 
@@ -646,5 +650,22 @@ function hardResetForm() {
 
   updateUrgency();
 }
+const timeOptionsUi = computed(() => {
+  // support both array and { time: [...] }
+  const raw = Array.isArray(transactionStore.timeOptions)
+    ? transactionStore.timeOptions
+    : Array.isArray(transactionStore.timeOptions?.time)
+      ? transactionStore.timeOptions.time
+      : [];
 
+  return raw.map((t) => {
+    if (typeof t === "string") {
+      return { label: t, value: t };
+    }
+    // object case: accept common keys and fallbacks
+    const label = t.label ?? t.value ?? t.time ?? "";
+    const value = t.value ?? t.time ?? t.label ?? "";
+    return { label, value };
+  });
+});
 </script>

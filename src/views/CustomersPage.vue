@@ -49,10 +49,17 @@
       </div>
     </div>
 
-    <q-tabs v-model="activeTab" dense class="bg-grey-2 text-dark q-mb-md" align="justify">
+    <q-tabs
+      v-model="activeTab"
+      dense
+      class="bg-grey-2 text-dark q-mb-md"
+      align="justify"
+    >
       <q-tab name="all" class="tab-bordered">All Customers</q-tab>
       <q-tab name="contract" class="tab-bordered">Contract Customers</q-tab>
-      <q-tab name="non-contract" class="tab-bordered">Non-Contract Customers</q-tab>
+      <q-tab name="non-contract" class="tab-bordered"
+        >Non-Contract Customers</q-tab
+      >
     </q-tabs>
 
     <q-tab-panels v-model="activeTab" animated>
@@ -65,9 +72,15 @@
         <div class="row-col-table">
           <div class="row row-col-header text-center items-center">
             <div class="col header-bordered flex flex-center">Name</div>
-            <div class="col header-bordered flex flex-center">Contact Details</div>
-            <div class="col header-bordered flex flex-center">Orders Summary</div>
-            <div class="col header-bordered flex flex-center">Payments Summary</div>
+            <div class="col header-bordered flex flex-center">
+              Contact Details
+            </div>
+            <div class="col header-bordered flex flex-center">
+              Orders Summary
+            </div>
+            <div class="col header-bordered flex flex-center">
+              Payments Summary
+            </div>
             <div class="col-2 header-bordered flex flex-center">Actions</div>
           </div>
 
@@ -115,14 +128,29 @@
                     >
                       {{ customer.contact_no1 }}
                       <q-tooltip>Click for options</q-tooltip>
-                      <q-popup-proxy transition-show="scale" transition-hide="scale">
+                      <q-popup-proxy
+                        transition-show="scale"
+                        transition-hide="scale"
+                      >
                         <q-list style="min-width: 220px">
-                          <q-item clickable v-ripple @click="callViaPhone(customer.contact_no1)">
-                            <q-item-section avatar><q-icon name="call" /></q-item-section>
+                          <q-item
+                            clickable
+                            v-ripple
+                            @click="callViaPhone(customer.contact_no1)"
+                          >
+                            <q-item-section avatar
+                              ><q-icon name="call"
+                            /></q-item-section>
                             <q-item-section>Call via phone</q-item-section>
                           </q-item>
-                          <q-item clickable v-ripple @click="callViaWhatsApp(customer.contact_no1)">
-                            <q-item-section avatar><q-icon name="chat" /></q-item-section>
+                          <q-item
+                            clickable
+                            v-ripple
+                            @click="callViaWhatsApp(customer.contact_no1)"
+                          >
+                            <q-item-section avatar
+                              ><q-icon name="chat"
+                            /></q-item-section>
                             <q-item-section>Call via WhatsApp</q-item-section>
                           </q-item>
                         </q-list>
@@ -140,14 +168,29 @@
                     >
                       {{ customer.contact_no2 }}
                       <q-tooltip>Click for options</q-tooltip>
-                      <q-popup-proxy transition-show="scale" transition-hide="scale">
+                      <q-popup-proxy
+                        transition-show="scale"
+                        transition-hide="scale"
+                      >
                         <q-list style="min-width: 220px">
-                          <q-item clickable v-ripple @click="callViaPhone(customer.contact_no2)">
-                            <q-item-section avatar><q-icon name="call" /></q-item-section>
+                          <q-item
+                            clickable
+                            v-ripple
+                            @click="callViaPhone(customer.contact_no2)"
+                          >
+                            <q-item-section avatar
+                              ><q-icon name="call"
+                            /></q-item-section>
                             <q-item-section>Call via phone</q-item-section>
                           </q-item>
-                          <q-item clickable v-ripple @click="callViaWhatsApp(customer.contact_no2)">
-                            <q-item-section avatar><q-icon name="chat" /></q-item-section>
+                          <q-item
+                            clickable
+                            v-ripple
+                            @click="callViaWhatsApp(customer.contact_no2)"
+                          >
+                            <q-item-section avatar
+                              ><q-icon name="chat"
+                            /></q-item-section>
                             <q-item-section>Call via WhatsApp</q-item-section>
                           </q-item>
                         </q-list>
@@ -168,14 +211,29 @@
                   >
                     {{ customer.email }}
                     <q-tooltip>Click for options</q-tooltip>
-                    <q-popup-proxy transition-show="scale" transition-hide="scale">
+                    <q-popup-proxy
+                      transition-show="scale"
+                      transition-hide="scale"
+                    >
                       <q-list style="min-width: 220px">
-                        <q-item clickable v-ripple @click="composeEmail(customer.email)">
-                          <q-item-section avatar><q-icon name="email" /></q-item-section>
+                        <q-item
+                          clickable
+                          v-ripple
+                          @click="composeEmail(customer.email)"
+                        >
+                          <q-item-section avatar
+                            ><q-icon name="email"
+                          /></q-item-section>
                           <q-item-section>Compose email</q-item-section>
                         </q-item>
-                        <q-item clickable v-ripple @click="copyEmail(customer.email)">
-                          <q-item-section avatar><q-icon name="content_copy" /></q-item-section>
+                        <q-item
+                          clickable
+                          v-ripple
+                          @click="copyEmail(customer.email)"
+                        >
+                          <q-item-section avatar
+                            ><q-icon name="content_copy"
+                          /></q-item-section>
                           <q-item-section>Copy email</q-item-section>
                         </q-item>
                       </q-list>
@@ -187,25 +245,29 @@
               <div class="col bordered">
                 <div>
                   Total Orders:
-                  <span class="text-weight-bold">{{ customer.orders_count }}</span>
+                  <span class="text-weight-bold">{{
+                    customer.orders_count
+                  }}</span>
                 </div>
                 <div>
                   Active Orders:
-                  <span class="text-weight-bold">{{ customer.active_orders_count }}</span>
+                  <span class="text-weight-bold">{{
+                    customer.active_orders_count
+                  }}</span>
                 </div>
                 <div>
                   Last Order:
                   <span
-                    v-if="customer.last_order_id"
+                    v-if="customer.last_order_no"
                     class="text-weight-bold"
                     style="text-decoration: underline"
                   >
                     <a
                       href="#"
                       class="text-primary cursor-pointer"
-                      @click.prevent="openOrderTab(customer.last_order_id)"
+                      @click.prevent="openOrderTab(customer.last_order_no)"
                     >
-                      {{ new Date(customer.last_order_date).toLocaleDateString() }}
+                      {{ formatDate(customer.last_order_date) }}
                     </a>
                     <q-tooltip>Open last order in new tab</q-tooltip>
                   </span>
@@ -216,14 +278,14 @@
               <div class="col bordered">
                 <div>
                   Outstanding Balance:
-                  <span class="text-weight-bold text-red-8 text-subtitle1">
-                    {{ getOutstandingBalance(customer) }}
+                  <span class="text-weight-bold text-red-8">
+                     {{ formatMoney(getOutstandingBalance(customer)) }}
                   </span>
                 </div>
                 <div>
                   Current Credits:
-                  <span class="text-weight-bold text-green-9 text-subtitle1">
-                    {{ getTotalCredits(customer) }}
+                  <span class="text-weight-bold text-green-9">
+                 {{ formatMoney(getTotalCredits(customer)) }}
                   </span>
                 </div>
               </div>
@@ -239,7 +301,7 @@
                 >
                   <q-tooltip>Create collection for this customer</q-tooltip>
                 </q-btn>
-                <q-btn
+                <!-- <q-btn
                   unelevated
                   dense
                   label="Create Transaction"
@@ -248,7 +310,7 @@
                   @click="navigateToPOS(customer)"
                 >
                   <q-tooltip>Open POS with this customer</q-tooltip>
-                </q-btn>
+                </q-btn> -->
               </div>
             </div>
           </template>
@@ -372,8 +434,13 @@ const filteredCustomers = computed(() => {
   const afterSearch = !query
     ? base
     : base.filter((customer) =>
-        [customer.name, customer.contact_no1, customer.contact_no2, customer.email, customer.type]
-          .some((field) => field?.toLowerCase().includes(query))
+        [
+          customer.name,
+          customer.contact_no1,
+          customer.contact_no2,
+          customer.email,
+          customer.type,
+        ].some((field) => field?.toLowerCase().includes(query))
       );
 
   return [...afterSearch].sort(compareByLastOrder);
@@ -401,8 +468,8 @@ const openCustomerTab = (customerId) => {
   window.open(`/customers/${customerId}`, "_blank");
 };
 
-const openOrderTab = (orderId) => {
-  window.open(`/orders/${orderId}`, "_blank");
+const openOrderTab = (orderNo) => {
+  window.open(`/orders/${orderNo}`, "_blank");
 };
 
 const handleCustomerAdded = async () => {
@@ -465,7 +532,8 @@ const sanitizeForTel = (raw) => String(raw || "").replace(/[^\d+]/g, "");
 const sanitizeForWhatsApp = (raw) => String(raw || "").replace(/\D/g, "");
 const ensureWhatsAppWithCc = (digits) => {
   if (!digits) return "";
-  if (digits.startsWith("0")) return `${DEFAULT_WHATSAPP_CC.replace("+", "")}${digits.slice(1)}`;
+  if (digits.startsWith("0"))
+    return `${DEFAULT_WHATSAPP_CC.replace("+", "")}${digits.slice(1)}`;
   return digits;
 };
 const sanitizeEmail = (raw) => String(raw || "").trim();
@@ -477,7 +545,9 @@ const callViaPhone = (raw) => {
 
 const callViaWhatsApp = (raw) => {
   const onlyDigits = sanitizeForWhatsApp(raw);
-  const withCc = onlyDigits.startsWith("0") ? ensureWhatsAppWithCc(onlyDigits) : onlyDigits;
+  const withCc = onlyDigits.startsWith("0")
+    ? ensureWhatsAppWithCc(onlyDigits)
+    : onlyDigits;
   if (withCc) openURL(`https://wa.me/${withCc}`);
 };
 
@@ -496,4 +566,26 @@ const copyEmail = async (raw) => {
     $q.notify({ type: "negative", message: "Copy failed" });
   }
 };
+
+function formatDate(input) {
+  if (!input) return "N/A";
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return "N/A";
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+}
+
+function formatMoney(value) {
+  const n = Number(value ?? 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
 </script>

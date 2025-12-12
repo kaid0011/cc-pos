@@ -3,13 +3,26 @@
     Customer Details
   </div>
   <div class="full-container contact-persons-management">
-    <q-btn
-      dense
-      flat
-      label="Create Collection"
-      class="bg-primary text-white full-width q-px-sm"
-      @click="openCollectionDialog(customerDetails)"
-    />
+    <div class="row">
+      <div class="col q-pa-sm">
+        <q-btn
+          dense
+          flat
+          label="Create Collection"
+          class="bg-primary text-white full-width"
+          @click="openCollectionDialog(customerDetails)"
+        />
+      </div>
+      <div class="col q-pa-sm">
+        <q-btn
+          dense
+          flat
+          label="Generate SOA"
+          class="bg-secondary text-white full-width"
+          @click="openSoaDialog"
+        />
+      </div>
+    </div>
     <div class="page-1-container p-exception text-subtitle1">
       <div class="row">
         <div class="col bordered p-min">
@@ -54,11 +67,26 @@
             </div>
 
             <div>
-              <strong>Customer Type:</strong> {{ customerDetails.type }}
+              <strong>Customer Type: </strong>
+              <span>
+                {{ customerDetails.type }}
+                <span
+                  v-if="
+                    customerDetails.sub_type &&
+                    customerDetails.sub_type.trim().length
+                  "
+                >
+                  - {{ customerDetails.sub_type }}
+                </span>
+              </span>
             </div>
             <div>
-              <strong>Customer Sub Type:</strong>
-              {{ customerDetails.sub_type }}
+              <strong>Billing Address: </strong>
+              {{ customerDetails.billing_address || "-" }}
+            </div>
+            <div>
+              <strong>PO No.: </strong>
+              {{ customerDetails.po_no || "-" }}
             </div>
             <div>
               <strong>Recommended By:</strong>
@@ -127,7 +155,7 @@
               <q-separator />
               <div>
                 Total Credits:
-                <span class="text-weight-bolder mark-yellow"
+                <span class="text-weight-bolder mark-green"
                   >${{ parseFloat(creditsTotal).toFixed(2) }}</span
                 >
               </div>
@@ -143,20 +171,32 @@
               Order Payments
             </span>
           </div>
-          <a class="text-subtitle1"> (View Order Payments)</a>
-          <div>
+          <!-- <a class="text-subtitle1"> (View Order Payments)</a> -->
+          <div class="line-height-1 q-mb-md">
             <div>
               Unpaid Amount:
-              <span class="text-weight-bolder mark-yellow"></span>
+              <span class="text-weight-bold text-red-8">{{
+                formatCurrency(unpaidAmount)
+              }}</span>
             </div>
             <div>
               Paid Amount:
-              <span class="text-weight-bolder mark-yellow"></span>
+              <span class="text-weight-bold text-green-9">{{
+                formatCurrency(paidAmount)
+              }}</span>
             </div>
             <div>
               Total Amount:
-              <span class="text-weight-bolder mark-yellow"></span>
+              <span class="text-weight-bold mark-yellow">{{
+                formatCurrency(totalAmount)
+              }}</span>
             </div>
+          </div>
+          <div class="q-mt-md flex flex-center">
+            <canvas
+              ref="paymentsPieRef"
+              style="max-width: 250px; max-height: 250px"
+            ></canvas>
           </div>
         </div>
       </div>
@@ -172,7 +212,24 @@
             label="Show Addresses"
             class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
             @click="toggleAddresses"
-          />
+            ><q-icon
+              name="help_outline"
+              size="14px"
+              class="q-ml-sm"
+              tabindex="0"
+              role="button"
+              aria-label="Show/hide addresses help"
+            >
+              <q-tooltip
+                anchor="bottom right"
+                self="top right"
+                max-width="260px"
+              >
+                Click to {{ showAddresses ? "collapse" : "expand" }} the
+                customer’s address list below.
+              </q-tooltip>
+            </q-icon></q-btn
+          >
           <div v-if="showAddresses" class="q-pa-md addresses-container">
             <div class="row items-center justify-end">
               <q-btn
@@ -197,9 +254,6 @@
                 <div class="col col-3 header-bordered flex flex-center">
                   Remarks
                 </div>
-                <div class="col col-3 header-bordered flex flex-center">
-                  Actions
-                </div>
               </div>
 
               <!-- Rows -->
@@ -222,27 +276,19 @@
                     >
                       , ({{ address.additional_info }})
                     </span>
+                    <div>
+                      <q-btn
+                        dense
+                        outline
+                        label="Update"
+                        color="primary"
+                        class="main-button q-px-sm line-height-1"
+                        @click="openUpdateDialog(address, 'address')"
+                      />
+                    </div>
                   </div>
                   <div class="col col-3 bordered">
                     {{ address.remarks || "-" }}
-                  </div>
-                  <div class="col col-3 bordered actions">
-                    <q-btn
-                      dense
-                      unelevated
-                      label="Update"
-                      color="primary"
-                      class="main-button q-ma-xs q-px-sm"
-                      @click="openUpdateDialog(address, 'address')"
-                    />
-                    <!-- <q-btn
-                      dense
-                      unelevated
-                      label="Delete"
-                      color="negative"
-                      class="negative-button q-ma-xs q-px-sm"
-                      @click="openDeleteDialog(address, 'address')"
-                    /> -->
                   </div>
                 </div>
               </template>
@@ -265,7 +311,26 @@
             label="Show Contact Persons"
             class="full-width text-primary show-list-tab text-weight-bolder text-subtitle1"
             @click="toggleContactPersons"
-          />
+          >
+            <q-icon
+              name="help_outline"
+              size="14px"
+              class="q-ml-sm"
+              tabindex="0"
+              role="button"
+              aria-label="Show/hide contact persons help"
+            >
+              <q-tooltip
+                anchor="bottom right"
+                self="top right"
+                max-width="260px"
+              >
+                Click to {{ showContactPersons ? "collapse" : "expand" }} the
+                contact persons list below. You can search by name, phone, or
+                email.
+              </q-tooltip>
+            </q-icon></q-btn
+          >
           <div
             v-if="showContactPersons"
             class="q-pa-md contact-persons-container"
@@ -330,17 +395,9 @@
                         outline
                         label="Update"
                         color="primary"
-                        class="main-button q-mt-xs q-px-md"
+                        class="main-button q-px-sm line-height-1"
                         @click="openUpdateDialog(person, 'contact')"
                       />
-                      <!-- <q-btn
-                      dense
-                      unelevated
-                      label="Delete"
-                      color="negative"
-                      class="negative-button q-ma-xs q-px-sm"
-                      @click="openDeleteDialog(person, 'contact')"
-                    /> -->
                     </div>
                   </div>
                   <div class="col bordered">
@@ -366,7 +423,7 @@
       </div>
     </div>
 
-    <div class="page-1-container text-subtitle1">
+    <div class="page-1-container text-subtitle1 q-py-lg">
       <div class="row justify-center">
         <span
           class="subheadline text-h6 text-weight-bolder text-uppercase text-center"
@@ -382,7 +439,15 @@
             Schedule Remarks:
           </div>
           <div class="q-pa-sm" style="white-space: pre-line">
-            {{ customerDetails.schedule_remarks }}
+            <span
+              v-if="
+                customerDetails.schedule_remarks &&
+                customerDetails.schedule_remarks.trim()
+              "
+            >
+              {{ customerDetails.schedule_remarks }}
+            </span>
+            <span v-else class="text-grey-6 flex flex-center">No remarks.</span>
           </div>
         </div>
         <div class="col all-border">
@@ -392,7 +457,15 @@
             Price Remarks:
           </div>
           <div class="q-pa-sm" style="white-space: pre-line">
-            {{ customerDetails.price_remarks }}
+            <span
+              v-if="
+                customerDetails.price_remarks &&
+                customerDetails.price_remarks.trim()
+              "
+            >
+              {{ customerDetails.price_remarks }}
+            </span>
+            <span v-else class="text-grey-6 flex flex-center">No remarks.</span>
           </div>
         </div>
         <div class="col all-border">
@@ -402,7 +475,15 @@
             Accounting Remarks:
           </div>
           <div class="q-pa-sm" style="white-space: pre-line">
-            {{ customerDetails.accounting_remarks }}
+            <span
+              v-if="
+                customerDetails.accounting_remarks &&
+                customerDetails.accounting_remarks.trim()
+              "
+            >
+              {{ customerDetails.accounting_remarks }}
+            </span>
+            <span v-else class="text-grey-6 flex flex-center">No remarks.</span>
           </div>
         </div>
         <div class="col all-border">
@@ -412,7 +493,15 @@
             Other Remarks:
           </div>
           <div class="q-pa-sm" style="white-space: pre-line">
-            {{ customerDetails.other_remarks }}
+            <span
+              v-if="
+                customerDetails.other_remarks &&
+                customerDetails.other_remarks.trim()
+              "
+            >
+              {{ customerDetails.other_remarks }}
+            </span>
+            <span v-else class="text-grey-6 flex flex-center">No remarks.</span>
           </div>
         </div>
       </div>
@@ -433,6 +522,9 @@
             label="Logistics History"
             icon="local_shipping"
           />
+          <q-tab name="invoices" label="Invoice History" icon=" receipt" />
+          <q-tab name="soa" label="SOA History" icon="receipt" />
+          <q-tab name="complaints" label="Complaints History" icon="report_problem" />
           <q-tab
             name="pricelist"
             label="Customer Price List"
@@ -440,11 +532,24 @@
           />
         </q-tabs>
         <q-separator />
-        <q-tab-panels v-model="activeTab" class="customer-element-panels" animated keep-alive>
+        <q-tab-panels
+          v-model="activeTab"
+          class="customer-element-panels"
+          animated
+          keep-alive
+        >
           <q-tab-panel name="logistics">
             <LogisticsTableByCustomer :customer-id="customerDetails.id" />
           </q-tab-panel>
-
+          <q-tab-panel name="invoices">
+            <InvoiceTableByCustomer :customer-id="customerDetails.id" />
+          </q-tab-panel>
+          <q-tab-panel name="soa">
+            <SoaTableByCustomer :customer-id="customerDetails.id" />
+          </q-tab-panel>
+ <q-tab-panel name="complaints">
+          <ComplaintsByCustomer :customer-id="customerDetails.id" />
+        </q-tab-panel>
           <q-tab-panel name="pricelist">
             <ItemsManager
               :default-group-id="customerDetails.pricing_group_id"
@@ -699,6 +804,12 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <GenerateSoaComponent
+      v-model="showSoaDialog"
+      :customer-id="customerDetails.id"
+      :rows="rows"
+    />
   </div>
 </template>
 
@@ -717,7 +828,25 @@ import UpdateCustomerDialog from "@/components/dialogs/UpdateCustomerDialog.vue"
 import CreateCollectionTab from "@/components/CreateCollectionTab.vue";
 
 import LogisticsTableByCustomer from "@/components/LogisticsTableByCustomer.vue";
+import InvoiceTableByCustomer from "@/components/InvoiceTableByCustomer.vue";
+import SoaTableByCustomer from "@/components/SoaTableByCustomer.vue";
+import ComplaintsByCustomer from "@/components/ComplaintsByCustomer.vue";
 import ItemsManager from "@/components/ItemsManager.vue";
+import GenerateSoaComponent from "@/components/GenerateSoaComponent.vue";
+import Chart from "chart.js/auto";
+import { onBeforeUnmount } from "vue";
+import ChartDataLabels from "chartjs-plugin-datalabels";
+Chart.register(ChartDataLabels);
+
+onBeforeUnmount(() => {
+  if (paymentsChart) {
+    paymentsChart.destroy();
+    paymentsChart = null;
+  }
+});
+
+const paymentsPieRef = ref(null);
+let paymentsChart = null;
 
 const transactionStore = useTransactionStore();
 const $q = useQuasar();
@@ -749,6 +878,11 @@ const selectedAddress = ref({});
 const searchQuery = ref("");
 const activeTab = ref("logistics");
 
+const ordersByCustomer = ref([]);
+const paidAmount = ref(0);
+const totalAmount = ref(0);
+const unpaidAmount = ref(0);
+
 onMounted(async () => {
   await loadCustomerData();
   await transactionStore.setSelectedCustomer(customerDetails.value);
@@ -764,6 +898,22 @@ const formatDate = (timestamp) => {
     day: "2-digit",
   });
 };
+const formatMoneyCompact = (n) => {
+  const num = Number(n) || 0;
+  if (Math.abs(num) >= 100000) {
+    return `$${new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(num)}`;
+  }
+  return `$${num.toFixed(2)}`;
+};
+const toNumber = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+const formatCurrency = (v) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+    toNumber(v)
+  );
 
 const loadCustomerData = async () => {
   const customerId = route.params.id;
@@ -777,15 +927,68 @@ const loadCustomerData = async () => {
     customerId
   );
   contactPersons.value = await transactionStore.fetchContactPersons(customerId);
+  ordersByCustomer.value = await transactionStore.fetchOrdersByCustomerId(
+    customerId
+  );
+  computePaymentsSummary();
+  renderPaymentsChart();
 };
+function computePaymentsSummary() {
+  let total = 0;
+  let paid = 0;
 
+  for (const row of ordersByCustomer.value || []) {
+    const orderId =
+      row?.orders?.id ?? row?.orders?.order_id ?? row?.order_id ?? "unknown";
+    const opRaw = row?.orders?.order_payments;
+
+    let t = 0;
+    let p = 0;
+
+    if (Array.isArray(opRaw)) {
+      // Supabase many-to-one returns array
+      t = opRaw.reduce((mx, it) => Math.max(mx, toNumber(it?.total_amount)), 0);
+      p = opRaw.reduce((s, it) => s + toNumber(it?.paid_amount), 0);
+    } else {
+      t = toNumber(opRaw?.total_amount);
+      p = toNumber(opRaw?.paid_amount);
+    }
+
+    // clamp overpayment per order
+    const pClamped = Math.min(p, t);
+    total += t;
+    paid += pClamped;
+  }
+
+  totalAmount.value = round2(total);
+  paidAmount.value = round2(paid);
+  unpaidAmount.value = round2(Math.max(total - paid, 0));
+}
+
+watch(
+  ordersByCustomer,
+  () => {
+    computePaymentsSummary();
+    renderPaymentsChart();
+  },
+  { deep: true }
+);
+watch([paidAmount, totalAmount], () => {
+  renderPaymentsChart();
+});
 // Computed filter for contacts
 const filteredContactPersons = computed(() => {
-  return searchQuery.value
-    ? contactPersons.value.filter((person) =>
-        person.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    : contactPersons.value;
+  const q = (searchQuery.value || "").toString().trim().toLowerCase();
+  if (!q) return contactPersons.value;
+
+  const norm = (v) => (v == null ? "" : String(v)).toLowerCase();
+
+  return (contactPersons.value || []).filter((p) => {
+    const fields = [p?.name, p?.contact_no1, p?.contact_no2, p?.email].map(
+      norm
+    );
+    return fields.some((f) => f.includes(q));
+  });
 });
 
 const openDeleteDialog = (item, type) => {
@@ -899,7 +1102,6 @@ const handleUpdated = async () => {
   try {
     await loadCustomerData(); // Refresh both addresses and contacts
 
-    // Close both dialogs
     showUpdateAddressDialog.value = false;
     showUpdateContactPersonDialog.value = false;
 
@@ -1029,6 +1231,94 @@ const isActiveLabel = computed(() => (isActive.value ? "active" : "inactive"));
 const isActiveClass = computed(() =>
   isActive.value ? "text-green-9" : "text-red-8"
 );
+
+const showSoaDialog = ref(false);
+
+function openSoaDialog() {
+  if (!customerDetails.value?.id) {
+    $q.notify({ type: "negative", message: "Customer not found." });
+    return;
+  }
+  showSoaDialog.value = true;
+}
+function getPaymentsDataset() {
+  // guard against NaN
+  const paid = Number(paidAmount.value) || 0;
+  const total = Number(totalAmount.value) || 0;
+  const unpaid = Math.max(total - paid, 0);
+
+  return {
+    labels: ["Unpaid", "Paid"],
+    data: [unpaid, paid],
+    // optionalconsistent colors
+    colors: ["#E55E40", "#84B04F"],
+  };
+}
+
+function renderPaymentsChart() {
+  const ctx = paymentsPieRef.value;
+  if (!ctx) return;
+
+  const ds = getPaymentsDataset();
+
+  // (re)create chart
+  if (paymentsChart) {
+    paymentsChart.destroy();
+  }
+
+  const centerTextPlugin = {
+    id: "centerText",
+    afterDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
+      const ds = chart.data.datasets?.[0]?.data || [];
+      const total = ds.reduce((a, b) => a + (Number(b) || 0), 0);
+
+      const label = "TOTAL";
+      const value = `$${(Number(total) || 0).toFixed(2)}`;
+
+      const x = (chartArea.left + chartArea.right) / 2;
+      const y = (chartArea.top + chartArea.bottom) / 2;
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "600 12px Inter, system-ui, -apple-system, Segoe UI, Roboto";
+      ctx.fillText(label, x, y - 10);
+      ctx.font = "700 14px Inter, system-ui, -apple-system, Segoe UI, Roboto";
+      ctx.fillText(value, x, y + 12);
+      ctx.restore();
+    },
+  };
+
+  paymentsChart = new Chart(ctx, {
+    type: "doughnut", // <- was "pie"
+    data: {
+      labels: ds.labels,
+      datasets: [{ data: ds.data, backgroundColor: ds.colors, borderWidth: 1 }],
+    },
+    options: {
+      responsive: true,
+      cutout: "40%", // <- donut hole
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: { enabled: false },
+        datalabels: {
+          color: "#FFFFFF", // <- white labels on slices
+          formatter: (value) => formatMoneyCompact(value),
+          font: { weight: "bold" },
+          anchor: "center",
+          align: "center",
+          offset: 0,
+          clamp: true,
+          display: (ctx) =>
+            Number(ctx?.dataset?.data?.[ctx.dataIndex] ?? 0) > 0,
+        },
+      },
+    },
+    plugins: [centerTextPlugin],
+  });
+}
 </script>
 
 <style scoped>

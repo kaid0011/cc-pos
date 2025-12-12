@@ -17,7 +17,11 @@
     "@ionic/pwa-elements": "^3.3.0",
     "@quasar/extras": "^1.16.11",
     "@supabase/supabase-js": "^2.43.5",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "axios": "^1.7.9",
+    "chart.js": "^4.5.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "expo-doctor": "^1.6.1",
@@ -28,6 +32,7 @@
     "jspdf": "^3.0.0",
     "jspdf-autotable": "^5.0.2",
     "lodash.debounce": "^4.0.8",
+    "page-flip": "^2.0.7",
     "pinia": "^2.3.0",
     "qrcode.vue": "^3.6.0",
     "quasar": "^2.16.4",
@@ -40,7 +45,7 @@
     "@quasar/vite-plugin": "^1.7.0",
     "@vitejs/plugin-vue": "^5.0.4",
     "sass": "^1.77.6",
-    "vite": "^5.4.14",
+    "vite": "^7.2.7",
     "vite-plugin-pwa": "^0.20.0"
   }
 }

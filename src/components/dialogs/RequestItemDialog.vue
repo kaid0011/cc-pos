@@ -46,22 +46,22 @@
               />
             </div>
 
-<!-- Sub Category -->
-<div class="col">
-  <div class="dialog-label">
-    Sub-Category:<span class="dialog-asterisk">*</span>
-  </div>
-  <q-select
-    v-model="newItem.sub_category"
-    :options="subCategoryOptions"
-    outlined
-    dense
-    emit-value
-    map-options
-    class="q-mb-md"
-    :disable="!newItem.category"
-  />
-</div>
+            <!-- Sub Category -->
+            <div class="col">
+              <div class="dialog-label">
+                Sub-Category:<span class="dialog-asterisk">*</span>
+              </div>
+              <q-select
+                v-model="newItem.sub_category"
+                :options="subCategoryOptions"
+                outlined
+                dense
+                emit-value
+                map-options
+                class="q-mb-md"
+                :disable="!newItem.category"
+              />
+            </div>
 
             <!-- Tag Category -->
             <div class="col">
@@ -142,6 +142,21 @@
                 :rules="[(val) => val > 0 || 'Must be a positive number']"
               />
             </div>
+
+            <div class="col">
+              <div class="dialog-label">
+                Company:<span class="dialog-asterisk">*</span>
+              </div>
+              <q-select
+                v-model="newItem.company"
+                :options="companyOptions"
+                outlined
+                dense
+                emit-value
+                map-options
+                class="q-mb-md"
+              />
+            </div>
           </div>
 
           <q-separator class="q-mb-md" />
@@ -189,33 +204,32 @@
                 />
               </div>
 
-<div class="col-3">
-  <q-select
-    v-model="rate.applicable_days"
-    :options="dayOptions"
-    multiple
-    use-chips
-    emit-value
-    map-options
-    outlined
-    dense
-    label="Applicable Days"
-  >
-    <!-- same chip renderer as UpdateItemDialog -->
-    <template v-slot:selected-item="scope">
-      <q-chip
-        dense
-        removable
-        :color="scope.opt.color || 'primary'"
-        text-color="white"
-        @remove="scope.removeAtIndex(scope.index)"
-      >
-        {{ capitalizeWords(scope.opt.value) }}
-      </q-chip>
-    </template>
-  </q-select>
-</div>
-
+              <div class="col-3">
+                <q-select
+                  v-model="rate.applicable_days"
+                  :options="dayOptions"
+                  multiple
+                  use-chips
+                  emit-value
+                  map-options
+                  outlined
+                  dense
+                  label="Applicable Days"
+                >
+                  <!-- same chip renderer as UpdateItemDialog -->
+                  <template v-slot:selected-item="scope">
+                    <q-chip
+                      dense
+                      removable
+                      :color="scope.opt.color || 'primary'"
+                      text-color="white"
+                      @remove="scope.removeAtIndex(scope.index)"
+                    >
+                      {{ capitalizeWords(scope.opt.value) }}
+                    </q-chip>
+                  </template>
+                </q-select>
+              </div>
 
               <div class="col-1 text-right">
                 <q-btn
@@ -284,6 +298,7 @@ const newItem = ref({
   turnaround_time: null,
   unit: null,
   pieces: 1,
+  company: "cc",
   servicePrices: [],
 });
 
@@ -307,6 +322,11 @@ const packTypeOptions = [
   { label: "Hang", value: "hang" },
   { label: "Fold", value: "fold" },
   { label: "Roll", value: "roll" },
+];
+
+const companyOptions = [
+  { label: "Cotton Care", value: "cc" },
+  { label: "Dry Cleaners", value: "dc" },
 ];
 
 const unitOptions = [
@@ -393,6 +413,7 @@ function resetForm() {
     turnaround_time: null,
     unit: null,
     pieces: 1,
+    company: "cc",
     servicePrices: [],
   };
 }
@@ -414,6 +435,7 @@ async function handleRequest() {
           turnaround_time: newItem.value.turnaround_time,
           unit: newItem.value.unit,
           pieces: newItem.value.pieces,
+          company: newItem.value.company,
           requested_by: userId,
         },
       ])
@@ -458,7 +480,7 @@ function capitalizeWords(str) {
 watch(
   () => newItem.value.category,
   (val) => {
-    newItem.value.sub_category = null; // reset selection
+    newItem.value.sub_category = null;// reset selection
     loadSubCategoryOptions(val);
   }
 );

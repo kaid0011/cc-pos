@@ -432,7 +432,7 @@ import QrcodeVue from "qrcode.vue";
 import html2pdf from "html2pdf.js"; // Import html2pdf for PDF generation
 import payQr from "@/assets/images/pay_qr.png";
 import ccLogo from "@/assets/images/cc_logo.png";
-import ccdcLogo from "@/assets/images/cc_dc_logo.png";
+import ccdcLogo from "@/assets/images/dc_logo.png";
 
 const transactionStore = useTransactionStore();
 const route = useRoute();

@@ -149,7 +149,7 @@ body {
 /* end of search container */
 
 .item-container {
-  padding: 0 1em 1em 1em !important;
+  padding: 1em 1em 1em 1em !important;
   background-color: #e6bba0 !important;
   overflow-y: auto; /* Enable vertical scrolling */
   height: 100%;
@@ -214,6 +214,7 @@ body {
 /* size */
 .size-input {
   width: 4em;
+  margin: 3px 5px 3px 10px;
 }
 
 /* transaction table */
@@ -345,7 +346,7 @@ mark-blue {
 .mark-green {
   background-color: #34f086;
   color: black;
-  font-weight: 800;
+  font-weight: 600;
   padding-right: 5px;
   padding-left: 5px;
 }
@@ -353,7 +354,7 @@ mark-blue {
 .mark-red {
   background-color: #ff8b8b;
   color: black;
-  font-weight: 800;
+  font-weight: 600;
   padding-right: 5px;
   padding-left: 5px;
 }
@@ -583,16 +584,13 @@ textarea {
   background-color: #ffe0cd;
   height: 100%; /* Full height */
   min-height: calc(100vh - 7.5em) !important;
-  padding: 0 !important;
 }
 
 .preview-left-container {
-  padding: 1em !important;
   background-color: #ffe0cd;
 }
 
 .preview-right-container {
-  padding: 0 !important;
   background-color: #edd0bd;
 }
 
@@ -854,7 +852,7 @@ textarea {
 .dialog-label {
   margin-left: 5px;
   margin-bottom: 2px;
-  font-weight: 600;
+  font-weight: 800;
   text-transform: uppercase;
   font-size: 0.9em;
 }
@@ -993,12 +991,12 @@ textarea {
 }
 
 .page-1-container {
-  padding: 2rem !important;
+  /* padding: 2rem !important; */
   background-color: #ffe0cd;
 }
 
 .page-2-container {
-  padding: 2rem !important;
+  /* padding: 2rem !important; */
   background-color: #f3cfb8;
 }
 
@@ -1016,4 +1014,16 @@ textarea {
 
 .customer-element-panels {
   background-color: #fff1e6;
+}
+
+/* Chrome, Edge, Safari */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
 }

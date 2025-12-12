@@ -366,7 +366,7 @@
                 <div>
                   <span class="text-caption text-uppercase text-weight-bold">
                     Driver: </span
-                  >{{ logistics.collections?.[0]?.driver_name || "N/A" }}
+                  >{{ collectionDriverName(logistics) || "N/A" }}
                 </div>
               </div>
             </div>
@@ -398,7 +398,7 @@
                 <div>
                   <span class="text-caption text-uppercase text-weight-bold">
                     Driver: </span
-                  >{{ logistics.deliveries?.[0]?.driver_name || "N/A" }}
+                  >{{ deliveryDriverName(logistics) || "N/A" }}
                 </div>
               </div>
             </div>
@@ -708,6 +708,35 @@ const sortedDriverOptions = computed(() => {
   );
 });
 
+
+/* ===== ADD: Driver helpers (ID → Name) ===== */
+const driverMapById = computed(() => {
+  const m = new Map();
+  (transactionStore.driverOptions || []).forEach((d) => {
+    if (d?.id != null) m.set(String(d.id), (d.name || '').trim());
+  });
+  return m;
+});
+
+const getDriverName = (id) => {
+  const key = id != null ? String(id) : '';
+  return (key && driverMapById.value.get(key)) || '';
+};
+
+// Use on logistics row or a single collection object
+const collectionDriverName = (src) => {
+  const c = Array.isArray(src?.collections) ? src.collections?.[0] : src;
+  if (!c) return '';
+  return getDriverName(c?.driver_id) || c?.driver_name || '';
+};
+
+// Use on logistics row or a single delivery object
+const deliveryDriverName = (src) => {
+  const d = Array.isArray(src?.deliveries) ? src.deliveries?.[0] : src;
+  if (!d) return '';
+  return getDriverName(d?.driver_id) || d?.driver_name || '';
+};
+
 const selectAll = ref(false);
 
 watch(selectAll, (val) => {
@@ -734,10 +763,11 @@ watch([selectedDriver, selectedDate], () => {
   const selectedRawDate = selectedDate.value;
 
   matchedOrdersList.value = filteredOrders.value.filter((logistics) =>
-    logistics.collections?.some(
+    (logistics.collections || []).some(
       (c) =>
-        c?.driver_name === driverName && c?.collection_date === selectedRawDate
-    )
+        (getDriverName(c?.driver_id) || c?.driver_name || '') === driverName &&
+        c?.collection_date === selectedRawDate
+    ),
   );
 });
 
@@ -781,7 +811,7 @@ const filteredOrders = computed(() => {
       const customerName = logistics.customer?.name?.toLowerCase() || '';
       const collectionDate =
         logistics.collections?.[0]?.collection_date || null;
-      const collectionDriver = logistics.collections?.[0]?.driver_name || '';
+       const collectionDriver = collectionDriverName(logistics);
 
       const statusMatch =
         !logisticsStatusFilter.value ||

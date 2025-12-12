@@ -1,240 +1,211 @@
+<!-- /src/components/SimpleItemForm.vue -->
 <template>
-  <div class="text-p">
-    <!-- Checkbox to toggle between search and category view -->
-    <q-checkbox
-      v-model="searchModeActive"
-      label="Search an item instead"
-      class="q-my-sm"
-      @update:model="resetInputs"
-    />
-
-    <!-- Conditional rendering based on the checkbox state -->
-    <div v-if="searchModeActive">
-      <div>Search an item...</div>
-      <q-select
-        v-model="selectedSearchItemName"
-        :options="filteredSearchItemOptions"
-        square
-        dense
-        outlined
-        use-input
-        input-debounce="300"
-        class="others-input q-mb-xs bg-white"
-        label="Type to search item"
-        @filter="filterSearchItemsByInput"
-      >
-        <template v-slot:prepend>
-          <q-icon name="search" />
-        </template>
-        <template v-slot:append>
-          <q-icon name="close" @click="clearSearchInput" class="cursor-pointer" />
-        </template>
-      </q-select>
-    </div>
-
-    <!-- Category, Sub-category, Item, Price Type, Process, and Price displayed if not in search mode -->
-    <div v-else>
-      <div class="row">
-        <div class="col">
-          <div>Category</div>
-          <q-select
-            v-model="selectedCategoryName"
-            :options="categoryOptions"
-            square
-            dense
-            outlined
-            input-debounce="300"
-            class="others-input q-mb-xs bg-white"
-            label="Select Category"
-          />
-        </div>
+  <div class="q-gutter-y-md">
+    <div>
+      <div class="dialog-label">
+        Item Name:<span class="dialog-asterisk">*</span>
       </div>
-
-      <!-- If "New Item" category is selected -->
-      <div v-if="isNewItemSelected">
-        <div>Enter New Item:</div>
-        <q-input
-          v-model="newItemNameInput"
-          square
-          dense
-          outlined
-          class="others-input q-mb-xs bg-white"
-          placeholder="Enter item name"
-        />
-        <div>Unit:</div>
-        <q-select
-          v-model="newItemUnitType"
-          :options="unitTypeOptions"
-          square
-          dense
-          outlined
-          class="others-input q-mb-xs bg-white"
-          label="Select Unit"
-        />
-      </div>
-      <div v-else>
-        <div>Sub-category</div>
-        <q-select
-          v-model="selectedSubCategoryName"
-          :options="filteredSubCategoryOptions"
-          square
-          dense
-          outlined
-          input-debounce="300"
-          class="others-input q-mb-xs bg-white"
-          label="Select Sub-category"
-        />
-
-        <div>Item Name:</div>
-        <q-select
-          v-model="selectedItemName"
-          :options="filteredItemOptions"
-          square
-          dense
-          outlined
-          input-debounce="300"
-          class="others-input q-mb-xs bg-white"
-          label="Select Item"
-        />
-      </div>
-    </div>
-
-    <!-- Process Dropdown -->
-    <div>Process</div>
-    <q-select
-      v-model="selectedProcessOption"
-      :options="filteredProcessOptions"
-      square
-      dense
-      outlined
-      class="others-input q-mb-xs bg-white"
-      label="Select Process"
-      @update:model="calculatePriceForSelectedType"
-    />
-
-    <div class="row q-col-gutter-sm">
-      <div class="col-6">
-        <!-- Price Type Dropdown -->
-        <div>Price Type</div>
-        <q-select
-          v-model="selectedPriceTypeOption"
-          :options="filteredPriceTypeOptions"
-          square
-          dense
-          outlined
-          class="others-input q-mb-xs bg-white"
-          label="Select Price Type"
-        />
-      </div>
-      <div class="col-6">
-        <!-- Price Input -->
-        <div>Price:</div>
-        <q-input
-          v-model="priceInputValue"
-          square
-          dense
-          outlined
-          class="others-input q-mb-xs bg-white"
-          label="Enter Price"
-          :disable="isPriceInputDisabled"
-        />
-      </div>
-    </div>
-
-    <!-- Conditional Inputs Based on Unit -->
-    <div v-if="selectedUnitType === 'pc' || (isNewItemSelected && newItemUnitType === 'pc')">
-      <div>Quantity:</div>
       <q-input
-        v-model="pieceQuantityInput"
-        type="number"
-        square
-        dense
+        v-model="itemName"
         outlined
-        class="others-input q-mb-xs bg-white"
-        label="Enter Quantity"
+        dense
+        class="bg-white"
       />
     </div>
 
-    <div
-      v-else-if="selectedUnitType === 'sqft' || (isNewItemSelected && newItemUnitType === 'sqft')"
-      class="row q-col-gutter-sm"
-    >
+    <div class="row q-col-gutter-x-sm">
       <div class="col">
-        <div>Width:</div>
-        <q-input
-          v-model="areaWidthInput"
-          type="number"
-          square
-          dense
+      <div class="dialog-label">
+        Category:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-select
+          v-model="selectedCategory"
+          :options="categoryOptions"
+          map-options
+          emit-value
           outlined
-          class="others-input q-mb-xs bg-white"
-          label="Enter Width (ft)"
+          dense
+          class="bg-white"
+          @update:model-value="selectedSubCategory = null"
         />
       </div>
       <div class="col">
-        <div>Breadth:</div>
-        <q-input
-          v-model="areaBreadthInput"
-          type="number"
-          square
-          dense
+      <div class="dialog-label">
+       Sub-category:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-select
+          v-model="selectedSubCategory"
+          :options="subCategoryOptions"
+          map-options
+          emit-value
+          :disable="!selectedCategory"
           outlined
-          class="others-input q-mb-xs bg-white"
-          label="Enter Breadth (ft)"
+          dense
+          class="bg-white"
         />
       </div>
     </div>
 
-    <div v-else-if="selectedUnitType === 'kg' || (isNewItemSelected && newItemUnitType === 'kg')">
-      <div>Weight:</div>
-      <q-input
-        v-model="weightInput"
-        type="number"
-        square
-        dense
-        outlined
-        class="others-input q-mb-xs bg-white"
-        label="Enter Weight (kg)"
-      />
+    <div class="row q-col-gutter-x-sm">
+      <div class="col">
+      <div class="dialog-label">
+        Pieces:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-input
+          v-model.number="pieces"
+          type="number"
+          min="0"
+          outlined
+          dense
+          class="bg-white"
+        />
+      </div>
+      <div class="col">
+      <div class="dialog-label">
+        Process:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-select
+          v-model="selectedProcess"
+          :options="processOptions"
+          outlined
+          dense
+          class="bg-white"
+        />
+      </div>
+      <div class="col">
+      <div class="dialog-label">
+        Unit:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-select
+          v-model="unit"
+          :options="unitOptions"
+          outlined
+          dense
+          label="pc / kg / sqft"
+          class="bg-white"
+        />
+      </div>
     </div>
 
-    <!-- Display area, weight, and subtotal conditionally -->
-    <div v-if="(selectedUnitType || newItemUnitType) === 'sqft'" class="q-mt-md text-right">
-      <div>Area: <span class="text-summary">{{ computedArea.toFixed(2) }} sqft</span></div>
-      <div>Subtotal: <span class="text-summary">${{ computedSubtotal.toFixed(2) }}</span></div>
-    </div>
-    <div v-else-if="(selectedUnitType || newItemUnitType) === 'kg'" class="text-right q-mt-md">
-      <div>Weight: <span class="text-summary">{{ weightInput }} kg</span></div>
-      <div>Subtotal: <span class="text-summary">${{ computedSubtotal.toFixed(2) }}</span></div>
+    <div class="row q-col-gutter-x-sm">
+      <div class="col">
+      <div class="dialog-label">
+        Price:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-input
+          v-model.number="price"
+          type="number"
+          min="0"
+          outlined
+          dense
+          prefix="$"
+          class="bg-white"
+        />
+      </div>
+
+      <!-- pc -->
+      <div v-if="unit === 'pc'" class="col">
+      <div class="dialog-label">
+        Quantity:<span class="dialog-asterisk">*</span>
+      </div>
+        <q-input
+          v-model.number="quantityInput"
+          type="number"
+          min="0"
+          outlined
+          dense
+          class="bg-white"
+        />
+      </div>
+
+      <!-- sqft -->
+      <div v-if="unit === 'sqft'" class="col">
+      <div class="dialog-label">
+        Width (ft):<span class="dialog-asterisk">*</span>
+      </div>
+        <q-input
+          v-model.number="width"
+          type="number"
+          min="0"
+          outlined
+          dense
+          class="bg-white"
+        />
+      </div>
+      <div v-if="unit === 'sqft'" class="col">
+      <div class="dialog-label">
+        Breadth (ft):<span class="dialog-asterisk">*</span>
+      </div>
+        <q-input
+          v-model.number="breadth"
+          type="number"
+          min="0"
+          outlined
+          dense
+          class="bg-white"
+        />
+      </div>
+
+      <!-- kg -->
+      <div v-if="unit === 'kg'" class="col">
+      <div class="dialog-label">
+        Weight (kg):<span class="dialog-asterisk">*</span>
+      </div>
+        <q-input
+          v-model.number="weight"
+          type="number"
+          min="0"
+          outlined
+          dense
+          class="bg-white"
+        />
+      </div>
     </div>
 
-    <!-- Button to add item to transaction table -->
-    <div class="row justify-end">
+    <div class="row items-center justify-between">
+      <div class="text-caption">
+        Subtotal preview:
+        <span class="text-weight-medium"
+          >${{ subtotalPreview.toFixed(2) }}</span
+        >
+        <span v-if="unit === 'sqft' && area > 0" class="q-ml-sm"
+          >(Area: {{ area.toFixed(2) }} sqft)</span
+        >
+        <span v-if="unit === 'kg' && weight > 0" class="q-ml-sm"
+          >(Weight: {{ Number(weight).toFixed(2) }} kg)</span
+        >
+        <span v-if="unit === 'pc' && quantityInput > 0" class="q-ml-sm"
+          >(Qty: {{ quantityInput }})</span
+        >
+      </div>
       <q-btn
-        class="float-right q-my-md"
-        label="Add to Transaction"
+        unelevated
         color="primary"
+        label="Add to Transaction"
         @click="addTransactionItem"
       />
     </div>
   </div>
 </template>
+
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useQuasar } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 
+const $q = useQuasar();
 const transactionStore = useTransactionStore();
 
-// Data Initialization
 onMounted(async () => {
-  await transactionStore.loadItems();
+  await transactionStore.loadItems?.();
 });
 
-const capitalizeFirst = (str) =>
-  str.replace(/\b\w/g, (char) => char.toUpperCase());
+const itemName = ref("");
+const selectedCategory = ref(null);
+const selectedSubCategory = ref(null);
+const selectedProcess = ref(null);
 
-// Options and Category Data
-const categoryOptions = [
+const rawCategories = [
   "clothings",
   "beddings",
   "upholsteries",
@@ -242,239 +213,134 @@ const categoryOptions = [
   "onsite cleaning",
   "new item",
 ];
-const priceTypeOptions = ["Current", "TBA", "Custom"];
-const unitTypeOptions = ["pc", "sqft", "kg"];
 
-// Reactive Variables
-const searchModeActive = ref(false);
-const selectedSearchItemName = ref(null);
-const selectedCategoryName = ref(null);
-const selectedSubCategoryName = ref(null);
-const selectedItemName = ref(null);
-const newItemNameInput = ref("");
-const newItemUnitType = ref(null);
-const selectedPriceTypeOption = ref(null);
-const selectedProcessOption = ref(null);
-const priceInputValue = ref(null);
-
-// Input Controls for Units
-const pieceQuantityInput = ref(1);
-const areaWidthInput = ref(0);
-const areaBreadthInput = ref(0);
-const weightInput = ref(0);
-
-// Computed Properties
-const isNewItemSelected = computed(
-  () => selectedCategoryName.value === "New Item"
+const categoryOptions = computed(() =>
+  rawCategories.map((v) => ({ label: toTitleCase(v), value: v }))
 );
 
-const filteredPriceTypeOptions = computed(() => {
-  return isNewItemSelected.value && !searchModeActive.value
-    ? priceTypeOptions.filter((type) => type !== "Current")
-    : priceTypeOptions;
-});
+const unitOptions = ["pc", "kg", "sqft"];
+const unit = ref("pc");
 
-const filteredSubCategoryOptions = computed(() => {
-  if (!selectedCategoryName.value) return [];
-  return [
-    ...new Set(
-      transactionStore.items
-        .filter((item) => item.category === selectedCategoryName.value)
-        .map((item) => item.sub_category)
-    ),
-  ];
-});
+const price = ref(null);
 
-const filteredItemOptions = computed(() => {
-  if (!selectedCategoryName.value || !selectedSubCategoryName.value) return [];
-  return transactionStore.items
-    .filter(
-      (item) =>
-        item.category === selectedCategoryName.value &&
-        item.sub_category === selectedSubCategoryName.value
+// pc
+const quantityInput = ref(null);
+
+// sqft
+const width = ref(null);
+const breadth = ref(null);
+
+// kg
+const weight = ref(null);
+
+// pieces: applies to all units (display-only)
+const pieces = ref(null);
+
+const processOptions = ["Laundry", "Dry Clean", "Pressing Only", "Others"];
+
+/* Sub-category options with Title Case labels, raw values preserved */
+const subCategoryOptions = computed(() => {
+  const items = transactionStore.items || [];
+  if (!selectedCategory.value) return [];
+  const uniques = Array.from(
+    new Set(
+      items
+        .filter((i) => i.category === selectedCategory.value)
+        .map((i) => i.sub_category)
+        .filter(Boolean)
     )
-    .map((item) => item.name);
+  );
+  return uniques.map((v) => ({ label: toTitleCase(String(v)), value: v }));
 });
 
-const filteredSearchItemOptions = ref([]);
-const filterSearchItemsByInput = (searchInput, updateCallback) => {
-  filteredSearchItemOptions.value =
-    searchInput === ""
-      ? []
-      : transactionStore.items
-          .filter((item) =>
-            item.name.toLowerCase().includes(searchInput.toLowerCase())
-          )
-          .map((item) => item.name);
-  updateCallback();
-};
-
-const filteredProcessOptions = ref([]);
-const selectedUnitType = computed(() => {
-  const itemName = searchModeActive.value
-    ? selectedSearchItemName.value
-    : selectedItemName.value;
-  const item = transactionStore.items.find((i) => i.name === itemName);
-  return item ? item.unit : null;
+const area = computed(() => {
+  if (unit.value !== "sqft") return 0;
+  const w = Number(width.value) || 0;
+  const b = Number(breadth.value) || 0;
+  return w * b;
 });
 
-// Calculations for Area and Subtotal
-const computedArea = computed(() => {
-  if (
-    selectedUnitType.value === "sqft" ||
-    (isNewItemSelected.value && newItemUnitType.value === "sqft")
-  ) {
-    return areaWidthInput.value * areaBreadthInput.value;
-  }
+/* DB quantity mapping (pieces never affects quantity). */
+const quantityForDB = computed(() => {
+  if (unit.value === "pc") return Number(quantityInput.value) || 0;
+  if (unit.value === "sqft") return area.value || 0;
+  if (unit.value === "kg") return Number(weight.value) || 0;
   return 0;
 });
 
-const computedSubtotal = computed(() => {
-  if (
-    selectedUnitType.value === "sqft" ||
-    (isNewItemSelected.value && newItemUnitType.value === "sqft")
-  ) {
-    return computedArea.value * numericPrice.value;
-  } else if (
-    selectedUnitType.value === "kg" ||
-    (isNewItemSelected.value && newItemUnitType.value === "kg")
-  ) {
-    return weightInput.value * numericPrice.value;
-  }
-  return 0;
+const subtotalPreview = computed(() => {
+  const p = Number(price.value) || 0;
+  return p * (Number(quantityForDB.value) || 0);
 });
 
-const numericPrice = computed(() => {
-  const priceMatch = priceInputValue.value
-    ? priceInputValue.value.match(/[\d.]+/)
-    : null;
-  return priceMatch ? parseFloat(priceMatch[0]) : 0;
-});
+function addTransactionItem() {
+  if (!itemName.value) return notifyWarn("Item Name is required.");
+  if (!selectedCategory.value) return notifyWarn("Category is required.");
+  if (!selectedProcess.value) return notifyWarn("Process is required.");
+  const p = Number(price.value);
+  if (!(p >= 0)) return notifyWarn("Price must be a non-negative number.");
 
-// Functions
-const resetInputs = () => {
-  selectedCategoryName.value = null;
-  selectedSubCategoryName.value = null;
-  selectedItemName.value = null;
-  newItemNameInput.value = "";
-  selectedPriceTypeOption.value = null;
-  selectedProcessOption.value = null;
-  priceInputValue.value = null;
-  selectedSearchItemName.value = null;
-};
-
-const clearSearchInput = () => {
-  selectedSearchItemName.value = null;
-};
-
-const updateProcessOptionsList = () => {
-  const selectedItemBaseName = searchModeActive.value
-    ? selectedSearchItemName.value
-    : selectedItemName.value;
-  const selectedItemData = transactionStore.items.find(
-    (i) => i.name === selectedItemBaseName
-  );
-
-  filteredProcessOptions.value = selectedItemData
-    ? [
-        selectedItemData.laundry_price !== null ? "Laundry" : null,
-        selectedItemData.dryclean_price !== null ? "Dry Clean" : null,
-        selectedItemData.pressing_price !== null ? "Pressing Only" : null,
-        selectedItemData.others_price !== null ? "Others" : null,
-      ].filter(Boolean)
-    : [];
-};
-
-const calculatePriceForSelectedType = () => {
-  const currentItemName = searchModeActive.value
-    ? selectedSearchItemName.value
-    : selectedItemName.value;
-  const currentItemData = transactionStore.items.find(
-    (i) => i.name === currentItemName
-  );
-
-  if (selectedPriceTypeOption.value === "Custom") {
-    priceInputValue.value = null;
-    isPriceInputDisabled.value = false;
-  } else if (selectedPriceTypeOption.value === "TBA") {
-    priceInputValue.value = "TBA";
-    isPriceInputDisabled.value = true;
-  } else if (
-    selectedPriceTypeOption.value === "Current" &&
-    selectedProcessOption.value &&
-    currentItemData
-  ) {
-    const priceMap = {
-      Laundry: currentItemData.laundry_price,
-      "Dry Clean": currentItemData.dryclean_price,
-      "Pressing Only": currentItemData.pressing_price,
-      Others: currentItemData.others_price,
-    };
-    const processPrice = priceMap[selectedProcessOption.value];
-    priceInputValue.value =
-      processPrice !== null
-        ? `$${processPrice.toFixed(2)} / ${currentItemData.unit}`
-        : null;
-    isPriceInputDisabled.value = true;
+  if (unit.value === "pc") {
+    if (!((Number(quantityInput.value) || 0) > 0))
+      return notifyWarn("Enter positive Quantity for pc.");
+  } else if (unit.value === "sqft") {
+    if (!((Number(width.value) || 0) > 0 && (Number(breadth.value) || 0) > 0)) {
+      return notifyWarn("Enter positive Width and Breadth.");
+    }
+  } else if (unit.value === "kg") {
+    if (!((Number(weight.value) || 0) > 0))
+      return notifyWarn("Enter positive Weight.");
   }
-};
 
-const isPriceInputDisabled = ref(false);
+  const match = (transactionStore.items || []).find(
+    (i) =>
+      i.category === selectedCategory.value &&
+      i.sub_category === selectedSubCategory.value
+  );
+  const tagCategory = match?.tag_category ?? null;
 
-const addTransactionItem = () => {
-  const unitType = isNewItemSelected.value ? newItemUnitType.value : selectedUnitType.value;
-
-  let baseName = searchModeActive.value
-    ? selectedSearchItemName.value
-    : isNewItemSelected.value
-    ? newItemNameInput.value
-    : selectedItemName.value;
-
-  let itemDetails = "";
-  let subtotalValue = 0;
-
-  if (unitType === "pc") {
-    itemDetails = "";
-    subtotalValue =
-      selectedPriceTypeOption.value === "TBA"
-        ? 0
-        : pieceQuantityInput.value * numericPrice.value;
-  } else if (unitType === "sqft") {
-    itemDetails = ` (${computedArea.value.toFixed(2)} sqft)`;
-    subtotalValue =
-      selectedPriceTypeOption.value === "TBA"
-        ? 0
-        : computedArea.value * numericPrice.value;
-  } else if (unitType === "kg") {
-    itemDetails = ` (${weightInput.value} kg)`;
-    subtotalValue =
-      selectedPriceTypeOption.value === "TBA"
-        ? 0
-        : weightInput.value * numericPrice.value;
-  }
-  const tagCategory = currentItem ? currentItem.tag_category : null;
-
-  transactionStore.addItem({
-    name: `${baseName}${itemDetails}`,
-    category: selectedCategoryName.value,
-    subCategory: selectedSubCategoryName.value,
-    tag_category: tagCategory, // Add tag_category to the item
-    price: selectedPriceTypeOption.value === "TBA" ? "TBA" : numericPrice.value,
-    unit: unitType,
-    process: selectedProcessOption.value,
-    quantity: pieceQuantityInput.value,
-    subtotal: subtotalValue,
+  transactionStore.addItem?.({
+    name: itemName.value,
+    category: selectedCategory.value,
+    subCategory: selectedSubCategory.value || null, // raw value
+    tag_category: tagCategory,
+    process: selectedProcess.value,
+    unit: unit.value,
+    price: p,
+    quantity: Number(quantityForDB.value),
+    pieces: Number(pieces.value) || 0,
+    subtotal: subtotalPreview.value,
   });
-};
 
-watch(searchModeActive, resetInputs);
-watch(
-  [selectedPriceTypeOption, selectedProcessOption, selectedItemName, selectedSearchItemName],
-  calculatePriceForSelectedType
-);
-watch(
-  [selectedItemName, selectedSearchItemName, searchModeActive, selectedCategoryName],
-  updateProcessOptionsList
-);
+  resetInputs();
+}
 
+function resetInputs() {
+  itemName.value = "";
+  selectedCategory.value = null;
+  selectedSubCategory.value = null;
+  selectedProcess.value = null;
+  unit.value = "pc";
+  price.value = null;
+  quantityInput.value = null;
+  width.value = null;
+  breadth.value = null;
+  weight.value = null;
+  pieces.value = null;
+}
+
+function notifyWarn(message) {
+  $q?.notify?.({ type: "warning", message });
+}
+
+function toTitleCase(s) {
+  return s.replace(
+    /\w\S*/g,
+    (w) => w[0].toUpperCase() + w.slice(1).toLowerCase()
+  );
+}
 </script>
+
+<style scoped>
+/* Minimal */
+</style>

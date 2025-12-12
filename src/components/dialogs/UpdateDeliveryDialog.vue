@@ -61,7 +61,10 @@
           <template v-slot:append>
             <q-icon name="event" class="cursor-pointer">
               <q-popup-proxy>
-                <q-date v-model="transactionStore.deliveryDate" mask="YYYY-MM-DD" />
+                <q-date
+                  v-model="transactionStore.deliveryDate"
+                  mask="YYYY-MM-DD"
+                />
               </q-popup-proxy>
             </q-icon>
           </template>
@@ -72,15 +75,16 @@
         Delivery Time:<span class="dialog-asterisk">*</span>
         <q-select
           v-model="transactionStore.deliveryTime"
-          :options="timeOptions"
+          :options="timeOptionsUi"
           option-label="label"
-          option-value="id"
+          option-value="value"
           emit-value
           map-options
-          required
+          label="Select Delivery Time"
           outlined
           dense
-          class="q-mb-sm bg-white"
+          clearable
+          class="q-mb-xs bg-white"
         />
       </div>
     </div>
@@ -99,6 +103,18 @@
           required
           dense
           class="q-mb-sm bg-white"
+        />
+      </div>
+      <!-- Delivered Date -->
+      <div class="col text-slip-row">
+        Delivered Date:
+        <q-input
+          v-model="transactionStore.deliveredDate"
+          type="date"
+          dense
+          outlined
+          clearable
+          @clear="transactionStore.deliveredDate = null"
         />
       </div>
     </div>
@@ -133,12 +149,16 @@ import { useTransactionStore } from "@/stores/transactionStore";
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
 
+const emit = defineEmits(['close', 'update:modelValue']);
+
 const timeOptions = ref([]);
 const contactOptions = ref([]);
 const addressOptions = ref([]);
 
 const sortedDriverOptions = computed(() =>
-  [...transactionStore.driverOptions].sort((a, b) => a.name.localeCompare(b.name))
+  [...transactionStore.driverOptions].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  )
 );
 
 // ---------- helpers ----------
@@ -232,13 +252,18 @@ async function initFromLogisticsId(logisticsId) {
   transactionStore.deliveryTime = del.delivery_time ?? null;
 
   // dates/remarks
-  transactionStore.deliveryDate = (del.delivery_date || "").slice(0, 10) || null;
+  transactionStore.deliveryDate =
+    (del.delivery_date || "").slice(0, 10) || null;
+  transactionStore.deliveredDate =
+    (del.delivered_date || "").slice(0, 10) || null;
   transactionStore.deliveryRemarks = del.delivery_remarks ?? null;
 }
 
 // ---------- watches / lifecycle ----------
 onMounted(async () => {
   await initFromLogisticsId(transactionStore.logisticsId);
+  await transactionStore.loadDrivers();
+  await transactionStore.loadTimeOptions();
 });
 
 watch(
@@ -249,7 +274,9 @@ watch(
 );
 
 // ---------- UI formatters ----------
-const formattedDeliveryDate = computed(() => formatDate(transactionStore.deliveryDate));
+const formattedDeliveryDate = computed(() =>
+  formatDate(transactionStore.deliveryDate)
+);
 function formatDate(dateString) {
   if (!dateString) return "N/A";
   const d = new Date(dateString);
@@ -274,7 +301,9 @@ const formattedDeliveryContactNos = computed({
     if (!transactionStore.selectedDeliveryContact) {
       transactionStore.selectedDeliveryContact = {};
     }
-    const [c1, c2] = String(value).split(" / ").map((s) => s.trim());
+    const [c1, c2] = String(value)
+      .split(" / ")
+      .map((s) => s.trim());
     transactionStore.selectedDeliveryContact.contact_no1 = c1 || "";
     transactionStore.selectedDeliveryContact.contact_no2 = c2 || null;
   },
@@ -284,32 +313,50 @@ const formattedDeliveryContactNos = computed({
 async function updateDelivery() {
   const id = transactionStore.selectedDeliveryId;
   if (!id) {
-    $q.notify({ type: "negative", message: "No delivery selected for update." });
+    $q.notify({
+      type: "negative",
+      message: "No delivery selected for update.",
+    });
     return;
   }
 
   // Normalize values coming from selects (could be id or object)
   const contact = transactionStore.selectedDeliveryContact;
   const address = transactionStore.selectedDeliveryAddress;
-  const driver  = transactionStore.selectedDeliveryDriver;
+  const driver = transactionStore.selectedDeliveryDriver;
 
   const updateData = {
-    delivery_date:     transactionStore.deliveryDate || null,
-    delivery_time:     transactionStore.deliveryTime || null,
-    delivery_remarks:  transactionStore.deliveryRemarks || null,
-
-    // IDs: accept either raw id or object with id
+    delivery_date: transactionStore.deliveryDate || null,
+    delivery_time: transactionStore.deliveryTime || null,
+    delivery_remarks: transactionStore.deliveryRemarks || null,
     contact_person_id: contact?.id ?? contact ?? null,
-    address_id:        address?.id ?? address ?? null,
-    driver_id:         driver?.id ?? driver ?? null,
+    address_id: address?.id ?? address ?? null,
+    driver_id: driver?.id ?? driver ?? null,
   };
 
   try {
     await transactionStore.updateDelivery(id, updateData);
     $q.notify({ type: "positive", message: "Delivery updated successfully." });
+     emit("close");
   } catch (error) {
     console.error("Update delivery failed:", error);
-    $q.notify({ type: "negative", message: "Failed to update delivery. Please try again." });
+    $q.notify({
+      type: "negative",
+      message: "Failed to update delivery. Please try again.",
+    });
   }
 }
+
+function computeUrgency(collectionDate, deliveryDate) {
+  const wd = workingDays(collectionDate, deliveryDate);
+  if (wd == null) return "default";
+  if (wd < 4) return "express";
+  if (wd <= 5) return "urgent";
+  return "default";
+}
+
+const formattedDeliveredDate = computed(() =>
+  formatDate(transactionStore.deliveredDate)
+);
+
 </script>

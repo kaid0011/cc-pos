@@ -47,27 +47,28 @@
             </q-item>
 
             <!-- Submenus -->
-<q-item
-  v-for="sub in section.submenus"
-  :key="sub.route"
-  clickable
-  :disable="sub.disabled"
-  @click="!sub.disabled && navigateTo(sub.route)"
-  :active="route.path === sub.route"
-  active-class="submenu-active"
-  class="submenu-item"
-  :class="{ 'submenu-disabled': sub.disabled }"
-  dense
->
-  <q-item-section avatar>
-    <q-icon :name="sub.icon" />
-  </q-item-section>
-  <q-item-section v-if="showLabels">
-    {{ sub.label }}
-    <span v-if="sub.disabled" class="under-dev">(Under development)</span>
-  </q-item-section>
-</q-item>
-
+            <q-item
+              v-for="sub in section.submenus"
+              :key="sub.route"
+              clickable
+              :disable="sub.disabled"
+              @click="!sub.disabled && navigateTo(sub.route)"
+              :active="route.path === sub.route"
+              active-class="submenu-active"
+              class="submenu-item"
+              :class="{ 'submenu-disabled': sub.disabled }"
+              dense
+            >
+              <q-item-section avatar>
+                <q-icon :name="sub.icon" />
+              </q-item-section>
+              <q-item-section v-if="showLabels">
+                {{ sub.label }}
+                <span v-if="sub.disabled" class="under-dev"
+                  >(Under development)</span
+                >
+              </q-item-section>
+            </q-item>
           </div>
 
           <!-- Logout -->
@@ -124,15 +125,23 @@ const fullMenu = [
         label: "My Dashboard",
         icon: "dashboard",
         route: "/dashboard",
-        // disabled: true,
+        
       },
     ],
   },
   {
-    label: "Order Management",
-    icon: "list_alt",
-    roles: ["csr", "admin", "owner"],
-    submenus: [{ label: "All Orders", icon: "assignment", route: "/orders" }],
+    label: "POS",
+    icon: "point_of_sale",
+    roles: ["csr", "admin", "accounts", "owner"],
+    submenus: [
+      { label: "New POS Order", icon: "add_shopping_cart", route: "/pos" },
+      // {
+      //   label: "POS Transactions",
+      //   icon: "receipt",
+      //   route: "/pos/transactions",
+        
+      // },
+    ],
   },
   {
     label: "Customer Management",
@@ -140,6 +149,7 @@ const fullMenu = [
     roles: ["csr", "admin", "owner"],
     submenus: [
       { label: "Customers List", icon: "person", route: "/customers" },
+    { label: "Customer Complaints", icon: "report_problem", route: "/customers/complaints" },
     ],
   },
   {
@@ -152,9 +162,30 @@ const fullMenu = [
         label: "Onsite Services",
         icon: "room_service",
         route: "/logistics/onsite",
-        // disabled: true,
-
+        
       },
+    ],
+  },
+  {
+    label: "Order Management",
+    icon: "list_alt",
+    roles: ["csr", "admin", "owner"],
+    submenus: [
+      { 
+        label: "All Orders",
+        icon: "assignment",
+        route: "/orders" 
+      },
+      { 
+        label: "Invoice List",
+        icon: "receipt",
+        route: "/invoices" 
+      },
+      { 
+        label: "Error Reports",
+        icon: "error",
+        route: "/error_reports" 
+      }
     ],
   },
   {
@@ -167,8 +198,7 @@ const fullMenu = [
         label: "Item Requests",
         icon: "playlist_add",
         route: "/items/requests",
-        // disabled: true,
-
+        
       },
     ],
   },
@@ -196,127 +226,104 @@ const fullMenu = [
         route: "/finance/settlements",
       },
       {
-        label: "Discounts",
-        icon: "percent",
-        route: "/finance/discounts",
-        // disabled: true,
-
+        label: "SOA Management",
+        icon: "list",
+        route: "/finance/soa",
       },
-      {
-        label: "Accounting",
-        icon: "calculate",
-        route: "/finance/accounting",
-        // disabled: true,
-
-      },
+      // {
+      //   label: "Discounts",
+      //   icon: "percent",
+      //   route: "/finance/discounts",
+      // },
+      // {
+      //   label: "Accounting",
+      //   icon: "calculate",
+      //   route: "/finance/accounting",
+        
+      // },
     ],
   },
-  {
-    label: "Reports",
-    icon: "analytics",
-    roles: ["admin", "owner"],
-    submenus: [
-      {
-        label: "Financial Dashboard",
-        icon: "bar_chart",
-        route: "/reports/financial",
-        // disabled: true,
-
-      },
-      {
-        label: "Operations Dashboard",
-        icon: "work",
-        route: "/reports/operations",
-        // disabled: true,
-
-      },
-      {
-        label: "Customer Dashboard",
-        icon: "people",
-        route: "/reports/customers",
-        // disabled: true,
-
-      },
-      {
-        label: "Staff & Driver Dashboard",
-        icon: "badge",
-        route: "/reports/staff",
-        // disabled: true,
-
-      },
-    ],
-  },
-  {
-    label: "Settings",
-    icon: "settings",
-    roles: ["admin"],
-    submenus: [
-      {
-        label: "Staff & Roles",
-        icon: "supervisor_account",
-        route: "/settings/staff",
-        // disabled: true,
-
-      },
-      {
-        label: "Holiday Calendar",
-        icon: "event",
-        route: "/settings/holidays",
-        // disabled: true,
-
-      },
-      {
-        label: "Announcements",
-        icon: "campaign",
-        route: "/settings/announcements",
-        // disabled: true,
-
-      },
-      {
-        label: "Audit Logs",
-        icon: "rule_folder",
-        route: "/settings/audit",
-        // disabled: true,
-
-      },
-    ],
-  },
-  {
-    label: "Error Reporting",
-    icon: "report_problem",
-    roles: ["csr", "production", "driver", "admin", "owner"],
-    submenus: [
-      {
-        label: "Error Logs",
-        icon: "bug_report",
-        route: "/errors/logs",
-        // disabled: true,
-
-      },
-      {
-        label: "Error Dashboard",
-        icon: "query_stats",
-        route: "/errors/dashboard",
-        // disabled: true,
-
-      },
-    ],
-  },
-  {
-    label: "POS",
-    icon: "point_of_sale",
-    roles: ["csr", "admin", "accounts", "owner"],
-    submenus: [
-      { label: "New POS Order", icon: "add_shopping_cart", route: "/pos" },
-      {
-        label: "POS Transactions",
-        icon: "receipt",
-        route: "/pos/transactions",
-        // disabled: true,
-
-      },
-    ],
-  },
+  // {
+  //   label: "Reports",
+  //   icon: "analytics",
+  //   roles: ["admin", "owner"],
+  //   submenus: [
+  //     {
+  //       label: "Financial Dashboard",
+  //       icon: "bar_chart",
+  //       route: "/reports/financial",
+        
+  //     },
+  //     {
+  //       label: "Operations Dashboard",
+  //       icon: "work",
+  //       route: "/reports/operations",
+        
+  //     },
+  //     {
+  //       label: "Customer Dashboard",
+  //       icon: "people",
+  //       route: "/reports/customers",
+        
+  //     },
+  //     {
+  //       label: "Staff & Driver Dashboard",
+  //       icon: "badge",
+  //       route: "/reports/staff",
+        
+  //     },
+  //   ],
+  // },
+  // {
+  //   label: "Settings",
+  //   icon: "settings",
+  //   roles: ["admin"],
+  //   submenus: [
+  //     {
+  //       label: "Staff & Roles",
+  //       icon: "supervisor_account",
+  //       route: "/settings/staff",
+        
+  //     },
+  //     {
+  //       label: "Holiday Calendar",
+  //       icon: "event",
+  //       route: "/settings/holidays",
+        
+  //     },
+  //     {
+  //       label: "Announcements",
+  //       icon: "campaign",
+  //       route: "/settings/announcements",
+        
+  //     },
+  //     {
+  //       label: "Audit Logs",
+  //       icon: "rule_folder",
+  //       route: "/settings/audit",
+        
+  //     },
+  //   ],
+  // },
+  // {
+  //   label: "Error Reporting",
+  //   icon: "report_problem",
+  //   roles: ["csr", "production", "driver", "admin", "owner"],
+  //   submenus: [
+  //     {
+  //       label: "Error Logs",
+  //       icon: "bug_report",
+  //       route: "/error_reports" 
+        
+  //     },
+  //     {
+  //       label: "Error Dashboard",
+  //       icon: "query_stats",
+  //       route: "/errors/dashboard",
+        
+  //     },
+  //   ],
+  // },
 ];
 
 // Filter menu by role

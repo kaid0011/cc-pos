@@ -1,8 +1,8 @@
 <template>
   <div class="preview">
-    <div class="row">
+    <div class="row q-col-gutter-x-md q-pa-md page-1-container">
       <!-- Left Container -->
-      <div class="col-6 preview-left-container">
+      <div class="col-6">
         <q-card flat class="order-banner bg-blue-grey text-white q-pa-md">
           <div class="flex justify-between items-center">
             <div class="text-left">
@@ -25,9 +25,25 @@
                   formatDate(order?.created_at)
                 }}</span>
               </div>
+              <div class="text-slip-row">
+                Handler:
+                <span class="text-summary">{{ handlerLabel }}</span>
+              </div>
             </div>
           </div>
+          <!-- <div>
+            <q-btn
+              unelevated
+              outline
+              class="full-width q-mt-md"
+              label="Generate Invoice"
+              color="white"
+              icon="update"
+              @click="handlePrintInvoice(order.order_no)"
+            />
+          </div> -->
         </q-card>
+
         <q-card class="preview-card order-container" ref="orderContainer">
           <!-- Customer and Order Details -->
           <div class="text-subtitle1 text-uppercase text-weight-bolder">
@@ -80,11 +96,7 @@
                 Collection Details
               </div>
               <div class="text-weight-bold">
-                <a
-                  @click.prevent="
-                    openCollectionHistoryDialog(collection.logistics_id)
-                  "
-                >
+                <a @click.prevent="openCollectionHistoryDialog()">
                   (View Collection History)
                 </a>
               </div>
@@ -92,7 +104,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Contact Person:</div>
                 <div class="col-6">
-                  {{ collection.customer_contact_persons?.name || "-" }}
+                  {{ collection.contact_person?.name || "-" }}
                 </div>
               </div>
               <div class="row text-slip-row row-col-row">
@@ -104,7 +116,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Address:</div>
                 <div class="col-6">
-                  {{ collection.address || "-" }}
+                  {{ formatAddress(collection.address) || "-" }}
                 </div>
               </div>
 
@@ -123,7 +135,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Collection Driver:</div>
                 <div class="col-6">
-                  {{ collection.driver_name || "-" }}
+                  {{ getDriverName(collection.driver_id) || "-" }}
                 </div>
               </div>
               <div class="row text-slip-row row-col-row">
@@ -142,10 +154,12 @@
               <q-card-actions align="right">
                 <!-- Update Button -->
                 <q-btn
+                  unelevated
+                  dense
                   label="Update Collection"
                   color="primary"
                   icon="update"
-                  class="full-width"
+                  class="full-width q-mt-md"
                   @click="updateCollection(logistics.logistics_id)"
                 />
               </q-card-actions>
@@ -157,11 +171,7 @@
                 Delivery Details
               </div>
               <div class="text-weight-bold">
-                <a
-                  @click.prevent="
-                    openDeliveryHistoryDialog(delivery.logistics_id)
-                  "
-                >
+                <a @click.prevent="openDeliveryHistoryDialog()">
                   (View Delivery History)
                 </a>
               </div>
@@ -169,7 +179,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Contact Person:</div>
                 <div class="col-6">
-                  {{ delivery.customer_contact_persons?.name || "-" }}
+                  {{ delivery.contact_person?.name || "-" }}
                 </div>
               </div>
               <div class="row text-slip-row row-col-row">
@@ -181,7 +191,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Address:</div>
                 <div class="col-6">
-                  {{ delivery.address || "-" }}
+                  {{ formatAddress(delivery.address) || "-" }}
                 </div>
               </div>
 
@@ -201,7 +211,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Delivery Driver:</div>
                 <div class="col-6">
-                  {{ delivery.driver_name || "-" }}
+                  {{ getDriverName(delivery.driver_id) || "-" }}
                 </div>
               </div>
               <div class="row text-slip-row row-col-row">
@@ -210,9 +220,83 @@
                   {{ delivery.remarks || "-" }}
                 </div>
               </div>
+
+              <div class="q-mt-md">
+                <div class="text-weight-bold text-uppercase q-mb-xs">
+                  Delivery Exceptions
+                </div>
+
+                <q-list bordered class="rounded-borders bg-blue-grey-1">
+                  <q-item
+                    v-for="exc in exceptionGroups"
+                    :key="exc.key"
+                    clickable
+                    dense
+                    class="q-pa-sm"
+                    @click="openExceptionDetails(exc)"
+                  >
+                    <q-item-section>
+                      <div class="">
+                        <div class="row items-center no-wrap">
+                          <q-icon
+                            name="event"
+                            size="16px"
+                            class="q-mr-sm text-blue-9"
+                          />
+                          <span>{{ formatDateLine(exc.date) }}</span>
+                        </div>
+                        <div class="row items-center no-wrap">
+                          <q-icon
+                            name="schedule"
+                            size="16px"
+                            class="q-mr-sm text-blue-9"
+                          />
+                          <span>{{ exc.time || "[No time]" }}</span>
+                        </div>
+                        <div class="row items-center no-wrap">
+                          <q-icon
+                            name="person"
+                            size="16px"
+                            class="q-mr-sm text-blue-9"
+                          />
+                          <span>{{ exc.driverName || "[No driver]" }}</span>
+                        </div>
+                      </div>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-chip dense square color="blue-9" text-color="white">
+                        {{ exc.items?.length || 0 }} item{{
+                          (exc.items?.length || 0) === 1 ? "" : "s"
+                        }}
+                      </q-chip>
+                    </q-item-section>
+                  </q-item>
+
+                  <!-- No exceptions -->
+                  <q-item v-if="!exceptionGroups.length" dense>
+                    <q-item-section>
+                      <div class="text-grey">No delivery exceptions.</div>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </div>
+
               <q-card-actions align="right">
-                <!-- Update Button -->
+                <!-- New: Delivery Exception button -->
                 <q-btn
+                  unelevated
+                  dense
+                  label="Make Delivery Exception"
+                  color="orange"
+                  icon="local_shipping"
+                  class="full-width q-mb-sm q-mt-md"
+                  @click="openDeliveryExceptionDialog"
+                />
+
+                <!-- Existing: Update Button -->
+                <q-btn
+                  unelevated
+                  dense
                   label="Update Delivery"
                   color="primary"
                   icon="update"
@@ -226,9 +310,9 @@
       </div>
 
       <!-- Right Container -->
-      <div class="col-6 preview-right-container">
+      <div class="col-6">
         <!-- Instructions Display -->
-        <q-card class="instructions-list preview-card q-ma-md">
+        <q-card class="instructions-list preview-card q-mb-md">
           <!-- Add Instruction Button -->
           <div class="row justify-between items-center">
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
@@ -319,7 +403,7 @@
 
         <!-- Reports Section -->
 
-        <q-card class="report-list preview-card q-ma-md">
+        <q-card class="report-list preview-card">
           <!-- Add Report Button in Report List Card -->
           <div class="row justify-between items-center">
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
@@ -387,9 +471,9 @@
       </div>
     </div>
 
-    <div class="row">
+    <div class="row q-col-gutter-x-md page-2-container q-pa-md">
       <div class="col-4">
-        <q-card class="preview-card q-mt-md">
+        <q-card class="preview-card full-height">
           <div class="row justify-start items-center">
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Logistics Details
@@ -440,8 +524,11 @@
               </div>
             </div>
           </q-card-section>
-          <q-card-actions class="q-pt-none" align="right">
+          <q-card-actions class="q-pt-none">
             <q-btn
+              dense
+              unelevated
+              class="full-width q-mt-md"
               label="Update Logistics Details"
               color="primary"
               icon="update"
@@ -451,7 +538,7 @@
         </q-card>
       </div>
       <div class="col-4">
-        <q-card class="preview-card q-mt-md">
+        <q-card class="preview-card full-height">
           <div class="row justify-start items-center">
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Production Details
@@ -516,8 +603,11 @@
               </div>
             </div>
           </q-card-section>
-          <q-card-actions class="q-pt-none" align="right">
+          <q-card-actions class="q-pt-none">
             <q-btn
+              unelevated
+              dense
+              class="full-width q-mt-md"
               label="Update Production Details"
               color="primary"
               icon="update"
@@ -527,10 +617,7 @@
         </q-card>
       </div>
       <div class="col-4">
-        <q-card
-          class="preview-card order-container q-mt-md"
-          ref="orderContainer"
-        >
+        <q-card class="preview-card full-height" ref="orderContainer">
           <div class="row justify-between items-center">
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Invoice Details
@@ -582,19 +669,20 @@
           <q-card-actions class="q-pt-none">
             <q-btn
               unelevated
+              dense
               label="Generate Invoice"
               color="primary"
               icon="update"
-              class="full-width q-mt-sm"
-              @click="generateInvoiceTab(order?.order_no)"
+              class="full-width q-mt-md"
+              @click="handlePrintInvoice(order?.order_no)"
             />
           </q-card-actions>
         </q-card>
       </div>
     </div>
 
-    <div class="row">
-      <q-card class="transactions-list preview-card q-ma-md">
+    <div class="row page-1-container q-pa-md">
+      <q-card class="transactions-list preview-card full-width">
         <!-- Add Instruction Button -->
         <div class="row justify-between items-center">
           <div class="text-subtitle1 text-uppercase text-weight-bolder">
@@ -613,118 +701,534 @@
         </div>
         <q-separator class="q-mt-xs" />
 
-        <q-card-section class="q-px-none">
-          <!-- Transaction Table -->
-          <div class="transaction-summary">
-            <div class="row row-col-header order-header">
-              <div class="col col-3 text-weight-bold bordered">Item</div>
-              <div class="col col-2 text-weight-bold bordered">Process</div>
-              <div class="col col-1 text-weight-bold bordered">Price</div>
-              <div class="col col-1 text-weight-bold bordered">Pcs</div>
-              <div class="col col-1 text-weight-bold bordered">Qty</div>
-              <div class="col col-2 text-weight-bold bordered">Subtotal</div>
-            <div class="col col-1 text-weight-bold bordered">Ready?</div>
-              <div class="col col-1 text-weight-bold bordered"></div>
+        <q-card-section>
+          <!-- ============ PC (pieces) ============ -->
+          <div v-if="pcItems.length" class="q-mb-md">
+            <div
+              class="text-subtitle1 text-weight-bolder q-mb-xs text-uppercase"
+            >
+              Pieces
             </div>
+            <div class="transaction-summary">
+              <div class="row row-col-header order-header text-center">
+                <div class="col-4 text-weight-bold bordered">Item</div>
+                <div class="col-2 text-weight-bold bordered">Process</div>
+                <div class="col text-weight-bold bordered">Price</div>
+                <div class="col text-weight-bold bordered">Qty</div>
+                <div class="col text-weight-bold bordered">Pieces</div>
+                <div class="col text-weight-bold bordered">Subtotal</div>
+                <div class="col-1 text-weight-bold bordered">Ready?</div>
+              </div>
 
-            <div v-if="transactions.length > 0">
               <div
-                v-for="(item, index) in transactions"
-                :key="index"
+                v-for="(item, idx) in pcItems"
+                :key="`pc-${item.id ?? idx}`"
                 class="row row-col-row order-row"
               >
-                <div class="col col-3 bordered">
-                  <textarea
+                <!-- Item + delete -->
+                <div class="col-4 bordered row items-center no-wrap">
+                  <div class="col" :style="{ minWidth: 0 }">
+                    <q-input
+                      outlined
+                      dense
+                      type="textarea"
+                      autogrow
+                      rows="1"
+                      v-model="item.item_name"
+                      class="editable-field item-name-textarea"
+                      placeholder="Item Name"
+                    />
+                  </div>
+                  <div class="col-auto q-ml-xs">
+                    <q-btn
+                      flat
+                      class="trash-icon"
+                      color="negative"
+                      icon="delete"
+                      @click="
+                        openDeleteTransactionDialog(
+                          transactions.indexOf(item),
+                          item.id
+                        )
+                      "
+                    />
+                  </div>
+                </div>
+
+                <!-- Process -->
+                <div class="col-2 bordered">
+                  <q-select
+                    outlined
+                    dense
+                    options-dense
+                    v-model="item.process"
+                    :options="processOptions"
+                    class="editable-field"
+                    emit-value
+                    map-options
+                  />
+                </div>
+
+                <!-- Price -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
                     type="text"
-                    v-model="transactions[index].item_name"
+                    inputmode="decimal"
+                    :model-value="formatPriceNumber(item.price)"
+                    :suffix="`/ ${priceUnitLabel(item)}`"
                     class="editable-field"
-                    placeholder="Item Name"
-                    @input="autoResize($event)"
-                  ></textarea>
+                    :disable="String(item.price).toUpperCase() === 'TBA'"
+                    @keypress="
+                      (e) => allowOnlyNumberDot(e, false, e.target.value)
+                    "
+                    @paste="(e) => onPasteNumberDot(e, false)"
+                    @update:model-value="
+                      (val) =>
+                        onPriceInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                  <div
+                    v-if="String(item.price).toUpperCase() === 'TBA'"
+                    class="text-center"
+                  >
+                    TBA
+                  </div>
                 </div>
-                <div class="col col-2 bordered">
-                  <input
+
+                <!-- Qty -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
                     type="text"
-                    v-model="transactions[index].process"
+                    inputmode="decimal"
+                    :model-value="formatQtyModelValue(item)"
+                    :suffix="qtyUnitLabel(item)"
                     class="editable-field"
-                    placeholder="Process"
+                    @keypress="
+                      (e) => allowOnlyNumberDot(e, false, e.target.value)
+                    "
+                    @paste="(e) => onPasteNumberDot(e, false)"
+                    @update:model-value="
+                      (val) => onQtyInputChange(transactions.indexOf(item), val)
+                    "
                   />
                 </div>
-                <div class="col col-1 bordered">
-                  <input
-                    type="number"
-                    v-model.number="transactions[index].price"
-                    class="editable-field"
-                    placeholder="Price"
-                  />
+                <!-- Pieces -->
+                <div class="col bordered flex flex-center">
+                  <span class="q-mr-xs">{{ totalPiecesForPc(item) }}</span
+                  ><span class="unit-dim">pcs</span>
                 </div>
-                <div class="col col-1 bordered">
-                  {{ computedPcs(transactions[index]) }}
+
+                <!-- Subtotal -->
+                <div
+                  class="col bordered flex items-center justify-center pos-rel"
+                >
+                  <span>${{ formatMoney(item.subtotal) }}</span>
+
+                  <!-- tiny ? help icon in bottom-right -->
+                  <q-icon
+                    name="help_outline"
+                    size="14px"
+                    class="calc-help"
+                    tabindex="0"
+                    role="button"
+                    aria-label="See computation"
+                  >
+                    <q-tooltip
+                      anchor="bottom right"
+                      self="top right"
+                      max-width="260px"
+                    >
+                      {{ subtotalBreakdown(item) }}
+                    </q-tooltip>
+                  </q-icon>
                 </div>
-                <div class="col col-1 bordered">
-                  <input
-                    type="number"
-                    v-model.number="transactions[index].quantity"
-                    class="editable-field"
-                    placeholder="Qty"
-                  />
-                </div>
-                <div class="col col-2 bordered">
-                  <input
-                    type="number"
-                    v-model.number="transactions[index].subtotal"
-                    class="editable-field"
-                    placeholder="Subtotal"
-                    readonly
-                  />
-                </div>
-              <div class="col col-1 bordered text-center">
-                <q-checkbox v-model="item.ready_status" size="md" dense />
-              </div>
-                <!-- Delete Button Column -->
-                <div class="col col-1 text-center bordered">
-                  <q-btn
-                    flat
-                    class="trash-icon"
-                    color="negative"
-                    icon="delete"
-                    @click="openDeleteTransactionDialog(index, item.id)"
-                  />
+
+                <!-- Ready -->
+                <div class="col-1 bordered flex-center flex">
+                  <q-checkbox v-model="item.ready_status" size="md" dense />
                 </div>
               </div>
             </div>
+          </div>
 
-            <div v-else class="text-center text-grey q-my-md">
-              No items added to the list.
+          <!-- ============ WEIGHT (kg/lbs) ============ -->
+          <div v-if="weightItems.length" class="q-mb-md">
+            <div
+              class="text-subtitle1 text-weight-bolder q-mb-xs text-uppercase"
+            >
+              Weight
             </div>
+            <div class="transaction-summary">
+              <div class="row row-col-header order-header text-center">
+                <div class="col-4 text-weight-bold bordered">Item</div>
+                <div class="col-2 text-weight-bold bordered">Process</div>
+                <div class="col text-weight-bold bordered">Price</div>
+                <div class="col text-weight-bold bordered">Weight</div>
+                <div class="col text-weight-bold bordered">Pieces</div>
+                <div class="col text-weight-bold bordered">Subtotal</div>
+                <div class="col-1 text-weight-bold bordered">Ready?</div>
+              </div>
 
-            <div class="row row-col-footer order-footer">
-              <div class="col col-5 text-weight-bold text-uppercase"></div>
-              <div class="col col-2 text-weight-bold text-uppercase bordered">
-                Total
+              <div
+                v-for="(item, idx) in weightItems"
+                :key="`wt-${item.id ?? idx}`"
+                class="row row-col-row order-row"
+              >
+                <!-- Item + delete -->
+                <div class="col-4 bordered row items-center no-wrap">
+                  <div class="col" :style="{ minWidth: 0 }">
+                    <q-input
+                      outlined
+                      dense
+                      type="textarea"
+                      autogrow
+                      rows="1"
+                      v-model="item.item_name"
+                      class="editable-field item-name-textarea"
+                      placeholder="Item Name"
+                    />
+                  </div>
+                  <div class="col-auto q-ml-xs">
+                    <q-btn
+                      flat
+                      class="trash-icon"
+                      color="negative"
+                      icon="delete"
+                      @click="
+                        openDeleteTransactionDialog(
+                          transactions.indexOf(item),
+                          item.id
+                        )
+                      "
+                    />
+                  </div>
+                </div>
+
+                <!-- Process -->
+                <div class="col-2 bordered">
+                  <q-select
+                    outlined
+                    dense
+                    options-dense
+                    v-model="item.process"
+                    :options="processOptions"
+                    class="editable-field"
+                    emit-value
+                    map-options
+                  />
+                </div>
+
+                <!-- Price -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
+                    type="text"
+                    inputmode="decimal"
+                    :model-value="formatPriceNumber(item.price)"
+                    :suffix="`/ ${priceUnitLabel(item)}`"
+                    class="editable-field"
+                    :disable="String(item.price).toUpperCase() === 'TBA'"
+                    @keypress="
+                      (e) => allowOnlyNumberDot(e, false, e.target.value)
+                    "
+                    @paste="(e) => onPasteNumberDot(e, false)"
+                    @update:model-value="
+                      (val) =>
+                        onPriceInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                  <div
+                    v-if="String(item.price).toUpperCase() === 'TBA'"
+                    class="text-center"
+                  >
+                    TBA
+                  </div>
+                </div>
+
+                <!-- Weight -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
+                    type="text"
+                    inputmode="decimal"
+                    :model-value="formatQtyModelValue(item)"
+                    :suffix="unitLabel(getUnitForItem(item))"
+                    class="editable-field"
+                    @keypress="
+                      (e) => allowOnlyNumberDot(e, false, e.target.value)
+                    "
+                    @paste="(e) => onPasteNumberDot(e, false)"
+                    @update:model-value="
+                      (val) => onQtyInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                </div>
+
+                <!-- Pieces -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
+                    type="number"
+                    :model-value="computedPcs(item)"
+                    suffix="pcs"
+                    class="editable-field"
+                    @update:model-value="
+                      (val) =>
+                        onPiecesInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                </div>
+
+                <!-- Subtotal -->
+                <div
+                  class="col bordered flex items-center justify-center pos-rel"
+                >
+                  <span>${{ formatMoney(item.subtotal) }}</span>
+
+                  <!-- tiny ? help icon in bottom-right -->
+                  <q-icon
+                    name="help_outline"
+                    size="14px"
+                    class="calc-help"
+                    tabindex="0"
+                    role="button"
+                    aria-label="See computation"
+                  >
+                    <q-tooltip
+                      anchor="bottom right"
+                      self="top right"
+                      max-width="260px"
+                    >
+                      {{ subtotalBreakdown(item) }}
+                    </q-tooltip>
+                  </q-icon>
+                </div>
+
+                <!-- Ready -->
+                <div class="col-1 bordered flex-center flex">
+                  <q-checkbox v-model="item.ready_status" size="md" dense />
+                </div>
               </div>
-              <div class="col col-1 text-weight-bold bordered">
-                {{ totalPcs }}
+            </div>
+          </div>
+
+          <!-- ============ SIZE (sqft/sqm) ============ -->
+          <div v-if="sizeItems.length" class="q-mb-md">
+            <div
+              class="text-subtitle1 text-weight-bolder q-mb-xs text-uppercase"
+            >
+              Size
+            </div>
+            <div class="transaction-summary">
+              <div class="row row-col-header order-header text-center">
+                <div class="col-4 text-weight-bold bordered">Item</div>
+                <div class="col-2 text-weight-bold bordered">Process</div>
+                <div class="col text-weight-bold bordered">Price</div>
+                <div class="col text-weight-bold bordered">Size</div>
+                <div class="col text-weight-bold bordered">Pieces</div>
+                <div class="col text-weight-bold bordered">Subtotal</div>
+                <div class="col-1 text-weight-bold bordered">Ready?</div>
               </div>
-              <div class="col col-1 text-weight-bold bordered">
-                {{ totalQty }}
+
+              <div
+                v-for="(item, idx) in sizeItems"
+                :key="`sz-${item.id ?? idx}`"
+                class="row row-col-row order-row"
+              >
+                <!-- Item + delete -->
+                <div class="col-4 bordered row items-center no-wrap">
+                  <div class="col" :style="{ minWidth: 0 }">
+                    <q-input
+                      outlined
+                      dense
+                      type="textarea"
+                      autogrow
+                      rows="1"
+                      v-model="item.item_name"
+                      class="editable-field item-name-textarea"
+                      placeholder="Item Name"
+                    />
+                  </div>
+                  <div class="col-auto q-ml-xs">
+                    <q-btn
+                      flat
+                      class="trash-icon"
+                      color="negative"
+                      icon="delete"
+                      @click="
+                        openDeleteTransactionDialog(
+                          transactions.indexOf(item),
+                          item.id
+                        )
+                      "
+                    />
+                  </div>
+                </div>
+
+                <!-- Process -->
+                <div class="col-2 bordered">
+                  <q-select
+                    outlined
+                    dense
+                    options-dense
+                    v-model="item.process"
+                    :options="processOptions"
+                    class="editable-field"
+                    emit-value
+                    map-options
+                  />
+                </div>
+
+                <!-- Price -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
+                    type="text"
+                    inputmode="decimal"
+                    :model-value="formatPriceNumber(item.price)"
+                    :suffix="`/ ${priceUnitLabel(item)}`"
+                    class="editable-field"
+                    :disable="String(item.price).toUpperCase() === 'TBA'"
+                    @keypress="
+                      (e) => allowOnlyNumberDot(e, false, e.target.value)
+                    "
+                    @paste="(e) => onPasteNumberDot(e, false)"
+                    @update:model-value="
+                      (val) =>
+                        onPriceInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                  <div
+                    v-if="String(item.price).toUpperCase() === 'TBA'"
+                    class="text-center"
+                  >
+                    TBA
+                  </div>
+                </div>
+
+                <!-- Size (area/length) -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
+                    type="text"
+                    inputmode="decimal"
+                    :model-value="formatQtyModelValue(item)"
+                    :suffix="unitLabel(getUnitForItem(item))"
+                    class="editable-field"
+                    @keypress="
+                      (e) => allowOnlyNumberDot(e, false, e.target.value)
+                    "
+                    @paste="(e) => onPasteNumberDot(e, false)"
+                    @update:model-value="
+                      (val) => onQtyInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                </div>
+
+                <!-- Pieces -->
+                <div class="col bordered">
+                  <q-input
+                    outlined
+                    dense
+                    type="number"
+                    :model-value="computedPcs(item)"
+                    suffix="pcs"
+                    class="editable-field"
+                    @update:model-value="
+                      (val) =>
+                        onPiecesInputChange(transactions.indexOf(item), val)
+                    "
+                  />
+                </div>
+
+                <!-- Subtotal -->
+                <div
+                  class="col bordered flex items-center justify-center pos-rel"
+                >
+                  <span>${{ formatMoney(item.subtotal) }}</span>
+
+                  <!-- tiny ? help icon in bottom-right -->
+                  <q-icon
+                    name="help_outline"
+                    size="14px"
+                    class="calc-help"
+                    tabindex="0"
+                    role="button"
+                    aria-label="See computation"
+                  >
+                    <q-tooltip
+                      anchor="bottom right"
+                      self="top right"
+                      max-width="260px"
+                    >
+                      {{ subtotalBreakdown(item) }}
+                    </q-tooltip>
+                  </q-icon>
+                </div>
+
+                <!-- Ready -->
+                <div class="col-1 bordered flex-center flex">
+                  <q-checkbox v-model="item.ready_status" size="md" dense />
+                </div>
               </div>
-              <div class="col col-2 text-weight-bold bordered">
-                ${{ totalSubtotal }}
-              </div>
-              <div class="col col-1 text-weight-bold bordered"></div>
             </div>
           </div>
         </q-card-section>
-        <q-card-actions align="right">
+
+        <q-card-section class="flex justify-between q-pt-none">
+          <div class="unit-totals-right">
+            <q-card flat bordered class="unit-totals-card q-pa-sm">
+              <div class="unit-line">
+                <span class="unit-label">Per Piece</span>
+                <span class="unit-value"
+                  >${{ formatMoney(totalsAmounts.piece) }}</span
+                >
+              </div>
+              <q-separator />
+              <div class="unit-line">
+                <span class="unit-label">By Weight</span>
+                <span class="unit-value"
+                  >${{ formatMoney(totalsAmounts.weight) }}</span
+                >
+              </div>
+              <q-separator />
+              <div class="unit-line">
+                <span class="unit-label">By Size</span>
+                <span class="unit-value"
+                  >${{ formatMoney(totalsAmounts.size) }}</span
+                >
+              </div>
+              <q-separator spaced />
+              <div class="unit-line grand">
+                <span class="unit-label">Total Amount</span>
+                <span class="unit-value text-red-9"
+                  >${{ formatMoney(totalsAmounts.total) }}</span
+                >
+              </div>
+            </q-card>
+          </div>
+
           <!-- Update Transactions Button -->
-          <q-btn
-            label="Update Transactions"
-            color="primary"
-            icon="update"
-            @click="updateTransaction(order.id)"
-          />
-        </q-card-actions>
+          <div>
+            <q-btn
+              unelevated
+              label="Update Transactions"
+              color="primary"
+              icon="update"
+              class="q-py-md"
+              @click="updateTransaction(order.id)"
+            />
+          </div>
+        </q-card-section>
       </q-card>
     </div>
   </div>
@@ -1264,131 +1768,12 @@
     </q-card>
   </q-dialog>
   <!-- Add Report Dialog -->
-  <q-dialog v-model="isAddReportDialogOpen" persistent>
-    <q-card style="min-width: 400px">
-      <q-card-section>
-        <div class="text-h6 text-center">Add Error Report</div>
-      </q-card-section>
-      <q-card-section class="q-px-md">
-        <div class="q-px-md">
-          <div class="row items-center q-mb-sm">
-            <div class="col-4">Select Category:</div>
-            <div class="col-8">
-              <q-select
-                square
-                dense
-                outlined
-                class="bg-white"
-                :options="reportCategories"
-                v-model="selectedCategory"
-                label="Select Category"
-                @update:model-value="updateSubCategories"
-              />
-            </div>
-          </div>
-          <div class="row items-center q-mb-sm">
-            <div class="col-4">Select Sub-category:</div>
-            <div class="col-8">
-              <q-select
-                square
-                dense
-                outlined
-                class="bg-white"
-                :options="filteredSubCategories"
-                v-model="selectedSubCategory"
-                label="Select Sub-category"
-              />
-            </div>
-          </div>
+<AddErrorReportDialog
+  v-model="isAddReportDialogOpen"
+  :order-id="order?.id"
+  @added="onReportAdded"
+/>
 
-          <div class="row items-center q-mb-sm">
-            <div class="col-4">Enter Item Description:</div>
-            <div class="col-8">
-              <textarea
-                v-model="reportDesc"
-                type="textarea"
-                class="q-pa-sm report-desc full-width"
-                placeholder="Enter item description here..."
-              />
-            </div>
-          </div>
-          <div class="row items-center q-mb-sm">
-            <div class="col-4">Attach Photo (Optional):</div>
-            <div class="col-8">
-              <!-- Capture Photo Button -->
-              <q-btn
-                outline
-                color="primary"
-                label="Capture Photo"
-                dense
-                class="outline-btn q-mt-sm"
-                @click="openCameraDialog"
-              />
-              <!-- Remove Photo Button -->
-              <q-btn
-                dense
-                flat
-                icon="delete"
-                color="red"
-                v-if="uploadedPhotoUrl"
-                @click="clearUploadedPhoto"
-                label="Remove Photo"
-                class="q-mt-xs"
-              />
-              <!-- Display Captured Photo -->
-              <q-img
-                v-if="uploadedPhotoUrl"
-                :src="uploadedPhotoUrl"
-                class="q-mt-sm"
-                style="max-width: 300px; height: auto"
-              />
-            </div>
-          </div>
-
-          <!-- Camera Dialog -->
-          <q-dialog v-model="isCameraDialogOpen" persistent>
-            <q-card style="max-width: 500px">
-              <q-card-section class="dialog-header">
-                <div class="text-h6">Capture Photo</div>
-              </q-card-section>
-              <q-card-section class="dialog-body">
-                <!-- Video Element -->
-                <video
-                  ref="videoElement"
-                  autoplay
-                  playsinline
-                  disablePictureInPicture
-                  class="camera-feed styled-camera"
-                ></video>
-                <div align="right" class="q-mt-md">
-                  <q-btn
-                    label="Close"
-                    color="negative"
-                    @click="closeCameraDialog"
-                  />
-                  <q-btn
-                    color="primary"
-                    class="q-ml-sm"
-                    label="Capture"
-                    @click="capturePhoto"
-                  />
-                </div>
-              </q-card-section>
-            </q-card>
-          </q-dialog>
-        </div>
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          label="Cancel"
-          color="negative"
-          @click="closeAddReportDialog"
-        />
-        <q-btn label="Add Report" color="primary" @click="addErrorReport" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
   <q-dialog
     v-model="showUpdateCollectionDialog"
     persistent
@@ -1410,7 +1795,10 @@
         />
       </q-card-section>
       <q-card-section class="q-pa-none">
-        <UpdateCollectionDialog />
+        <UpdateCollectionDialog
+          @update:modelValue="(val) => (showUpdateCollectionDialog = val)"
+          @close="onCollectionDialogClosed"
+        />
       </q-card-section>
     </q-card>
   </q-dialog>
@@ -1436,7 +1824,10 @@
         />
       </q-card-section>
       <q-card-section class="q-pa-none">
-        <UpdateDeliveryDialog />
+        <UpdateDeliveryDialog
+          @update:modelValue="(val) => (showUpdateDeliveryDialog = val)"
+          @close="onDeliveryDialogClosed"
+        />
       </q-card-section>
     </q-card>
   </q-dialog>
@@ -1542,19 +1933,17 @@
 
         <q-separator class="q-my-sm" />
 
-        <q-banner
-          v-if="selectedPaymentType === 'Online Package Credits'"
-          class="bg-yellow-1 text-primary q-my-sm"
-          rounded
-        >
+        <q-banner class="bg-yellow-1 text-primary q-my-sm" rounded>
           <q-icon name="account_balance_wallet" class="q-mr-sm" />
           Customer Credit Available:
           <span class="text-weight-bolder text-subtitle1 q-ml-xs"
             >${{ (totalCredits || 0).toFixed(2) }}</span
           >
         </q-banner>
-        <div class="row q-col-gutter-x-md">
-          <div class="col-6">
+
+        <div class="row q-col-gutter-x-md q-mb-sm">
+          <!-- Payment Type -->
+          <div class="col">
             <div class="dialog-label">
               Payment Type<span class="dialog-asterisk">*</span>
             </div>
@@ -1567,7 +1956,9 @@
               :rules="[(val) => !!val || 'Payment Type is required']"
             />
           </div>
-          <div class="col-6">
+
+          <!-- Payment Amount + Reference No -->
+          <div class="col">
             <div class="dialog-label">
               Payment Amount<span class="dialog-asterisk">*</span>
             </div>
@@ -1602,7 +1993,42 @@
               />
             </div>
           </div>
+          <div class="col">
+            <div class="dialog-label">
+              Company
+              <span
+                v-if="availablePaymentCompanies.length > 1"
+                class="dialog-asterisk"
+                >*</span
+              >
+            </div>
+            <q-select
+              v-model="selectedPaymentCompany"
+              :options="availablePaymentCompanies"
+              option-label="label"
+              option-value="value"
+              outlined
+              dense
+              class="dialog-inputs"
+              :disable="availablePaymentCompanies.length <= 1"
+              :rules="
+                availablePaymentCompanies.length > 1
+                  ? [(val) => !!val || 'Company is required for split payments']
+                  : []
+              "
+              :hint="
+                availablePaymentCompanies.length === 0
+                  ? 'No items tagged with CC/DC. Company will not be saved.'
+                  : availablePaymentCompanies.length === 1
+                  ? `Auto-selected: ${
+                      availablePaymentCompanies[0]?.label || ''
+                    }`
+                  : 'Select which company this payment belongs to.'
+              "
+            />
+          </div>
         </div>
+
         <div class="q-mb-sm">
           <div class="dialog-label q-mb-xs">Remarks</div>
           <q-input
@@ -1624,6 +2050,344 @@
       </q-card-section>
     </q-card>
   </q-dialog>
+  <!-- Delivery Exception Dialog -->
+  <q-dialog v-model="showDeliveryExceptionDialog" persistent>
+    <q-card style="min-width: 900px; max-width: 95vw">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Make Delivery Exception
+        </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showDeliveryExceptionDialog = false"
+        />
+      </q-card-section>
+
+      <q-card-section class="dialog-body">
+        <q-banner class="bg-blue-1 text-blue-10 q-mb-md" rounded>
+          <q-icon name="info" class="q-mr-sm" />
+          Use this when **some items** need a different delivery
+          date/time/driver than the main delivery.
+        </q-banner>
+
+        <!-- Defaults section -->
+        <div class="text-subtitle2 text-weight-bold q-mb-sm">
+          Exception Delivery Details
+        </div>
+        <div class="row q-col-gutter-md q-mb-md">
+          <div class="col-4">
+            <div class="dialog-label q-mb-xs">Delivery Date</div>
+            <q-input
+              v-model="deliveryExceptionForm.delivery_date"
+              type="date"
+              outlined
+              dense
+              class="dialog-inputs"
+            />
+          </div>
+          <div class="col-4">
+            <div class="dialog-label q-mb-xs">Delivery Time</div>
+            <q-select
+              v-model="deliveryExceptionForm.delivery_time"
+              :options="timeOptions"
+              outlined
+              dense
+              class="dialog-inputs"
+              emit-value
+              map-options="false"
+            />
+          </div>
+          <div class="col-4">
+            <div class="dialog-label q-mb-xs">Driver</div>
+            <q-select
+              v-model="deliveryExceptionForm.driver_id"
+              :options="driverOptions"
+              option-label="name"
+              option-value="id"
+              outlined
+              dense
+              emit-value
+              map-options
+              class="dialog-inputs"
+            />
+          </div>
+        </div>
+
+        <div class="q-mb-md">
+          <div class="dialog-label q-mb-xs">Remarks</div>
+          <q-input
+            v-model="deliveryExceptionForm.remarks"
+            type="textarea"
+            outlined
+            dense
+            autogrow
+            placeholder="Optional remarks about this exception (e.g. EARLY DELIVERY FOR CURTAINS)..."
+          />
+        </div>
+
+        <!-- Items selection -->
+        <div class="text-subtitle2 text-weight-bold q-mb-xs">
+          Select Items for This Exception
+        </div>
+        <div class="text-caption text-grey-8 q-mb-sm">
+          Tick the items below and set how much quantity will be delivered on
+          this exception schedule.
+        </div>
+
+        <div class="transaction-summary">
+          <div class="row row-col-header order-header text-center">
+            <div class="col-1 text-weight-bold bordered">Select</div>
+            <div class="col-4 text-weight-bold bordered">Item</div>
+            <div class="col-2 text-weight-bold bordered">Company</div>
+            <div class="col-2 text-weight-bold bordered">Available Qty</div>
+            <div class="col-3 text-weight-bold bordered">Qty for Exception</div>
+          </div>
+
+          <div v-if="deliveryExceptionItems.length">
+            <div
+              v-for="(exItem, idx) in deliveryExceptionItems"
+              :key="exItem.item_id"
+              class="row row-col-row order-row"
+            >
+              <div class="col-1 bordered flex flex-center">
+                <q-checkbox v-model="exItem.selected" dense />
+              </div>
+              <div class="col-4 bordered">
+                <div class="text-body2">{{ exItem.item_name }}</div>
+                <div class="text-caption text-grey">
+                  {{ exItem.processLabel }} • {{ exItem.companyLabel }}
+                </div>
+              </div>
+              <div class="col-2 bordered text-center">
+                {{ exItem.availableQty }} {{ unitLabel(exItem.unit) }}
+              </div>
+              <div class="col-3 bordered">
+                <q-input
+                  v-model.number="exItem.exceptionQty"
+                  type="number"
+                  dense
+                  outlined
+                  :min="0"
+                  :max="exItem.availableQty"
+                  @blur="normalizeExceptionQty(exItem)"
+                  suffix="qty"
+                />
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center text-grey q-my-md">
+            No transaction items found for this order.
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn
+          flat
+          label="Cancel"
+          color="negative"
+          @click="showDeliveryExceptionDialog = false"
+        />
+        <q-btn
+          unelevated
+          label="Save Delivery Exception"
+          color="primary"
+          icon="save"
+          @click="saveDeliveryException"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+  <q-dialog v-model="isExceptionDetailsOpen" persistent>
+    <q-card style="min-width: 720px; max-width: 90vw">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Exception Details
+        </div>
+        <q-btn
+          icon="close"
+          flat
+          dense
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="closeExceptionDetails"
+        />
+      </q-card-section>
+
+      <q-card-section>
+        <div class="q-mb-xs">
+          <div
+            v-if="selectedException?.remarks"
+            class="text-subtitle1 text-weight-bold text-blue-9 bg-blue-1 q-mb-md text-center q-pa-sm="
+          >
+            {{ selectedException.remarks }}
+          </div>
+          <q-list bordered class="rounded-borders">
+            <q-item
+              v-for="exc in exceptionGroups"
+              :key="exc.key"
+              clickable
+              dense
+              class="q-pa-sm"
+              @click="openExceptionDetails(exc)"
+            >
+              <q-item-section>
+                <div class="">
+                  <q-icon
+                    name="event"
+                    size="16px"
+                    class="q-mr-sm text-blue-9"
+                  />
+                  <span class="text-weight-bold q-mr-xs">Delivery Date:</span>
+                  <span>{{ formatDateLine(exc.date) }}</span>
+                </div>
+                <div class="">
+                  <q-icon
+                    name="schedule"
+                    size="16px"
+                    class="q-mr-sm text-blue-9"
+                  />
+                  <span class="text-weight-bold q-mr-xs">Delivery Time:</span>
+                  <span>{{ exc.time || "[No time]" }}</span>
+                </div>
+                <div class="">
+                  <q-icon
+                    name="person"
+                    size="16px"
+                    class="q-mr-sm text-blue-9"
+                  />
+                  <span class="text-weight-bold q-mr-xs">Delivery Driver:</span>
+                  <span>{{ exc.driverName || "[No driver]" }}</span>
+                </div>
+              </q-item-section>
+              <q-item-section side>
+                <q-chip dense square color="blue-9" text-color="white">
+                  {{ exc.items?.length || 0 }} item{{
+                    (exc.items?.length || 0) === 1 ? "" : "s"
+                  }}
+                </q-chip>
+              </q-item-section>
+            </q-item></q-list
+          >
+        </div>
+
+        <!-- Exceptions table: same columns as Transaction Items (without Ready) -->
+        <div class="transaction-summary q-mt-md">
+          <div class="row row-col-header order-header text-center">
+            <div class="col-4 text-weight-bold bordered">Item</div>
+            <div class="col-2 text-weight-bold bordered">Process</div>
+            <div class="col text-weight-bold bordered">Price</div>
+            <div class="col text-weight-bold bordered">
+              {{
+                qtyHeaderForUnit(selectedException?.items?.[0]?.unit || "pc")
+              }}
+            </div>
+            <div class="col text-weight-bold bordered">Pieces</div>
+            <div class="col text-weight-bold bordered">Subtotal</div>
+          </div>
+
+          <div
+            v-for="it in selectedException?.items || []"
+            :key="`${it.id}-${it.name}`"
+            class="row row-col-row order-row"
+          >
+            <!-- Item -->
+            <div class="col-4 bordered">
+              <div class="text-body2">{{ it.name }}</div>
+            </div>
+
+            <!-- Process -->
+            <div class="col-2 bordered text-center">
+              {{ processLabelForTxId(it.id) }}
+            </div>
+
+            <!-- Price -->
+            <div class="col bordered text-center">
+              {{ priceDisplayForTxId(it.id) }}
+            </div>
+
+            <!-- Qty / Weight / Size (exception qty) -->
+            <div class="col bordered text-center">
+              {{ formatNumber(it.qty) }} {{ unitLabel(it.unit) }}
+            </div>
+
+            <!-- Pieces -->
+            <div class="col bordered text-center">
+              {{ piecesForTxId(it.id) }} <span class="unit-dim">pcs</span>
+            </div>
+
+            <!-- Subtotal (with tooltip) -->
+            <div class="col bordered flex items-center justify-center pos-rel">
+              <span>${{ formatMoney(excSubtotalForItem(it)) }}</span>
+
+              <q-icon
+                name="help_outline"
+                size="14px"
+                class="calc-help"
+                tabindex="0"
+                role="button"
+                aria-label="See computation"
+              >
+                <q-tooltip
+                  anchor="bottom right"
+                  self="top right"
+                  max-width="260px"
+                >
+                  {{ excSubtotalBreakdown(it) }}
+                </q-tooltip>
+              </q-icon>
+            </div>
+          </div>
+
+          <div
+            v-if="!selectedException?.items?.length"
+            class="text-center text-grey q-my-md"
+          >
+            No items in this exception.
+          </div>
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="between">
+        <q-btn
+  outline
+  color="red"
+  icon="undo"
+  class="q-ml-sm"
+  label="Mark as Undelivered"
+  @click="markExceptionGroupUndelivered"
+/>
+        <div class="flex">
+          <q-input
+          v-model="deliveredDate"
+          type="date"
+          dense
+          outlined
+          clearable
+          class="dialog-inputs q-mr-sm"
+          style="max-width: 220px"
+          @clear="deliveredDate = null"
+        >
+          <template v-slot:prepend>
+            <q-icon name="event_available" />
+          </template>
+        </q-input>
+
+        <q-btn
+          unelevated
+          color="positive"
+          icon="done_all"
+          label="Mark as Delivered"
+          @click="markExceptionGroupDelivered"
+        />
+        </div>
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -1636,6 +2400,7 @@ import UpdateCollectionDialog from "@/components/dialogs/UpdateCollectionDialog.
 import UpdateDeliveryDialog from "@/components/dialogs/UpdateDeliveryDialog.vue";
 import CollectionHistory from "@/components/CollectionHistory.vue";
 import DeliveryHistory from "@/components/DeliveryHistory.vue";
+import AddErrorReportDialog from "@/components/dialogs/AddErrorReportDialog.vue";
 import { useQuasar } from "quasar";
 
 const $q = useQuasar();
@@ -1651,6 +2416,8 @@ const delivery = ref({});
 const transactions = ref([]);
 const instructions = ref([]);
 const reports = ref([]);
+// Exception details dialog: picked Delivered Date for the group
+const deliveredDate = ref(null);
 
 const driverOptions = ref([]); // Initialize as a reactive array
 const timeOptions = ref([]); // Initialize as a reactive array
@@ -1658,33 +2425,33 @@ const timeOptions = ref([]); // Initialize as a reactive array
 const showCollectionHistoryDialog = ref(false);
 const showDeliveryHistoryDialog = ref(false);
 
-// Load driverOptions when component is mounted
+
+const isExceptionDetailsOpen = ref(false);
+const selectedException = ref(null);
+
 onMounted(async () => {
   try {
-    // Load drivers first
+    console.log("🚀 Component mounted!");
+
+    // ROUTE PARAM
+    const orderNo = route.params.order_no;
+    console.log("🔍 Route param - order_no:", orderNo);
+
+    // LOAD DROPDOWN OPTIONS
     await transactionStore.loadDrivers();
     await transactionStore.loadTimeOptions();
-
-    // Now set the dropdown options to the driverOptions from the store
     driverOptions.value = transactionStore.driverOptions;
     timeOptions.value = transactionStore.timeOptions;
+    console.log("✅ Driver/Time options loaded.");
 
-    console.log("Driver Options Set:", driverOptions.value);
-  } catch (error) {
-    console.error("Error loading driver options:", error);
-    driverOptions.value = []; // Fallback to an empty array
-  }
-});
-
-onMounted(async () => {
-  try {
-    const orderNo = route.params.order_no;
+    // FETCH ORDER DETAILS
     const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
       orderNo
     );
+    console.log("📦 orderDetails:", orderDetails);
 
     if (!orderDetails) {
-      console.warn("No order details found for:", orderNo);
+      console.warn("⚠️ No order details found for:", orderNo);
       return;
     }
 
@@ -1697,20 +2464,21 @@ onMounted(async () => {
 
     (orderDetails.transactions || []).forEach((tx, i) => {
       if (Array.isArray(tx.order_transaction_items)) {
-        tx.order_transaction_items.forEach((item, j) => {
-transactions.value.push({
-  ...item,
-  ready_status: item.ready_status === true,
-});
+        tx.order_transaction_items.forEach((item) => {
+          transactions.value.push({
+            ...item,
+            ready_status: item.ready_status === true,
+          });
         });
       } else {
         console.warn(`⚠️ No items in transaction ${i}`);
       }
     });
 
-    reports.value = orderDetails.error_reports || [];
+    await loadDeliveryExceptions();
 
-    console.log("Assigned reports to reactive var:", reports.value);
+    reports.value = orderDetails.error_reports || [];
+    console.log("📊 reports:", reports.value);
 
     instructions.value = [
       ...(orderDetails.instructions_onetime || []).map((instruction) => ({
@@ -1735,39 +2503,70 @@ transactions.value.push({
       })),
     ];
 
-    console.log("Final instructions list:", instructions.value);
+    console.log("📋 Final instructions:", instructions.value);
+
+    // LOAD ERROR ITEM OPTIONS
+    const items = await fetchAllErrorItems();
+    const categoriesSet = new Set(items.map((item) => item.category));
+    reportCategories.value = Array.from(categoriesSet);
+    if (reportCategories.value.length > 0) {
+      selectedCategory.value = reportCategories.value[0];
+      updateSubCategories(selectedCategory.value);
+    }
+
+    // LOAD ITEM OPTIONS FOR TRANSACTIONS
+    await transactionStore.loadItems();
+    console.log("🛒 Items loaded.");
   } catch (error) {
-    console.error("❌ Error loading order details:", error);
+    console.error("❌ Error in merged onMounted:", error);
   }
 });
 
-// Watcher for transactions to dynamically calculate subtotals
 watch(
   transactions,
   (newTransactions) => {
-    newTransactions.forEach((transaction) => {
-      transaction.subtotal =
-        (transaction.price || 0) * (transaction.quantity || 1); // Exclude pieces
-      // transaction.subtotal = (transaction.price || 0) * (transaction.quantity || 0) * (transaction.pieces || 1);
+    newTransactions.forEach((t) => {
+      const unit = getUnitForItem(t); // 'pc' | 'kg' | 'lbs' | 'sqft' | 'sqm'
+      const isTBA =
+        t.price == null ||
+        (typeof t.price === "string" && t.price.toUpperCase() === "TBA");
+      const price = isTBA ? 0 : parseFloat(t.price) || 0;
+      const qty = parseFloat(t.quantity) || 0;
+      const pcs = Math.max(Number(t.pieces ?? 0) || 1, 1); // default 1
+
+      if (unit === "sqft" || unit === "sqm") {
+        t.subtotal = +(price * qty * pcs).toFixed(2);
+      } else {
+        t.subtotal = +(price * qty).toFixed(2);
+      }
     });
   },
   { deep: true }
 );
 
-onMounted(async () => {
+function onReportAdded(newReport) {
   try {
-    const items = await fetchAllErrorItems(); // Fetch categories and subcategories
-    const categoriesSet = new Set(items.map((item) => item.category));
-    reportCategories.value = Array.from(categoriesSet);
-
-    // Automatically set the first category and load its subcategories
-    if (reportCategories.value.length > 0) {
-      selectedCategory.value = reportCategories.value[0];
-      updateSubCategories(selectedCategory.value);
-    }
-  } catch (error) {
-    console.error("Error fetching error items:", error);
+    reports.value.push(newReport);
+    Notify.create({ message: "Report list updated.", color: "green" });
+  } catch (e) {
+    Notify.create({ message: "Failed to update report list.", color: "red" });
   }
+}
+
+const groupedByUnit = computed(() => {
+  const groups = { pc: [], kg: [], sqft: [], other: [] };
+  for (const it of transactions.value) {
+    const u = getUnitForItem(it);
+    if (u === "pc" || u === "kg" || u === "sqft") groups[u].push(it);
+    else groups.other.push(it);
+  }
+  // optional: sort within groups (e.g., by item_name)
+  Object.keys(groups).forEach((k) =>
+    groups[k].sort((a, b) =>
+      (a.item_name || "").localeCompare(b.item_name || "")
+    )
+  );
+  return groups;
 });
 
 const paymentStatus = computed({
@@ -1841,13 +2640,6 @@ const noRolls = computed({
     order.value.order_production.no_rolls = val;
   },
 });
-
-function autoResize(event) {
-  const textarea = event.target;
-  textarea.style.height = "auto"; // Reset the height
-  textarea.style.height = `${textarea.scrollHeight}px`; // Adjust based on content
-  textarea.style.overflow = "hidden";
-}
 
 // Reactive variables for adding instructions
 const instructionsType = ref("onetime");
@@ -2046,25 +2838,56 @@ function clearUploadedPhoto() {
   uploadedPhotoUrl.value = null; // Reset the photo URL
 }
 
-// Computed properties for totals
-const totalPcs = computed(() =>
-  transactions.value.reduce((acc, item) => acc + computedPcs(item), 0)
-);
+// --- Per-section totals ---
+const pcTotals = computed(() => {
+  const qty = pcItems.value.reduce(
+    (acc, it) => acc + (parseFloat(it.quantity) || 0),
+    0
+  );
+  const subtotal = pcItems.value.reduce(
+    (acc, it) => acc + (parseFloat(it.subtotal) || 0),
+    0
+  );
+  return { qty, subtotal };
+});
 
-const totalQty = computed(() => {
-  return transactions.value.reduce((acc, item) => {
-    const qty = parseFloat(item.quantity) || 0; // Ensure a numeric value
-    return acc + qty;
-  }, 0);
+const weightTotals = computed(() => {
+  let kg = 0,
+    lbs = 0,
+    pieces = 0,
+    subtotal = 0;
+  for (const it of weightItems.value) {
+    const u = getUnitForItem(it);
+    const q = parseFloat(it.quantity) || 0;
+    if (u === "kg") kg += q;
+    else if (u === "lbs") lbs += q;
+    pieces += computedPcs(it);
+    subtotal += parseFloat(it.subtotal) || 0;
+  }
+  return { kg, lbs, pieces, subtotal };
+});
+
+const sizeTotals = computed(() => {
+  let sqft = 0,
+    sqm = 0,
+    pieces = 0,
+    subtotal = 0;
+  for (const it of sizeItems.value) {
+    const u = getUnitForItem(it);
+    const q = parseFloat(it.quantity) || 0;
+    if (u === "sqft") sqft += q;
+    else if (u === "sqm") sqm += q;
+    pieces += computedPcs(it);
+    subtotal += parseFloat(it.subtotal) || 0;
+  }
+  return { sqft, sqm, pieces, subtotal };
 });
 
 const totalSubtotal = computed(() => {
-  return transactions.value
-    .reduce((acc, item) => {
-      const subtotal = parseFloat(item.subtotal) || 0; // Ensure a numeric value
-      return acc + subtotal;
-    }, 0)
-    .toFixed(2); // Format as a fixed two-decimal string
+  return transactions.value.reduce((acc, item) => {
+    const subtotal = parseFloat(item.subtotal) || 0;
+    return acc + subtotal;
+  }, 0);
 });
 
 // Computed properties for formatted display
@@ -2103,34 +2926,32 @@ function getContactNumber(contactPersonId) {
 
 const formattedCollectionContactNos = computed({
   get() {
-    const contact1 =
-      collection.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = collection.value.customer_contact_persons?.contact_no2;
+    const contact1 = collection.value.contact_person?.contact_no1 || "-";
+    const contact2 = collection.value.contact_person?.contact_no2;
 
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    collection.value.customer_contact_persons.contact_no1 = contact1 || "";
+    collection.value.contact_person.contact_no1 = contact1 || "";
 
     // Only set contact_no2 if it was provided
-    collection.value.customer_contact_persons.contact_no2 = contact2 || null;
+    collection.value.contact_person.contact_no2 = contact2 || null;
   },
 });
 
 const formattedDeliveryContactNos = computed({
   get() {
-    const contact1 =
-      delivery.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = delivery.value.customer_contact_persons?.contact_no2;
+    const contact1 = delivery.value.contact_person?.contact_no1 || "-";
+    const contact2 = delivery.value.contact_person?.contact_no2;
     // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
     return contact2 ? `${contact1} / ${contact2}` : contact1;
   },
   set(value) {
     const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    delivery.value.customer_contact_persons.contact_no1 = contact1 || "";
-    delivery.value.customer_contact_persons.contact_no2 = contact2 || "";
+    delivery.value.contact_person.contact_no1 = contact1 || "";
+    delivery.value.contact_person.contact_no2 = contact2 || "";
   },
 });
 
@@ -2447,6 +3268,17 @@ const categoryOptions = [
 ];
 const priceTypeOptions = ["Current", "TBA", "Custom"];
 const unitTypeOptions = ["pc", "sqft", "kg"];
+const processOptions = [
+  { label: "Laundry", value: "laundry" },
+  { label: "Dry Clean", value: "dryclean" },
+  { label: "Pressing Only", value: "pressing" },
+  { label: "Others", value: "others" },
+];
+
+const companyOptions = [
+  { label: "CC", value: "cc" },
+  { label: "DC", value: "dc" },
+];
 
 // Reactive Variables
 const searchModeActive = ref(false);
@@ -2746,41 +3578,102 @@ watch(selectedSearchItemName, (newItemName) => {
     }
   }
 });
+// FILE: src/views/OrderView.vue (script setup) — replace your updateTransaction() and add a refresher
+async function refreshTransactionsAndGoodsStatus() {
+  const orderNo = route.params.order_no;
+  const details = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
 
-// Method to update transactions
+  // Refresh order + goods status from DB
+  order.value = details?.order || {};
+  // If store returns goods_status inside order.order_production, the computed "goodsStatus" will reflect it.
+
+  // Rebuild transactions from ACTIVE transaction(s) only
+  const list = [];
+  (details?.transactions || [])
+    .filter((tx) => tx.status === "active") // guard against old versions
+    .forEach((tx) => {
+      (tx.order_transaction_items || []).forEach((item) => {
+        list.push({
+          ...item,
+          ready_status: item.ready_status === true,
+        });
+      });
+    });
+
+  // Fallback: if API doesn’t include `status`, keep existing behavior
+  if (!list.length && Array.isArray(details?.transactions)) {
+    details.transactions.forEach((tx) => {
+      (tx.order_transaction_items || []).forEach((item) => {
+        list.push({ ...item, ready_status: item.ready_status === true });
+      });
+    });
+  }
+
+  transactions.value = list;
+}
+
+function computeOrderTotalFromUI() {
+  // Why: all UI subtotals are already normalized; just sum safely
+  const rows = Array.isArray(transactions.value) ? transactions.value : [];
+  return rows.reduce((acc, it) => acc + (Number(it.subtotal) || 0), 0);
+}
+
 async function updateTransaction(orderId) {
   try {
-    // Prepare transaction items and ensure they are properly formatted
-    transactionStore.transactionItems = transactions.value.map((item) => ({
-      name: item.item_name,
-      order_id: orderId,
-      price: item.price,
-      process: item.process,
-      pieces: item.pieces || 1, // Default to 1 if undefined
-      quantity: item.quantity,
-      subtotal: item.subtotal,
-      category: item.category,
-      tag_category: item.tag_category,
-      status: "active",
-    }));
+    // Build payload from UI rows
+    transactionStore.transactionItems = transactions.value.map((item) => {
+      const unit =
+        (item.unit || "").toLowerCase().trim() || getUnitForItem(item);
+      const pieces = item.pieces != null ? Number(item.pieces) || 0 : null;
 
-    // Call the transactionStore updateTransaction
+      return {
+        item_name: item.item_name,
+        price: item.price,
+        process: item.process,
+        quantity: Number(item.quantity ?? 0) || 0,
+        subtotal: Number(item.subtotal ?? 0) || 0,
+        pieces,
+        category: item.category ?? null,
+        sub_category: item.sub_category ?? null,
+        tag_category: item.tag_category ?? null,
+        unit,
+        ready_status: item.ready_status === true,
+        pack_type: item.pack_type ?? null,
+        company: item.company ?? null,
+      };
+    });
+
+    // 1) Persist the item changes
     await transactionStore.updateTransaction(orderId);
-updateReadyStatus();
+
+    // 2) Recompute current total from UI + sync order_payments
+    const newTotal = computeOrderTotalFromUI();
+    if (typeof transactionStore.syncOrderPaymentsTotals !== "function") {
+      // Hard guard so you notice in dev if store method is missing
+      throw new Error(
+        "[OrderView] transactionStore.syncOrderPaymentsTotals() is missing"
+      );
+    }
+    await transactionStore.syncOrderPaymentsTotals(orderId, newTotal);
+
+    // 3) Refresh UI from DB (active items + payments/goods status)
+    await refreshTransactionsAndGoodsStatus();
+
     Notify.create({
-      message: "Transactions updated successfully!",
+      message: "Transactions & invoice totals updated.",
       color: "green",
       icon: "check_circle",
     });
   } catch (error) {
     console.error("Error updating transactions:", error);
     Notify.create({
-      message: "Failed to update transactions. Please try again.",
+      message: "Failed to update transactions.",
       color: "red",
       icon: "error",
     });
   }
 }
+
 
 // Start of ass contact person
 const isAddContactPersonDialogOpen = ref(false);
@@ -2931,10 +3824,9 @@ const addAddress = async () => {
   }
 };
 
-// End of add address
-
 const computedPcs = (item) => {
-  return (item.pieces || 1) * item.quantity;
+  const pcs = parseFloat(item.pieces);
+  return isNaN(pcs) ? 0 : pcs;
 };
 
 const isAddInstructionDialogOpen = ref(false);
@@ -3060,24 +3952,6 @@ const updateDelivery = async (logisticsId) => {
   }
 };
 
-const openCollectionHistoryDialog = async (logisticsId) => {
-  try {
-    transactionStore.logisticsId = logisticsId;
-    showCollectionHistoryDialog.value = true;
-  } catch (error) {
-    console.error("Error opening collection history dialog:", error);
-  }
-};
-
-const openDeliveryHistoryDialog = async (logisticsId) => {
-  try {
-    transactionStore.logisticsId = logisticsId;
-    showDeliveryHistoryDialog.value = true;
-  } catch (error) {
-    console.error("Error opening delivery history dialog:", error);
-  }
-};
-
 // Payment dialog control
 const showAddPaymentDialog = ref(false);
 
@@ -3110,14 +3984,26 @@ const addPayment = async () => {
     return;
   }
 
+  // If there are multiple companies on this order, make sure one is selected
+  if (
+    availablePaymentCompanies.value.length > 1 &&
+    !selectedPaymentCompany.value
+  ) {
+    $q.notify({
+      type: "negative",
+      message: "Please select a company for this payment.",
+    });
+    return;
+  }
+
   console.log("💳 Selected payment type:", selectedPaymentType.value);
+  console.log("🏢 Selected payment company:", selectedPaymentCompany.value);
   console.log("💰 Payment amount:", paymentAmount.value);
 
   const paymentSection = order.value?.order_payment;
   console.log("📦 order.order_payment:", paymentSection);
 
   const orderId = order.value?.id;
-
   console.log("🧾 Extracted order ID:", orderId);
 
   if (!orderId) {
@@ -3125,11 +4011,16 @@ const addPayment = async () => {
     return;
   }
 
+  // 🔐 This payload is what store.addPayment will use to:
+  //  - update order_payments
+  //  - insert into order_payments_history (including `company`)
   const paymentData = {
-    order_id: orderId, // rename this key
+    order_id: orderId,
     type: selectedPaymentType.value,
     amount: paymentAmount.value,
-    reference_no: referenceNo.value,
+    reference_no: referenceNo.value || null,
+    company: selectedPaymentCompany.value || null, // <-- NEW: for order_payments_history.company
+    remarks: creditRemarks.value || null, // <-- send remarks down as well
   };
 
   console.log("📤 Final payment data to send:", paymentData);
@@ -3178,6 +4069,8 @@ const addPayment = async () => {
     selectedPaymentType.value = null;
     paymentAmount.value = 0;
     referenceNo.value = "";
+    creditRemarks.value = "";
+    selectedPaymentCompany.value = null;
 
     $q.notify({ type: "positive", message: "Payment added successfully." });
   } catch (error) {
@@ -3190,6 +4083,45 @@ const addPayment = async () => {
 };
 
 const totalCredits = ref(0);
+
+// --- Payment company handling for split invoicing ---
+
+// Selected company for this payment (e.g. 'cc' or 'dc')
+const selectedPaymentCompany = ref(null);
+
+// Derive which companies are actually used in the transaction items
+const availablePaymentCompanies = computed(() => {
+  const used = new Set(
+    transactions.value
+      .map((t) => (t.company || "").toLowerCase())
+      .filter(Boolean)
+  );
+
+  // ✅ If no items are tagged with a company, we return an empty array.
+  //    That means: no company selection is shown / needed.
+  if (!used.size) {
+    return [];
+  }
+
+  // ✅ Otherwise, only show the companies that actually appear in the items.
+  //    - If only 'cc' => returns [{ label: 'CC', value: 'cc' }]
+  //    - If only 'dc' => returns [{ label: 'DC', value: 'dc' }]
+  //    - If both      => returns both options
+  return companyOptions.filter((opt) => used.has(opt.value));
+});
+
+// When dialog opens, auto-pick company if there is only one option
+watch(showAddPaymentDialog, (open) => {
+  if (open) {
+    if (availablePaymentCompanies.value.length === 1) {
+      // ✅ Only CC or only DC: auto select it
+      selectedPaymentCompany.value = availablePaymentCompanies.value[0].value;
+    } else {
+      // ✅ 0 companies (no tagging) or 2 companies (split)
+      selectedPaymentCompany.value = null;
+    }
+  }
+});
 
 watch(selectedPaymentType, async (newType) => {
   console.log("💡 Payment Type Changed:", newType);
@@ -3218,39 +4150,1218 @@ watch(selectedPaymentType, async (newType) => {
   }
 });
 
-function generateInvoiceTab(orderNo) {
-  const url = `/invoice/${orderNo}`;
-  window.open(url, "_blank");
+const DRIVER_NOT_SET = "[NOT SET]";
+
+const driverMapById = computed(() => {
+  const m = new Map();
+  (transactionStore.driverOptions || []).forEach((d) => {
+    if (d?.id != null)
+      m.set(String(d.id), (d.name || "").trim() || DRIVER_NOT_SET);
+  });
+  return m;
+});
+const getDriverName = (id) =>
+  driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
+
+function formatAddress(addr) {
+  if (!addr) return "-";
+  const main = [addr.block_no, addr.road_name, addr.unit_no, addr.building_name]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" ");
+  const postal = (addr.postal_code ?? "").toString().trim();
+  const line = [main, postal].filter(Boolean).join(", ");
+  const extra = [addr.additional_info, addr.remarks]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" — ");
+  return extra ? `${line} (${extra})` : line || "-";
 }
 
-const updateReadyStatus = async () => {
-  try {
-    const updates = transactions.value.map((item) => ({
-      id: item.id,
-ready_status: item.ready_status === true
-    }));
+const reloadCollectionAndDelivery = async () => {
+  const orderNo = route.params.order_no;
+  const details = await transactionStore.fetchWholeOrderByOrderNo(orderNo);
+  logistics.value = details || {}; // <-- refresh logistics (must include delivered_date)
+  collection.value = details?.collection || {};
+  delivery.value = details?.delivery || {};
+  await loadDeliveryExceptions();
+};
 
-    await Promise.all(
-      updates.map((update) =>
-        transactionStore.updateTransactionReady(update.id, update.ready_status)
-      )
+const onCollectionDialogClosed = async () => {
+  showUpdateCollectionDialog.value = false;
+  await reloadCollectionAndDelivery();
+  $q.notify({ type: "positive", message: "Collection updated." });
+};
+
+const onDeliveryDialogClosed = async () => {
+  showUpdateDeliveryDialog.value = false;
+  await reloadCollectionAndDelivery();
+  $q.notify({ type: "positive", message: "Delivery updated." });
+};
+
+const openCollectionHistoryDialog = () => {
+  // try current page state first, then last-used store value
+  const id =
+    logistics.value?.logistics_id ??
+    collection.value?.logistics_id ??
+    transactionStore?.logisticsId ??
+    null;
+
+  if (!id) {
+    console.warn("[openCollectionHistoryDialog] Missing logistics_id");
+    Notify.create({
+      type: "negative",
+      message: "Logistics ID is missing. Cannot open history.",
+    });
+    return;
+  }
+
+  transactionStore.logisticsId = id;
+  console.log("opening collection history dialog:", id);
+  showCollectionHistoryDialog.value = true;
+};
+
+const openDeliveryHistoryDialog = () => {
+  const id =
+    logistics.value?.logistics_id ??
+    delivery.value?.logistics_id ??
+    transactionStore?.logisticsId ??
+    null;
+
+  if (!id) {
+    console.warn("[openDeliveryHistoryDialog] Missing logistics_id");
+    Notify.create({
+      type: "negative",
+      message: "Logistics ID is missing. Cannot open history.",
+    });
+    return;
+  }
+
+  transactionStore.logisticsId = id;
+  console.log("opening delivery history dialog:", id);
+  showDeliveryHistoryDialog.value = true;
+};
+
+async function handlePrintInvoice(orderNoRaw) {
+  const TAG = "[handlePrintInvoice]";
+  console.log(`${TAG} start`, { orderNoRaw });
+
+  try {
+    const orderNo = String(orderNoRaw ?? "").trim();
+
+    if (!orderNo) {
+      Notify.create({
+        type: "negative",
+        message: "Order number is required.",
+        icon: "error",
+      });
+      return false;
+    }
+
+    const res = await transactionStore.printInvoice(orderNo);
+    console.log(`${TAG} result`, res);
+
+    if (res?.ok) {
+      const url = `/invoice/${encodeURIComponent(orderNo)}/${encodeURIComponent(
+        res.invoiceNo
+      )}/${encodeURIComponent(res.historyId)}`;
+      console.log(`${TAG} opening`, { url });
+
+      Notify.create({
+        type: "positive",
+        message: `Invoice history recorded for Order #${orderNo} (Invoice #${res.invoiceNo}).`,
+        icon: "check_circle",
+      });
+
+      window.open(url, "_blank");
+      return true;
+    }
+
+    Notify.create({
+      type: "negative",
+      message: res?.error || "Failed to create print history.",
+      icon: "report_problem",
+    });
+    return false;
+  } catch (err) {
+    console.error(`${TAG} error`, err);
+    Notify.create({
+      type: "negative",
+      message: err?.message || "Unexpected error while generating invoice.",
+      icon: "error",
+    });
+    return false;
+  }
+}
+
+const formatMoney = (val) => {
+  const num = parseFloat(val);
+  if (isNaN(num)) return "0.00";
+  return num.toFixed(2);
+};
+
+/** Get unit safely from item; fallback by inferring from name */
+function getUnitForItem(item) {
+  const u = (item.unit || "").toString().toLowerCase().trim();
+  if (u) return u;
+  return inferUnitFromName(item.item_name || "");
+}
+
+/** When name contains “(… sqft)” or “kg”, infer unit; default pc */
+function inferUnitFromName(name) {
+  const s = (name || "").toLowerCase();
+  if (s.includes("sqft")) return "sqft";
+  if (s.includes("kg")) return "kg";
+  return "pc";
+}
+
+/** Display label for unit in UI */
+function unitLabel(u) {
+  if (!u) return "";
+  return u.toLowerCase() === "pc" ? "pcs" : u;
+}
+
+/** Price input shows only the number part (no /unit) */
+function formatPriceNumber(price) {
+  if (price === null || price === undefined) return 0;
+  if (typeof price === "string" && price.toUpperCase() === "TBA") return 0;
+  const n = Number(price);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Qty model for input: 2 decimals for non-pc, integer for pc */
+function formatQtyModelValue(item) {
+  const unit = getUnitForItem(item);
+  const q = Number(item.quantity ?? 0);
+  if (!Number.isFinite(q)) return unit === "pc" ? 0 : 0.0;
+  return unit === "pc" ? Math.trunc(q) : Number(q.toFixed(2));
+}
+
+/** Handle price edits; keep numeric in state */
+function onPriceInputChange(rowIndex, val) {
+  const n = parseFloat(val);
+  transactions.value[rowIndex].price = Number.isFinite(n) ? n : 0;
+}
+
+function onQtyInputChange(rowIndex, val) {
+  const item = transactions.value[rowIndex];
+  const unit = getUnitForItem(item);
+  let q = parseFloat(val);
+  if (!Number.isFinite(q) || q < 0) q = 0;
+  item.quantity = unit === "pc" ? Math.trunc(q) : parseFloat(q.toFixed(2));
+
+  const isTBA =
+    item.price == null ||
+    (typeof item.price === "string" && item.price.toUpperCase() === "TBA");
+  const price = isTBA ? 0 : parseFloat(item.price) || 0;
+  const pcs = Math.max(Number(item.pieces ?? 0) || 1, 1);
+
+  item.subtotal =
+    unit === "sqft" || unit === "sqm"
+      ? +(price * item.quantity * pcs).toFixed(2)
+      : +(price * item.quantity).toFixed(2);
+}
+
+const showDeliveryExceptionDialog = ref(false);
+
+const deliveryExceptionForm = ref({
+  delivery_date: null,
+  delivery_time: null,
+  driver_id: null,
+  remarks: "",
+});
+
+// This will be built from `transactions`
+const deliveryExceptionItems = ref([]);
+
+function openDeliveryExceptionDialog() {
+  // Default values from current delivery
+  const d = delivery.value || {};
+
+  // Date: expect `YYYY-MM-DD`; if datetime string, slice first 10 chars
+  const rawDate = d.delivery_date
+    ? new Date(d.delivery_date).toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+
+  deliveryExceptionForm.value = {
+    delivery_date: rawDate,
+    delivery_time: d.delivery_time || null,
+    driver_id: d.driver_id || null,
+    remarks:
+      d.remarks && d.remarks.trim().length
+        ? d.remarks
+        : `DELIVERY EXCEPTION for Order #${order.value?.order_no || ""}`,
+  };
+
+  // Build item list from current transactions
+  deliveryExceptionItems.value = (transactions.value || []).map((item) => {
+    const unit = getUnitForItem(item);
+    const qty = Number(item.quantity ?? 0) || 0;
+
+    return {
+      item_id: item.id, // order_transaction_item_id
+      item_name: item.item_name,
+      company: (item.company || "").toString().toLowerCase(),
+      companyLabel: (item.company || "").toString().toUpperCase() || "-",
+      process: item.process,
+      processLabel:
+        item.process === "laundry"
+          ? "Laundry"
+          : item.process === "dryclean"
+          ? "Dry Clean"
+          : item.process === "pressing"
+          ? "Pressing Only"
+          : item.process === "others"
+          ? "Others"
+          : item.process || "-",
+      unit,
+      availableQty: qty,
+      exceptionQty: qty, // default: send all unless user reduces
+      selected: false,
+    };
+  });
+
+  showDeliveryExceptionDialog.value = true;
+}
+function normalizeExceptionQty(exItem) {
+  if (exItem.exceptionQty == null || isNaN(exItem.exceptionQty)) {
+    exItem.exceptionQty = 0;
+  }
+  if (exItem.exceptionQty < 0) exItem.exceptionQty = 0;
+  if (exItem.exceptionQty > exItem.availableQty) {
+    exItem.exceptionQty = exItem.availableQty;
+  }
+}
+async function saveDeliveryException() {
+  try {
+    const logisticsId =
+      logistics.value?.logistics_id || logistics.value?.id || null;
+
+    if (!logisticsId) {
+      Notify.create({
+        type: "negative",
+        message: "Logistics ID is missing, cannot create delivery exception.",
+      });
+      return;
+    }
+
+    const selectedItems = deliveryExceptionItems.value.filter(
+      (i) => i.selected && i.exceptionQty > 0
     );
+
+    if (!selectedItems.length) {
+      Notify.create({
+        type: "warning",
+        message: "Please select at least one item with quantity > 0.",
+      });
+      return;
+    }
+
+    if (!deliveryExceptionForm.value.delivery_date) {
+      Notify.create({
+        type: "warning",
+        message: "Delivery date is required.",
+      });
+      return;
+    }
+
+    // Create 1 exception row per selected item
+    const promises = selectedItems.map((item) => {
+      const payload = {
+        logistics_id: logisticsId,
+        order_transaction_item_id: item.item_id,
+        delivery_date: deliveryExceptionForm.value.delivery_date,
+        delivery_time: deliveryExceptionForm.value.delivery_time,
+        driver_id: deliveryExceptionForm.value.driver_id,
+        quantity: item.exceptionQty,
+        remarks: deliveryExceptionForm.value.remarks || null,
+      };
+
+      return transactionStore.createDeliveryException(payload);
+    });
+
+    await Promise.all(promises);
+    Notify.create({
+      type: "positive",
+      message: "Delivery exception(s) saved successfully.",
+    });
+
+    showDeliveryExceptionDialog.value = false;
+    await loadDeliveryExceptions();
+    await updateDeliveryLogisticsStatus();
+  } catch (err) {
+    console.error("[saveDeliveryException] error", err);
+    Notify.create({
+      type: "negative",
+      message: "Failed to save delivery exceptions. Please try again.",
+    });
+  }
+}
+
+const deliveryExceptions = ref([]); // rows from logistics_delivery_exceptions
+
+async function loadDeliveryExceptions() {
+  try {
+    const logisticsId =
+      logistics.value?.logistics_id || logistics.value?.id || null;
+
+    if (!logisticsId) {
+      console.warn("[loadDeliveryExceptions] Missing logistics_id");
+      deliveryExceptions.value = [];
+      return;
+    }
+
+    const rows =
+      (await transactionStore.fetchDeliveryExceptionsByLogisticsId(
+        logisticsId
+      )) || [];
+
+    deliveryExceptions.value = Array.isArray(rows) ? rows : [];
+    console.log("[loadDeliveryExceptions] exceptions:", deliveryExceptions.value);
+
+    // ✅ If the dialog is open, re-compute the delivered date for the selected group
+    if (isExceptionDetailsOpen.value && selectedException.value) {
+      deliveredDate.value = deliveredDateForGroup(selectedException.value);
+    }
+  } catch (err) {
+    console.error("[loadDeliveryExceptions] error", err);
+    deliveryExceptions.value = [];
+  }
+}
+
+const deliveryPlanGroups = computed(() => {
+  const groupsMap = new Map();
+
+  const fmtDate = (dateStr) => {
+    if (!dateStr) return "[No date]";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "[Invalid date]";
+    return d.toLocaleDateString("en-SG", {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  // --- 0) Build base items and exception qty map (for pc unit) ---
+
+  const baseItems = (transactions.value || []).map((item) => ({
+    id: item.id,
+    name: item.item_name,
+    qty: parseFloat(item.quantity) || 0,
+    unit: getUnitForItem(item), // "pc" | "kg" | "sqft"
+    company: item.company || null,
+  }));
+
+  // itemId -> total exception qty (pcs only)
+  const exceptionQtyByItemId = new Map();
+
+  (deliveryExceptions.value || []).forEach((ex) => {
+    const tx = (transactions.value || []).find(
+      (t) => String(t.id) === String(ex.order_transaction_item_id)
+    );
+    if (!tx) {
+      console.warn(
+        "[deliveryPlanGroups] Exception references missing item",
+        ex.order_transaction_item_id
+      );
+      return;
+    }
+
+    const unit = getUnitForItem(tx);
+    if (unit !== "pc") {
+      // only track pcs here; others show full qty in main
+      return;
+    }
+
+    const txQty = parseFloat(tx.quantity) || 0;
+    let exQty =
+      ex.quantity != null && !isNaN(parseFloat(ex.quantity))
+        ? parseFloat(ex.quantity)
+        : txQty; // if no quantity given, assume "all"
+
+    if (exQty <= 0) return;
+
+    const current = exceptionQtyByItemId.get(tx.id) || 0;
+    exceptionQtyByItemId.set(tx.id, current + exQty);
+  });
+
+  // --- 1) MAIN DELIVERY GROUP ---
+
+  if (
+    delivery.value &&
+    (delivery.value.delivery_date ||
+      delivery.value.delivery_time ||
+      delivery.value.driver_id)
+  ) {
+    const key = [
+      delivery.value.delivery_date || "",
+      delivery.value.delivery_time || "",
+      delivery.value.driver_id || "",
+      "MAIN",
+    ].join("__");
+
+    const mainItems = baseItems
+      .map((bi) => {
+        let mainQty = bi.qty;
+
+        if (bi.unit === "pc") {
+          const excQty = exceptionQtyByItemId.get(bi.id) || 0;
+          mainQty = Math.max(0, bi.qty - excQty);
+        }
+        // for non-pc units, keep full qty in main
+
+        return {
+          ...bi,
+          qty: mainQty,
+        };
+      })
+      .filter((bi) => bi.qty > 0); // only show if something left for main
+
+    if (mainItems.length > 0) {
+      groupsMap.set(key, {
+        key,
+        type: "main",
+        isException: false,
+        date: delivery.value.delivery_date || null,
+        time: delivery.value.delivery_time || null,
+        driverId: delivery.value.driver_id || null,
+        driverName: getDriverName(delivery.value.driver_id),
+        items: mainItems,
+        label: `Main Delivery • ${fmtDate(delivery.value.delivery_date)}${
+          delivery.value.delivery_time
+            ? " • " + delivery.value.delivery_time
+            : ""
+        } • ${getDriverName(delivery.value.driver_id)}`,
+      });
+    }
+  }
+
+  // --- 2) EXCEPTION GROUPS ---
+
+  (deliveryExceptions.value || []).forEach((ex) => {
+    const tx = (transactions.value || []).find(
+      (t) => String(t.id) === String(ex.order_transaction_item_id)
+    );
+
+    if (!tx) {
+      console.warn(
+        "[deliveryPlanGroups] Exception references missing item (for grouping)",
+        ex.order_transaction_item_id
+      );
+      return;
+    }
+
+    const unit = getUnitForItem(tx);
+    const txQty = parseFloat(tx.quantity) || 0;
+
+    const key = [
+      ex.delivery_date || "",
+      ex.delivery_time || "",
+      ex.driver_id || "",
+      "EXC",
+    ].join("__");
+
+    let group = groupsMap.get(key);
+    if (!group) {
+      group = {
+        key,
+        type: "exception",
+        isException: true,
+        date: ex.delivery_date || null,
+        time: ex.delivery_time || null,
+        driverId: ex.driver_id || null,
+        driverName: getDriverName(ex.driver_id),
+        items: [],
+        remarks: ex.remarks || null,
+      };
+
+      group.label = [
+        "Exception",
+        group.date ? fmtDate(group.date) : "[No date]",
+        group.time || "",
+        group.driverName || "[No driver]",
+      ]
+        .filter(Boolean)
+        .join(" • ");
+
+      groupsMap.set(key, group);
+    }
+
+    let exQty =
+      ex.quantity != null && !isNaN(parseFloat(ex.quantity))
+        ? parseFloat(ex.quantity)
+        : txQty;
+
+    if (exQty <= 0) return;
+
+    group.items.push({
+      id: tx.id,
+      name: tx.item_name,
+      qty: exQty,
+      unit,
+      company: tx.company || null,
+    });
+  });
+
+  // --- 3) Filter out empty groups & sort ---
+
+  const groups = Array.from(groupsMap.values()).filter(
+    (g) => Array.isArray(g.items) && g.items.length > 0
+  );
+
+  groups.sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0;
+    const db = b.date ? new Date(b.date).getTime() : 0;
+    if (da !== db) return da - db;
+
+    const ta = (a.time || "").toString();
+    const tb = (b.time || "").toString();
+    if (ta !== tb) return ta.localeCompare(tb);
+
+    const aIsMain = a.type === "main" ? 0 : 1;
+    const bIsMain = b.type === "main" ? 0 : 1;
+    return aIsMain - bIsMain;
+  });
+
+  return groups;
+});
+
+const handlerLabel = computed(() => {
+  const used = new Set(
+    (transactions.value || [])
+      .map((t) => (t.company || "").toLowerCase())
+      .filter(Boolean)
+  );
+  const labels = [];
+  if (used.has("cc")) labels.push("Cotton Care");
+  if (used.has("dc")) labels.push("DryCleaners");
+  return labels.length ? labels.join(" / ") : "-";
+});
+
+function perUnitPieces(item) {
+  const n = Number(item.pieces_per_unit ?? item.pieces ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// Group transactions by effective unit
+const pcItems = computed(() =>
+  (transactions.value || []).filter((i) => getUnitForItem(i) === "pc")
+);
+
+const weightItems = computed(() =>
+  (transactions.value || []).filter((i) => {
+    const u = getUnitForItem(i);
+    return u === "kg" || u === "lbs";
+  })
+);
+
+const sizeItems = computed(() =>
+  (transactions.value || []).filter((i) => {
+    const u = getUnitForItem(i);
+    return u === "sqft" || u === "sqm";
+  })
+);
+
+// Keep sets for multi-piece pc items (price/qty suffix)
+function qtyUnitLabel(item) {
+  const unit = getUnitForItem(item);
+  if (unit === "pc" && perUnitPieces(item) > 1) return "sets";
+  return unitLabel(unit);
+}
+function priceUnitLabel(item) {
+  const unit = getUnitForItem(item);
+  if (unit === "pc" && perUnitPieces(item) > 1) return "set";
+  return unitLabel(unit);
+}
+
+function onPiecesInputChange(rowIndex, val) {
+  const n = parseInt(val, 10);
+  const safe = Number.isFinite(n) && n >= 0 ? n : 0;
+  const item = transactions.value[rowIndex];
+  item.pieces = safe;
+
+  const unit = getUnitForItem(item);
+  const isTBA =
+    item.price == null ||
+    (typeof item.price === "string" && item.price.toUpperCase() === "TBA");
+  const price = isTBA ? 0 : parseFloat(item.price) || 0;
+  const pcs = Math.max(Number(item.pieces ?? 0) || 1, 1);
+  const qty = parseFloat(item.quantity) || 0;
+
+  item.subtotal =
+    unit === "sqft" || unit === "sqm"
+      ? +(price * qty * pcs).toFixed(2)
+      : +(price * qty).toFixed(2);
+}
+
+function subtotalBreakdown(item) {
+  const unit = getUnitForItem(item);
+  const priceNum = parseFloat(item.price);
+  const isTBA =
+    item.price == null ||
+    (typeof item.price === "string" && item.price.toUpperCase() === "TBA") ||
+    !Number.isFinite(priceNum);
+
+  const qty = Number(item.quantity ?? 0) || 0;
+  const pcs = Math.max(Number(item.pieces ?? 0) || 1, 1);
+
+  if (isTBA) return "Price is TBA → subtotal treated as $0.00";
+
+  if (unit === "sqft" || unit === "sqm") {
+    const subtotal = (priceNum * qty * pcs).toFixed(2);
+    return `$${priceNum.toFixed(2)} / ${unit} × ${qty} ${unit}${
+      pcs > 1 ? ` × ${pcs} pcs` : ""
+    } = $${subtotal}`;
+  }
+
+  // existing behavior for others
+  const priceUnit = priceUnitLabel(item);
+  const qtyUnit = unitLabel(unit);
+  const subtotal = (priceNum * qty).toFixed(2);
+  let line = `$${priceNum.toFixed(
+    2
+  )} / ${priceUnit} × ${qty} ${qtyUnit} = $${subtotal}`;
+  if (unit === "pc" && perUnitPieces(item) > 1) {
+    line += `\n(${perUnitPieces(item)} pcs per set)`;
+  }
+  if ((unit === "kg" || unit === "lbs") && item.pieces > 0) {
+    line += `\nNote: Pieces are recorded for reference and do not change the price.`;
+  }
+  return line;
+}
+
+const totalsAmounts = computed(() => {
+  let piece = 0,
+    weight = 0,
+    size = 0;
+  for (const it of transactions.value || []) {
+    const u = getUnitForItem(it);
+    const sub = Number(it.subtotal) || 0;
+    if (u === "pc") piece += sub;
+    else if (u === "kg" || u === "lbs") weight += sub;
+    else if (u === "sqft" || u === "sqm") size += sub;
+  }
+  return { piece, weight, size, total: piece + weight + size };
+});
+
+function totalPiecesForPc(item) {
+  // pieces-per-unit (fallback to 1) × quantity
+  const per = Math.max(perUnitPieces(item) || 1, 1);
+  const qty = Number(item.quantity ?? 0) || 0;
+  return per * qty;
+}
+
+const exceptionGroups = computed(() =>
+  (deliveryPlanGroups.value || []).filter((g) => g.isException)
+);
+
+function openExceptionDetails(group) {
+  selectedException.value = group;
+  // ✅ Pre-fill from DB if present and consistent across the group's rows
+  deliveredDate.value = deliveredDateForGroup(group);
+  isExceptionDetailsOpen.value = true;
+}
+
+function closeExceptionDetails() {
+  isExceptionDetailsOpen.value = false;
+  selectedException.value = null;
+}
+
+function formatDateLine(dateStr) {
+  if (!dateStr) return "[No date]";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "[Invalid date]";
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+/** Find the base transaction row by item (exception uses transaction item id) */
+function txById(id) {
+  return (
+    (transactions.value || []).find((t) => String(t.id) === String(id)) || null
+  );
+}
+
+/** Pretty process label like your main tables */
+function processLabelForTxId(id) {
+  const tx = txById(id);
+  if (!tx) return "-";
+  const p = (tx.process || "").toLowerCase();
+  if (p === "laundry") return "Laundry";
+  if (p === "dryclean") return "Dry Clean";
+  if (p === "pressing") return "Pressing Only";
+  if (p === "others") return "Others";
+  return tx.process || "-";
+}
+
+/** Show price as number or TBA with unit suffix like main tables */
+function priceDisplayForTxId(id) {
+  const tx = txById(id);
+  if (!tx) return "$0.00";
+  const isTBA =
+    tx.price == null ||
+    (typeof tx.price === "string" && tx.price.toUpperCase() === "TBA");
+  if (isTBA) return "TBA";
+  const num = parseFloat(tx.price) || 0;
+  return `$${num.toFixed(2)} / ${priceUnitLabel(tx)}`;
+}
+
+/** Pieces column mirrors your logic */
+function piecesForTxId(id) {
+  const tx = txById(id);
+  if (!tx) return 0;
+  return computedPcs(tx); // you already have this util
+}
+
+/** Numeric formatting for qty/size/weight cells */
+function formatNumber(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "0";
+  // integers for pcs, 2dp otherwise (matches your inputs)
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+}
+
+/** Compute subtotal for an exception item using your existing rules */
+function excSubtotalForItem(excItem) {
+  const tx = txById(excItem.id);
+  if (!tx) return 0;
+
+  const unit = getUnitForItem(tx); // existing util
+  const isTBA =
+    tx.price == null ||
+    (typeof tx.price === "string" && tx.price.toUpperCase() === "TBA");
+  const price = isTBA ? 0 : parseFloat(tx.price) || 0;
+
+  const excQty = Number(excItem.qty) || 0; // quantity for this exception
+  const pcs = Math.max(Number(tx.pieces ?? 0) || 1, 1);
+
+  // mirror your main subtotal logic
+  const val =
+    unit === "sqft" || unit === "sqm" ? price * excQty * pcs : price * excQty;
+
+  return +val.toFixed(2);
+}
+
+/** Header label to match section tables */
+function qtyHeaderForUnit(unit) {
+  const u = (unit || "").toLowerCase();
+  if (u === "kg" || u === "lbs") return "Weight";
+  if (u === "sqft" || u === "sqm") return "Size";
+  return "Qty";
+}
+
+function excSubtotalBreakdown(excItem) {
+  const tx = txById(excItem.id);
+  if (!tx) return "Item not found.";
+
+  const unit = getUnitForItem(tx);
+  const priceNum = parseFloat(tx.price);
+  const isTBA =
+    tx.price == null ||
+    (typeof tx.price === "string" && tx.price.toUpperCase() === "TBA") ||
+    !Number.isFinite(priceNum);
+
+  const qty = Number(excItem.qty) || 0; // exception quantity
+  const pcs = Math.max(Number(tx.pieces ?? 0) || 1, 1);
+
+  if (isTBA) return "Price is TBA → subtotal treated as $0.00";
+
+  if (unit === "sqft" || unit === "sqm") {
+    const subtotal = (priceNum * qty * pcs).toFixed(2);
+    return `$${priceNum.toFixed(2)} / ${unit} × ${qty} ${unit}${
+      pcs > 1 ? ` × ${pcs} pcs` : ""
+    } = $${subtotal}`;
+  }
+
+  const priceUnit = priceUnitLabel(tx);
+  const qtyUnit = unitLabel(unit);
+  const subtotal = (priceNum * qty).toFixed(2);
+  let line = `$${priceNum.toFixed(
+    2
+  )} / ${priceUnit} × ${qty} ${qtyUnit} = $${subtotal}`;
+
+  if (unit === "pc" && perUnitPieces(tx) > 1) {
+    line += `\n(${perUnitPieces(tx)} pcs per set)`;
+  }
+  if ((unit === "kg" || unit === "lbs") && tx.pieces > 0) {
+    line += `\nNote: Pieces are recorded for reference and do not change the price.`;
+  }
+  return line;
+}
+
+function isMainDelivered() {
+  const l = logistics.value || {};
+  return Boolean(l.delivered_date || l.deliveredDate);
+}
+
+function countDeliveredExceptions() {
+  const rows = Array.isArray(deliveryExceptions.value)
+    ? deliveryExceptions.value
+    : [];
+  const delivered = rows.filter(
+    (r) => r.delivered_date || r.deliveredDate
+  ).length;
+  return { total: rows.length, delivered };
+}
+
+// --- Place inside <script setup> of OrderView.vue ---
+
+/** Group matcher: returns raw exception rows that belong to a computed group */
+function exceptionRowsForGroup(group) {
+  const rows = Array.isArray(deliveryExceptions.value)
+    ? deliveryExceptions.value
+    : [];
+
+  const day = group?.date
+    ? new Date(group.date).toISOString().slice(0, 10)
+    : null;
+  const time = (group?.time || "").toString();
+  const driverId = group?.driverId ?? group?.driver_id ?? null;
+
+  return rows.filter((r) => {
+    const rDate = r.delivery_date
+      ? new Date(r.delivery_date).toISOString().slice(0, 10)
+      : null;
+    const rTime = (r.delivery_time || "").toString();
+    const rDriverId = r.driver_id ?? null;
+    return (
+      rDate === day &&
+      rTime === time &&
+      String(rDriverId ?? "") === String(driverId ?? "")
+    );
+  });
+}
+
+async function updateDeliveryLogisticsStatus() {
+  try {
+    const logisticsId = logistics.value?.logistics_id || logistics.value?.id;
+    if (!logisticsId) return;
+
+    const mainDone = isMainDelivered();
+
+    const rows = Array.isArray(deliveryExceptions.value)
+      ? deliveryExceptions.value
+      : [];
+    const total = rows.length;
+    const delivered = rows.filter(
+      (r) => r.delivered_date || r.deliveredDate
+    ).length;
+
+    let next = null; 
+
+    if (mainDone && delivered === total) {
+      next = "delivery completed";
+    } else if (mainDone || delivered > 0) {
+      next = "delivered partial";
+    } else {
+      next = "delivery scheduled";
+    }
+
+    // Compare lowercase to lowercase to avoid unnecessary writes
+    const current = (logistics.value.logistics_status || "").toLowerCase();
+    const desired = (next || "").toLowerCase();
+
+    if (current !== desired) {
+      await transactionStore.updateLogistics(logisticsId, {
+        logistics_status: next,
+      });
+      logistics.value.logistics_status = next;
+    }
+  } catch (e) {
+    console.error("[updateDeliveryLogisticsStatus] write failed", e);
+  }
+}
+
+
+async function markExceptionGroupDelivered() {
+  try {
+    if (!selectedException.value) {
+      Notify.create({
+        type: "negative",
+        message: "No exception group selected.",
+      });
+      return;
+    }
+    const rows = exceptionRowsForGroup(selectedException.value);
+    if (!rows.length) {
+      Notify.create({
+        type: "warning",
+        message: "No exception rows found for the selected group.",
+      });
+      return;
+    }
+
+    const ids = rows.map((r) => r.id).filter((id) => id != null);
+    if (!ids.length) {
+      Notify.create({
+        type: "warning",
+        message: "No valid exception IDs found to update.",
+      });
+      return;
+    }
+
+    if (
+      typeof transactionStore.markDeliveryExceptionsDelivered !== "function"
+    ) {
+      Notify.create({
+        type: "negative",
+        message: "Store method markDeliveryExceptionsDelivered() is missing.",
+      });
+      return;
+    }
+
+    await transactionStore.markDeliveryExceptionsDelivered(
+      ids,
+      deliveredDate.value
+    );
+
+    // Refresh and recompute status
+    await loadDeliveryExceptions();
+
+    // Reset UI state
+    deliveredDate.value = null;
+    isExceptionDetailsOpen.value = false;
+    selectedException.value = null;
 
     Notify.create({
       type: "positive",
-      message: "Ready status updated successfully!",
-      icon: "check_circle",
-      timeout: 2500,
+      message: "Exception group marked as delivered.",
     });
-  } catch (error) {
-    console.error("❌ Error updating ready status:", error);
+  } catch (err) {
+    console.error("[markExceptionGroupDelivered] error", err);
     Notify.create({
       type: "negative",
-      message: "Failed to update ready status.",
-      icon: "error",
-      timeout: 3500,
+      message: "Failed to mark exception group as delivered.",
     });
   }
-};
+}
+
+function toDateOnly(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  // handle 'YYYY-MM-DD' or ISO strings from DB
+  const iso = new Date(v);
+  if (!isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
+  const s = String(v).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+
+/** Compute a group's delivered date from its raw exception rows.
+ *  - If all rows share the same delivered_date → return it (YYYY-MM-DD)
+ *  - If mixed or none → return null
+ */
+function deliveredDateForGroup(group) {
+  const rows = exceptionRowsForGroup(group);
+  const dates = rows
+    .map((r) => r.delivered_date ?? r.deliveredDate ?? null)
+    .map(toDateOnly)
+    .filter(Boolean);
+
+  if (!dates.length) return null;
+
+  const unique = Array.from(new Set(dates));
+  return unique.length === 1 ? unique[0] : null;
+}
+
+async function markExceptionGroupUndelivered() {
+  try {
+    if (!selectedException.value) {
+      Notify.create({ type: "negative", message: "No exception group selected." });
+      return;
+    }
+
+    const rows = exceptionRowsForGroup(selectedException.value);
+    if (!rows.length) {
+      Notify.create({
+        type: "warning",
+        message: "No exception rows found for the selected group.",
+      });
+      return;
+    }
+
+    const ids = rows.map((r) => r.id).filter((id) => id != null);
+    if (!ids.length) {
+      Notify.create({
+        type: "warning",
+        message: "No valid exception IDs found to update.",
+      });
+      return;
+    }
+
+      await transactionStore.clearDeliveryExceptionsDelivered(ids);
+
+    // Refresh and recompute status
+    await loadDeliveryExceptions();
+
+    deliveredDate.value = null;
+    isExceptionDetailsOpen.value = false;
+    selectedException.value = null;
+
+    Notify.create({
+      type: "positive",
+      message: "Exception group marked as undelivered.",
+    });
+  } catch (err) {
+    console.error("[markExceptionGroupUndelivered] error", err);
+    Notify.create({
+      type: "negative",
+      message: "Failed to mark exception group as undelivered.",
+    });
+  }
+}
+
+// FILE: src/views/OrderView.vue  (inside <script setup>)
+
+// --- Numeric input helpers: allow digits + one dot; optional leading minus (for negatives).
+function sanitizeToNumberDot(str, allowNegative = false) {
+  if (typeof str !== "string") str = String(str ?? "");
+  let out = "";
+  let hasDot = false;
+  let started = false; // once any non-leading-minus char is added
+
+  for (const ch of str.trim()) {
+    if (ch >= "0" && ch <= "9") {
+      out += ch;
+      started = true;
+      continue;
+    }
+    if (ch === "." && !hasDot) {
+      out += ".";
+      hasDot = true;
+      started = true;
+      continue;
+    }
+    if (allowNegative && ch === "-" && !started && out === "") {
+      out = "-"; // only at beginning
+      continue;
+    }
+    // ignore other chars
+  }
+  // avoid outputs like "-" or "." alone
+  if (out === "-" || out === "." || out === "-.") return "";
+  return out;
+}
+
+/**
+ * Keypress guard used in q-input @keypress to restrict input.
+ * currentValue: pass e.target.value from the template for correct dot handling.
+ */
+function allowOnlyNumberDot(evt, allowNegative = false, currentValue = "") {
+  // Non-character keys (e.g., Arrow keys) often don't fire keypress, but guard anyway.
+  const k = evt.key;
+
+  // Allow control combinations (copy/paste etc.)
+  if (evt.ctrlKey || evt.metaKey) return;
+
+  // Allow navigation & editing keys (defensive for some browsers emitting keypress)
+  const allowedNonChar = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab", "Enter"];
+  if (allowedNonChar.includes(k)) return;
+
+  // Digits always ok
+  if (k >= "0" && k <= "9") return;
+
+  // Dot: only one allowed and not if current already has a dot
+  if (k === "." && !String(currentValue).includes(".")) return;
+
+  // Minus: only if negatives allowed and only at start
+  if (k === "-" && allowNegative && (currentValue == null || String(currentValue).length === 0)) return;
+
+  // Otherwise block
+  evt.preventDefault();
+}
+
+/**
+ * Paste handler: sanitize pasted text; replace current selection with cleaned value.
+ */
+function onPasteNumberDot(evt, allowNegative = false) {
+  const clipboard = evt.clipboardData || window.clipboardData;
+  const pasted = clipboard ? clipboard.getData("text") : "";
+  const sanitized = sanitizeToNumberDot(pasted, allowNegative);
+
+  // If sanitization changes text, replace manually and dispatch input event so v-model updates.
+  if (sanitized !== pasted) {
+    evt.preventDefault();
+    const inputEl = evt.target;
+    if (!inputEl) return;
+
+    const start = inputEl.selectionStart ?? inputEl.value.length;
+    const end = inputEl.selectionEnd ?? inputEl.value.length;
+    const before = inputEl.value.slice(0, start);
+    const after = inputEl.value.slice(end);
+    inputEl.value = before + sanitized + after;
+
+    // Trigger Vue to pick up the programmatic change
+    inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+}
 
 </script>
+
+<style scoped>
+.pos-rel {
+  position: relative;
+}
+.calc-help {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  opacity: 0.7;
+  cursor: help;
+}
+.calc-help:hover,
+.calc-help:focus {
+  opacity: 1;
+}
+.item-name-textarea :deep(.q-field__native) {
+  white-space: pre-wrap; /* wrap long names */
+  overflow-wrap: anywhere; /* break long words */
+}
+
+.col[style*="min-width: 0"],
+.item-name-textarea {
+  min-width: 0; /* prevents content from forcing row overflow */
+}
+
+.unit-totals-right {
+  display: flex;
+  justify-content: flex-end;
+}
+.unit-totals-card {
+  max-width: 520px;
+  min-width: 360px;
+}
+.unit-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+}
+.unit-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  opacity: 0.75;
+}
+.unit-value {
+  text-align: right;
+  font-weight: 600;
+}
+.unit-money {
+  font-weight: 700;
+}
+.unit-line.grand .unit-label {
+  opacity: 1;
+}
+.unit-line.grand .unit-value {
+  font-size: 1.1rem;
+}
+.unit-dim {
+  opacity: 0.7;
+}
+</style>

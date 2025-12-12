@@ -1,16 +1,16 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { supabase } from "@/../supabase/config.js";
-import { useTransactionStore } from '@/stores/transactionStore';
+import { useTransactionStore } from "@/stores/transactionStore";
 
 // Import views
 import DashboardPage from "@/views/DashboardPage.vue";
 import PosPage from "@/views/PosPage.vue";
+import ErrorReportsPage from "@/views/ErrorReportsPage.vue";
 import OrdersPage from "@/views/OrdersPage.vue";
 import OrderView from "@/views/OrderView.vue";
 import OrderViewReadOnly from "@/views/OrderViewReadOnly.vue";
 import CustomersPage from "@/views/CustomersPage.vue";
 import CustomerView from "@/views/CustomerView.vue";
-import PaymentPage from "@/views/PaymentPage.vue";
 import TagsPage from "@/views/TagsPage.vue";
 import TagView from "@/views/TagView.vue";
 import TagGroupView from "@/views/TagGroupView.vue";
@@ -25,6 +25,11 @@ import InvoiceGroupView from "@/views/InvoiceGroupView.vue";
 import ItemsPage from "@/views/ItemsPage.vue";
 import ItemRequestPage from "@/views/ItemRequestPage.vue";
 import PaymentsPage from "@/views/PaymentsPage.vue";
+import SoaPage from "@/views/SoaPage.vue";
+import SoaView from "@/views/SoaView.vue";
+import CustomerComplaintsPage from "@/views/CustomerComplaintsPage.vue";
+import OnSiteJobsPage from "@/views/OnSiteJobsPage.vue";
+import SettlementsPage from "@/views/SettlementsPage.vue";
 
 const routes = [
   {
@@ -61,6 +66,15 @@ const routes = [
     meta: {
       requiresAuth: true,
       roles: ["csr", "admin", "production"],
+    },
+  },
+  {
+    path: "/error_reports",
+    name: "ErrorReportsPage",
+    component: ErrorReportsPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["csr", "admin"],
     },
   },
   {
@@ -190,15 +204,20 @@ const routes = [
     },
   },
   {
-    path: "/invoice/:order_no",
+    path: "/invoice/:order_no/:invoice_no/:history_id",
     name: "InvoiceView",
     component: InvoiceView,
     meta: {
       requiresAuth: true,
       roles: ["admin", "csr"],
     },
+    props: (route) => ({
+      orderNo: route.params.order_no,
+      invoiceNo: route.params.invoice_no,
+      historyId: route.params.history_id,
+    }),
   },
-    {
+  {
     path: "/invoice/grp-:groupSlug",
     name: "InvoiceGroupView",
     component: InvoiceGroupView,
@@ -235,9 +254,45 @@ const routes = [
     },
   },
   {
-    path: "/finance/payments/:order_no",
-    name: "PaymentPage",
-    component: PaymentPage,
+    path: "/finance/soa",
+    name: "SoaManagement",
+    component: SoaPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
+  {
+    path: "/finance/soa/:soa_no",
+    name: "SoaView",
+    component: SoaView,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
+  {
+    path: "/finance/settlements",
+    name: "SettlementsPage",
+    component: SettlementsPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
+  {
+    path: "/customers/complaints",
+    name: "CustomerComplaintsPage",
+    component: CustomerComplaintsPage,
+    meta: {
+      requiresAuth: true,
+      roles: ["admin"],
+    },
+  },
+  {
+    path: "/logistics/onsite",
+    name: "OnSiteJobsPage",
+    component: OnSiteJobsPage,
     meta: {
       requiresAuth: true,
       roles: ["admin"],
@@ -259,17 +314,19 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const user = session?.user;
 
-  if (to.path === '/login' && user) {
+  if (to.path === "/login" && user) {
     // Redirect logged-in user away from login
-    return next('/dashboard');
+    return next("/dashboard");
   }
 
   if (to.meta.requiresAuth && !user) {
     // Block if no active user session
-    return next('/login');
+    return next("/login");
   }
 
   // Normalize user role
@@ -279,14 +336,13 @@ router.beforeEach(async (to, from, next) => {
 
   // If route requires specific roles, enforce it
   if (to.meta?.roles?.length) {
-    const allowedRoles = to.meta.roles.map(r => r.toLowerCase());
+    const allowedRoles = to.meta.roles.map((r) => r.toLowerCase());
     if (!allowedRoles.includes(userRole)) {
-      return next('/unauthorized');
+      return next("/unauthorized");
     }
   }
 
   next();
 });
-
 
 export default router;

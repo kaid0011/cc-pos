@@ -1,4 +1,3 @@
-<!-- src/components/UpdateCustomerDialog.vue -->
 <template>
   <q-dialog v-model="isOpen" persistent>
     <q-card style="min-width: 70em">
@@ -21,21 +20,20 @@
           <div class="text-center text-h6 text-weight-bold text-uppercase q-mb-md">
             Customer Details
           </div>
-
-          <div class="row q-col-gutter-x-sm">
+          <div class="row q-col-gutter-md">
             <div class="col">
               <div class="dialog-label">
                 Name:<span class="dialog-asterisk">*</span>
               </div>
               <q-input
                 v-model="customer.name"
-                label="Name"
+                label="Enter name here"
                 outlined
+                dense
                 :rules="[(val) => !!val || 'Customer Name is required']"
                 class="dialog-inputs"
               />
             </div>
-
             <div class="col-3">
               <div class="dialog-label">
                 Customer Type:<span class="dialog-asterisk">*</span>
@@ -47,11 +45,11 @@
                 option-label="label"
                 label="Select Customer Type"
                 outlined
+                dense
                 :rules="[(val) => !!val || 'Customer Type is required']"
                 class="dialog-inputs"
               />
             </div>
-
             <div class="col-3">
               <div class="dialog-label">
                 Customer Sub-Type:<span class="dialog-asterisk">*</span>
@@ -61,6 +59,7 @@
                 :options="filteredSubTypes"
                 label="Select Customer Sub-Type"
                 outlined
+                dense
                 :rules="[(val) => !!val || 'Customer Sub-Type is required']"
                 class="dialog-inputs"
                 :disable="!selectedType"
@@ -68,7 +67,7 @@
             </div>
           </div>
 
-          <div class="row q-col-gutter-x-sm">
+          <div class="row q-col-gutter-md">
             <div class="col">
               <div class="dialog-label">
                 Contact No:<span class="dialog-asterisk">*</span>
@@ -78,6 +77,7 @@
                 @update:model-value="(v) => enforceDigits(v, 'contact_no1')"
                 @keydown="onDigitsKeydown"
                 outlined
+                dense
                 type="tel"
                 inputmode="numeric"
                 :rules="[
@@ -87,7 +87,6 @@
                 class="dialog-inputs"
               />
             </div>
-
             <div class="col">
               <div class="dialog-label">
                 Alternative Contact No:<span class="dialog-asterisk"></span>
@@ -97,6 +96,7 @@
                 @update:model-value="(v) => enforceDigits(v, 'contact_no2')"
                 @keydown="onDigitsKeydown"
                 outlined
+                dense
                 type="tel"
                 inputmode="numeric"
                 :rules="[
@@ -105,14 +105,48 @@
                 class="dialog-inputs"
               />
             </div>
-
             <div class="col">
               <div class="dialog-label">
                 E-mail Address:<span class="dialog-asterisk"></span>
               </div>
-              <q-input v-model="customer.email" outlined class="dialog-inputs" />
+              <q-input
+                v-model="customer.email"
+                outlined
+                dense
+                class="dialog-inputs"
+              />
             </div>
+          </div>
 
+          <div class="row q-col-gutter-md">
+            <div class="col">
+              <div class="dialog-label">PO No.:</div>
+              <q-input
+                v-model="customer.po_no"
+                label="(Optional)"
+                outlined
+                dense
+                class="dialog-inputs"
+              />
+            </div>
+            <div class="col">
+              <div class="dialog-label">
+                Pricing Group:<span class="dialog-asterisk">*</span>
+              </div>
+              <q-select
+                v-model="selectedPricingGroup"
+                :options="pricingGroupOptions"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                label="Select Pricing Group"
+                outlined
+                dense
+                :rules="[(val) => !!val || 'Pricing Group is required']"
+                class="dialog-inputs"
+              />
+            </div>
             <div class="col">
               <div class="dialog-label">
                 Recommended By:<span class="dialog-asterisk"></span>
@@ -121,6 +155,20 @@
                 v-model="customer.recommended_by"
                 label="Who recommended you?"
                 outlined
+                dense
+                class="dialog-inputs"
+              />
+            </div>
+          </div>
+
+          <div class="row q-col-gutter-md">
+            <div class="col">
+              <div class="dialog-label">Billing Address:</div>
+              <q-input
+                v-model="customer.billing_address"
+                label="(Optional)"
+                outlined
+                dense
                 class="dialog-inputs"
               />
             </div>
@@ -137,7 +185,7 @@
               <q-input
                 v-model="customer.schedule_remarks"
                 label="Schedule Remarks"
-                outlined
+                outlined dense
                 type="textarea"
                 class="dialog-inputs"
               />
@@ -147,7 +195,7 @@
               <q-input
                 v-model="customer.price_remarks"
                 label="Price Remarks"
-                outlined
+                outlined dense
                 type="textarea"
                 class="dialog-inputs"
               />
@@ -160,7 +208,7 @@
               <q-input
                 v-model="customer.accounting_remarks"
                 label="Accounting Remarks"
-                outlined
+                outlined dense
                 type="textarea"
                 class="dialog-inputs"
               />
@@ -170,7 +218,7 @@
               <q-input
                 v-model="customer.other_remarks"
                 label="Other Remarks"
-                outlined
+                outlined dense
                 type="textarea"
                 class="dialog-inputs"
               />
@@ -193,9 +241,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { useQuasar } from "quasar";
+import { fetchPricingGroups } from "@/../supabase/api/item_list.js";
 
 const $q = useQuasar();
 
@@ -214,9 +263,11 @@ const typeOptions = ref([]);
 const subTypeMapping = ref({});
 const filteredSubTypes = ref([]);
 
+const selectedPricingGroup = ref(null);
+const pricingGroupOptions = ref([]);
+
 // Customer data
 const customer = ref({
-  id: undefined,
   name: "",
   contact_no1: "",
   contact_no2: "",
@@ -228,7 +279,10 @@ const customer = ref({
   price_remarks: "",
   accounting_remarks: "",
   other_remarks: "",
+  pricing_group_id: null,
   created_at: "",
+  po_no: "",
+  billing_address: ""
 });
 
 // --- DIGIT-ONLY HELPERS ---
@@ -288,10 +342,9 @@ const fetchCustomerTypes = async () => {
 
 // Initialize form and sanitize existing numbers
 const initializeForm = async () => {
-  await fetchCustomerTypes();
-
   if (transactionStore.selectedCustomer) {
     customer.value = { ...transactionStore.selectedCustomer };
+    selectedPricingGroup.value = customer.value.pricing_group_id;
   }
 
   // sanitize pre-filled numbers coming from backend/store
@@ -344,4 +397,10 @@ const handleUpdateCustomer = async () => {
 const closeDialog = () => {
   emit("update:modelValue", false);
 };
+
+onMounted(async () => {
+  await fetchCustomerTypes();
+  pricingGroupOptions.value = await fetchPricingGroups();
+});
+
 </script>

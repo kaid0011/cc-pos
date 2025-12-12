@@ -1475,7 +1475,9 @@ onMounted(async () => {
 
 onMounted(async () => {
   try {
-    const orderNo = route.params.order_no;
+const orderNo = route.params.order_no;
+console.log("🔍 Route param - order_no:", orderNo);
+
     const orderDetails = await transactionStore.fetchWholeOrderByOrderNo(
       orderNo
     );

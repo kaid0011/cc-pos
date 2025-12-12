@@ -1,6 +1,22 @@
 // src/supabase/api/item_list.js
 import { supabase } from "../config.js";
 
+export const fetchAllItems = async () => {
+  try {
+    const { data: items, error } = await supabase
+      .from('pricing_items')
+      .select('*');
+    if (error) {
+      console.error('Error fetching items:', error.message);
+      return [];
+    }
+    return items;
+  } catch (error) {
+    console.error('Unexpected error fetching items:', error.message);
+    return [];
+  }
+};
+
 // ----------------------
 // Fetch pricing groups
 // ----------------------
@@ -35,6 +51,7 @@ export const fetchItemsByGroup = async (groupId) => {
         pieces,
       tag_category,
       pack_type,
+      company,
       turnaround_time,
         pricing_group_rates (
           id,
@@ -100,11 +117,12 @@ export const createItem = async (newItem, groupId, changedBy) => {
           pieces: newItem.pieces,
       tag_category: newItem.tag_category,
       pack_type: newItem.pack_type,
+      company: newItem.company,
       turnaround_time: newItem.turnaround_time,
           is_active: true,
         },
       ])
-      .select("id, name, category, sub_category, unit, pieces, tag_category, pack_type, turnaround_time")
+      .select("id, name, category, sub_category, unit, pieces, tag_category, pack_type, company, turnaround_time")
       .single();
     if (itemError) throw itemError;
 
@@ -207,6 +225,7 @@ export const updateItems = async (item, groupId, changedBy) => {
       pieces: item.pieces,
       tag_category: item.tag_category,
       pack_type: item.pack_type,
+      company: item.company,
       turnaround_time: item.turnaround_time
     };
 
@@ -571,6 +590,7 @@ export const deleteItem = async (item, groupName, changedBy) => {
       pieces: item.pieces,
       tag_category: item.tag_category,
       pack_type: item.pack_type,
+      company: item.company,
       turnaround_time: item.turnaround_time,
       servicePrices: item.servicePrices || [],
       is_active: item.is_active,

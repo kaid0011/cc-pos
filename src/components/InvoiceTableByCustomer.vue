@@ -30,9 +30,8 @@
       </q-input>
     </div>
 
-    <LogisticsTableComponent
+    <InvoiceTableComponent
       :rows="paginatedOrders"
-      :active-driver-tab="activeDriverTab"
       :selected-filter-date="filterDateISO"
     />
 
@@ -52,7 +51,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useQuasar } from 'quasar';
 import { useTransactionStore } from '@/stores/transactionStore';
-import LogisticsTableComponent from '@/components/LogisticsTableComponent.vue';
+import InvoiceTableComponent from '@/components/InvoiceTableComponent.vue';
 
 const props = defineProps({
   customerId: { type: [String, Number], required: true },
@@ -66,9 +65,7 @@ const allOrders = ref([]);
 const searchQuery = ref('');
 const filterDateISO = ref(null);
 const currentPage = ref(1);
-const pageSize = ref(10);
-const DRIVER_NOT_SET = '[NOT SET]';
-const activeDriverTab = ref('');
+const PAGE_SIZE = 10;
 
 /** ---- Lifecycle ---- */
 onMounted(async () => {
@@ -78,7 +75,7 @@ onMounted(async () => {
     allOrders.value = normalizeOrders(raw).filter(
       (r) => String(r?.customer?.id ?? '') === String(props.customerId)
     );
-    if (driverTabs.value.length > 0) activeDriverTab.value = driverTabs.value[0];
+    // No driverTabs defaulting; remove if not needed by child.
   } catch (e) {
     console.error('Failed to fetch orders:', e);
     $q.notify({ type: 'negative', message: 'Failed to load customer logistics' });
@@ -119,14 +116,6 @@ function decorateOrder(order) {
   const balance = total - paid;
   return {
     ...order,
-    goods_status:
-      order?.order_production?.[0]?.goods_status ??
-      order?.order_production?.goods_status ??
-      order?.goods_status ??
-      '-',
-    order_production: Array.isArray(order?.order_production)
-      ? order.order_production[0]
-      : order?.order_production ?? {},
     payment_status: op?.payment_status ?? order?.payment_status ?? '-',
     total_amount: total.toFixed(2),
     paid_amount: paid.toFixed(2),
@@ -143,43 +132,13 @@ function normalizeOrders(rows) {
     const orders = ordersRaw.map((o) => decorateOrder(o));
     const customer = logistics.customer ?? r.customer ?? logistics.customers ?? r.customers ?? null;
 
-    const collections =
-      logistics.collections ??
-      r.collections ??
-      logistics.logistics_collections ??
-      r.logistics_collections ??
-      [];
-
-    const deliveries =
-      logistics.deliveries ??
-      r.deliveries ??
-      logistics.logistics_deliveries ??
-      r.logistics_deliveries ??
-      [];
-
     return {
-      ...logistics,
-      logistics_id: logistics.logistics_id ?? logistics.id,
       orders,
       order: orders?.[0] || null,
       customer,
-      collections,
-      deliveries,
     };
   });
 }
-
-/** ---- Driver helpers (used by filtering and tabs) ---- */
-const driverMapById = computed(() => {
-  const map = new Map();
-  (transactionStore.driverOptions || []).forEach((d) => {
-    if (d?.id != null) map.set(String(d.id), (d.name || '').trim() || DRIVER_NOT_SET);
-  });
-  return map;
-});
-const getDriverName = (id) => driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
-const displayDriver = (driverIdOrNotSet) =>
-  driverIdOrNotSet === DRIVER_NOT_SET ? DRIVER_NOT_SET : getDriverName(driverIdOrNotSet);
 
 /** ---- Filters & pagination ---- */
 const filterDateDisplay = computed(() => (filterDateISO.value ? formatDate(filterDateISO.value) : ''));
@@ -188,6 +147,10 @@ const getEffectiveDateISO = (t) => ({
   col: toISODate(t?.collections?.[0]?.collection_date),
   del: toISODate(t?.deliveries?.[0]?.delivery_date),
 });
+const getPrimaryDateISO = (t) => {
+  const d = getEffectiveDateISO(t);
+  return d.col || d.del || '';
+};
 
 const filteredOrders = computed(() => {
   const q = (searchQuery.value || '').toLowerCase();
@@ -197,15 +160,11 @@ const filteredOrders = computed(() => {
     .filter((log) => {
       const customerName = log.customer?.name?.toLowerCase?.() || '';
       const orderNo = log.order?.order_no?.toLowerCase?.() || '';
-      const status = log.logistics_status?.toLowerCase?.() || '';
-      const colDriverId = log.collections?.[0]?.driver_id;
-      const delDriverId = log.deliveries?.[0]?.driver_id;
 
       const matchesSearch =
         !q ||
         customerName.includes(q) ||
         orderNo.includes(q) ||
-        status.includes(q) ||
         getDriverName(colDriverId).toLowerCase().includes(q) ||
         getDriverName(delDriverId).toLowerCase().includes(q);
 
@@ -215,8 +174,8 @@ const filteredOrders = computed(() => {
       return matchesSearch && matchesDate;
     })
     .sort((a, b) => {
-      const aISO = getEffectiveDateISO(a).col || getEffectiveDateISO(a).del || '';
-      const bISO = getEffectiveDateISO(b).col || getEffectiveDateISO(b).del || '';
+      const aISO = getPrimaryDateISO(a);
+      const bISO = getPrimaryDateISO(b);
       if (!aISO && !bISO) return 0;
       if (!aISO) return 1;
       if (!bISO) return -1;
@@ -225,16 +184,9 @@ const filteredOrders = computed(() => {
 });
 
 const paginatedOrders = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
+  const start = (currentPage.value - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
   return filteredOrders.value.slice(start, end);
 });
-const totalPages = computed(() => Math.max(Math.ceil(filteredOrders.value.length / pageSize.value), 1));
-
-const driverTabs = computed(() => {
-  const ids = (transactionStore.driverOptions || []).filter(d => d?.id != null).map(d => String(d.id));
-  const unique = [...new Set(ids)];
-  unique.sort((a,b) => displayDriver(a).localeCompare(displayDriver(b)));
-  return [...unique, DRIVER_NOT_SET];
-});
+const totalPages = computed(() => Math.max(Math.ceil(filteredOrders.value.length / PAGE_SIZE), 1));
 </script>

@@ -14,6 +14,7 @@ export async function fetchAllCustomers() {
         orders (
           id,
           created_at,
+          order_no,
           order_payments(total_amount, paid_amount)
         )
       )
@@ -27,19 +28,18 @@ export async function fetchAllCustomers() {
     const orderIds = new Set();
     const activeOrderIds = new Set();
     let lastOrderDate = null;
-    let lastOrderId = null;
+    let lastOrderNo = null;
 
     c.logistics?.forEach(l => {
       const order = l.orders;
-      if (order?.id) {
-        orderIds.add(order.id);
+      if (order?.order_no) {
+        orderIds.add(order.order_no);
 
-        // track last order date + id
         if (order.created_at) {
           const orderDate = new Date(order.created_at);
           if (!lastOrderDate || orderDate > new Date(lastOrderDate)) {
             lastOrderDate = orderDate;
-            lastOrderId = order.id;
+            lastOrderNo = order.order_no;
           }
         }
 
@@ -63,7 +63,7 @@ export async function fetchAllCustomers() {
       orders_count: orderIds.size,
       active_orders_count: activeOrderIds.size,
       last_order_date: lastOrderDate,
-      last_order_id: lastOrderId, // ✅ add order id for navigation
+      last_order_no: lastOrderNo,
     };
   });
 }

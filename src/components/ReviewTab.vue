@@ -14,6 +14,14 @@
               transactionStore?.orderNo || "-"
             }}</span>
           </div>
+<div class="text-summary-row">
+  Order Date:
+  <span class="text-summary">{{ orderDateToday }}</span>
+</div>
+          <div class="text-summary-row">
+  Handler:
+  <span class="text-summary">{{ handlerDisplay }}</span>
+</div>
           <div class="text-summary-row">
             Customer Name:
             <span class="text-summary">{{
@@ -23,7 +31,13 @@
           <div class="text-summary-row">
             Contact Nos:
             <span class="text-summary"
-              >{{ transactionStore.selectedCustomer?.contact_no1 || "N/A" }}<span v-if="transactionStore.selectedCustomer?.contact_no2"> / {{ transactionStore.selectedCustomer?.contact_no2 || "-" }}</span></span
+              >{{ transactionStore.selectedCustomer?.contact_no1 || "N/A"
+              }}<span v-if="transactionStore.selectedCustomer?.contact_no2">
+                /
+                {{
+                  transactionStore.selectedCustomer?.contact_no2 || "-"
+                }}</span
+              ></span
             >
           </div>
           <div class="text-summary-row">
@@ -41,16 +55,22 @@
           <q-separator class="q-my-sm" />
           <div class="text-summary-row">
             Contact Person:
-            <span class="text-summary">{{ collectionContact?.name || "-" }}</span>
+            <span class="text-summary">{{
+              collectionContact?.name || "-"
+            }}</span>
           </div>
           <div class="text-summary-row">
             Contact Nos:
             <span class="text-summary"
-              >{{ collectionContact?.contact_no1 || "N/A" }}<span v-if="collectionContact?.contact_no2"> / {{ collectionContact?.contact_no2 || "-" }}</span></span>
+              >{{ collectionContact?.contact_no1 || "N/A"
+              }}<span v-if="collectionContact?.contact_no2">
+                / {{ collectionContact?.contact_no2 || "-" }}</span
+              ></span
+            >
           </div>
           <div class="text-summary-row">
-            Address: 
-            <span class="text-summary">{{ collectionAddress || '-'}} </span>
+            Address:
+            <span class="text-summary">{{ collectionAddress || "-" }} </span>
           </div>
           <div class="text-summary-row">
             Collection Date:
@@ -58,11 +78,13 @@
           </div>
           <div class="text-summary-row">
             Collection Time:
-            <span class="text-summary">{{ transactionStore.collectionTime || "-" }}</span>
+            <span class="text-summary">{{
+              transactionStore.collectionTime || "-"
+            }}</span>
           </div>
           <div class="text-summary-row">
             Collection Driver:
-            <span class="text-summary">{{ transactionStore.selectedCollectionDriver || "-" }}</span>
+            <span class="text-summary">{{ collectionDriverName }}</span>
           </div>
         </div>
 
@@ -74,19 +96,20 @@
           <q-separator class="q-my-sm" />
           <div class="text-summary-row">
             Contact Person:
-            <span class="text-summary">{{
-              deliveryContact?.name || "-"
-            }}</span>
+            <span class="text-summary">{{ deliveryContact?.name || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Contact Nos:
             <span class="text-summary"
-              >{{ deliveryContact?.contact_no1 || "N/A" }}<span v-if="deliveryContact?.contact_no2"> / {{ deliveryContact?.contact_no2 || "-" }}</span></span
+              >{{ deliveryContact?.contact_no1 || "N/A"
+              }}<span v-if="deliveryContact?.contact_no2">
+                / {{ deliveryContact?.contact_no2 || "-" }}</span
+              ></span
             >
           </div>
           <div class="text-summary-row">
             Address:
-            <span class="text-summary">{{ deliveryAddress || '-' }}</span>
+            <span class="text-summary">{{ deliveryAddress || "-" }}</span>
           </div>
           <div class="text-summary-row">
             Delivery Date:
@@ -94,40 +117,61 @@
           </div>
           <div class="text-summary-row">
             Delivery Time:
-            <span class="text-summary">{{ transactionStore.deliveryTime || "-" }}</span>
+            <span class="text-summary">{{
+              transactionStore.deliveryTime || "-"
+            }}</span>
           </div>
           <div class="text-summary-row">
             Delivery Driver:
-            <span class="text-summary">{{ transactionStore.selectedDeliveryDriver || "-" }}</span>
+            <span class="text-summary">{{ deliveryDriverName }}</span>
           </div>
         </div>
       </div>
 
       <!-- Transaction Summary -->
-      <div class="transaction-summary">
-        <!-- Table Header -->
+      <div class="transaction-summary q-ma-md">
         <div class="row row-col-header">
-          <div class="col col-4 text-weight-bold bordered">Item</div>
-          <div class="col col-2 text-weight-bold bordered">Process</div>
-          <div class="col col-2 text-weight-bold bordered">Price</div>
-          <div class="col col-1 text-weight-bold bordered">Pcs</div>
-          <div class="col col-1 text-weight-bold bordered">Qty</div>
-          <div class="col col-2 text-weight-bold bordered">Subtotal</div>
+          <div class="col-5 text-weight-bold bordered">Item</div>
+          <div class="col text-weight-bold bordered">Process</div>
+          <div class="col text-weight-bold bordered">Price</div>
+          <div class="col text-weight-bold bordered">Qty</div>
+          <div class="col text-weight-bold bordered">Subtotal</div>
         </div>
 
-        <!-- Transactions or Fallback Message -->
         <div v-if="rows.length > 0">
           <div
             v-for="item in rows"
-            :key="item.name"
+            :key="`${item.name}|${item.process}|${item.unit}|${item.price}|${
+              item.company ?? ''
+            }`"
             class="row row-col-row summary-row"
           >
-            <div class="col col-4 bordered">{{ item.name }}</div>
-            <div class="col col-2 bordered">{{ item.process }}</div>
-            <div class="col col-2 bordered">{{ item.price }}</div>
-            <div class="col col-1 bordered">{{ item.pieces }}</div>
-            <div class="col col-1 bordered">{{ item.quantity }}</div>
-            <div class="col col-2 bordered">{{ item.subtotal }}</div>
+            <div class="col-5 bordered">{{ displayItemName(item) }}</div>
+            <div class="col bordered">
+              {{ formatProcessText(item.process) }}
+            </div>
+            <div class="col bordered">
+              {{ formatPriceWithUnit(item.price, item.unit) }}
+            </div>
+            <div class="col bordered">
+              {{ formatQuantity(getDisplayQty(item)) }}
+              <span class="text-caption">{{ unitLabel(item.unit) }}</span>
+              <span v-if="item.unit === 'sqft' && Number(item.pieces ?? 0) > 0">
+                × {{ Math.trunc(item.pieces) }} pcs
+              </span>
+
+              <span
+                v-else-if="
+                  (item.unit === 'kg' || item.unit === 'lbs') &&
+                  Number(item.pieces ?? 0) > 0
+                "
+              >
+                ({{ Math.trunc(item.pieces) }} pcs)
+              </span>
+            </div>
+            <div class="col bordered">
+              ${{ item.subtotal.toFixed(2) }}
+            </div>
           </div>
         </div>
 
@@ -135,21 +179,8 @@
         <div v-else class="text-center text-grey q-my-md">
           No items added to the list.
         </div>
-
-        <div class="row row-col-footer">
-          <div class="col col-6 text-weight-bolder text-uppercase"></div>
-          <div class="col col-2 text-weight-bolder text-uppercase bordered">
-            Total
-          </div>
-          <div class="col col-1 text-weight-bolder bordered">
-            {{ totalPcs }}
-          </div>
-          <div class="col col-1 text-weight-bolder bordered">
-            {{ totalQty }}
-          </div>
-          <div class="col col-2 text-weight-bolder bordered text-red-9">
-            {{ totalSubtotal }}
-          </div>
+        <div class="row row-col-footer text-weight-bold text-subtitle1 justify-end">
+            TOTAL AMOUNT : <span class="text-red-8 q-ml-sm q-mr-md">{{ totalSubtotal }}</span>
         </div>
       </div>
 
@@ -333,9 +364,7 @@
 
       <!-- Stepper Navigation -->
       <q-stepper-navigation>
-        <div class="row justify-end q-mx-md q-my-sm">
-
-        </div>
+        <div class="row justify-end q-mx-md q-my-sm"></div>
       </q-stepper-navigation>
     </div>
   </div>
@@ -360,11 +389,11 @@ const collectionContact = computed(
   () => transactionStore.selectedCollectionContact || "-"
 );
 
-const collectionAddress = computed(
-  () => transactionStore.selectedCollectionAddress || "-"
+const collectionAddress = computed(() =>
+  formatAddress(transactionStore.selectedCollectionAddress)
 );
-const deliveryAddress = computed(
-  () => transactionStore.selectedDeliveryAddress || "-"
+const deliveryAddress = computed(() =>
+  formatAddress(transactionStore.selectedDeliveryAddress)
 );
 
 // Helper functions for instruction chip colors and labels
@@ -392,10 +421,6 @@ function formatSectionLabel(section) {
 const isDialogOpen = ref(false);
 const dialogMessage = ref("");
 
-const totalPcs = computed(() =>
-  rows.value.reduce((acc, item) => acc + (item.pieces || 0), 0)
-);
-
 const totalQty = computed(() =>
   rows.value.reduce((acc, item) => acc + (item.quantity || 0), 0)
 );
@@ -415,9 +440,7 @@ const formattedCollectionDate = computed(() => {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-      })
-        .format(new Date(transactionStore.collectionDate))
-
+      }).format(new Date(transactionStore.collectionDate))
     : "--/--/----";
 });
 
@@ -428,9 +451,123 @@ const formattedDeliveryDate = computed(() => {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-      })
-        .format(new Date(transactionStore.deliveryDate))
-
+      }).format(new Date(transactionStore.deliveryDate))
     : "--/--/----";
 });
+
+const formatAddress = (a) => {
+  if (!a || typeof a !== "object") return "-";
+  const parts = [a.block_no, a.road_name, a.unit_no, a.building_name]
+    .map((v) => (v ?? "") + "")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const main = parts.join(" ");
+  const postal = (a.postal_code ?? "").toString().trim();
+
+  const combined = [main, postal].filter(Boolean).join(", ");
+  return combined || "-";
+};
+
+const collectionDriverName = computed(() =>
+  typeof transactionStore.selectedCollectionDriver === "string"
+    ? transactionStore.selectedCollectionDriver || "-"
+    : transactionStore.selectedCollectionDriver?.name || "-"
+);
+
+const deliveryDriverName = computed(() =>
+  typeof transactionStore.selectedDeliveryDriver === "string"
+    ? transactionStore.selectedDeliveryDriver || "-"
+    : transactionStore.selectedDeliveryDriver?.name || "-"
+);
+function getDisplayQty(item) {
+  if (item.unit === "kg" || item.unit === "lbs")
+    return item.weight ?? item.quantity ?? 0;
+  if (item.unit === "sqft") return item.area ?? item.quantity ?? 0;
+  return item.quantity ?? 0;
+}
+function formatQuantity(val) {
+  const n = Number(val ?? 0);
+  if (!Number.isFinite(n)) return "0";
+  // why: keep whole numbers tidy, decimals to 2 dp for readability
+  if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+  return n.toFixed(2);
+}
+
+function displayItemName(item) {
+  // Only show pieces when the unit is strictly 'pc'
+  if (String(item.unit || "").toLowerCase() !== "pc") {
+    return item.name || "";
+  }
+
+  const perUnit = Number(item.pieces_per_unit ?? item.pieces ?? 0);
+  if (!Number.isFinite(perUnit) || perUnit <= 0) {
+    return item.name || "";
+  }
+
+  const label = perUnit === 1 ? "pc" : "pcs";
+  return `${item.name} (${perUnit}${label})`;
+}
+
+function unitLabel(unit) {
+  if (!unit) return "";
+  const u = String(unit).toLowerCase();
+  if (u === "pc") return "pcs";
+  return unit;
+}
+
+function formatPriceWithUnit(price, unit) {
+  if (price === "TBA") {
+    return "TBA";
+  }
+  if (typeof price === "number") {
+    return `$${price.toFixed(2)} / ${unit}`;
+  }
+  return `$0.00 / ${unit}`;
+}
+
+function formatProcessText(process) {
+  switch (process) {
+    case "laundry":
+      return "Laundry";
+    case "dryclean":
+      return "Dry Clean";
+    case "pressing":
+      return "Pressing Only";
+    case "others":
+      return "Others";
+    default:
+      return process;
+  }
+}
+
+const handlerDisplay = computed(() => {
+  const norm = (v) => (v ?? '').toString().trim().toLowerCase();
+  const labels = { cc: 'Cotton Care', dc: 'DryCleaners' };
+
+  const set = new Set(rows.value.map(r => norm(r.company)).filter(Boolean));
+  if (set.size === 0) return '-';
+
+  // Keep CC before DC when both exist
+  const order = ['cc', 'dc'];
+  const sorted = Array.from(set).sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    return a.localeCompare(b);
+  });
+
+  // Map known codes, fallback to uppercased value for unknowns
+  return sorted.map(k => labels[k] ?? k.toUpperCase()).join('/');
+});
+
+const orderDateToday = computed(() =>
+  new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Singapore", // keep consistent with other screens
+  }).format(new Date())
+);
+
 </script>

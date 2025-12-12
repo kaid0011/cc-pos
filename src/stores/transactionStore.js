@@ -1,11 +1,28 @@
 import { supabase } from "@/../supabase/config.js";
 import { defineStore } from "pinia";
-// import { fetchAllItems } from "@/../supabase/api/item_list.js";
 import { getLastOrderIdForDate } from "@/../supabase/api/orders.js";
 import { fetchAllCustomers } from "@/../supabase/api/customers.js";
+import { fetchAllItems } from "@/../supabase/api/item_list.js";
 // import { fetchContactPersons } from "@/../supabase/api/contacts.js";
 // import { laThSolid } from "@quasar/extras/line-awesome";
-
+function derivePaymentStatus(paidAmount, totalAmount) {
+  const paid = Number(paidAmount || 0);
+  const total = Number(totalAmount || 0);
+  if (total <= 0) return "paid";
+  if (paid <= 0) return "unpaid";
+  if (paid >= total) return "paid";
+  return "partial";
+}
+function toNum(v, d = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : d;
+}
+function inferUnitFromName(name) {
+  const s = (name || "").toLowerCase();
+  if (s.includes("sqft")) return "sqft";
+  if (s.includes("kg")) return "kg";
+  return "pc";
+}
 export const useTransactionStore = defineStore("transactionStore", {
   state: () => ({
     transactionItems: [],
@@ -33,6 +50,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     isOrderNoManuallySet: false,
     collectionDate: null,
     deliveryDate: null,
+    deliveredDate: null,
     collectionTime: null,
     deliveryTime: null,
     collectionRemarks: null,
@@ -46,6 +64,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     jobType: null,
     jobUrgency: null,
     logisticsId: null,
+    readyBy: null,
   }),
   actions: {
     async loadItems() {
@@ -161,7 +180,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           Ting: "Tin",
         };
 
-        const driverName = this.selectedCollectionDriver || "";
+        const driverName = this.selectedCollectionDriver.name || "";
         const code = nameToCodeMap.hasOwnProperty(driverName)
           ? nameToCodeMap[driverName]
           : "UNK";
@@ -209,6 +228,8 @@ export const useTransactionStore = defineStore("transactionStore", {
               accounting_remarks: newCustomer.accounting_remarks || null,
               other_remarks: newCustomer.other_remarks || null,
               pricing_group_id: newCustomer.pricing_group_id || null,
+              po_no: newCustomer.po_no || null,
+              billing_address: newCustomer.billing_address || null,
             },
           ])
           .select();
@@ -306,25 +327,30 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
+    // transactionStore.js
     async loadTimeOptions() {
       try {
         const { data, error } = await supabase
           .from("options_time")
-          .select("time");
+          .select("time, am_pm"); // ✅ fetch both columns
 
         if (error) {
           console.error("Error fetching time options:", error);
           return;
         }
 
-        // Map and sort time options alphabetically
-        this.timeOptions = data.map((option) => `${option.time}`);
-
-        console.log("Sorted Time Options:", this.timeOptions);
+        // ✅ Keep as array of { time, am_pm } exactly from DB
+        this.timeOptions = Array.isArray(data)
+          ? data.map((option) => ({
+              time: option.time?.trim() || "",
+              am_pm: option.am_pm?.trim() || "",
+            }))
+          : [];
       } catch (error) {
         console.error("Unexpected error fetching time options:", error);
       }
     },
+
     // Load recurring instructions for a specific customer
     async loadRecurringInstructions(customerId) {
       try {
@@ -517,91 +543,126 @@ export const useTransactionStore = defineStore("transactionStore", {
         process,
         price,
         pieces,
-        quantity,
+        quantity = 0,
         subtotal,
         category,
         tag_category,
         pack_type,
+        company,
+        weight,
+        area,
+        pieces_per_unit,
       } = item;
 
       const unitType = this.detectUnitType(unit);
+
+      // per-unit pieces (for display math); base pieces stays in `pieces`
+      const perUnit =
+        typeof pieces_per_unit === "number"
+          ? pieces_per_unit
+          : typeof pieces === "number"
+          ? pieces
+          : 0;
+
+      const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+      // Normalized measurement used in math
+      let measure = 0;
+      if (unitType === "weight") {
+        measure = typeof weight === "number" ? weight : safeNum(quantity);
+      } else if (unitType === "size") {
+        measure = typeof area === "number" ? area : safeNum(quantity);
+      } else {
+        measure = safeNum(quantity);
+      }
+
+      const lineSubtotal =
+        typeof subtotal === "number"
+          ? subtotal
+          : typeof price === "number"
+          ? price * measure
+          : 0;
+
       let newItem;
 
+      // --- TBA branch (no merge). If you want TBA merging, move the merge logic above this and compare price === "TBA".
       if (price === "TBA") {
-        // Special handling for TBA price type
         newItem = {
           name,
           process,
           price: "TBA",
-          pieces,
-          quantity,
-          subtotal: 0,
           unit,
+          pieces, // base only
+          quantity: measure, // normalized measure
+          subtotal: 0,
           category,
           tag_category,
           pack_type,
+          company,
+          pieces_per_unit: perUnit,
         };
-        this.transactionItems = [...this.transactionItems, newItem]; // Add directly
+
+        if (unitType === "weight") newItem.weight = measure;
+        else if (unitType === "size") newItem.area = measure;
+
+        this.transactionItems = [...this.transactionItems, newItem];
         return;
       }
 
-      if (unitType === "size" || unitType === "weight") {
-        const key = `${name}-${process}-${unit}`;
-        const existingItemIndex = this.transactionItems.findIndex(
-          (tItem) =>
-            tItem.name === key &&
-            tItem.process === process &&
-            tItem.price === price // Check price as part of comparison
-        );
+      // 🔹 Try to merge with existing row (same name + process + unit + price + company)
+      const existingItem = this.transactionItems.find(
+        (tItem) =>
+          tItem.name === name &&
+          tItem.process === process &&
+          tItem.unit === unit &&
+          tItem.price === price &&
+          tItem.company === company
+      );
 
-        if (existingItemIndex > -1) {
-          // Update existing item
-          this.transactionItems[existingItemIndex].quantity += quantity;
-          this.transactionItems[existingItemIndex].subtotal += subtotal;
-        } else {
-          // Add new item
-          newItem = {
-            name,
-            process,
-            price,
-            pieces,
-            quantity,
-            subtotal,
-            unit,
-            category,
-            tag_category,
-            pack_type,
-          };
-          this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
+      if (existingItem) {
+        // Update normalized measurement
+        existingItem.quantity = safeNum(existingItem.quantity) + measure;
+
+        if (unitType === "weight") {
+          existingItem.weight = safeNum(existingItem.weight) + measure;
+        } else if (unitType === "size") {
+          existingItem.area = safeNum(existingItem.area) + measure;
         }
+
+        // Set per-unit/base pieces only if missing
+        if (
+          existingItem.pieces_per_unit == null &&
+          typeof perUnit === "number"
+        ) {
+          existingItem.pieces_per_unit = perUnit;
+        }
+        if (existingItem.pieces == null && typeof pieces === "number") {
+          existingItem.pieces = pieces; // base only
+        }
+
+        // Subtotal
+        existingItem.subtotal = safeNum(existingItem.subtotal) + lineSubtotal;
       } else {
-        const existingItem = this.transactionItems.find(
-          (tItem) =>
-            tItem.name === name &&
-            tItem.process === process &&
-            tItem.price === price // Check price as part of comparison
-        );
+        // 🔹 Create new row
+        newItem = {
+          name,
+          process,
+          price,
+          unit,
+          pieces, // base only
+          quantity: measure, // normalized
+          subtotal: lineSubtotal,
+          category,
+          tag_category,
+          pack_type,
+          company,
+          pieces_per_unit: perUnit,
+        };
 
-        if (existingItem) {
-          // Update existing item
-          existingItem.quantity += quantity;
-          existingItem.subtotal += subtotal;
-        } else {
-          // Add new item
-          newItem = {
-            name,
-            process,
-            price,
-            pieces,
-            quantity,
-            subtotal,
-            unit,
-            category,
-            tag_category,
-            pack_type,
-          };
-          this.transactionItems = [...this.transactionItems, newItem]; // Reactive update
-        }
+        if (unitType === "weight") newItem.weight = measure;
+        else if (unitType === "size") newItem.area = measure;
+
+        this.transactionItems = [...this.transactionItems, newItem];
       }
     },
 
@@ -691,6 +752,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           category: report.category,
           sub_category: report.sub_category,
           order_id: orderId,
+          status: "flagged"
         };
 
         // Check for and upload photo if provided
@@ -794,48 +856,115 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-    async generateInvoice() {
-      try {
-        // Ensure orderNo is set
-        if (!this.orderNo) {
-          throw new Error("Order number is not set. Cannot generate invoice.");
-        }
+    async printInvoice(orderNo) {
+      const TAG = "[store.printInvoice]";
+      console.log(`${TAG} start`, { orderNo });
 
-        // Fetch the order ID using the current orderNo
-        const { data: orderData, error: orderError } = await supabase
+      try {
+        // 1) Resolve orders.id from order_no
+        const { data: orderRow, error: orderErr } = await supabase
           .from("orders")
           .select("id")
-          .eq("order_no", this.orderNo)
+          .eq("order_no", orderNo)
           .single();
 
-        if (orderError || !orderData) {
-          throw new Error(
-            `Failed to retrieve order ID for order_no: ${this.orderNo}`
+        if (orderErr || !orderRow?.id) {
+          console.error(`${TAG} orders lookup failed`, { orderErr, orderRow });
+          return { ok: false, error: `Order not found for ${orderNo}` };
+        }
+        const orderId = orderRow.id;
+        console.log(`${TAG} order resolved`, { orderId });
+
+        // 2) Fetch the existing invoice row by order_id (DO NOT INSERT)
+        const { data: invRow, error: invErr } = await supabase
+          .from("order_invoices")
+          .select("id, invoice_no")
+          .eq("order_id", orderId)
+          .single();
+
+        if (invErr || !invRow?.id) {
+          console.error(`${TAG} invoice lookup failed`, {
+            invErr,
+            invRow,
+            orderId,
+          });
+          return {
+            ok: false,
+            error: `Invoice row not found for order ${orderNo}`,
+          };
+        }
+        const orderInvoiceId = invRow.id;
+        const invoiceNo = invRow.invoice_no;
+        console.log(`${TAG} invoice resolved`, { orderInvoiceId, invoiceNo });
+
+        // 3) Insert a print history row (DB auto-fills printed_by, printed_at)
+        const { data: histInsert, error: histErr } = await supabase
+          .from("order_invoices_print_history")
+          .insert({ order_invoice_id: orderInvoiceId })
+          .select("id") // Postgres RETURNING
+          .single();
+
+        if (histErr || !histInsert?.id) {
+          console.error(`${TAG} history insert failed`, {
+            histErr,
+            histInsert,
+          });
+          return {
+            ok: false,
+            error: `Failed to create print history for invoice #${invoiceNo}`,
+          };
+        }
+        const historyId = histInsert.id;
+        console.log(`${TAG} history inserted`, { historyId });
+
+        // 4) Fetch the inserted history row to display printed_at/printed_by
+        const { data: histRow, error: histFetchErr } = await supabase
+          .from("order_invoices_print_history")
+          .select("id, printed_at, printed_by")
+          .eq("id", historyId)
+          .single();
+
+        if (histFetchErr || !histRow?.id) {
+          console.warn(
+            `${TAG} history fetch failed; proceeding with ids only`,
+            { histFetchErr }
           );
+          return { ok: true, orderId, orderInvoiceId, invoiceNo, historyId };
         }
 
-        const orderId = orderData.id;
-        const timestamp = new Date().toISOString();
+        console.log(`${TAG} history fetched`, { histRow });
 
-        // Insert the invoice record
-        const { error: invoiceError } = await supabase.from("invoices").insert({
-          invoice_date_time: timestamp,
-          order_id: orderId,
-        });
-
-        if (invoiceError) {
-          throw new Error(`Error inserting invoice: ${invoiceError.message}`);
-        }
-
-        console.log(
-          "Invoice generated successfully for order_no:",
-          this.orderNo
-        );
-        return true; // Return success status
-      } catch (error) {
-        console.error("Error in generateInvoice:", error.message);
-        return false; // Return failure status
+        // 5) Done — return structured payload
+        return {
+          ok: true,
+          orderId,
+          orderInvoiceId,
+          invoiceNo,
+          historyId,
+          history: histRow, // contains printed_at (invoice date) & printed_by
+        };
+      } catch (err) {
+        console.error(`${TAG} unexpected error`, err);
+        return { ok: false, error: err?.message || "Unexpected error" };
       }
+    },
+    async fetchPrintHistoryById(historyId) {
+      const TAG = "[fetchPrintHistoryById]";
+      console.log(`${TAG} start`, { historyId });
+
+      const { data, error } = await supabase
+        .from("order_invoices_print_history")
+        .select("id, order_invoice_id, printed_at, printed_by")
+        .eq("id", historyId)
+        .single();
+
+      if (error) {
+        console.error(`${TAG} error`, error);
+        return { ok: false, error: error.message };
+      }
+
+      console.log(`${TAG} ok`, data);
+      return { ok: true, data };
     },
 
     // Fetch contact person details by contact person ID
@@ -980,7 +1109,14 @@ export const useTransactionStore = defineStore("transactionStore", {
       if (insertError) throw insertError;
     },
 
-    async addPayment({ order_id, amount, type, remarks, reference_no }) {
+    async addPayment({
+      order_id,
+      amount,
+      type,
+      remarks,
+      reference_no,
+      company,
+    }) {
       if (!order_id) throw new Error("Missing order_id");
 
       const { data: orderPayment, error: fetchError } = await supabase
@@ -1013,6 +1149,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           payment_type: type,
           remarks,
           reference_no,
+          company,
         });
 
       if (insertError) throw insertError;
@@ -1065,6 +1202,8 @@ export const useTransactionStore = defineStore("transactionStore", {
           price_remarks: customer.price_remarks,
           accounting_remarks: customer.accounting_remarks,
           other_remarks: customer.other_remarks,
+          po_no: customer.po_no,
+          billing_address: customer.billing_address,
         })
         .eq("id", customer.id);
 
@@ -1711,6 +1850,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             contact_person_id,
             address_id,
             delivery_date,
+            delivered_date,
             delivery_time,
             logistics_id,
             driver_id,
@@ -1948,6 +2088,203 @@ export const useTransactionStore = defineStore("transactionStore", {
         return [];
       }
     },
+    // path: src/api/orders.js
+
+    async fetchWholeOrderByOrderNo(orderNo) {
+      try {
+        // 1) Core order + customer (use same aliasing as the working function)
+        const { data, error } = await supabase
+          .from("logistics")
+          .select(
+            `
+          id,
+          job_type,
+          urgency,
+          logistics_status,
+          customer_id,
+          orders!inner(
+            order_no,
+            id,
+            created_at,
+            order_payments(id, payment_status, paid_amount, total_amount, deposit),
+            order_tags(tag_status, tag_changes),
+            order_production(ready_by, goods_status, no_packets, no_hangers, no_rolls, no_returns),
+            order_invoices(invoice_no, created_at)
+          ),
+          customers:customer_id (
+            id,
+            name,
+            contact_no1,
+            contact_no2,
+            email,
+            type,
+            sub_type,
+            schedule_remarks,
+            price_remarks,
+            accounting_remarks,
+            other_remarks,
+            billing_address,
+            po_no,
+            customer_credits(online_package, other_credits)
+          )
+        `
+          )
+          .eq("orders.order_no", orderNo)
+          .single();
+
+        if (error) throw error;
+        if (!data || !data.orders) return null;
+
+        const order = data.orders;
+
+        // 2) Collections & deliveries via helpers (same as the working function)
+        const [collectionsRes, deliveriesRes] = await Promise.allSettled([
+          this.fetchCollectionByLogisticsId(data.id),
+          this.fetchDeliveryByLogisticsId(data.id),
+        ]);
+
+        const rawCollections =
+          collectionsRes.status === "fulfilled" &&
+          Array.isArray(collectionsRes.value)
+            ? collectionsRes.value
+            : [];
+
+        const rawDeliveries =
+          deliveriesRes.status === "fulfilled" &&
+          Array.isArray(deliveriesRes.value)
+            ? deliveriesRes.value
+            : [];
+
+        // 3) Map collections to SAME shape as fetchAllOrdersSimple
+        const collections = rawCollections.map((c) => ({
+          id: c.id,
+          collection_date: c.collection_date,
+          collection_time: c.collection_time,
+          no_bags: c.no_bags,
+          driver_id: c.driver_id,
+          driver: c.profiles
+            ? { id: c.profiles.id, name: c.profiles.name }
+            : null,
+          address_id: c.address_id,
+          // Why: UI expects 'address', not 'customer_address' (keep parity with Simple)
+          address: c.customer_address
+            ? {
+                id: c.customer_address.id,
+                block_no: c.customer_address.block_no,
+                road_name: c.customer_address.road_name,
+                unit_no: c.customer_address.unit_no,
+                building_name: c.customer_address.building_name,
+                postal_code: c.customer_address.postal_code,
+                additional_info: c.customer_address.additional_info,
+                remarks: c.customer_address.remarks,
+              }
+            : null,
+          contact_person: c.customer_contact_persons
+            ? {
+                id: c.customer_contact_persons.id,
+                name: c.customer_contact_persons.name,
+                contact_no1: c.customer_contact_persons.contact_no1,
+                contact_no2: c.customer_contact_persons.contact_no2,
+                email: c.customer_contact_persons.email,
+              }
+            : null,
+        }));
+
+        // 4) Map deliveries to SAME shape as fetchAllOrdersSimple
+        const deliveries = rawDeliveries.map((d) => ({
+          id: d.id,
+          delivery_date: d.delivery_date,
+          delivery_time: d.delivery_time,
+          driver_id: d.driver_id,
+          driver: d.profiles
+            ? { id: d.profiles.id, name: d.profiles.name }
+            : null,
+          address_id: d.address_id,
+          address: d.customer_address
+            ? {
+                id: d.customer_address.id,
+                block_no: d.customer_address.block_no,
+                road_name: d.customer_address.road_name,
+                unit_no: d.customer_address.unit_no,
+                building_name: d.customer_address.building_name,
+                postal_code: d.customer_address.postal_code,
+                additional_info: d.customer_address.additional_info,
+                remarks: d.customer_address.remarks,
+              }
+            : null,
+          contact_person: d.customer_contact_persons
+            ? {
+                id: d.customer_contact_persons.id,
+                name: d.customer_contact_persons.name,
+                contact_no1: d.customer_contact_persons.contact_no1,
+                contact_no2: d.customer_contact_persons.contact_no2,
+                email: d.customer_contact_persons.email,
+              }
+            : null,
+        }));
+
+        // 5) Fetch related resources in parallel
+        const [
+          transactions,
+          onetimeInstructions,
+          errorReports,
+          recurringInstructions,
+        ] = await Promise.all([
+          this.fetchTransactionsByOrderId(order.id),
+          this.fetchOnetimeInstructionsByOrderId(order.id),
+          this.fetchErrorReportsByOrderId(order.id),
+          this.fetchRecurringInstructionsByCustomerId(data.customer_id),
+        ]);
+
+        // 6) Assemble final payload (parity with working function + backward-compat single objects)
+        const fullData = {
+          logistics_id: data.id,
+          job_type: data.job_type,
+          urgency: data.urgency,
+          logistics_status: data.logistics_status,
+
+          customer_id: order.customer_id,
+          customer: data.customers || null,
+
+          transactions,
+          instructions_onetime: onetimeInstructions,
+          error_reports: errorReports,
+
+          order: {
+            id: order.id,
+            order_no: order.order_no,
+            created_at: order.created_at,
+            order_payment: Array.isArray(order.order_payments)
+              ? order.order_payments[0] || null
+              : order.order_payments || null,
+            order_tags: Array.isArray(order.order_tags)
+              ? order.order_tags[0] || null
+              : order.order_tags || null,
+            order_production: Array.isArray(order.order_production)
+              ? order.order_production[0] || null
+              : order.order_production || null,
+            order_invoices: Array.isArray(order.order_invoices)
+              ? order.order_invoices[0] || null
+              : order.order_invoices || null,
+          },
+
+          instructions_recurring: recurringInstructions,
+
+          // Arrays aligned with fetchAllOrdersSimple
+          collections,
+          deliveries,
+
+          // Backward-compat single-object shape using first mapped item
+          collection: collections[0] || null,
+          delivery: deliveries[0] || null,
+        };
+
+        return fullData;
+      } catch (err) {
+        console.error("Error fetching whole order:", err);
+        return null;
+      }
+    },
     async fetchAllOrdersSimple() {
       try {
         const { data, error } = await supabase
@@ -1992,6 +2329,7 @@ export const useTransactionStore = defineStore("transactionStore", {
                 contact_no1,
                 contact_no2,
                 email,
+                pricing_group_id,
                 customer_credits (
                   online_package,
                   other_credits
@@ -2013,15 +2351,21 @@ export const useTransactionStore = defineStore("transactionStore", {
             ]);
 
             const collections =
-              collectionsRes.status === "fulfilled" && Array.isArray(collectionsRes.value)
+              collectionsRes.status === "fulfilled" &&
+              Array.isArray(collectionsRes.value)
                 ? collectionsRes.value
                 : [];
             const deliveries =
-              deliveriesRes.status === "fulfilled" && Array.isArray(deliveriesRes.value)
+              deliveriesRes.status === "fulfilled" &&
+              Array.isArray(deliveriesRes.value)
                 ? deliveriesRes.value
                 : [];
 
-            return { ...logistics, logistics_collections: collections, logistics_deliveries: deliveries };
+            return {
+              ...logistics,
+              logistics_collections: collections,
+              logistics_deliveries: deliveries,
+            };
           })
         );
 
@@ -2042,7 +2386,9 @@ export const useTransactionStore = defineStore("transactionStore", {
                 order_tags: Array.isArray(logistics.orders.order_tags)
                   ? logistics.orders.order_tags[0] || null
                   : logistics.orders.order_tags || null,
-                order_production: Array.isArray(logistics.orders.order_production)
+                order_production: Array.isArray(
+                  logistics.orders.order_production
+                )
                   ? logistics.orders.order_production[0] || null
                   : logistics.orders.order_production || null,
                 order_invoices: Array.isArray(logistics.orders.order_invoices)
@@ -2058,7 +2404,10 @@ export const useTransactionStore = defineStore("transactionStore", {
                 contact_no1: logistics.customers.contact_no1,
                 contact_no2: logistics.customers.contact_no2,
                 email: logistics.customers.email,
-                customer_credits: Array.isArray(logistics.customers.customer_credits)
+                pricing_group_id: logistics.customers.pricing_group_id,
+                customer_credits: Array.isArray(
+                  logistics.customers.customer_credits
+                )
                   ? logistics.customers.customer_credits[0] || null
                   : logistics.customers.customer_credits || null,
               }
@@ -2071,6 +2420,12 @@ export const useTransactionStore = defineStore("transactionStore", {
               collection_time: c.collection_time,
               no_bags: c.no_bags,
               driver_id: c.driver_id,
+              driver: c.profiles
+                ? {
+                    id: c.profiles.id,
+                    name: c.profiles.name,
+                  }
+                : null,
               address_id: c.address_id,
               address: c.customer_address
                 ? {
@@ -2099,8 +2454,15 @@ export const useTransactionStore = defineStore("transactionStore", {
             logistics.logistics_deliveries?.map((d) => ({
               id: d.id,
               delivery_date: d.delivery_date,
+              delivered_date: d.delivered_date,
               delivery_time: d.delivery_time,
               driver_id: d.driver_id,
+              driver: d.profiles
+                ? {
+                    id: d.profiles.id,
+                    name: d.profiles.name,
+                  }
+                : null,
               address_id: d.address_id,
               address: d.customer_address
                 ? {
@@ -2151,7 +2513,8 @@ export const useTransactionStore = defineStore("transactionStore", {
         tag_category,
         unit,
         ready_status,
-        pack_type
+        pack_type,
+        company
       )
     `
         )
@@ -2205,7 +2568,7 @@ export const useTransactionStore = defineStore("transactionStore", {
     async fetchErrorReportsByOrderId(orderId) {
       const { data, error } = await supabase
         .from("order_error_reports")
-        .select("id, order_id, description, category, sub_category, image")
+        .select("id, order_id, description, category, sub_category, image, status")
         .eq("order_id", orderId);
 
       if (error) {
@@ -2245,6 +2608,10 @@ export const useTransactionStore = defineStore("transactionStore", {
           collection_time,
           no_bags,
           driver_id,
+                  profiles:driver_id (
+          id,
+          name
+        ),
           address_id,
           customer_address (
             id,
@@ -2276,19 +2643,30 @@ export const useTransactionStore = defineStore("transactionStore", {
       return data;
     },
 
+    // path: src/stores/transactionStore.js
     async fetchCollectionHistoryByLogisticsId(logisticsId) {
       const { data, error } = await supabase
-        .from("logistics_collections")
+        .from("logistics_collections_history")
         .select(
           `
-           id,
+        id,
+        created_at,
+        created_by,
+        logistics_collection_id,
+
+        logistics_collections:logistics_collection_id!inner(
+          id,
           logistics_id,
           collection_date,
           collection_time,
           no_bags,
           driver_id,
+          profiles:driver_id (
+            id,
+            name
+          ),
           address_id,
-          customer_address (
+          customer_address:address_id (
             id,
             road_name,
             postal_code,
@@ -2298,35 +2676,41 @@ export const useTransactionStore = defineStore("transactionStore", {
             block_no,
             remarks
           ),
-          customer_contact_persons (
+          customer_contact_persons:contact_person_id (
             id,
             name,
             contact_no1,
             contact_no2,
             email
           ),
-          logistics ( logistics_status )
-        `
+          logistics:logistics_id (
+            logistics_status
+          )
         )
-        .eq("logistics_id", logisticsId)
-        .order("id", { ascending: true });
+      `
+        )
+        .eq("logistics_collections.logistics_id", logisticsId)
+        .order("created_at", { ascending: true });
 
       if (error) {
-        console.error("Error fetching collections:", error);
+        console.error("Error fetching collection history:", error);
         return [];
       }
 
-      // Fetch profile names for each collection
-      const collectionsWithProfiles = await Promise.all(
-        data.map(async (collection) => {
-          collection.profile_name = collection.created_by
-            ? await this.getProfileName(collection.created_by)
+      // 3) add profile_name (from history.created_by); keep shapes simple
+      const withProfiles = await Promise.all(
+        (data || []).map(async (row) => {
+          const profile_name = row.created_by
+            ? await this.getProfileName(row.created_by).catch(() => "[NOT SET]")
             : "[NOT SET]";
-          return collection;
+          return {
+            ...row,
+            profile_name,
+          };
         })
       );
 
-      return collectionsWithProfiles;
+      return withProfiles;
     },
 
     // Fetch Deliveries
@@ -2340,6 +2724,11 @@ export const useTransactionStore = defineStore("transactionStore", {
           delivery_date,
           delivery_time,
           driver_id,
+          delivered_date,
+                  profiles:driver_id (
+          id,
+          name
+        ),
           address_id,
           customer_address (
             id,
@@ -2361,7 +2750,7 @@ export const useTransactionStore = defineStore("transactionStore", {
           logistics ( logistics_status )
         `
         )
-        .eq("logistics_id", logisticsId)
+        .eq("logistics_id", logisticsId);
       if (error) {
         console.error("Error fetching deliveries:", error);
         return [];
@@ -2372,16 +2761,27 @@ export const useTransactionStore = defineStore("transactionStore", {
 
     async fetchDeliveryHistoryByLogisticsId(logisticsId) {
       const { data, error } = await supabase
-        .from("logistics_deliveries")
+        .from("logistics_deliveries_history")
         .select(
           `
-           id,
+        id,
+        created_at,
+        created_by,
+        logistics_delivery_id,
+
+        logistics_deliveries:logistics_delivery_id!inner(
+          id,
           logistics_id,
           delivery_date,
+          delivered_date,
           delivery_time,
           driver_id,
+          profiles:driver_id (
+            id,
+            name
+          ),
           address_id,
-          customer_address (
+          customer_address:address_id (
             id,
             road_name,
             postal_code,
@@ -2391,163 +2791,87 @@ export const useTransactionStore = defineStore("transactionStore", {
             block_no,
             remarks
           ),
-          customer_contact_persons (
+          customer_contact_persons:contact_person_id (
             id,
             name,
             contact_no1,
             contact_no2,
             email
           ),
-          logistics ( logistics_status )
-        `
+          logistics:logistics_id (
+            logistics_status
+          )
         )
-        .eq("logistics_id", logisticsId)
-        .order("id", { ascending: true });
+      `
+        )
+        .eq("logistics_deliveries.logistics_id", logisticsId)
+        .order("created_at", { ascending: true });
 
       if (error) {
-        console.error("Error fetching deliveries:", error);
+        console.error("Error fetching delivery history:", error);
         return [];
       }
 
-      // Fetch profile names for each collection
-      const deliveriesWithProfiles = await Promise.all(
-        data.map(async (delivery) => {
-          delivery.profile_name = delivery.created_by
-            ? await this.getProfileName(delivery.created_by)
+      // 3) add profile_name (from history.created_by); keep shapes simple
+      const withProfiles = await Promise.all(
+        (data || []).map(async (row) => {
+          const profile_name = row.created_by
+            ? await this.getProfileName(row.created_by).catch(() => "[NOT SET]")
             : "[NOT SET]";
-          return delivery;
+          return {
+            ...row,
+            profile_name,
+          };
         })
       );
 
-      return deliveriesWithProfiles;
+      return withProfiles;
     },
-
-    // Fetch Whole Order (Main Function)
-    async fetchWholeOrderByOrderNo(orderNo) {
-      try {
-        const { data, error } = await supabase
-          .from("logistics")
-          .select(
-            `
-        id,
-        job_type,
-        urgency,
-        logistics_status,
-        customer_id,
-        orders!inner(order_no, id, created_at, 
-          order_payments(id, payment_status, paid_amount, total_amount, deposit),
-          order_tags(tag_status, tag_changes),
-          order_production(ready_by, goods_status, no_packets, no_hangers, no_rolls, no_returns),
-          order_invoices(invoice_no, created_at)
-        ),
-        customers(id, name, contact_no1, contact_no2, email, type, sub_type,
-          schedule_remarks, price_remarks, accounting_remarks, other_remarks, billing_address,
-          customer_credits(online_package, other_credits)
-        ),
-        logistics_collections:logistics_collections(status, id, logistics_id, collection_date, collection_time, address_id, driver_id, collection_remarks, no_bags, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks)),
-        logistics_deliveries:logistics_deliveries(status, id, logistics_id, delivery_date, delivery_time, address_id, driver_id, delivery_remarks, customer_contact_persons (id, name, contact_no1, contact_no2, email, remarks))
-        `
-          )
-          .eq("orders.order_no", orderNo)
-          .single();
-
-        if (error) throw error;
-
-        const order = data.orders;
-
-        const [
-          transactions,
-          onetimeInstructions,
-          errorReports,
-          recurringInstructions,
-        ] = await Promise.all([
-          this.fetchTransactionsByOrderId(order.id),
-          this.fetchOnetimeInstructionsByOrderId(order.id),
-          this.fetchErrorReportsByOrderId(order.id),
-          this.fetchRecurringInstructionsByCustomerId(data.customer_id),
-        ]);
-
-        const fullData = {
-          logistics_id: data.id,
-          job_type: data.job_type,
-          urgency: data.urgency,
-          logistics_status: data.logistics_status,
-          customer_id: order.customer_id,
-          customer: data.customers || null,
-          transactions,
-          instructions_onetime: onetimeInstructions,
-          error_reports: errorReports,
-          order: {
-            id: order.id,
-            order_no: order.order_no,
-            created_at: order.created_at,
-            order_payment: Array.isArray(order.order_payments)
-              ? order.order_payments[0] || null
-              : order.order_payments || null,
-            order_tags: Array.isArray(order.order_tags)
-              ? order.order_tags[0] || null
-              : order.order_tags || null,
-            order_production: Array.isArray(order.order_production)
-              ? order.order_production[0] || null
-              : order.order_production || null,
-            order_invoices: Array.isArray(order.order_invoices)
-              ? order.order_invoices[0] || null
-              : order.order_invoices || null,
-          },
-          instructions_recurring: recurringInstructions,
-          collection: (data.logistics_collections || [])[0] || null,
-          delivery: (data.logistics_deliveries || [])[0] || null,
-        };
-
-        return fullData;
-      } catch (error) {
-        console.error("Error fetching whole order:", error);
-        return null;
-      }
-    },
-
     async createOrderFromCollection(logisticsId) {
       try {
         const collection = await this.fetchCollectionByLogisticsId(logisticsId);
+
+        // ✅ ALWAYS SET A DATE
         this.readyBy = this.computeReadyByDate(collection?.collection_date);
 
-        // Step 1: Create Order and get orderId
         const { orderId } = await this.createOrder(logisticsId);
         if (!orderId) throw new Error("Failed to create order");
 
-        console.log("[createOrderFromCollection] Created orderId:", orderId);
-
-        // Step 2: Update logistics.order_id with new orderId
-        const { error: updateError } = await supabase
+        await supabase
           .from("logistics")
           .update({ order_id: orderId })
           .eq("id", logisticsId);
 
-        if (updateError) {
-          console.error(
-            "[createOrderFromCollection] Failed to update logistics.order_id:",
-            updateError
-          );
-          throw updateError;
-        }
-
-        console.log(
-          "[createOrderFromCollection] Updated logistics.order_id successfully"
-        );
-
-        // Step 3: Create transaction-related data
         await this.createTransaction(orderId);
         await this.createInstructions(orderId);
         await this.createErrorReports(orderId);
         await this.createInvoice(orderId);
 
         this.resetTransactionItems();
-
-        return orderNo;
       } catch (error) {
         console.error("[createOrderFromCollection] Error:", error);
       }
     },
+
+computeReadyByDate(startDate) {
+  let base = startDate ? new Date(startDate) : new Date();
+
+  if (isNaN(base.getTime())) {
+    console.warn("[computeReadyByDate] Invalid date, using today.");
+    base = new Date();
+  }
+
+  const result = new Date(base);
+  let added = 0;
+
+  while (added < 5) {
+    result.setDate(result.getDate() + 1);
+    const dow = result.getDay(); // 0=Sun, 6=Sat
+    if (dow !== 0 && dow !== 6) added++;
+  }
+
+  return result.toISOString().split("T")[0];
+},
 
     // start of order creation
     async createWholeTransaction() {
@@ -2582,26 +2906,6 @@ export const useTransactionStore = defineStore("transactionStore", {
       } catch (error) {
         console.error("Error in createWholeTransaction:", error);
       }
-    },
-
-    async computeReadyByDate(startDate) {
-      if (!startDate) {
-        console.warn("Invalid startDate provided to computeReadyByDate.");
-        return null;
-      }
-
-      const readyByDate = new Date(startDate);
-      let addedDays = 0;
-
-      while (addedDays < 5) {
-        readyByDate.setDate(readyByDate.getDate() + 1);
-        const dayOfWeek = readyByDate.getDay(); // 0 = Sunday, 6 = Saturday
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          addedDays++; // Only count Monday-Friday
-        }
-      }
-
-      return readyByDate.toISOString().split("T")[0]; // Format: "YYYY-MM-DD"
     },
 
     async createLogistics(orderId) {
@@ -2653,18 +2957,24 @@ export const useTransactionStore = defineStore("transactionStore", {
         if (insertError) throw insertError;
 
         // 3. Merge existing data with updateData
+
+        const session = await supabase.auth.getSession();
+        const userId = session?.data?.session?.user?.id;
+
         const mergedUpdate = {
           logistics_status:
             updateData.logistics_status ?? logisticsData.logistics_status,
+          delivered_date:
+            updateData.delivered_date ?? logisticsData.delivered_date,
           job_type: updateData.job_type ?? logisticsData.job_type,
           urgency: updateData.urgency ?? logisticsData.urgency,
+          created_at: new Date().toISOString(),
+          created_by: userId,
         };
-
-        // 4. Add system-generated values
-        const session = await supabase.auth.getSession();
-        const userId = session?.data?.session?.user?.id;
-        mergedUpdate.created_at = new Date().toISOString();
-        mergedUpdate.created_by = userId;
+        console.log(
+          "[updateLogistics] payload → logistics.update",
+          mergedUpdate
+        );
 
         // 5. Update logistics row
         const { error: updateError } = await supabase
@@ -2758,98 +3068,101 @@ export const useTransactionStore = defineStore("transactionStore", {
       }
     },
 
-// in transactionStore.js
-async updateCollection(collectionId) {
-  try {
-    // 1) fetch the current live row
-    const { data: oldRow, error: fetchErr } = await supabase
-      .from("logistics_collections")
-      .select("*")
-      .eq("id", collectionId)
-      .single();
-    if (fetchErr) throw fetchErr;
-    if (!oldRow) throw new Error("Collection not found");
+    // in transactionStore.js
+    async updateCollection(collectionId) {
+      try {
+        // 1) fetch the current live row
+        const { data: oldRow, error: fetchErr } = await supabase
+          .from("logistics_collections")
+          .select("*")
+          .eq("id", collectionId)
+          .single();
+        if (fetchErr) throw fetchErr;
+        if (!oldRow) throw new Error("Collection not found");
 
-    // helpers
-    const idOf = (v) => (v && typeof v === "object" ? (v.id ?? null) : (v ?? null));
-    const toNull = (v) => (v === "" || v === undefined ? null : v);
+        // helpers
+        const idOf = (v) =>
+          v && typeof v === "object" ? v.id ?? null : v ?? null;
+        const toNull = (v) => (v === "" || v === undefined ? null : v);
 
-    // session user + audit time (you said changed_* should still be created_*)
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id ?? null;
-    const nowIso = new Date().toISOString();
+        // session user + audit time (you said changed_* should still be created_*)
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id ?? null;
+        const nowIso = new Date().toISOString();
 
-    // 2) archive OLD values to history
-    // NOTE: history has NO logistics_id; it references the original row by logistics_collection_id
-    const historyPayload = {
-      logistics_collection_id: oldRow.id,
-      contact_person_id: oldRow.contact_person_id ?? null,
-      address_id: oldRow.address_id ?? null,
-      collection_date: oldRow.collection_date ?? null,
-      collection_time: oldRow.collection_time ?? null,
-      collection_remarks: oldRow.collection_remarks ?? null,
-      driver_id: oldRow.driver_id ?? null,
-      no_bags: oldRow.no_bags ?? null,
-      created_at: nowIso,   // acts as changed_at
-      created_by: userId,   // acts as changed_by
-    };
+        // 2) archive OLD values to history
+        // NOTE: history has NO logistics_id; it references the original row by logistics_collection_id
+        const historyPayload = {
+          logistics_collection_id: oldRow.id,
+          contact_person_id: oldRow.contact_person_id ?? null,
+          address_id: oldRow.address_id ?? null,
+          collection_date: oldRow.collection_date ?? null,
+          collection_time: oldRow.collection_time ?? null,
+          collection_remarks: oldRow.collection_remarks ?? null,
+          driver_id: oldRow.driver_id ?? null,
+          no_bags: oldRow.no_bags ?? null,
+          created_at: nowIso, // acts as changed_at
+          created_by: userId, // acts as changed_by
+        };
 
-    const { error: histErr } = await supabase
-      .from("logistics_collections_history")
-      .insert([historyPayload]);
-    if (histErr) throw histErr;
+        const { error: histErr } = await supabase
+          .from("logistics_collections_history")
+          .insert([historyPayload]);
+        if (histErr) throw histErr;
 
-    // 3) update LIVE row with NEW values from the store (`this.`)
-    const livePayload = {
-      contact_person_id: idOf(this.selectedCollectionContact),
-      address_id:       idOf(this.selectedCollectionAddress),
-      collection_date:  toNull(this.collectionDate),
-      collection_time:  toNull(this.collectionTime),
-      collection_remarks: toNull(this.collectionRemarks),
-      driver_id:        idOf(this.selectedCollectionDriver),
-      no_bags:          this.collectionNoBags ?? null,
+        // 3) update LIVE row with NEW values from the store (`this.`)
+        const livePayload = {
+          contact_person_id: idOf(this.selectedCollectionContact),
+          address_id: idOf(this.selectedCollectionAddress),
+          collection_date: toNull(this.collectionDate),
+          collection_time: toNull(this.collectionTime),
+          collection_remarks: toNull(this.collectionRemarks),
+          driver_id: idOf(this.selectedCollectionDriver),
+          no_bags: this.collectionNoBags ?? null,
 
-      // audit fields (you asked to keep using created_* for changes)
-      created_at: nowIso,
-      created_by: userId,
-    };
+          // audit fields (you asked to keep using created_* for changes)
+          created_at: nowIso,
+          created_by: userId,
+        };
 
-    const { error: updErr } = await supabase
-      .from("logistics_collections")
-      .update(livePayload)
-      .eq("id", collectionId);
-    if (updErr) throw updErr;
+        const { error: updErr } = await supabase
+          .from("logistics_collections")
+          .update(livePayload)
+          .eq("id", collectionId);
+        if (updErr) throw updErr;
 
-    // (optional) return the updated row for immediate UI refresh
-    const { data: fresh, error: refetchErr } = await supabase
-      .from("logistics_collections")
-      .select(`
+        // (optional) return the updated row for immediate UI refresh
+        const { data: fresh, error: refetchErr } = await supabase
+          .from("logistics_collections")
+          .select(
+            `
         id, logistics_id, collection_date, collection_time, collection_remarks,
         address_id, driver_id, no_bags,
         customer_contact_persons ( id, name, contact_no1, contact_no2 )
-      `)
-      .eq("id", collectionId)
-      .single();
-    if (!refetchErr && fresh) {
-      // reflect the latest values into the store state if you want instant UI sync
-      this.selectedCollectionId = fresh.id;
-      this.collectionDate = fresh.collection_date ?? null;
-      this.collectionTime = fresh.collection_time ?? null;
-      this.collectionRemarks = fresh.collection_remarks ?? null;
-      this.collectionNoBags = fresh.no_bags ?? null;
+      `
+          )
+          .eq("id", collectionId)
+          .single();
+        if (!refetchErr && fresh) {
+          // reflect the latest values into the store state if you want instant UI sync
+          this.selectedCollectionId = fresh.id;
+          this.collectionDate = fresh.collection_date ?? null;
+          this.collectionTime = fresh.collection_time ?? null;
+          this.collectionRemarks = fresh.collection_remarks ?? null;
+          this.collectionNoBags = fresh.no_bags ?? null;
 
-      // if your selects use objects, you may want to rehydrate them:
-      // this.selectedCollectionDriver = fresh.driver_id ?? null;
-      // this.selectedCollectionAddress = fresh.address_id ?? null;
-      // this.selectedCollectionContact = fresh.customer_contact_persons ?? null;
-    }
+          // if your selects use objects, you may want to rehydrate them:
+          // this.selectedCollectionDriver = fresh.driver_id ?? null;
+          // this.selectedCollectionAddress = fresh.address_id ?? null;
+          // this.selectedCollectionContact = fresh.customer_contact_persons ?? null;
+        }
 
-    console.log("Collection updated + history archived.");
-  } catch (err) {
-    console.error("Error updating collection:", err);
-    throw err;
-  }
-},
+        console.log("Collection updated + history archived.");
+      } catch (err) {
+        console.error("Error updating collection:", err);
+        throw err;
+      }
+    },
 
     async createDelivery(logisticsId, fallback = {}) {
       try {
@@ -2865,6 +3178,8 @@ async updateCollection(collectionId) {
                 this.selectedDeliveryAddress?.id ?? fallback.address_id ?? null,
               delivery_date:
                 this.deliveryDate ?? fallback.delivery_date ?? null,
+              delivered_date:
+                this.deliveredDate ?? fallback.delivered_date ?? null,
               delivery_time:
                 this.deliveryTime ?? fallback.delivery_time ?? null,
               delivery_remarks:
@@ -2882,95 +3197,324 @@ async updateCollection(collectionId) {
       }
     },
 
-// in transactionStore.js
-async updateDelivery(deliveryId) {
-  try {
-    // 1) fetch the current live row
-    const { data: oldRow, error: fetchErr } = await supabase
-      .from("logistics_deliveries")
-      .select("*")
-      .eq("id", deliveryId)
-      .single();
-    if (fetchErr) throw fetchErr;
-    if (!oldRow) throw new Error("Delivery not found");
+    async updateDelivery(deliveryId, updateData = {}) {
+      const TAG = "[transactionStore.updateDelivery]";
+      try {
+        // 1) Load current delivery for history + logistics_id
+        const { data: oldRow, error: fetchErr } = await supabase
+          .from("logistics_deliveries")
+          .select("*")
+          .eq("id", deliveryId)
+          .single();
+        if (fetchErr) throw fetchErr;
+        if (!oldRow) throw new Error("Delivery not found");
 
-    // helpers
-    const idOf = (v) => (v && typeof v === "object" ? (v.id ?? null) : (v ?? null));
-    const toNull = (v) => (v === "" || v === undefined ? null : v);
+        const idOf = (v) =>
+          v && typeof v === "object" ? v.id ?? null : v ?? null;
+        const toNull = (v) => (v === "" || v === undefined ? null : v);
 
-    // session user + audit time (use created_* as change audit)
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id ?? null;
-    const nowIso = new Date().toISOString();
+        // 2) Archive old deliveries row
+        const historyPayload = {
+          logistics_delivery_id: oldRow.id,
+          contact_person_id: oldRow.contact_person_id ?? null,
+          address_id: oldRow.address_id ?? null,
+          delivery_date: oldRow.delivery_date ?? null,
+          delivered_date: oldRow.delivered_date ?? null,
+          delivery_time: oldRow.delivery_time ?? null,
+          delivery_remarks: oldRow.delivery_remarks ?? null,
+          driver_id: oldRow.driver_id ?? null,
+          // created_at/created_by not set here; Supabase defaults can handle timestamps on the history table if desired
+        };
+        const { error: histErr } = await supabase
+          .from("logistics_deliveries_history")
+          .insert([historyPayload]);
+        if (histErr) throw histErr;
 
-    // 2) archive OLD values → deliveries history
-    //    history links to the original row by logistics_delivery_id
-    const historyPayload = {
-      logistics_delivery_id: oldRow.id,
-      contact_person_id: oldRow.contact_person_id ?? null,
-      address_id: oldRow.address_id ?? null,
-      delivery_date: oldRow.delivery_date ?? null,
-      delivery_time: oldRow.delivery_time ?? null,
-      delivery_remarks: oldRow.delivery_remarks ?? null,
-      driver_id: oldRow.driver_id ?? null,
-      created_at: nowIso,   // acts as changed_at
-      created_by: userId,   // acts as changed_by
-    };
+        // 3) Update LIVE deliveries row (main delivered_date lives here)
+        const livePayload = {
+          contact_person_id:
+            idOf(updateData.contact_person_id ?? updateData.contact_person) ??
+            idOf(this.selectedDeliveryContact),
+          address_id:
+            idOf(updateData.address_id ?? updateData.address) ??
+            idOf(this.selectedDeliveryAddress),
+          delivery_date: toNull(updateData.delivery_date ?? this.deliveryDate),
+          delivered_date: toNull(
+            updateData.delivered_date ?? this.deliveredDate
+          ),
+          delivery_time: toNull(updateData.delivery_time ?? this.deliveryTime),
+          delivery_remarks:
+            updateData.delivery_remarks ?? this.deliveryRemarks ?? null,
+          driver_id:
+            idOf(updateData.driver_id ?? updateData.driver) ??
+            idOf(this.selectedDeliveryDriver),
+        };
 
-    const { error: histErr } = await supabase
-      .from("logistics_deliveries_history")
-      .insert([historyPayload]);
-    if (histErr) throw histErr;
+        console.log(`${TAG} ▶️ updating logistics_deliveries`, {
+          deliveryId,
+          livePayload,
+        });
+        const { error: updErr } = await supabase
+          .from("logistics_deliveries")
+          .update(livePayload)
+          .eq("id", deliveryId);
+        if (updErr) throw updErr;
 
-    // 3) update LIVE row with NEW values from the store (`this.`)
-    const livePayload = {
-      contact_person_id: idOf(this.selectedDeliveryContact),
-      address_id:       idOf(this.selectedDeliveryAddress),
-      delivery_date:    toNull(this.deliveryDate),
-      delivery_time:    toNull(this.deliveryTime),
-      delivery_remarks: toNull(this.deliveryRemarks),
-      driver_id:        idOf(this.selectedDeliveryDriver),
-
-      // audit (keep using created_* on change as requested)
-      created_at: nowIso,
-      created_by: userId,
-    };
-
-    const { error: updErr } = await supabase
-      .from("logistics_deliveries")
-      .update(livePayload)
-      .eq("id", deliveryId);
-    if (updErr) throw updErr;
-
-    // (optional) refetch and sync store to what’s in DB now
-    const { data: fresh, error: refetchErr } = await supabase
-      .from("logistics_deliveries")
-      .select(`
-        id, logistics_id, delivery_date, delivery_time, delivery_remarks,
+        // 4) Re-fetch updated delivery (to get the authoritative delivered_date + logistics_id)
+        const { data: fresh, error: refetchErr } = await supabase
+          .from("logistics_deliveries")
+          .select(
+            `
+        id, logistics_id, delivery_date, delivered_date, delivery_time, delivery_remarks,
         address_id, driver_id,
         customer_contact_persons ( id, name, contact_no1, contact_no2 )
-      `)
-      .eq("id", deliveryId)
-      .single();
+      `
+          )
+          .eq("id", deliveryId)
+          .single();
+        if (refetchErr) throw refetchErr;
 
-    if (!refetchErr && fresh) {
-      this.selectedDeliveryId = fresh.id;
-      this.deliveryDate = fresh.delivery_date ?? null;
-      this.deliveryTime = fresh.delivery_time ?? null;
-      this.deliveryRemarks = fresh.delivery_remarks ?? null;
+        // Sync minimal store fields used by the dialog
+        this.selectedDeliveryId = fresh.id;
+        this.deliveryDate = fresh.delivery_date ?? null;
+        this.deliveryTime = fresh.delivery_time ?? null;
+        this.deliveryRemarks = fresh.delivery_remarks ?? null;
+        this.deliveredDate = fresh.delivered_date ?? null;
 
-      // If your selects use full objects, you can rehydrate them here:
-      // this.selectedDeliveryDriver = fresh.driver_id ?? null;   // or map id -> object if you keep objects
-      // this.selectedDeliveryAddress = fresh.address_id ?? null; // or look up address object
-      // this.selectedDeliveryContact = fresh.customer_contact_persons ?? null;
+        // 5) Compute next logistics_status from main + exceptions
+        const logisticsId = fresh.logistics_id;
+        if (!logisticsId) {
+          console.warn(`${TAG} ⛔ Missing logistics_id on delivery`, {
+            deliveryId,
+          });
+          console.log(
+            `${TAG} Delivery updated + history archived (no status recompute).`
+          );
+          return;
+        }
+
+        // 5a) Main delivered (from deliveries.delivered_date)
+        const mainDone = Boolean(fresh.delivered_date);
+
+        // 5b) Exceptions: delivered_date count
+        const { data: exceptions, error: excErr } = await supabase
+          .from("logistics_delivery_exceptions")
+          .select("id, delivered_date")
+          .eq("logistics_id", logisticsId);
+        if (excErr) throw excErr;
+
+        const totalExceptions = exceptions?.length ?? 0;
+        const deliveredExceptions = (exceptions || []).filter(
+          (e) => !!e.delivered_date
+        ).length;
+
+        // 5c) Current logistics status (to avoid redundant writes)
+        const { data: logRow, error: logErr } = await supabase
+          .from("logistics")
+          .select("id, logistics_status")
+          .eq("id", logisticsId) // change to .eq("logistics_id", logisticsId) if your PK is different
+          .single();
+        if (logErr) throw logErr;
+
+        // 5d) Decide next status
+        let next = null;
+        if (mainDone && deliveredExceptions === totalExceptions)
+          next = "delivery completed";
+        else if (mainDone || deliveredExceptions > 0)
+          next = "delivered partial";
+
+        console.log(`${TAG} status decision`, {
+          logisticsId,
+          mainDone,
+          totalExceptions,
+          deliveredExceptions,
+          currentStatus: logRow?.logistics_status ?? null,
+          next,
+        });
+
+        // 5e) Update logistics status if needed (no created_* fields)
+        if (next && next !== logRow?.logistics_status) {
+          const { error: sErr } = await supabase
+            .from("logistics")
+            .update({ logistics_status: next })
+            .eq("id", logisticsId); // change eq target if your PK differs
+          if (sErr) throw sErr;
+          console.log(`${TAG} logistics_status updated → ${next}`);
+        } else {
+          console.log(`${TAG} no logistics_status change needed`);
+        }
+
+        console.log(
+          `${TAG} ✅ Delivery saved, history archived, status evaluated.`
+        );
+      } catch (err) {
+        console.error(`${TAG} ❌`, err);
+        throw err;
+      }
+    },
+// In actions:
+async markDeliveryExceptionsDelivered(ids, deliveredDateStr) {
+  const TAG = "[transactionStore.markDeliveryExceptionsDelivered]";
+  try {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      console.warn(`${TAG} no ids provided`, ids);
+      return { updated: 0 };
     }
 
-    console.log("Delivery updated + history archived.");
+    // normalize to YYYY-MM-DD (accepts Date or string)
+    const toDateOnly = (v) => {
+      if (!v) return null;
+      if (v instanceof Date) return v.toISOString().slice(0, 10);
+      const d = new Date(v);
+      if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+      const s = String(v).slice(0, 10);
+      return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+    };
+
+    const day = toDateOnly(deliveredDateStr);
+    if (!day) {
+      console.warn(`${TAG} invalid delivered date`, deliveredDateStr);
+      return { updated: 0 };
+    }
+
+    // 1) Update exceptions and collect affected logistics_id
+    const { data, error } = await supabase
+      .from("logistics_delivery_exceptions")
+      .update({ delivered_date: day })
+      .in("id", ids)
+      .select("id, logistics_id");
+
+    if (error) throw error;
+
+    const logisticsIds = [...new Set((data || [])
+      .map((r) => r.logistics_id)
+      .filter(Boolean))];
+
+    // 2) For each logistics_id, compute & write next status (same rules as updateDelivery)
+    for (const logisticsId of logisticsIds) {
+      // a) main delivery done?
+      const { data: main, error: mErr } = await supabase
+        .from("logistics_deliveries")
+        .select("id, delivered_date")
+        .eq("logistics_id", logisticsId)
+        .single();
+      if (mErr && mErr.code !== "PGRST116") throw mErr;
+
+      const mainDone = !!(main && main.delivered_date);
+
+      // b) exceptions delivered count
+      const { data: excRows, error: eErr } = await supabase
+        .from("logistics_delivery_exceptions")
+        .select("id, delivered_date")
+        .eq("logistics_id", logisticsId);
+      if (eErr) throw eErr;
+
+      const total = excRows?.length ?? 0;
+      const delivered = (excRows || []).filter((r) => !!r.delivered_date).length;
+
+      // c) current logistics row
+      const { data: logRow, error: logErr } = await supabase
+        .from("logistics")
+        .select("id, logistics_status")
+        .eq("id", logisticsId)
+        .single();
+      if (logErr) throw logErr;
+
+      // d) decide next
+      let next = null;
+      if (mainDone && delivered === total) next = "delivery completed";
+      else if (mainDone || delivered > 0) next = "delivered partial";
+
+      // e) write only if a change is needed
+      if (next && next !== logRow?.logistics_status) {
+        const { error: sErr } = await supabase
+          .from("logistics")
+          .update({ logistics_status: next })
+          .eq("id", logisticsId);
+        if (sErr) throw sErr;
+        console.log(`${TAG} logistics ${logisticsId} → ${next}`);
+      }
+    }
+
+    console.log(`${TAG} updated rows:`, data?.length || 0);
+    return { updated: data?.length || 0 };
   } catch (err) {
-    console.error("Error updating delivery:", err);
+    console.error(`${TAG} error`, err);
     throw err;
   }
 },
+
+async clearDeliveryExceptionsDelivered(ids) {
+  const TAG = "[transactionStore.clearDeliveryExceptionsDelivered]";
+  try {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      console.warn(`${TAG} no ids provided`, ids);
+      return { updated: 0 };
+    }
+
+    // 1) Clear delivered_date and collect affected logistics_id
+    const { data, error } = await supabase
+      .from("logistics_delivery_exceptions")
+      .update({ delivered_date: null })
+      .in("id", ids)
+      .select("id, logistics_id");
+
+    if (error) throw error;
+
+    const logisticsIds = [...new Set((data || [])
+      .map((r) => r.logistics_id)
+      .filter(Boolean))];
+
+    // 2) Recompute status per logistics_id (same rules as updateDelivery)
+    for (const logisticsId of logisticsIds) {
+      const { data: main, error: mErr } = await supabase
+        .from("logistics_deliveries")
+        .select("id, delivered_date")
+        .eq("logistics_id", logisticsId)
+        .single();
+      if (mErr && mErr.code !== "PGRST116") throw mErr;
+
+      const mainDone = !!(main && main.delivered_date);
+
+      const { data: excRows, error: eErr } = await supabase
+        .from("logistics_delivery_exceptions")
+        .select("id, delivered_date")
+        .eq("logistics_id", logisticsId);
+      if (eErr) throw eErr;
+
+      const total = excRows?.length ?? 0;
+      const delivered = (excRows || []).filter((r) => !!r.delivered_date).length;
+
+      const { data: logRow, error: logErr } = await supabase
+        .from("logistics")
+        .select("id, logistics_status")
+        .eq("id", logisticsId)
+        .single();
+      if (logErr) throw logErr;
+
+      let next = null;
+      if (mainDone && delivered === total) next = "delivery completed";
+      else if (mainDone || delivered > 0) next = "delivered partial";
+
+      if (next && next !== logRow?.logistics_status) {
+        const { error: sErr } = await supabase
+          .from("logistics")
+          .update({ logistics_status: next })
+          .eq("id", logisticsId);
+        if (sErr) throw sErr;
+        console.log(`${TAG} logistics ${logisticsId} → ${next}`);
+      } else {
+        console.log(`${TAG} no logistics_status change for`, logisticsId);
+      }
+    }
+
+    return { updated: data?.length || 0 };
+  } catch (error) {
+    console.error(`${TAG} error`, error);
+    throw error;
+  }
+},
+
 
     async createOrder(logisticsId) {
       try {
@@ -2992,16 +3536,26 @@ async updateDelivery(deliveryId) {
         const orderId = orderData.id;
 
         // 2. Insert into order_payments with the generated orderId
+        const totalAmount = Number(this.totalAmount) || 0;
+
+        const rawDeposit = this?.deposit ?? 0;
+        const depositNum = Number(rawDeposit);
+
+        const safeDeposit = Math.max(0, Math.min(depositNum, totalAmount));
+
+        const paymentStatus = safeDeposit >= totalAmount ? "paid" : "unpaid";
+
+        const payload = {
+          order_id: orderId,
+          payment_status: paymentStatus,
+          deposit: safeDeposit,
+          paid_amount: safeDeposit,
+          total_amount: totalAmount,
+        };
+
         const { data: paymentData, error: paymentError } = await supabase
           .from("order_payments")
-          .insert([
-            {
-              order_id: orderId,
-              payment_status: "unpaid",
-              paid_amount: 0,
-              total_amount: this.totalAmount,
-            },
-          ])
+          .insert([payload])
           .select("id")
           .single();
 
@@ -3020,6 +3574,7 @@ async updateDelivery(deliveryId) {
               no_packets: 0,
               no_hangers: 0,
               no_rolls: 0,
+              no_returns: 0,
             },
           ])
           .select("id")
@@ -3055,10 +3610,8 @@ async updateDelivery(deliveryId) {
 
     async createTransaction(orderId) {
       try {
-        console.log("[createTransaction] Start for orderId:", orderId);
-
         if (!orderId) {
-          console.error("[createTransaction] Invalid orderId");
+          console.error("Invalid orderId");
           return;
         }
 
@@ -3066,7 +3619,7 @@ async updateDelivery(deliveryId) {
           !Array.isArray(this.transactionItems) ||
           this.transactionItems.length === 0
         ) {
-          console.warn("[createTransaction] No transaction items found.");
+          console.warn("No transaction items found.");
           return;
         }
 
@@ -3081,99 +3634,358 @@ async updateDelivery(deliveryId) {
           .single();
 
         if (headerError) {
-          console.error(
-            "[createTransaction] Failed to insert order_transactions:",
-            headerError
-          );
+          console.error("Failed to insert order_transactions:", headerError);
           throw headerError;
         }
 
         const transactionId = transactionHeader.id;
-        console.log(
-          "[createTransaction] Inserted order_transaction with ID:",
-          transactionId
-        );
-
         // Step 2: Insert each item into order_transaction_items
         for (const [index, item] of this.transactionItems.entries()) {
+          const u = String(item.unit || "").toLowerCase();
+          const piecesDb =
+            u === "pc"
+              ? (() => {
+                  const perUnit = Number(
+                    item.pieces_per_unit ?? item.pieces ?? 0
+                  );
+                  return Number.isFinite(perUnit) && perUnit > 0
+                    ? Math.trunc(perUnit)
+                    : null;
+                })()
+              : u === "kg" || u === "lbs" || u === "sqft"
+              ? (() => {
+                  const userPieces = Number(item.pieces ?? 0);
+                  return Number.isFinite(userPieces) && userPieces > 0
+                    ? Math.trunc(userPieces)
+                    : null;
+                })()
+              : null;
+
           const itemData = {
             order_transaction_id: transactionId,
             item_name: item.name,
             price: item.price,
             process: item.process,
-            pieces: item.pieces,
+            pieces: piecesDb, // <-- use inlined value
             quantity: item.quantity,
             subtotal: item.subtotal,
             category: item.category,
             tag_category: item.tag_category,
             unit: item.unit,
             pack_type: item.pack_type,
+            company: item.company,
           };
-
-          console.log(
-            `[createTransaction] Inserting item #${index + 1}:`,
-            itemData
-          );
 
           const { error: itemError } = await supabase
             .from("order_transaction_items")
             .insert(itemData);
 
           if (itemError) {
-            console.error(
-              `[createTransaction] Error inserting item #${index + 1}:`,
-              itemError
-            );
+            console.error(`Error inserting item #${index + 1}:`, itemError);
             throw itemError;
           }
         }
-
-        console.log(
-          "[createTransaction] All transaction items inserted successfully."
-        );
       } catch (error) {
-        console.error("[createTransaction] Fatal error:", error);
+        console.error("Fatal error:", error);
       }
     },
 
-    async updateTransaction(orderId) {
-      try {
-        // Fetch existing active transactions for the orderId
-        const { data: transactions, error: fetchError } = await supabase
-          .from("transactions")
-          .select("id, status")
-          .eq("order_id", orderId)
-          .eq("status", "active");
+ async updateTransaction(orderId) {
+    if (!orderId) throw new Error("updateTransaction: missing orderId");
 
-        if (fetchError) throw fetchError;
+    // 0) Ensure ACTIVE transaction exists
+    const { data: activeTxRow, error: activeErr } = await supabase
+      .from("order_transactions")
+      .select("id")
+      .eq("order_id", orderId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (activeErr) throw activeErr;
 
-        let newStatus = 1; // Default first update status
+    let activeTxId = activeTxRow?.id;
+    if (!activeTxId) {
+      const { data: created, error: createErr } = await supabase
+        .from("order_transactions")
+        .insert({ order_id: orderId, status: "active" })
+        .select("id")
+        .single();
+      if (createErr) throw createErr;
+      activeTxId = created.id;
+    }
 
-        if (transactions.length > 0) {
-          // Check for the highest existing status and increment
-          const existingStatuses = transactions
-            .map((t) => parseInt(t.status))
-            .filter((s) => !isNaN(s));
+    // 1) Create HISTORY transaction header (inactive)
+    const { data: historyTx, error: histTxErr } = await supabase
+      .from("order_transactions")
+      .insert({ order_id: orderId, status: "inactive" })
+      .select("id")
+      .single();
+    if (histTxErr) throw histTxErr;
+    const historyTxId = historyTx.id;
 
-          if (existingStatuses.length > 0) {
-            newStatus = Math.max(...existingStatuses) + 1;
-          }
+    // 2) Fetch CURRENT active items
+    const { data: currentItems, error: curErr } = await supabase
+      .from("order_transaction_items")
+      .select("*")
+      .eq("order_transaction_id", activeTxId);
+    if (curErr) throw curErr;
 
-          // Update the existing transactions with the new status
-          const { error: updateError } = await supabase
-            .from("transactions")
-            .update({ status: newStatus })
-            .eq("order_id", orderId)
-            .eq("status", "active");
+    const currentById = new Map(
+      (currentItems || [])
+        .filter((r) => r && r.id != null)
+        .map((r) => [String(r.id), r])
+    );
 
-          if (updateError) throw updateError;
-        }
+    // 3) Snapshot CURRENT items into HISTORY transaction
+    if (currentItems?.length) {
+      const snapshotRows = currentItems.map((old) => ({
+        order_transaction_id: historyTxId,
+        item_name: old.item_name,
+        price: old.price,
+        process: old.process,
+        quantity: old.quantity,
+        subtotal: old.subtotal,
+        pieces: old.pieces,
+        category: old.category,
+        sub_category: old.sub_category,
+        tag_category: old.tag_category,
+        unit: old.unit,
+        ready_status: old.ready_status,
+        pack_type: old.pack_type,
+        company: old.company,
+      }));
+      const { error: snapErr } = await supabase
+        .from("order_transaction_items")
+        .insert(snapshotRows);
+      if (snapErr) throw snapErr;
+    }
 
-        // Insert new transactions using createTransaction
-        await this.createTransaction(orderId);
-      } catch (error) {
-        console.error("Error updating transaction:", error);
+    // 4) Normalize incoming from UI (must carry id for edited rows)
+    const incoming = (this.transactionItems || []).map((i) => {
+      const item_name = i.item_name ?? i.name ?? "";
+      const unit = (i.unit || inferUnitFromName(item_name))?.toLowerCase();
+
+      // pieces per your existing rules
+      let pieces = null;
+      if (unit === "pc") {
+        const perUnit = Number(i.pieces_per_unit ?? i.pieces ?? 0);
+        pieces =
+          Number.isFinite(perUnit) && perUnit > 0 ? Math.trunc(perUnit) : null;
+      } else if (unit === "kg" || unit === "lbs" || unit === "sqft") {
+        const userPieces = Number(i.pieces ?? 0);
+        pieces =
+          Number.isFinite(userPieces) && userPieces > 0
+            ? Math.trunc(userPieces)
+            : null;
       }
+
+      return {
+        order_transaction_id: activeTxId,
+        item_name,
+        price:
+          typeof i.price === "string" && i.price?.toUpperCase() === "TBA"
+            ? "TBA"
+            : toNum(i.price, 0),
+        process: i.process ?? null,
+        quantity: toNum(i.quantity, 0),
+        subtotal: toNum(i.subtotal, 0),
+        pieces,
+        category: i.category ?? null,
+        sub_category: i.sub_category ?? null,
+        tag_category: i.tag_category ?? null,
+        unit,
+        ready_status: !!i.ready_status,
+        pack_type: i.pack_type ?? null,
+        company: i.company ?? null,
+      };
+    });
+
+    const incomingIds = new Set(
+      incoming.filter((r) => r.id != null).map((r) => String(r.id))
+    );
+
+    // 5) Apply updates (in-place) & collect inserts
+    const inserts = [];
+    let updated = 0;
+
+    for (const row of incoming) {
+      if (row.id != null && currentById.has(String(row.id))) {
+        const { error: updErr } = await supabase
+          .from("order_transaction_items")
+          .update({
+            item_name: row.item_name,
+            price: row.price,
+            process: row.process,
+            quantity: row.quantity,
+            subtotal: row.subtotal,
+            pieces: row.pieces,
+            category: row.category,
+            sub_category: row.sub_category,
+            tag_category: row.tag_category,
+            unit: row.unit,
+            ready_status: row.ready_status,
+            pack_type: row.pack_type,
+            company: row.company,
+          })
+          .eq("id", row.id);
+        if (updErr) throw updErr;
+        updated += 1;
+      } else if (row.id == null) {
+        inserts.push(row);
+      }
+    }
+
+    // 6) Insert brand new items into ACTIVE tx
+    let inserted = 0;
+    if (inserts.length) {
+      const { error: insErr, count } = await supabase
+        .from("order_transaction_items")
+        .insert(inserts, { count: "exact" });
+      if (insErr) throw insErr;
+      inserted = count || inserts.length;
+    }
+
+    // 7) Handle removed items: keep row (to preserve FKs) but neutralize totals
+    let zeroed = 0;
+    for (const [id, old] of currentById.entries()) {
+      if (!incomingIds.has(id)) {
+        const { error: delErr } = await supabase
+          .from("order_transaction_items")
+          .update({
+            quantity: 0,
+            subtotal: 0,
+          })
+          .eq("id", old.id);
+        if (delErr) throw delErr;
+        zeroed += 1;
+      }
+    }
+
+    // 8) Recompute goods status
+    await this.recomputeProductionGoodsStatusByOrderId(orderId);
+
+    return {
+      history_transaction_id: historyTxId,
+      updated,
+      inserted,
+      zeroed, // items neutralized (soft-removed)
+    };
+  },
+    async updateTransactionReady(id, ready_status) {
+      const { data: updatedItem, error: updErr } = await supabase
+        .from("order_transaction_items")
+        .update({ ready_status })
+        .eq("id", id)
+        .select("order_transaction_id")
+        .single();
+      if (updErr) throw updErr;
+
+      const { data: tx, error: txErr } = await supabase
+        .from("order_transactions")
+        .select("order_id")
+        .eq("id", updatedItem.order_transaction_id)
+        .single();
+      if (txErr) throw txErr;
+
+      await this.recomputeProductionGoodsStatusByOrderId(tx.order_id);
+    },
+
+    async recomputeProductionGoodsStatusByOrderId(orderId) {
+      const { data: activeTx, error: actErr } = await supabase
+        .from("order_transactions")
+        .select("id")
+        .eq("order_id", orderId)
+        .eq("status", "active");
+      if (actErr) throw actErr;
+
+      const ids = (activeTx || []).map((r) => r.id);
+      if (!ids.length) {
+        await supabase
+          .from("order_production")
+          .update({ goods_status: "not ready" })
+          .eq("order_id", orderId);
+        return;
+      }
+
+      const { data: items, error: itErr } = await supabase
+        .from("order_transaction_items")
+        .select("ready_status")
+        .in("order_transaction_id", ids);
+      if (itErr) throw itErr;
+
+      const total = items?.length || 0;
+      const trues =
+        items?.reduce((a, it) => a + (it.ready_status ? 1 : 0), 0) || 0;
+
+      let goods_status = "not ready";
+      if (total > 0) {
+        goods_status =
+          trues === 0
+            ? "not ready"
+            : trues === total
+            ? "ready"
+            : "partial ready";
+      }
+
+      const { error: prodErr } = await supabase
+        .from("order_production")
+        .update({ goods_status })
+        .eq("order_id", orderId);
+      if (prodErr) throw prodErr;
+    },
+
+    async recomputeProductionGoodsStatusByOrderId(orderId) {
+      // a) Active transaction ids for this order
+      const { data: activeTx, error: activeErr } = await supabase
+        .from("order_transactions")
+        .select("id")
+        .eq("order_id", orderId)
+        .eq("status", "active");
+
+      if (activeErr) throw activeErr;
+
+      const activeIds = (activeTx || []).map((r) => r.id);
+      if (activeIds.length === 0) {
+        // No active transactions: conservatively mark not ready
+        await supabase
+          .from("order_production")
+          .update({ goods_status: "not ready" })
+          .eq("order_id", orderId);
+        return;
+      }
+
+      // b) Load all items under these active versions
+      const { data: items, error: itemsErr } = await supabase
+        .from("order_transaction_items")
+        .select("id, ready_status")
+        .in("order_transaction_id", activeIds);
+
+      if (itemsErr) throw itemsErr;
+
+      const total = (items || []).length;
+      const trues = (items || []).reduce(
+        (acc, it) => acc + (it.ready_status === true ? 1 : 0),
+        0
+      );
+
+      // c) Decide goods_status
+      let goods_status = "not ready";
+      if (total > 0) {
+        if (trues === 0) goods_status = "not ready";
+        else if (trues === total) goods_status = "ready";
+        else goods_status = "partial ready";
+      } else {
+        goods_status = "not ready";
+      }
+
+      // d) Persist to order_production
+      const { error: prodErr } = await supabase
+        .from("order_production")
+        .update({ goods_status })
+        .eq("order_id", orderId);
+
+      if (prodErr) throw prodErr;
     },
 
     async createInstructions(orderId) {
@@ -3219,6 +4031,7 @@ async updateDelivery(deliveryId) {
             sub_category: report.sub_category,
             order_id: orderId, // ✅ Now correctly assigned
             image: report.image || null,
+            status: "flagged"
           };
 
           const { error: reportError } = await supabase
@@ -3235,24 +4048,9 @@ async updateDelivery(deliveryId) {
       try {
         if (!orderId) throw new Error("Invalid orderId");
 
-        // Step 1: Get the latest invoice_no
-        const { data: latestInvoice, error: fetchError } = await supabase
-          .from("order_invoices")
-          .select("invoice_no")
-          .order("invoice_no", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (fetchError) throw fetchError;
-
-        const lastInvoiceNo = latestInvoice?.invoice_no ?? 0;
-        const newInvoiceNo = lastInvoiceNo + 1;
-
-        // Step 2: Insert new invoice
         const { data: insertedInvoice, error: insertError } = await supabase
           .from("order_invoices")
-          .insert({ order_id: orderId, invoice_no: newInvoiceNo })
-          .select("id, invoice_no")
+          .insert({ order_id: orderId })
           .single();
 
         if (insertError) throw insertError;
@@ -3263,15 +4061,6 @@ async updateDelivery(deliveryId) {
         console.error("[createInvoice] Error:", error);
         return null;
       }
-    },
-
-    async updateTransactionReady(id, ready_status) {
-      const { error } = await supabase
-        .from("order_transaction_items")
-        .update({ ready_status })
-        .eq("id", id);
-
-      if (error) throw error;
     },
 
     async updateOrderProductionGoodsStatus(order_id, goods_status) {
@@ -3330,7 +4119,7 @@ async updateDelivery(deliveryId) {
       ),
 
       logistics_deliveries (
-        delivery_date, delivery_time, address_id, driver_id,
+        delivery_date, delivered_date, delivery_time, address_id, driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       )
     `
@@ -3392,11 +4181,13 @@ async updateDelivery(deliveryId) {
           return {
             ...row,
             logistics_collections:
-              collections.status === "fulfilled" && Array.isArray(collections.value)
+              collections.status === "fulfilled" &&
+              Array.isArray(collections.value)
                 ? collections.value
                 : [],
             logistics_deliveries:
-              deliveries.status === "fulfilled" && Array.isArray(deliveries.value)
+              deliveries.status === "fulfilled" &&
+              Array.isArray(deliveries.value)
                 ? deliveries.value
                 : [],
           };
@@ -3427,5 +4218,874 @@ async updateDelivery(deliveryId) {
 
       return data;
     },
+
+    async fetchInvoicesByCustomer(customerId) {
+      // Guard: only null/undefined is invalid; allow 0 if your IDs can be 0
+      if (customerId === undefined || customerId === null) {
+        throw new Error("customerId is required");
+      }
+
+      const { data, error } = await supabase
+        .from("logistics")
+        .select(
+          `
+      id,
+      logistics_status,
+      urgency,
+      customer_id,
+      orders:order_id!inner (
+        id,
+        order_no,
+        created_at,
+        order_payments (
+          payment_status,
+          total_amount,
+          paid_amount
+        ),
+        order_invoices (
+          id,
+          invoice_no,
+          created_at
+        )
+      )
+    `
+        )
+        .eq("customer_id", customerId);
+
+      if (error) throw error;
+      return data || [];
+    },
+
+    async getNextSoaNo(customerId) {
+      // Fetch customer code
+      const { data: cust, error: custErr } = await supabase
+        .from("customers")
+        .select("code")
+        .eq("id", customerId)
+        .single();
+      if (custErr) throw custErr;
+
+      const code = (cust?.code || "").trim().toUpperCase();
+      if (!code) throw new Error("Customer code not found");
+
+      // Fetch latest SOA for this customer; lexicographic is safe due to zero padding
+      const { data: lastList, error: lastErr } = await supabase
+        .from("customer_soa")
+        .select("soa_no")
+        .eq("customer_id", customerId)
+        .order("soa_no", { ascending: false })
+        .limit(1);
+      if (lastErr) throw lastErr;
+
+      const lastSoaNo =
+        Array.isArray(lastList) && lastList.length ? lastList[0].soa_no : null;
+      const lastNum =
+        lastSoaNo && lastSoaNo.startsWith(code)
+          ? parseInt(String(lastSoaNo).slice(-5), 10)
+          : 0;
+
+      const nextNum = (Number.isFinite(lastNum) ? lastNum : 0) + 1;
+      const padded = String(nextNum).padStart(5, "0");
+
+      return `${code}${padded}`; // e.g., HFC00001
+    },
+
+    async createCustomerSoa({ customerId, invoiceIds }) {
+      if (customerId === undefined || customerId === null)
+        throw new Error("customerId is required");
+      if (!Array.isArray(invoiceIds) || invoiceIds.length === 0)
+        throw new Error("invoiceIds is required");
+
+      const soaNo = await this.getNextSoaNo(customerId);
+
+      const { data: soaRow, error: soaErr } = await supabase
+        .from("customer_soa")
+        .insert([{ soa_no: soaNo, customer_id: customerId }])
+        .select("id, soa_no")
+        .single();
+      if (soaErr) throw soaErr;
+
+      const soaId = soaRow?.id;
+      if (!soaId) throw new Error("SOA header insert returned no ID");
+
+      // 🔧 FIX: use 'soa_id' (DB column), not 'customer_soa_id'
+      const linkRows = invoiceIds.map((invoice_id) => ({
+        customer_soa_id: soaId,
+        invoice_id,
+      }));
+
+      const { error: linkErr } = await supabase
+        .from("customer_soa_invoices")
+        .insert(linkRows);
+
+      if (linkErr) {
+        // best-effort rollback
+        await supabase.from("customer_soa").delete().eq("id", soaId);
+        throw linkErr;
+      }
+
+      return { soa_id: soaId, soa_no: soaRow.soa_no };
+    },
+    async fetchAllSoa() {
+      const { data, error } = await supabase
+        .from("customer_soa")
+        .select(
+          `
+      id,
+      soa_no,
+      created_at,
+      customers:customer_id!inner (
+        id,
+        name,
+        contact_no1,
+        contact_no2,
+        email
+      )
+    `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    async fetchSoaDetails(soaNo) {
+      if (!soaNo) {
+        console.error("SOA number is missing.");
+        return null;
+      }
+
+      try {
+        // 1) Header with nested customer & invoice links
+        const { data: header, error: headerErr } = await supabase
+          .from("customer_soa")
+          .select(
+            `
+          id,
+          soa_no,
+          created_at,
+          customer_id,
+          customers (
+            id,
+            name,
+            type,
+            billing_address,
+            payment_terms
+          ),
+          customer_soa_invoices (
+            invoice_id,
+            order_invoices (
+              id,
+              invoice_no,
+              order_id,
+              created_at
+            )
+          )
+        `
+          )
+          .eq("soa_no", soaNo)
+          .single();
+
+        if (headerErr) {
+          console.error("Error fetching SOA header:", headerErr);
+          return null;
+        }
+        if (!header) return null;
+
+        // 1a) Fetch customer credits (gracefully default to zeros if no row)
+        let customerCredits = { id: null, online_package: 0, other_credits: 0 };
+        {
+          const { data: creditsRow, error: creditsErr } = await supabase
+            .from("customer_credits")
+            .select("id, online_package, other_credits")
+            .eq("customer_id", header.customer_id)
+            .single();
+
+          // PostgREST 'no rows' => code PGRST116; treat as 0/0, otherwise log & continue
+          if (!creditsErr && creditsRow) {
+            customerCredits = {
+              id: creditsRow.id ?? null,
+              online_package: Number(creditsRow.online_package || 0),
+              other_credits: Number(creditsRow.other_credits || 0),
+            };
+          } else if (creditsErr && creditsErr.code !== "PGRST116") {
+            console.warn("Warning fetching customer_credits:", creditsErr);
+          }
+        }
+
+        // Flatten nested invoices -> collect order_ids
+        const invoiceLinks = (header.customer_soa_invoices || []).flatMap((l) =>
+          l?.order_invoices ? [l.order_invoices] : []
+        );
+        const orderIds = [
+          ...new Set(
+            invoiceLinks
+              .map((oi) => oi?.order_id)
+              .filter((v) => v !== null && v !== undefined)
+          ),
+        ];
+
+        // Early return if no invoice/order links
+        if (!invoiceLinks.length || !orderIds.length) {
+          return {
+            soa: {
+              soa_no: header.soa_no,
+              created_at: header.created_at,
+              customer_id: header.customer_id,
+            },
+            customer: header.customers
+              ? {
+                  id: header.customers.id,
+                  name: header.customers.name,
+                  type: header.customers.type,
+                  billing_address: header.customers.billing_address,
+                  payment_terms: header.customers.payment_terms,
+                }
+              : null,
+            customer_credits: customerCredits,
+            lines: (invoiceLinks || []).map((oi) => ({
+              order_id: null,
+              order_no: null,
+              invoice_no: oi?.invoice_no ?? null,
+              invoice_date: oi?.created_at ?? null,
+              logistics_status: null,
+              payment_status: null,
+              order_balance: 0,
+            })),
+          };
+        }
+
+        // 2) Orders with nested payments + logistics
+        let ordersData = [];
+        {
+          const { data: ordersNested, error: ordersErr } = await supabase
+            .from("orders")
+            .select(
+              `
+            id,
+            order_no,
+            order_payments (
+              order_id,
+              payment_status,
+              total_amount,
+              paid_amount
+            ),
+            logistics (
+              order_id,
+              logistics_status,
+              customer_id
+            )
+          `
+            )
+            .in("id", orderIds);
+
+          if (ordersErr) {
+            console.error("Error fetching orders (nested):", ordersErr);
+            return null;
+          }
+          ordersData = ordersNested || [];
+        }
+
+        // Index helpers
+        const ordersMap = new Map(ordersData.map((o) => [String(o.id), o]));
+
+        // 3) Compose lines
+        const lines = invoiceLinks.map((oi) => {
+          const k = String(oi.order_id);
+          const ord = ordersMap.get(k) || {};
+
+          // Aggregate payments per order
+          const payAgg = (ord.order_payments || []).reduce(
+            (acc, p) => {
+              acc.payment_status = p.payment_status || acc.payment_status;
+              acc.total_amount += Number(p.total_amount || 0);
+              acc.paid_amount += Number(p.paid_amount || 0);
+              return acc;
+            },
+            { total_amount: 0, paid_amount: 0, payment_status: null }
+          );
+
+          // Logistics for matching customer
+          const logi =
+            (ord.logistics || []).find(
+              (l) => String(l.customer_id) === String(header.customer_id)
+            ) ||
+            (ord.logistics || [])[0] ||
+            null;
+
+          const balance = Math.max(
+            Number(payAgg.total_amount) - Number(payAgg.paid_amount),
+            0
+          );
+
+          return {
+            order_id: ord.id ?? null,
+            order_no: ord.order_no ?? null,
+            invoice_no: oi.invoice_no ?? null,
+            invoice_date: oi.created_at ?? null,
+            logistics_status: logi?.logistics_status ?? null,
+            payment_status: payAgg.payment_status ?? null,
+
+            // ⬇️ Added so your table can show "Paid ($X.XX)"
+            total_amount: Number(payAgg.total_amount.toFixed(2)),
+            paid_amount: Number(payAgg.paid_amount.toFixed(2)),
+
+            order_balance: Number(balance.toFixed(2)),
+          };
+        });
+
+        // Sort for stable UI
+        lines.sort((a, b) => {
+          const ao = a.order_no || "";
+          const bo = b.order_no || "";
+          if (ao === bo)
+            return String(a.invoice_no || "").localeCompare(
+              String(b.invoice_no || "")
+            );
+          return String(ao).localeCompare(String(bo));
+        });
+
+        // 4) Final payload with customer_credits included
+        return {
+          soa: {
+            soa_no: header.soa_no,
+            created_at: header.created_at,
+            customer_id: header.customer_id,
+          },
+          customer: header.customers
+            ? {
+                id: header.customers.id,
+                name: header.customers.name,
+                type: header.customers.type,
+                billing_address: header.customers.billing_address,
+                payment_terms: header.customers.payment_terms,
+              }
+            : null,
+          customer_credits: customerCredits, // <-- NEW
+          lines,
+        };
+      } catch (err) {
+        console.error("Unexpected error fetching SOA details:", err);
+        return null;
+      }
+    },
+
+    async ensureCustomerCreditsRow(customerId) {
+      if (!customerId) {
+        console.error("ensureCustomerCreditsRow: customerId missing");
+        return null;
+      }
+
+      // Try fetch existing
+      const { data: existing, error: fetchErr } = await supabase
+        .from("customer_credits")
+        .select("id, customer_id, online_package, other_credits")
+        .eq("customer_id", customerId)
+        .single();
+
+      if (existing) return existing;
+
+      if (fetchErr && fetchErr.code !== "PGRST116") {
+        console.error("ensureCustomerCreditsRow fetch error:", fetchErr);
+        return null;
+      }
+
+      const { data: inserted, error: insErr } = await supabase
+        .from("customer_credits")
+        .insert({
+          customer_id: customerId,
+          online_package: 0,
+          other_credits: 0,
+        })
+        .select("id, customer_id, online_package, other_credits")
+        .single();
+
+      if (insErr) {
+        console.error("ensureCustomerCreditsRow insert error:", insErr);
+        return null;
+      }
+      return inserted;
+    },
+
+    async applyCredits({ customerId, amount, remarks }) {
+      if (
+        !customerId ||
+        !Number.isFinite(Number(amount)) ||
+        Number(amount) <= 0
+      ) {
+        console.error("applyCredits: invalid args");
+        return null;
+      }
+
+      // 1) Ensure row exists
+      const creditRow = await this.ensureCustomerCreditsRow(customerId);
+      if (!creditRow) return null;
+
+      // 2) Read current balances
+      const online = Number(creditRow.online_package || 0);
+      const other = Number(creditRow.other_credits || 0);
+      let remaining = Number(amount);
+
+      // 3) Compute deductions: online_package first, then other_credits
+      const useOnline = Math.min(online, remaining);
+      remaining -= useOnline;
+      const useOther = Math.min(other, remaining);
+      remaining -= useOther;
+
+      const newOnline = Number((online - useOnline).toFixed(2));
+      const newOther = Number((other - useOther).toFixed(2));
+
+      // If nothing to deduct, short-circuit
+      if (useOnline + useOther <= 0) {
+        return {
+          appliedOnline: 0,
+          appliedOther: 0,
+          totalApplied: 0,
+          remaining: Number((Number(amount) - 0).toFixed(2)),
+          after: { online_package: online, other_credits: other },
+        };
+      }
+
+      // 4) Update balances
+      const { error: updErr } = await supabase
+        .from("customer_credits")
+        .update({ online_package: newOnline, other_credits: newOther })
+        .eq("id", creditRow.id);
+
+      if (updErr) {
+        console.error("applyCredits update error:", updErr);
+        return null;
+      }
+
+      // 5) Insert history rows (negative amounts to represent deduction)
+      const historyRows = [];
+      if (useOnline > 0) {
+        historyRows.push({
+          customer_credit_id: creditRow.id,
+          credit_type: "Online Package Deduction",
+          amount: -Number(useOnline.toFixed(2)),
+          remarks: remarks || null,
+        });
+      }
+      if (useOther > 0) {
+        historyRows.push({
+          customer_credit_id: creditRow.id,
+          credit_type: "Other Credits Deduction",
+          amount: -Number(useOther.toFixed(2)),
+          remarks: remarks || null,
+        });
+      }
+
+      if (historyRows.length) {
+        const { error: histErr } = await supabase
+          .from("customer_credits_history")
+          .insert(historyRows);
+        if (histErr) {
+          // Non-fatal: balances already updated, but log the failure
+          console.error("applyCredits history insert error:", histErr);
+        }
+      }
+
+      const appliedOnline = Number(useOnline.toFixed(2));
+      const appliedOther = Number(useOther.toFixed(2));
+      const totalApplied = Number((appliedOnline + appliedOther).toFixed(2));
+
+      return {
+        appliedOnline,
+        appliedOther,
+        totalApplied,
+        remaining: Number(remaining.toFixed(2)),
+        after: { online_package: newOnline, other_credits: newOther },
+      };
+    },
+    async fetchPaymentHistoryByOrderId(orderId) {
+      const TAG = "[transactionStore:fetchPaymentHistoryByOrderId]";
+
+      if (!orderId) {
+        console.warn(`${TAG} called without orderId`);
+        return [];
+      }
+
+      // 1) Get order_payments rows for this order
+      const { data: opRows, error: opError } = await supabase
+        .from("order_payments")
+        .select("id")
+        .eq("order_id", orderId);
+
+      if (opError) {
+        console.error(`${TAG} error fetching order_payments`, opError);
+        return [];
+      }
+
+      if (!opRows || opRows.length === 0) {
+        console.log(`${TAG} no order_payments found for order_id=${orderId}`);
+        return [];
+      }
+
+      const orderPaymentIds = opRows.map((r) => r.id);
+
+      // 2) Get all history rows linked to those order_payment_id(s)
+      const { data: historyRows, error: histError } = await supabase
+        .from("order_payments_history")
+        .select("*")
+        .in("order_payment_id", orderPaymentIds)
+        .order("created_at", { ascending: true }); // optional ordering
+
+      if (histError) {
+        console.error(
+          `${TAG} error fetching order_payments_history`,
+          histError
+        );
+        return [];
+      }
+
+      console.log(
+        `${TAG} loaded ${
+          historyRows?.length || 0
+        } history rows for order_id=${orderId}`,
+        (historyRows || []).slice(0, 5)
+      );
+
+      return historyRows || [];
+    },
+    async createDeliveryException(payload) {
+      const { data, error } = await supabase
+        .from("logistics_delivery_exceptions")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+// transactionStore.js
+async fetchDeliveryExceptions() {
+
+  const { data, error } = await supabase
+    .from('logistics_delivery_exceptions')
+    .select('id, logistics_id, delivery_date, delivery_time, remarks, created_at') // no reason cols
+    .not('logistics_id', 'is', null);   // ✅ correct way to do IS NOT NULL
+
+  if (error) {
+    console.error('error:', error);
+    throw error;
+  }
+
+  const rows = data || [];
+  return rows;
+},
+
+
+    async fetchItemDeliveryExceptions(orderTransactionItemId) {
+      const { data, error } = await supabase
+        .from("logistics_delivery_exceptions")
+        .select("*")
+        .eq("order_transaction_item_id", orderTransactionItemId);
+
+      if (error) throw error;
+      return data || [];
+    },
+    async markExceptionAsDelivered(exceptionId, payload) {
+      // payload: { delivered_date, delivered_driver_id }
+
+      const { data, error } = await supabase
+        .from("logistics_delivery_exceptions")
+        .update(payload)
+        .eq("id", exceptionId)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    async fetchDeliveryPlan(logisticsId) {
+      // Fetch main delivery schedule
+      const { data: mainDelivery, error: err1 } = await supabase
+        .from("logistics_deliveries")
+        .select("*")
+        .eq("logistics_id", logisticsId)
+        .single();
+
+      if (err1) throw err1;
+
+      // Fetch all exceptions
+      const { data: exceptions, error: err2 } = await supabase
+        .from("logistics_delivery_exceptions")
+        .select("*, order_transaction_items(item_name, quantity)")
+        .eq("logistics_id", logisticsId);
+
+      if (err2) throw err2;
+
+      return {
+        mainDelivery,
+        exceptions,
+      };
+    },
+    // transactionStore.js – inside defineStore({ ..., actions: { ... } })
+    async fetchDeliveryExceptionsByLogisticsId(logisticsId) {
+      const TAG = "[transactionStore.fetchDeliveryExceptionsByLogisticsId]";
+      try {
+        if (!logisticsId) {
+          console.warn(`${TAG} logisticsId is missing or invalid`, logisticsId);
+          return [];
+        }
+
+        const { data, error } = await supabase
+          .from("logistics_delivery_exceptions")
+          .select(
+            `
+        id,
+        created_at,
+        created_by,
+        logistics_id,
+        order_transaction_item_id,
+        quantity,
+        delivery_date,
+        delivered_date,
+        delivery_time,
+        driver_id,
+        remarks
+      `
+          )
+          .eq("logistics_id", logisticsId)
+          .order("delivery_date", { ascending: true })
+          .order("delivery_time", { ascending: true });
+
+        if (error) {
+          console.error(`${TAG} Supabase error`, error);
+          throw error;
+        }
+
+        console.log(`${TAG} fetched ${data?.length || 0} rows`, data);
+        return data || [];
+      } catch (err) {
+        console.error(`${TAG} unexpected error`, err);
+        return [];
+      }
+    },
+
+    
+  async syncOrderPaymentsTotals(orderId, newTotal) {
+      if (!orderId) throw new Error("Missing orderId");
+      const totalAmount = Number(newTotal || 0);
+
+      // 1) fetch existing order_payment row (assumed single-row-per-order)
+      const { data: row, error: fetchErr } = await supabase
+        .from("order_payments")
+        .select("id, order_id, paid_amount, total_amount, payment_status")
+        .eq("order_id", orderId)
+        .limit(1)
+        .single();
+
+      if (fetchErr && fetchErr.code !== "PGRST116") {
+        // PGRST116: no rows found
+        throw fetchErr;
+      }
+
+      // 2) insert if missing
+      if (!row) {
+        const status = derivePaymentStatus(0, totalAmount);
+        const { error: insErr } = await supabase.from("order_payments").insert({
+          order_id: orderId,
+          total_amount: totalAmount,
+          paid_amount: 0,
+          payment_status: status,
+        });
+        if (insErr) throw insErr;
+        return true;
+      }
+
+      // 3) update existing
+      const paid = Number(row.paid_amount || 0);
+      const status = derivePaymentStatus(paid, totalAmount);
+      const { error: updErr } = await supabase
+        .from("order_payments")
+        .update({
+          total_amount: totalAmount,
+          payment_status: status,
+        })
+        .eq("id", row.id);
+
+      if (updErr) throw updErr;
+      return true;
+    },    
+       // transactionStore.js
+async fetchAllErrorReports() {
+  const { data, error } = await supabase
+    .from("order_error_reports")
+    .select(`
+      id,
+      order_id,
+      category,
+      sub_category,
+      description,
+      status,
+      created_at,
+      orders:orders ( order_no )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  // expose order_no at top-level
+  return (data ?? []).map(r => ({
+    id: r.id,
+    order_id: r.order_id ?? null,
+    order_no: r.orders?.order_no ?? null, // WHY: UI expects this field
+    category: r.category ?? null,
+    sub_category: r.sub_category ?? null,
+    description: r.description ?? null,
+    status: r.status ?? null,
+    created_at: r.created_at ?? null
+  }));
+},
+  async fetchOrderNoByOrderId(orderId) {
+      const idNum = Number(orderId);
+      if (!Number.isFinite(idNum)) return "";
+
+      // Supabase direct query:
+      const { data, error } = await supabase
+        .from("orders")
+        .select("order_no")
+        .eq("id", idNum)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[fetchOrderNoByOrderId] supabase error:", error);
+        return "";
+      }
+      return data?.order_no || "";
+    },
+    async fetchCustomerComplaints() {
+      const { data, error } = await supabase
+        .from("customer_complaints")
+        .select(
+          `
+      id,
+      category,
+      description,
+      created_at,
+      created_by,
+      customers:customer_id!inner (
+        id,
+        name,
+        contact_no1,
+        contact_no2,
+        email
+      )
+    `
+        )
+        .order("created_at", { ascending: false });
+
+              const withProfiles = await Promise.all(
+        (data || []).map(async (row) => {
+          const profile_name = row.created_by
+            ? await this.getProfileName(row.created_by).catch(() => "[NOT SET]")
+            : "[NOT SET]";
+          return {
+            ...row,
+            profile_name,
+          };
+        })
+      );
+      if (error) throw error;
+
+      return withProfiles;
+    },    
+async createCustomerComplaint(payload) {
+  const { data, error } = await supabase
+    .from("customer_complaints")
+    .insert({
+      customer_id: payload.customer_id,
+      category: payload.category, 
+      description: payload.description,
+    })
+    .select(); 
+
+  if (error) throw error;
+  return data?.[0];
+},
+async fetchOrderPayments() {
+  try {
+    const { data, error } = await supabase
+      .from("logistics")
+      .select(`
+        id,
+        orders!inner (
+          id,
+          order_no,
+          created_at,
+          order_payments (
+            payment_status,
+            total_amount,
+            paid_amount
+          )
+        ),
+        customers:customer_id (
+          id,
+          name,
+          contact_no1,
+          contact_no2,
+          email,
+          pricing_group_id,
+          customer_credits (
+            online_package,
+            other_credits
+          )
+        )
+      `)
+      .not("orders.order_no", "is", null) // ensure existing order_no
+      .order("id", { ascending: true });
+
+    if (error) throw error;
+    if (!Array.isArray(data) || data.length === 0) return [];
+
+    return data.map((logistics) => {
+      const rawOrder = logistics?.orders ?? null;
+      const rawCustomer = logistics?.customers ?? null;
+
+      const op = Array.isArray(rawOrder?.order_payments)
+        ? rawOrder.order_payments[0] || null
+        : rawOrder?.order_payments || null;
+
+      const order = rawOrder
+        ? {
+            id: rawOrder.id,
+            order_no: rawOrder.order_no,
+            created_at: rawOrder.created_at,
+            payment_status: op?.payment_status ?? null,
+            total_amount: op?.total_amount ?? null,
+            paid_amount: op?.paid_amount ?? null,
+            order_payment: op,
+          }
+        : null;
+
+      const credits = Array.isArray(rawCustomer?.customer_credits)
+        ? rawCustomer.customer_credits[0] || null
+        : rawCustomer?.customer_credits || null;
+
+      const customer = rawCustomer
+        ? {
+            id: rawCustomer.id,
+            name: rawCustomer.name,
+            contact_no1: rawCustomer.contact_no1,
+            contact_no2: rawCustomer.contact_no2,
+            email: rawCustomer.email,
+            pricing_group_id: rawCustomer.pricing_group_id,
+            customer_credits: credits,
+          }
+        : null;
+
+      return {
+        logistics_id: logistics.id,
+        order,
+        customer,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching all payments:", error);
+    return [];
+  }
+},
+
   },
 });

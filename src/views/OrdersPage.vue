@@ -1,121 +1,47 @@
+<!-- src/pages/OrdersPage.vue -->
 <template>
   <div class="row justify-center page-title-header text-uppercase">
     List of Orders
   </div>
+
   <div class="full-container orders-history">
-     <!-- Search & Date Filters -->
+    <!-- Search & Date Filters -->
     <div class="row justify-end q-mb-md q-gutter-x-sm">
-      <!-- Collection Start Date -->
+      <!-- Collection Date -->
       <div class="col">
         <div class="dialog-label">
-          <div class="text-weight-bold text-subtitle2">
-            Collection Start Date
-          </div>
+          <div class="text-weight-bold text-subtitle2">Collection Date</div>
         </div>
-        <q-input
-          v-model="formattedCollectionStartDate"
-          outlined
-          dense
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
+        <q-input v-model="formattedCollectionDate" outlined dense readonly class="bg-white">
+          <template #append>
             <q-icon name="event" class="cursor-pointer">
               <q-popup-proxy>
-                <q-date v-model="collectionStartDate" mask="YYYY-MM-DD" />
+                <q-date v-model="collectionDate" mask="YYYY-MM-DD" />
               </q-popup-proxy>
             </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('collectionStartDate')"
-            />
+            <q-icon name="close" class="cursor-pointer q-ml-sm" @click="clearDate('collectionDate')" />
           </template>
         </q-input>
       </div>
 
-      <!-- Collection End Date -->
+      <!-- Delivery Date -->
       <div class="col">
         <div class="dialog-label">
-          <div class="text-weight-bold text-subtitle2">Collection End Date</div>
+          <div class="text-weight-bold text-subtitle2">Delivery Date</div>
         </div>
-        <q-input
-          v-model="formattedCollectionEndDate"
-          outlined
-          dense
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
+        <q-input v-model="formattedDeliveryDate" outlined dense readonly class="bg-white">
+          <template #append>
             <q-icon name="event" class="cursor-pointer">
               <q-popup-proxy>
-                <q-date v-model="collectionEndDate" mask="YYYY-MM-DD" />
+                <q-date v-model="deliveryDate" mask="YYYY-MM-DD" />
               </q-popup-proxy>
             </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('collectionEndDate')"
-            />
+            <q-icon name="close" class="cursor-pointer q-ml-sm" @click="clearDate('deliveryDate')" />
           </template>
         </q-input>
       </div>
 
-      <!-- Delivery Start Date -->
-      <div class="col">
-        <div class="dialog-label">
-          <div class="text-weight-bold text-subtitle2">Delivery Start Date</div>
-        </div>
-        <q-input
-          v-model="formattedDeliveryStartDate"
-          outlined
-          dense
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy>
-                <q-date v-model="deliveryStartDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('deliveryStartDate')"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <!-- Delivery End Date -->
-      <div class="col">
-        <div class="dialog-label">
-          <div class="text-weight-bold text-subtitle2">Delivery End Date</div>
-        </div>
-        <q-input
-          v-model="formattedDeliveryEndDate"
-          outlined
-          dense
-          readonly
-          class="bg-white"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy>
-                <q-date v-model="deliveryEndDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-            <q-icon
-              name="close"
-              class="cursor-pointer q-ml-sm"
-              @click="clearDate('deliveryEndDate')"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <!-- Search Input -->
+      <!-- Search -->
       <div class="col">
         <div class="dialog-label">
           <div class="text-weight-bold text-subtitle2">Search Here...</div>
@@ -127,350 +53,19 @@
           dense
           debounce="300"
         >
-          <template v-slot:prepend>
-            <q-icon name="search" />
-          </template>
+          <template #prepend><q-icon name="search" /></template>
         </q-input>
       </div>
     </div>
 
-    <!-- Table Display -->
-    <div class="row-col-table">
-      <!-- Table Header -->
-      <div class="row row-col-header q-px-md text-center">
-        <div class="col bordered q-py-sm text-weight-bolder">Order Details</div>
-        <div class="col-5 bordered q-py-sm text-weight-bolder">
-          Logistics Details
-        </div>
-        <div class="col bordered q-py-sm text-weight-bolder">
-          Production Details
-        </div>
-        <div class="col bordered q-py-sm text-weight-bolder">
-          Payment Status
-        </div>
-      </div>
+    <!-- Table Component -->
+    <LogisticsTableComponent
+      :rows="paginatedOrders"
+      :selected-filter-date="selectedFilterDateForHighlight"
+      :delivery-exceptions="deliveryExceptions"
+    />
 
-      <!-- Table Rows -->
-      <div
-        v-if="paginatedOrders.length === 0"
-        class="text-center text-grey q-pa-lg text-h6"
-      >
-        No orders found.
-      </div>
-
-      <div v-else v-for="(logistics, index) in paginatedOrders" :key="index">
-        <div
-          v-for="(order, idx) in logistics.orders"
-          :key="idx"
-          class="row row-col-row q-px-md line-height-1"
-        >
-          <div class="col bordered">
-            <div class="q-mb-xs">
-              <q-btn
-                outline
-                color="blue-8"
-                dense
-                @click="openOrderTab(order)"
-                class="text-weight-bold bg-blue-1 text-subtitle1 q-px-sm"
-              >
-                {{ logistics.order?.order_no || "-" }}
-              </q-btn>
-            </div>
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold">
-                Date:
-              </span>
-              {{ getOrderDate(logistics) }}
-            </div>
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold">
-                Urgency:
-              </span>
-              <span
-                :class="[
-                  'text-uppercase',
-                  'text-weight-bolder',
-                  logistics.urgency?.toLowerCase?.() === 'urgent'
-                    ? 'text-purple'
-                    : logistics.urgency?.toLowerCase?.() === 'express'
-                    ? 'text-red'
-                    : 'text-caption',
-                ]"
-              >
-                {{ logistics.urgency || "default" }}
-              </span>
-            </div>
-
-            <q-separator class="q-mt-sm" />
-            <div class="mark-brown text-center text-uppercase">
-              Customer Details
-            </div>
-            <q-separator class="q-mb-sm" />
-            <div class="text-weight-bold">
-              <a
-                @click.prevent="openCustomerTab(logistics.customer?.id)"
-                class="text-weight-bold text-subtitle1 line-height-1"
-              >
-                {{ logistics.customer?.name || "[NOT SELECTED]" }}
-              </a>
-            </div>
-            <div>
-              {{ logistics.customer?.contact_no1 || "-"
-              }}<span v-if="logistics.customer?.contact_no2">
-                / {{ logistics.customer?.contact_no2 || "-" }}
-              </span>
-            </div>
-            <div v-if="logistics.customer?.email">
-              {{ logistics.customer?.email || "-" }}
-            </div>
-          </div>
-          <div class="col-5 bordered" style="padding: 0">
-            <div>
-              <div
-                :class="[
-                  'text-weight-bold',
-                  'text-subtitle1',
-                  'text-center',
-                  'q-mb-sm',
-                  'q-mx-sm',
-                  'line-height-1',
-                  'text-uppercase',
-                  logisticsBadgeClass(logistics.logistics_status),
-                ]"
-                style="border-style: solid; border-width: 1px"
-              >
-                {{ logistics.logistics_status }}
-              </div>
-            </div>
-            <q-separator />
-            <div class="row" style="min-height: auto">
-              <div
-                class="col"
-                style="border-right: 1px solid #ddd; border-color: #c09f8b"
-              >
-                <div
-                  class="text-uppercase text-weight-bolder text-pink-4 text-center"
-                >
-                  Collection
-                </div>
-                <q-separator />
-                <div class="q-pa-sm">
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Date: </span
-                    >{{ getCollectionDate(logistics.collections) }}
-                  </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Time:
-                    </span>
-                    {{ logistics.collections?.[0]?.collection_time || "-" }}
-                  </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Driver: </span
-                    >{{ logistics.collections?.[0]?.driver_name || "-" }}
-                  </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Address: </span
-                    >{{ logistics.collections?.[0]?.address || "-" }}
-                  </div>
-                </div>
-
-                <q-separator />
-                <div class="q-pa-sm">
-                  <div class="text-caption text-uppercase text-weight-bold">
-                    Contact Person:
-                  </div>
-                  <div>
-                    {{
-                      logistics.collections?.[0]?.contact_person?.name ||
-                      "[NOT SET]"
-                    }}
-                  </div>
-                  <div>
-                    {{
-                      logistics.collections?.[0]?.contact_person?.contact_no1 ||
-                      "-"
-                    }}<span
-                      v-if="
-                        logistics.collections?.[0]?.contact_person?.contact_no2
-                      "
-                    >
-                      /
-                      {{
-                        logistics.collections?.[0]?.contact_person
-                          ?.contact_no2 || "-"
-                      }}
-                    </span>
-                  </div>
-                  <div v-if="logistics.collections?.[0]?.contact_person?.email">
-                    {{
-                      logistics.collections?.[0]?.contact_person?.email || "-"
-                    }}
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div
-                  class="text-uppercase text-weight-bolder text-blue text-center"
-                >
-                  Delivery
-                </div>
-                <q-separator />
-                <div class="q-pa-sm">
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Date: </span
-                    >{{ getDeliveryDate(logistics.deliveries) }}
-                  </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Time: </span
-                    >{{ logistics.deliveries?.[0]?.delivery_time || "-" }}
-                  </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Driver: </span
-                    >{{ logistics.deliveries?.[0]?.driver_name || "-" }}
-                  </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold">
-                      Address: </span
-                    >{{ logistics.deliveries?.[0]?.address || "-" }}
-                  </div>
-                </div>
-                <q-separator />
-                <div class="q-pa-sm">
-                  <div class="text-caption text-uppercase text-weight-bold">
-                    Contact Person:
-                  </div>
-                  <div>
-                    {{
-                      logistics.deliveries?.[0]?.contact_person?.name ||
-                      "[NOT SET]"
-                    }}
-                  </div>
-                  <div>
-                    {{
-                      logistics.deliveries?.[0]?.contact_person?.contact_no1 ||
-                      "-"
-                    }}<span
-                      v-if="
-                        logistics.deliveries?.[0]?.contact_person?.contact_no2
-                      "
-                    >
-                      /
-                      {{
-                        logistics.deliveries?.[0]?.contact_person
-                          ?.contact_no2 || "-"
-                      }}
-                    </span>
-                    <div
-                      v-if="logistics.deliveries?.[0]?.contact_person?.email"
-                    >
-                      {{
-                        logistics.deliveries?.[0]?.contact_person?.email || "-"
-                      }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col bordered" style="padding-top: 0">
-            <div
-              class="text-weight-bold text-uppercase text-subtitle1 text-center q-mb-sm line-height-1"
-              style="border-style: solid; border-width: 1px"
-            >
-              {{ order.goods_status }}
-            </div>
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold"
-                >Ready By:</span
-              >
-              {{ formatDate(order.order_production?.ready_by) || "-" }}
-            </div>
-            <q-separator class="q-ma-sm" />
-            <div v-if="logistics.collections?.[0]?.no_bags">
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Bags: </span
-              >{{ logistics.collections?.[0]?.no_bags || "-" }}b
-            </div>
-            <div v-if="order.order_production?.no_hangers">
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Hang:</span
-              >
-              {{ order.order_production?.no_hangers || "-" }}h
-            </div>
-            <div v-if="order.order_production?.no_packets">
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Pack:</span
-              >
-              {{ order.order_production?.no_packets || "-" }}p
-            </div>
-            <div v-if="order.order_production?.no_rolls">
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Rolls:</span
-              >
-              {{ order.order_production?.no_rolls || "-" }}r
-            </div>
-          </div>
-          <div class="col bordered" style="padding-top: 0">
-            <div
-              class="text-weight-bold text-subtitle1 text-center q-mb-sm line-height-1 text-uppercase"
-              style="border-style: solid; border-width: 1px"
-            >
-              {{ order.payment_status }}
-            </div>
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Credits:</span
-              >
-              <span class="text-weight-bold">
-                ${{
-                  (
-                    parseFloat(
-                      logistics.customer?.customer_credits?.online_package ||
-                        "0"
-                    ) +
-                    parseFloat(
-                      logistics.customer?.customer_credits?.other_credits || "0"
-                    )
-                  ).toFixed(2)
-                }}
-              </span>
-            </div>
-            <q-separator class="q-ma-sm" />
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Paid:</span
-              >
-
-              <span class="text-weight-bold">${{ order.paid_amount }}</span>
-            </div>
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Balance:</span
-              >
-
-              <span class="text-red text-weight-bold"
-                >${{ order.balance_amount }}</span
-              >
-            </div>
-            <div>
-              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                >Amount:</span
-              >
-
-              <span class="text-weight-bold">${{ order.total_amount }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Pagination Controls -->
+    <!-- Pagination -->
     <div class="row justify-center q-mt-md">
       <q-pagination
         v-model="currentPage"
@@ -486,122 +81,176 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
+import LogisticsTableComponent from "@/components/LogisticsTableComponent.vue";
 
 const transactionStore = useTransactionStore();
+
 const rawOrders = ref([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const searchQuery = ref("");
 
-const collectionStartDate = ref(null);
-const collectionEndDate = ref(null);
-const deliveryStartDate = ref(null);
-const deliveryEndDate = ref(null);
+// single-date filters
+const collectionDate = ref(null);
+const deliveryDate = ref(null);
 
-const COLLECTION_STATUSES = new Set([
-  "collection arranged",
-  "collection completed",
-  "collection rescheduled",
-  "collection cancelled",
-]);
-
-const DELIVERY_STATUSES = new Set([
-  "delivery arranged",
-  "delivery completed",
-  "delivery rescheduled",
-  "delivery postponed",
-  "delivery partial",
-]);
-
-function logisticsBadgeClass(status) {
-  const s = String(status || "")
-    .trim()
-    .toLowerCase();
-  if (COLLECTION_STATUSES.has(s)) return "mark-bg-pink";
-  if (DELIVERY_STATUSES.has(s)) return "mark-bg-blue";
-  return "";
-}
+// delivery exceptions (included in Delivery Date filtering and passed to child)
+const deliveryExceptions = ref([]);
 
 onMounted(async () => {
   try {
     rawOrders.value = await transactionStore.fetchAllOrdersSimple();
+    if (typeof transactionStore.fetchDeliveryExceptions === "function") {
+      deliveryExceptions.value =
+        (await transactionStore.fetchDeliveryExceptions()) || [];
+    }
   } catch (error) {
-    console.error("Error fetching orders:", error);
+    console.error("Error during mount:", error);
   }
 });
 
-const formattedCollectionStartDate = computed(() =>
-  formatDate(collectionStartDate.value)
-);
-const formattedCollectionEndDate = computed(() =>
-  formatDate(collectionEndDate.value)
-);
-const formattedDeliveryStartDate = computed(() =>
-  formatDate(deliveryStartDate.value)
-);
-const formattedDeliveryEndDate = computed(() =>
-  formatDate(deliveryEndDate.value)
-);
+const formattedCollectionDate = computed(() => formatDate(collectionDate.value));
+const formattedDeliveryDate = computed(() => formatDate(deliveryDate.value));
 
 const clearDate = (type) => {
-  if (type === "collectionStartDate") collectionStartDate.value = null;
-  if (type === "collectionEndDate") collectionEndDate.value = null;
-  if (type === "deliveryStartDate") deliveryStartDate.value = null;
-  if (type === "deliveryEndDate") deliveryEndDate.value = null;
+  if (type === "collectionDate") collectionDate.value = null;
+  if (type === "deliveryDate") deliveryDate.value = null;
 };
+
+// highlight preference
+const selectedFilterDateForHighlight = computed(
+  () => deliveryDate.value || collectionDate.value || null
+);
+
+/* ---------------- utils ---------------- */
+const toDateOnly = (s) => {
+  if (!s) return null;
+  const t = String(s);
+  return t.includes("T") ? t.split("T")[0] : t;
+};
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const dOnly = toDateOnly(dateString);
+  const date = new Date(dOnly);
+  if (isNaN(date)) return "-";
+  return date.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+const s = (v) => String(v ?? "").toLowerCase();
+const digits = (v) => String(v ?? "").replace(/\D/g, "");
+
+/* -------- exceptions map for fast lookup -------- */
+const exceptionsByLogisticsId = computed(() => {
+  const m = new Map();
+  for (const ex of deliveryExceptions.value || []) {
+    const id = ex?.logistics_id;
+    if (id == null) continue;
+    const key = String(id);
+    if (!m.has(key)) m.set(key, []);
+    m.get(key).push(ex);
+  }
+  return m;
+});
+
+const hasExceptionDeliveryOnDate = (logistics, isoDate) => {
+  if (!isoDate) return false;
+  const key = String(logistics?.logistics_id ?? logistics?.id ?? "");
+  if (!key) return false;
+  const list = exceptionsByLogisticsId.value.get(key) || [];
+  return list.some((ex) => toDateOnly(ex?.delivery_date) === isoDate);
+};
+
+/* -------- search field collector -------- */
+function collectSearchFields(logistics, order) {
+  const cust = logistics.customer || {};
+  const coll = logistics.collections?.[0] || {};
+  const delv = logistics.deliveries?.[0] || {};
+
+  // contact person can come from either contact_person or customer_contact_persons
+  const collCP = coll.contact_person || coll.customer_contact_persons || {};
+  const delvCP = delv.contact_person || delv.customer_contact_persons || {};
+
+  const fields = [
+    order?.order_no,
+    // customer
+    cust?.name,
+    cust?.contact_no1,
+    cust?.contact_no2,
+    cust?.email,
+    // collection contact person
+    collCP?.name,
+    collCP?.contact_no1,
+    collCP?.contact_no2,
+    collCP?.email,
+    // delivery contact person
+    delvCP?.name,
+    delvCP?.contact_no1,
+    delvCP?.contact_no2,
+    delvCP?.email,
+  ];
+
+  return fields
+    .map((v) => String(v ?? "").trim())
+    .filter((v) => v.length > 0)
+    .map((v) => ({ raw: v.toLowerCase(), num: digits(v) }));
+}
+
+/* ---------------- filtering ---------------- */
 const filteredOrders = computed(() => {
-  const query = searchQuery.value.toLowerCase();
+  const q = s(searchQuery.value || "");
+  const qNum = digits(searchQuery.value || "");
+  const selectedCollection = toDateOnly(collectionDate.value);
+  const selectedDelivery = toDateOnly(deliveryDate.value);
 
   return rawOrders.value
     .map((logistics) => {
       const order = logistics.order || {};
 
-      const collectionDate =
-        logistics.collections?.[0]?.collection_date || null;
-      const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
+      const recordCollection = toDateOnly(logistics.collections?.[0]?.collection_date || null);
+      const recordDelivery = toDateOnly(logistics.deliveries?.[0]?.delivery_date || null);
 
       const collectionMatch =
-        (!collectionStartDate.value ||
-          collectionDate >= collectionStartDate.value) &&
-        (!collectionEndDate.value || collectionDate <= collectionEndDate.value);
+        !selectedCollection || recordCollection === selectedCollection;
 
       const deliveryMatch =
-        (!deliveryStartDate.value || deliveryDate >= deliveryStartDate.value) &&
-        (!deliveryEndDate.value || deliveryDate <= deliveryEndDate.value);
+        !selectedDelivery ||
+        recordDelivery === selectedDelivery ||
+        hasExceptionDeliveryOnDate(logistics, selectedDelivery);
 
-      const searchMatch = [
-        order.order_no,
-        logistics.customer?.name,
-        order.goods_status,
-        order.order_payment?.payment_status,
-        logistics.logistics_status,
-      ].some((field) => field?.toLowerCase().includes(query));
+      // ✅ updated search coverage
+      const fields = collectSearchFields(logistics, order);
+      const searchMatch =
+        q === "" ||
+        fields.some(
+          (f) =>
+            f.raw.includes(q) ||
+            (qNum.length >= 3 && f.num && f.num.includes(qNum)) // Why: helps phone number search ignoring formatting
+        );
 
-      return {
-        ...logistics,
-        orders:
-          collectionMatch && deliveryMatch && searchMatch && order.order_no
-            ? [
-                {
-                  ...order,
-                  customer: logistics.customer || null,
-                  customer_id: logistics.customer?.id || null,
-                  goods_status: order.order_production?.goods_status || "-",
-                  payment_status: order.order_payment?.payment_status || "-",
-                  total_amount: parseFloat(
-                    order.order_payment?.total_amount || 0
-                  ).toFixed(2),
-                  paid_amount: parseFloat(
-                    order.order_payment?.paid_amount || 0
-                  ).toFixed(2),
-                  balance_amount: parseFloat(
-                    (order.order_payment?.total_amount || 0) -
-                      (order.order_payment?.paid_amount || 0)
-                  ).toFixed(2),
-                },
-              ]
-            : [],
-      };
+      const normalizedOrder =
+        collectionMatch && deliveryMatch && searchMatch && order.order_no
+          ? [
+              {
+                ...order,
+                customer: logistics.customer || null,
+                customer_id: logistics.customer?.id || null,
+                goods_status: order?.order_production?.goods_status || "-",
+                payment_status: order?.order_payment?.payment_status || "-",
+                total_amount: parseFloat(order?.order_payment?.total_amount || 0).toFixed(2),
+                paid_amount: parseFloat(order?.order_payment?.paid_amount || 0).toFixed(2),
+                balance_amount: parseFloat(
+                  (order?.order_payment?.total_amount || 0) -
+                    (order?.order_payment?.paid_amount || 0)
+                ).toFixed(2),
+              },
+            ]
+          : [];
+
+      return { ...logistics, orders: normalizedOrder };
     })
     .filter((l) => l.orders.length > 0);
 });
@@ -613,60 +262,6 @@ const paginatedOrders = computed(() => {
 });
 
 const totalPages = computed(() =>
-  Math.ceil(filteredOrders.value.length / pageSize.value)
+  Math.max(1, Math.ceil(filteredOrders.value.length / pageSize.value))
 );
-
-const formatDate = (dateString) => {
-  if (!dateString) return "-";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
-
-const getOrderDate = (logistics) => {
-  return formatDate(logistics.order?.created_at);
-};
-
-const getCollectionDate = (collections) => {
-  if (!collections || collections.length === 0) return "-";
-  return formatDate(collections[0]?.collection_date);
-};
-
-const getDeliveryDate = (deliveries) => {
-  if (!deliveries || deliveries.length === 0) return "-";
-  return formatDate(deliveries[0]?.delivery_date);
-};
-
-const openCustomerTab = (customerId) => {
-  if (!customerId) return;
-  window.open(`/customers/${customerId}`, "_blank");
-};
-
-const openOrderDialog = async (order) => {
-  try {
-    if (!order) return;
-
-    transactionStore.setSelectedCustomer({ id: order.customer_id });
-    transactionStore.setOrderNo(order.order_no);
-    transactionStore.resetTransactionItems();
-
-    window.open(`/orders/${order.order_no}`, "_blank");
-  } catch (error) {
-    console.error("Error opening order dialog:", error);
-  }
-};
-
-const openOrderTab = async (order) => {
-  try {
-    transactionStore.setOrderNo(order?.order_no);
-    window.open(`/orders/${order?.order_no}`, "_blank");
-  } catch (error) {
-    console.error("Error opening order:", error);
-  }
-};
-
 </script>

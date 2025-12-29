@@ -751,7 +751,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         typeof pieces_per_unit === "number"
           ? pieces_per_unit
           : typeof pieces === "number"
-          ? pieces``
+          ? pieces
           : 0;
 
       const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);

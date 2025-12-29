@@ -541,31 +541,6 @@ const totalSubtotal = computed(() => {
     .toFixed(2); // Format as a fixed two-decimal string
 });
 
-// Date formatting
-const formattedOrderDate = computed(() =>
-  order.value?.created_at
-    ? new Date(order.value.created_at).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "N/A"
-);
-
-const readyByFormatted = computed(() => {
-  const date = order.value?.order_production?.ready_by
-    ? new Date(order.value.order_production.ready_by)
-    : null;
-  return date
-    ? date.toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-    : "N/A";
-});
-
 const tagCategoryCounts = computed(() => {
   return transactions.value.reduce((counts, item) => {
     const category = item.tag_category?.toLowerCase() || "others";

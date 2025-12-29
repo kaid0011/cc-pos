@@ -168,7 +168,7 @@
         v-model="formattedFilterDate"
         outlined
         dense
-        label="Search Date Here"
+        label="Search C/D Date Here"
         clearable
         readonly
       >
@@ -331,8 +331,46 @@ const pageSize = ref(10);
 const showCreateCollectionDialog = ref(false);
 const showWeeklySummary = ref(false);
 
-// DATA: normalized simple-orders (logistics + orders + collections/deliveries)
 const allOrders = ref([]);
+
+const deliveryExceptions = ref([]);
+
+// === Exception grouping helper ===
+const exGroupKey = (dateISO, timeLabel, driverId) => {
+  const d = dateISO ? toISODate(dateISO) : "";
+  const t = (timeLabel ?? "").toString().trim();
+  const drv = driverId == null || driverId === "" ? DRIVER_NOT_SET : String(driverId);
+  return `${d}__${t}__${drv}`;
+};
+
+// Is there any exception for this logistics on the selected date?
+const exceptionDateMatchedFor = (log, targetISO) => {
+  if (!targetISO) return false;
+  const key = String(log?.logistics_id ?? log?.id ?? "");
+  if (!key) return false;
+  const list = exceptionsByLogisticsId.value.get(key) || [];
+  return list.some((ex) => toISODate(ex?.delivery_date) === targetISO);
+};
+
+// Which drivers (as strings) handle exceptions on that date (ex.driver_id, fallback to main delivery driver)
+const exceptionDriverIdsForDate = (log, targetISO) => {
+  const out = new Set();
+  if (!targetISO) return out;
+  const d = log?.deliveries?.[0] || null;
+  const fallback = d?.driver_id ?? null;
+
+  const key = String(log?.logistics_id ?? log?.id ?? "");
+  if (!key) return out;
+  const list = exceptionsByLogisticsId.value.get(key) || [];
+
+  list.forEach((ex) => {
+    if (toISODate(ex?.delivery_date) !== targetISO) return;
+    const id = ex?.driver_id != null && ex.driver_id !== "" ? ex.driver_id : fallback;
+    out.add(id == null || id === "" ? DRIVER_NOT_SET : String(id));
+  });
+  return out;
+};
+
 
 const sortedDriverOptions = computed(() => {
   return [...transactionStore.driverOptions].sort((a, b) =>
@@ -359,9 +397,32 @@ const toggleWeeklySummary = () => {
   showWeeklySummary.value = !showWeeklySummary.value;
 };
 
+const exceptionsByLogisticsId = computed(() => {
+  const m = new Map();
+  for (const ex of deliveryExceptions.value || []) {
+    const key = ex?.logistics_id;
+    if (key == null) continue;
+    const id = String(key);
+    if (!m.has(id)) m.set(id, []);
+    m.get(id).push(ex);
+  }
+  // sort (latest first by date/time)
+  for (const arr of m.values()) {
+    arr.sort((a, b) => {
+      const da = new Date(a?.delivery_date || 0).getTime();
+      const db = new Date(b?.delivery_date || 0).getTime();
+      if (db !== da) return db - da;
+      return String(b?.delivery_time || "").localeCompare(
+        String(a?.delivery_time || "")
+      );
+    });
+  }
+  return m;
+});
+
 onMounted(async () => {
   await transactionStore.loadDrivers();
-  await buildTimeMapFromStoreExact(); // ⬅️ exact match map
+  await buildTimeMapFromStoreExact();
 
   if (driverTabs.value.length > 0) {
     activeDriverTab.value = driverTabs.value[0];
@@ -372,6 +433,13 @@ onMounted(async () => {
   } catch (e) {
     console.error("Failed to fetch orders:", e);
     $q.notify({ type: "negative", message: "Failed to load orders" });
+  }
+
+  try {
+    const ex = await transactionStore.fetchDeliveryExceptions();
+    deliveryExceptions.value = Array.isArray(ex) ? ex : [];
+  } catch (e) {
+    console.error("Failed to fetch delivery exceptions:", e);
   }
 });
 
@@ -460,6 +528,29 @@ function normalizeOrders(rows) {
   });
 }
 
+function formatAddress(addr) {
+  if (!addr || typeof addr !== "object") {
+    // why: gracefully handle strings/nulls just in case
+    return (addr ?? "").toString().trim();
+  }
+  const partsMain = [
+    addr.block_no,
+    addr.road_name,
+    addr.unit_no,
+    addr.building_name,
+  ]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" ");
+  const postal = (addr.postal_code ?? "").toString().trim();
+  const line = [partsMain, postal].filter(Boolean).join(", ");
+  const extra = [addr.additional_info, addr.remarks]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" — ");
+  return (extra ? `${line} (${extra})` : line) || "";
+}
+
 // Dates formatting
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -509,55 +600,55 @@ const hasUnsetDriver = (t) => {
   return noC || noD;
 };
 
-// FILTERING (search + date + driver tab)
 const filteredOrders = computed(() => {
   const query = searchQuery.value?.toLowerCase?.() || "";
-  const targetISO = selectedFilterDate.value
-    ? toISODate(selectedFilterDate.value)
-    : null;
+  const targetISO = selectedFilterDate.value ? toISODate(selectedFilterDate.value) : null;
   const driverId = activeDriverTab.value;
 
   const list = (allOrders.value || [])
     .filter((log) => {
+      // --- search ---
       const customerName = log.customer?.name?.toLowerCase?.() || "";
       const orderNo = log.order?.order_no?.toLowerCase?.() || "";
       const status = log.logistics_status?.toLowerCase?.() || "";
-      const colDriverId = log.collections?.[0]?.driver_id;
-      const delDriverId = log.deliveries?.[0]?.driver_id;
-
       const matchesSearch =
-        !query ||
-        customerName.includes(query) ||
-        orderNo.includes(query) ||
-        status.includes(query) ||
-        getDriverName(colDriverId).toLowerCase().includes(query) ||
-        getDriverName(delDriverId).toLowerCase().includes(query);
+        !query || customerName.includes(query) || orderNo.includes(query) || status.includes(query);
+      if (!matchesSearch) return false;
 
       const txISO = getEffectiveDateISO(log);
-      const matchesDate = targetISO
-        ? txISO.col === targetISO || txISO.del === targetISO
-        : true;
+      const exMatched = targetISO ? exceptionDateMatchedFor(log, targetISO) : false;
 
-      let matchesDriver = true;
-      if (driverId) {
-        if (isNotSetTab(driverId)) {
-          matchesDriver = hasUnsetDriver(log);
-        } else {
-          const effectiveIds = getEffectiveDriverIds(log);
-          matchesDriver = effectiveIds.includes(String(driverId));
-        }
+      // --- date match ---
+      const matchesDate =
+        !targetISO ||
+        txISO.col === targetISO ||
+        txISO.del === targetISO ||
+        exMatched;
+      if (!matchesDate) return false;
+
+      // --- driver match ---
+      if (!driverId) return true;
+
+      const isNotSet = isNotSetTab(driverId);
+
+      if (exMatched) {
+        // On exception day: ONLY exception drivers (fallback to main delivery), never collections
+        const ids = exceptionDriverIdsForDate(log, targetISO);
+        return isNotSet ? ids.has(DRIVER_NOT_SET) : ids.has(String(driverId));
       }
 
-      return matchesSearch && matchesDate && matchesDriver;
+      // Non-exception day: normal behavior (collection+delivery drivers allowed)
+      const cId = log?.collections?.[0]?.driver_id;
+      const dId = log?.deliveries?.[0]?.driver_id;
+
+      if (isNotSet) return cId == null || cId === "" || dId == null || dId === "";
+      return String(cId) === String(driverId) || String(dId) === String(driverId);
     })
     .sort((a, b) => {
       const txA = getEffectiveDateISO(a);
       const txB = getEffectiveDateISO(b);
-
-      // prefer collection date, else delivery date
       const isoA = txA.col || txA.del || "";
       const isoB = txB.col || txB.del || "";
-
       if (!isoA && !isoB) return 0;
       if (!isoA) return 1;
       if (!isoB) return -1;
@@ -586,53 +677,79 @@ const driverTabs = computed(() => {
   return [...unique, DRIVER_NOT_SET];
 });
 
-// Counts per driver used in tab header (collection vs delivery)
 const getTransactionsByDriver = (driverIdOrNotSet) => {
   const query = searchQuery.value?.toLowerCase?.() || "";
-  const targetISO = selectedFilterDate.value
-    ? toISODate(selectedFilterDate.value)
-    : null;
+  const targetISO = selectedFilterDate.value ? toISODate(selectedFilterDate.value) : null;
 
+  // base rows: search + (col/del or exception date)
   const base = (allOrders.value || []).filter((log) => {
     const customerName = log.customer?.name?.toLowerCase?.() || "";
     const orderNo = log.order?.order_no?.toLowerCase?.() || "";
     const status = log.logistics_status?.toLowerCase?.() || "";
     const matchesSearch =
-      !query ||
-      customerName.includes(query) ||
-      orderNo.includes(query) ||
-      status.includes(query);
-    const txISO = getEffectiveDateISO(log);
-    const matchesDate = targetISO
-      ? txISO.col === targetISO || txISO.del === targetISO
-      : true;
+      !query || customerName.includes(query) || orderNo.includes(query) || status.includes(query);
+    if (!matchesSearch) return false;
 
-    return matchesSearch && matchesDate;
+    if (!targetISO) return true;
+
+    const txISO = getEffectiveDateISO(log);
+    if (txISO.col === targetISO || txISO.del === targetISO) return true;
+
+    const key = String(log?.logistics_id ?? log?.id ?? "");
+    const list = exceptionsByLogisticsId.value.get(key) || [];
+    return list.some((ex) => toISODate(ex?.delivery_date) === targetISO);
   });
 
   const items = [];
+  const seenExc = new Set();
+
   base.forEach((log) => {
-    const c = log.collections?.[0];
-    const d = log.deliveries?.[0];
-    if (c)
-      items.push({
-        type: "collection",
-        driver_id: c.driver_id ?? null,
-        date: c.collection_date,
-      });
-    if (d)
-      items.push({
-        type: "delivery",
-        driver_id: d.driver_id ?? null,
-        date: d.delivery_date,
-      });
+    const c = log.collections?.[0] || null;
+    const d = log.deliveries?.[0] || null;
+
+    const onExceptionDay = !!targetISO && exceptionDateMatchedFor(log, targetISO);
+
+    // COLLECTION — skip entirely if we're looking at an exception day for this logistics
+    if (c && !onExceptionDay) {
+      const cISO = toISODate(c.collection_date);
+      if (!targetISO || cISO === targetISO) {
+        items.push({ type: "collection", driver_id: c.driver_id ?? null, date: cISO });
+      }
+    }
+
+    // DELIVERY — always allowed
+    if (d) {
+      const dISO = toISODate(d.delivery_date);
+      if (!targetISO || dISO === targetISO) {
+        items.push({ type: "delivery", driver_id: d.driver_id ?? null, date: dISO });
+      }
+    }
+
+    // EXCEPTIONS — standalone deliveries
+    const key = String(log?.logistics_id ?? log?.id ?? "");
+    const exList = exceptionsByLogisticsId.value.get(key) || [];
+    for (const ex of exList) {
+      const exISO = toISODate(ex?.delivery_date);
+      if (targetISO && exISO !== targetISO) continue;
+
+      const exDriverId =
+        ex?.driver_id != null && ex.driver_id !== "" ? ex.driver_id : d?.driver_id ?? null;
+
+      const gkey = exGroupKey(exISO, ex?.delivery_time, exDriverId);
+      if (seenExc.has(gkey)) continue;
+      seenExc.add(gkey);
+
+      items.push({ type: "delivery", driver_id: exDriverId, date: exISO });
+    }
   });
 
+  // filter by driver tab
   if (isNotSetTab(driverIdOrNotSet)) {
-    return items.filter((t) => !t.driver_id && t.driver_id !== 0);
+    return items.filter((t) => t.driver_id == null || t.driver_id === "");
   }
   return items.filter((t) => String(t.driver_id) === String(driverIdOrNotSet));
 };
+
 
 // Weekly summary counts computed from orders
 const daysOfWeek = [
@@ -803,110 +920,301 @@ const generateDriverSchedule = () => {
   const selectedDriver = transactionStore.selectedGenerateDriver;
   const generatedDate = selectedGenerateDate.value;
 
-  if (!selectedDriver) {
-    alert("Please select a driver before generating the schedule.");
+ if (!selectedDriver) {
+    $q.notify({
+      type: "warning",
+      message: "Please select a driver before generating the schedule.",
+      position: "bottom",
+      timeout: 3500,
+      actions: [{ label: "OK", color: "white" }],
+    });
     return;
   }
 
+  if (!generatedDate) {
+    $q.notify({
+      type: "warning",
+      message: "Please select a date before generating the schedule.",
+      position: "bottom",
+      timeout: 3500,
+      actions: [{ label: "OK", color: "white" }],
+    });
+    return;
+  }
+
+  // ---------- helpers ----------
+  const toMinutes = (hh, mm, ampm) => {
+    let h = Number(hh) || 0;
+    const m = Number(mm) || 0;
+    const a = (ampm || "").toLowerCase();
+    if (a === "pm" && h !== 12) h += 12;
+    if (a === "am" && h === 12) h = 0;
+    return h * 60 + m;
+  };
+  const parseTimeStart = (str) => {
+    // Accepts: "9am", "09:30 AM", "12nn - 3pm", "Custom Time", null, etc.
+    if (!str) return Number.MAX_SAFE_INTEGER;
+    const s = String(str).toLowerCase().trim();
+
+    // Range like "9am - 12nn" -> take left side
+    const left = s.split("-")[0].trim();
+
+    // normalize "nn" as pm
+    const norm = left.replace("nn", "pm"); // 12nn => 12pm
+
+    // 9am / 9 am / 9:30am / 09:30 AM
+    const m1 = norm.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i);
+    if (m1) return toMinutes(m1[1], m1[2] || "0", m1[3]);
+
+    // "12pm" written as "12"
+    const m2 = norm.match(/^(\d{1,2})(?::(\d{2}))?\s*(a|p)m?$/i);
+    if (m2) return toMinutes(m2[1], m2[2] || "0", m2[3] === "a" ? "am" : "pm");
+
+    // plain "09:30" (assume 24h) — rare
+    const m3 = norm.match(/^(\d{1,2}):(\d{2})$/);
+    if (m3) return Number(m3[1]) * 60 + Number(m3[2]);
+
+    // no parse => put at end
+    return Number.MAX_SAFE_INTEGER;
+  };
+
+  const sectionHeader = (label) => [
+    {
+      content: label,
+      colSpan: 6,
+      styles: {
+        fillColor: [44, 62, 80],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        halign: "left",
+      },
+    },
+  ];
+
+  // ---------- collect items ----------
   const items = [];
   (allOrders.value || []).forEach((log) => {
     const c = log.collections?.[0];
     const d = log.deliveries?.[0];
+
+    // COLLECTION
     if (
       c &&
       String(c.driver_id) === String(selectedDriver.id) &&
       toISODate(c.collection_date) === toISODate(generatedDate)
     ) {
+      const cp = c.contact_person || c.customer_contact_persons || {};
       items.push({
-        type: "collection",
-        customer: log.customer,
-        contact_person: c.contact_person || c.customer_contact_persons,
-        address: c.address,
+        kind: "COL",
+        sortTime: parseTimeStart(c.collection_time),
         time: c.collection_time,
-        no_bags: c.no_bags,
+        customer: log.customer,
+        contact: cp,
+        address: c.address,
+        bags: c.no_bags,
         remarks: c.remarks,
       });
     }
+
+    // DELIVERY
     if (
       d &&
       String(d.driver_id) === String(selectedDriver.id) &&
       toISODate(d.delivery_date) === toISODate(generatedDate)
     ) {
+      const cp = d.contact_person || d.customer_contact_persons || {};
       items.push({
-        type: "delivery",
-        customer: log.customer,
-        contact_person: d.contact_person || d.customer_contact_persons,
-        address: d.address,
+        kind: "DEL",
+        sortTime: parseTimeStart(d.delivery_time),
         time: d.delivery_time,
-        no_bags: d.no_bags,
+        customer: log.customer,
+        contact: cp,
+        address: d.address,
+        bags: d.no_bags,
         remarks: d.remarks,
       });
     }
+
+    // DELIVERY EXCEPTIONS (EXC)
+    const key = String(log?.logistics_id ?? log?.id ?? "");
+    const exList = exceptionsByLogisticsId.value.get(key) || [];
+    for (const ex of exList) {
+      const exDriverId =
+        ex?.driver_id != null && ex.driver_id !== ""
+          ? ex.driver_id
+          : d?.driver_id ?? null;
+
+      if (
+        String(exDriverId) === String(selectedDriver.id) &&
+        toISODate(ex?.delivery_date) === toISODate(generatedDate)
+      ) {
+        const cp =
+          ex.contact_person ||
+          ex.customer_contact_persons ||
+          d?.contact_person ||
+          d?.customer_contact_persons ||
+          {};
+        items.push({
+          kind: "EXC",
+          sortTime: parseTimeStart(ex.delivery_time || d?.delivery_time),
+          time: ex.delivery_time || d?.delivery_time,
+          customer: log.customer,
+          contact: cp,
+          address: ex.address || d?.address || null,
+          bags: ex.no_bags ?? d?.no_bags ?? null,
+          remarks:
+            ex.remarks ||
+            (ex.reason ? `Exception: ${ex.reason}` : d?.remarks) ||
+            "-",
+        });
+      }
+    }
   });
 
-  const collectionCount = items.filter((t) => t.type === "collection").length;
-  const deliveryCount = items.filter((t) => t.type === "delivery").length;
+  // ---------- split, sort, count ----------
+  const cols = items.filter((i) => i.kind === "COL").sort((a, b) => a.sortTime - b.sortTime);
+  const dels = items.filter((i) => i.kind === "DEL").sort((a, b) => a.sortTime - b.sortTime);
+  const excs = items.filter((i) => i.kind === "EXC").sort((a, b) => a.sortTime - b.sortTime);
 
-  const tableData = items.map((t) => {
+  const collectionCount = cols.length;
+  const deliveryCount = dels.length + excs.length;
+
+  // ---------- header (title + summary ribbon) ----------
+  const margin = { left: 12, right: 12, top: 18, bottom: 14 };
+  doc.setFontSize(16);
+  doc.text(
+    `Driver Schedule — ${selectedDriver.name}`,
+    margin.left,
+    margin.top
+  );
+
+  doc.setFontSize(11);
+  doc.text(
+    `${formatDate(generatedDate)}    |    ${collectionCount} Collections   •   ${deliveryCount} Deliveries (incl. EXC)`,
+    margin.left,
+    margin.top + 7
+  );
+
+  // footer (page X of Y)
+  const addFooter = (data) => {
+    const str = `Page ${data.pageNumber}`;
+    doc.setFontSize(9);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.text(str, pageWidth - margin.right, doc.internal.pageSize.getHeight() - 6, {
+      align: "right",
+    });
+  };
+
+  // ---------- common table options ----------
+  const tableHead = [
+    [
+      "Time",
+      "Type",
+      "Customer & Contact",
+      "Address",
+      "Bags",
+      "Remarks",
+    ],
+  ];
+
+  const mapRow = (t) => {
     let customer = t.customer?.name || "[NOT SET]";
     if (t.customer?.contact_no1) customer += `\n${t.customer.contact_no1}`;
     if (t.customer?.contact_no2) customer += `\n${t.customer.contact_no2}`;
 
-    let contactPerson = t.contact_person?.name || "[NOT SET]";
-    if (t.contact_person?.contact_no1)
-      contactPerson += `\n${t.contact_person.contact_no1}`;
-    if (t.contact_person?.contact_no2)
-      contactPerson += `\n${t.contact_person.contact_no2}`;
+    const cp = t.contact || {};
+    let contact = cp?.name || "[NOT SET]";
+    if (cp?.contact_no1) contact += `\n${cp.contact_no1}`;
+    if (cp?.contact_no2) contact += `\n${cp.contact_no2}`;
 
     return [
-      `${t.type.charAt(0).toUpperCase() + t.type.slice(1)}\n${
-        t.time || "[NOT SET]"
-      }),`,
-      customer,
-      contactPerson,
-      t.address || "[NOT SET]",
-      `No. of Bags:\n${t.no_bags || "-"}`,
+      t.time || "[NOT SET]",
+      t.kind === "COL" ? "Collection" : t.kind === "DEL" ? "Delivery" : "Delivery (EXC)",
+      `${customer}\n— ${contact}`,
+      formatAddress(t.address) || "[NOT SET]",
+      t.bags != null && t.bags !== "" ? String(t.bags) : "-",
       t.remarks || "-",
     ];
-  });
+  };
 
-  doc.setFontSize(14);
-  doc.text(
-    `Driver Schedule for ${selectedDriver.name} on ${formatDate(
-      generatedDate
-    )} (${collectionCount} Collections | ${deliveryCount} Deliveries)`,
-    10,
-    20
-  );
-
-  autoTable(doc, {
-    startY: 25,
-    head: [
-      ["Type", "Customer", "Contact Person", "Address", "Details", "Remarks"],
-    ],
-    body: tableData,
-    columnStyles: {
-      0: { cellWidth: 30 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 50 },
-      4: { cellWidth: 50 },
-      5: { cellWidth: 60 },
-    },
+  const commonOptions = {
+    startY: margin.top + 14, // below header
+    margin,
+    head: tableHead,
     styles: {
-      fontSize: 12,
-      lineWidth: 0.3,
-      cellPadding: 2,
-      lineColor: [0, 0, 0],
+      fontSize: 10,
+      cellPadding: 3,
+      lineColor: [200, 200, 200],
+      lineWidth: 0.2,
+      overflow: "linebreak",
+      valign: "middle",
     },
-    headStyles: { halign: "center", valign: "middle" },
-    theme: "striped",
+    headStyles: {
+      fillColor: [230, 230, 230],
+      textColor: [20, 20, 20],
+      fontStyle: "bold",
+      halign: "center",
+    },
+    columnStyles: {
+      0: { cellWidth: 26 },  // Time
+      1: { cellWidth: 30 },  // Type
+      2: { cellWidth: 72 },  // Customer & Contact
+      3: { cellWidth: 100 }, // Address
+      4: { cellWidth: 18, halign: "center" }, // Bags
+      5: { cellWidth: "auto" }, // Remarks
+    },
+    theme: "grid",
+    didDrawPage: (data) => addFooter(data),
+    // Keep section headers sticky in body as separate rows (we'll push them manually)
+  };
+
+  // ---------- build combined body with section headers ----------
+  const body = [];
+
+  if (cols.length) body.push(sectionHeader("COLLECTIONS"));
+  cols.forEach((t) => body.push(mapRow(t)));
+
+  if (dels.length) body.push(sectionHeader("DELIVERIES"));
+  dels.forEach((t) => body.push(mapRow(t)));
+
+  if (excs.length) body.push(sectionHeader("DELIVERIES (EXC)"));
+  excs.forEach((t) => body.push(mapRow(t)));
+
+  // if nothing found
+  if (!cols.length && !dels.length && !excs.length) {
+    body.push([
+      {
+        content: "No tasks for the selected driver/date.",
+        colSpan: 6,
+        styles: { halign: "center", fontStyle: "italic" },
+      },
+    ]);
+  }
+
+  // ---------- draw table ----------
+  autoTable(doc, {
+    ...commonOptions,
+    body,
+    // Allow section header rows to span across columns (we pushed them already as objects)
+    // Ensure these rows look like headers, not data
+    didParseCell: (data) => {
+      const cell = data.cell;
+      if (Array.isArray(cell.raw)) return; // normal row
+      if (typeof cell.raw === "object" && cell.raw?.colSpan === 6) {
+        data.cell.styles.fillColor = cell.raw.styles?.fillColor || [44, 62, 80];
+        data.cell.styles.textColor = cell.raw.styles?.textColor || [255, 255, 255];
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.halign = "left";
+      }
+    },
   });
 
+  // ---------- open ----------
   const pdfBlob = doc.output("blob");
   const pdfUrl = URL.createObjectURL(pdfBlob);
   window.open(pdfUrl, "_blank");
 };
+
 
 // STYLES
 const thumbStyle = { right: "4px", borderRadius: "5px", height: "7px" };
@@ -955,7 +1263,7 @@ const driverAmPmCounts = computed(() => {
   const start = new Date(startOfWeek.value);
   const end = new Date(endOfWeek.value);
 
-  // Initialize driver × day grid
+  // grid init
   drivers.value.forEach((driverIdOrNotSet) => {
     counts[driverIdOrNotSet] = {};
     daysOfWeek.forEach((day) => {
@@ -963,7 +1271,6 @@ const driverAmPmCounts = computed(() => {
     });
   });
 
-  // Helper: within current week (date-only compare)
   const inWeek = (iso) => {
     if (!iso) return false;
     const d = new Date(iso);
@@ -973,56 +1280,73 @@ const driverAmPmCounts = computed(() => {
     return ds >= s && ds <= e;
   };
 
-  // time → am_pm map from DB (exact label match)
+  // label -> "am"/"pm"
   const timeMap = new Map(
     (transactionStore.timeOptions || [])
       .filter((opt) => opt?.time && opt?.am_pm)
       .map((opt) => [opt.time.trim(), opt.am_pm.trim().toLowerCase()])
   );
 
-  // Helper to increment a single item (collection OR delivery)
-  const bump = ({ driverId, dateISO, label, tag }) => {
+  const bump = ({ driverId, dateISO, label }) => {
     if (!inWeek(dateISO)) return;
-
     const ampm = timeMap.get((label ?? "").trim());
+    if (ampm !== "am" && ampm !== "pm") return;
 
     const driverKey =
       driverId == null || driverId === "" ? DRIVER_NOT_SET : String(driverId);
     const dayKey = daysOfWeek[new Date(dateISO).getDay()];
 
     if (!counts[driverKey]) counts[driverKey] = {};
-    if (!counts[driverKey][dayKey])
-      counts[driverKey][dayKey] = { am: 0, pm: 0 };
+    if (!counts[driverKey][dayKey]) counts[driverKey][dayKey] = { am: 0, pm: 0 };
 
     counts[driverKey][dayKey][ampm] += 1;
   };
 
-  // Walk through each logistics: add collection + delivery into buckets
-  (allOrders.value || []).forEach((log, idx) => {
-    const c = log.collections?.[0];
-    const d = log.deliveries?.[0];
+  // --- DEDUPE set for exceptions across the week (grouped by date+time+driver)
+  const seenExc = new Set();
+
+  (allOrders.value || []).forEach((log) => {
+    const c = log.collections?.[0] || null;
+    const d = log.deliveries?.[0] || null;
 
     if (c) {
-      const dateISO = toISODate(c.collection_date);
       bump({
         driverId: c.driver_id ?? null,
-        dateISO,
+        dateISO: toISODate(c.collection_date),
         label: c.collection_time,
-        tag: `COL#${idx}`,
       });
     }
 
     if (d) {
-      const dateISO = toISODate(d.delivery_date);
       bump({
         driverId: d.driver_id ?? null,
-        dateISO,
+        dateISO: toISODate(d.delivery_date),
         label: d.delivery_time,
-        tag: `DEL#${idx}`,
+      });
+    }
+
+    // === GROUPED EXCEPTIONS ===
+    const lid = String(log?.logistics_id ?? log?.id ?? "");
+    const exList = exceptionsByLogisticsId.value.get(lid) || [];
+    for (const ex of exList) {
+      const exDriverId =
+        ex?.driver_id != null && ex.driver_id !== ""
+          ? ex.driver_id
+          : d?.driver_id ?? null;
+
+      const gkey = exGroupKey(ex?.delivery_date, ex?.delivery_time, exDriverId);
+      if (seenExc.has(gkey)) continue;
+      seenExc.add(gkey);
+
+      bump({
+        driverId: exDriverId,
+        dateISO: toISODate(ex?.delivery_date),
+        label: ex?.delivery_time,
       });
     }
   });
 
   return counts;
 });
+
 </script>

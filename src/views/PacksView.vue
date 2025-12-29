@@ -1,36 +1,68 @@
 <template>
   <div class="full-container">
     <div class="q-pa-md">
-      <q-card flat class="order-banner bg-blue-grey text-white q-pa-md">
-        <div class="flex justify-between items-center">
+      <q-card flat class="order-banner bg-blue-grey text-white">
+        <div class="flex justify-between items-center q-pa-sm">
           <div class="text-left">
-            <div class="text-caption">
-              <div class="text-h6 text-uppercase text-weight-bolder order-box">
-                Order Details
-              </div>
-            </div>
+            <img
+              v-if="brandLogoSrc"
+              :src="brandLogoSrc"
+              alt="Brand logo"
+              style="height: 50px; width: auto; vertical-align: middle"
+            />
           </div>
-          <div class="text-right">
-            <div class="text-slip-row">
-              Order No:
-              <span class="text-summary">{{ order?.order_no || "N/A" }}</span>
-            </div>
-            <div class="text-slip-row">
-              Order Date:
-              <span class="text-summary">{{
-                formatDate(order?.created_at)
-              }}</span>
-            </div>
+
+          <div
+            class="text-h6 text-uppercase text-weight-bolder order-box text-center q-pa-sm"
+          >
+            Pack Details
           </div>
         </div>
       </q-card>
     </div>
 
-    <!-- Collection and Delivery Details -->
-    <div class="row text-p q-col-gutter-md q-px-md line-height-1">
+    <div class="row q-col-gutter-md q-px-md line-height-1">
       <div class="col-4 q-pt-md" style="min-height: 100%">
-        <q-card class="preview-card order-container" ref="orderContainer">
-          <!-- Customer and Order Details -->
+        <q-card class="order-container" style="padding: 1em">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Order Details
+          </div>
+          <q-separator class="q-my-xs" />
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Order No:</div>
+            <div class="col-6 text-h6 text-weight-bold text-primary">
+              {{ order?.order_no || "N/A" }}
+            </div>
+          </div>
+
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">
+              <div>Order Date:</div>
+            </div>
+            <div class="col-6">
+              {{ formatDate(order?.created_at) }}
+            </div>
+          </div>
+
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">
+              <div>Job Type:</div>
+            </div>
+            <div class="col-6 text-capitalize">
+              {{ logistics?.job_type }}
+            </div>
+          </div>
+
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">
+              <div>Urgency:</div>
+            </div>
+            <div class="col-6 text-capitalize">
+              {{ logistics?.urgency || "-" }}
+            </div>
+          </div>
+        </q-card>
+        <q-card class="order-container" style="padding: 1em">
           <div class="text-subtitle1 text-uppercase text-weight-bolder">
             Customer Details
           </div>
@@ -64,10 +96,16 @@
               <div>Contact No/s:</div>
             </div>
             <div class="col-6">
-              {{ customer?.contact_no1 || "-"
-              }}<span v-if="customer.contact_no2">
-                / {{ customer?.contact_no2 || "-" }}</span
-              >
+              <template v-if="customerPhones.length">
+                <template
+                  v-for="(ph, i) in customerPhones"
+                  :key="'cust-ph-' + i"
+                >
+                  <a :href="phoneHref(ph)">{{ ph }}</a
+                  ><span v-if="i < customerPhones.length - 1"> / </span>
+                </template>
+              </template>
+              <template v-else>-</template>
             </div>
           </div>
           <div class="row text-slip-row row-col-row">
@@ -75,182 +113,14 @@
               <div>Email Address:</div>
             </div>
             <div class="col-6">
-              {{ customer?.email || "N/A" }}
+              <template v-if="customer?.email">
+                <a :href="mailtoHref(customer.email)">{{ customer.email }}</a>
+              </template>
+              <template v-else>N/A</template>
             </div>
           </div>
         </q-card>
-      </div>
-      <div class="col-4 q-pt-md" style="min-height: 100%">
-        <q-card class="slip-card">
-          <div class="text-subtitle1 text-uppercase text-weight-bolder">
-            Collection Details
-          </div>
-          <q-separator class="q-my-xs" />
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Contact Person:</div>
-            <div class="col-6">
-              {{ collection.customer_contact_persons?.name || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Contact Nos:</div>
-            <div class="col-6">
-              {{ formattedCollectionContactNos || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Address:</div>
-            <div class="col-6">
-              {{ collection.address || "-" }}
-            </div>
-          </div>
-
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Collection Date:</div>
-            <div class="col-6">
-              {{ formattedCollectionDate }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Collection Time:</div>
-            <div class="col-6">
-              {{ collection.collection_time || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Collection Driver:</div>
-            <div class="col-6">
-              {{ collection.driver_name || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">No. of Bags:</div>
-            <div class="col-6">
-              {{ collection.no_bags || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Remarks:</div>
-            <div class="col-6">
-              {{ collection.remarks || "-" }}
-            </div>
-          </div>
-        </q-card>
-      </div>
-      <div class="col-4 q-pt-md" style="min-height: 100%">
-        <q-card class="slip-card">
-          <div class="text-subtitle1 text-uppercase text-weight-bolder">
-            Delivery Details
-          </div>
-          <q-separator class="q-my-xs" />
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Contact Person:</div>
-            <div class="col-6">
-              {{ delivery.customer_contact_persons?.name || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Contact Nos:</div>
-            <div class="col-6">
-              {{ formattedDeliveryContactNos || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Address:</div>
-            <div class="col-6">
-              {{ delivery.address || "-" }}
-            </div>
-          </div>
-
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Delivery Date:</div>
-            <div class="col-6">
-              {{ formattedDeliveryDate }}
-            </div>
-          </div>
-
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Delivery Time:</div>
-            <div class="col-6">
-              {{ delivery.delivery_time || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Delivery Driver:</div>
-            <div class="col-6">
-              {{ delivery.driver_name || "-" }}
-            </div>
-          </div>
-          <div class="row text-slip-row row-col-row">
-            <div class="col-6">Remarks:</div>
-            <div class="col-6">
-              {{ delivery.remarks || "-" }}
-            </div>
-          </div>
-        </q-card>
-      </div>
-    </div>
-
-    <div class="row text-p q-col-gutter-md q-pa-md line-height-1">
-      <div class="col-4 q-pt-md" style="min-height: 100%">
-        <q-card class="preview-card">
-          <div class="row justify-start items-center">
-            <div class="text-subtitle1 text-uppercase text-weight-bolder">
-              Logistics Details
-            </div>
-          </div>
-          <q-separator class="q-mt-xs" />
-          <q-card-section class="q-pb-sm">
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>Logistics Status:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ logistics.logistics_status }}
-              </div>
-            </div>
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>Job Type:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ logistics.job_type }}
-              </div>
-            </div>
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>Urgency:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ logistics.urgency }}
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-      <div class="col-4 q-pt-md" style="min-height: 100%">
-        <q-card class="slip-card">
-          <div class="row justify-start items-center">
-            <div class="text-subtitle1 text-uppercase text-weight-bolder">
-              Production Details
-            </div>
-          </div>
-          <q-separator class="q-mt-xs" />
-          <q-card-section class="q-pb-sm">
-            <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>Goods Status:</div>
-              </div>
-              <div class="col text-uppercase text-summary">
-                {{ goodsStatus }}
-              </div>
-            </div>
-            
-          </q-card-section>
-        </q-card>
-      </div>
-      <div class="col-4 q-pt-md" style="min-height: 100%">
-        <q-card class="slip-card">
+        <q-card class="order-container" style="padding: 1em; margin-bottom: 0">
           <div class="row items-center">
             <div class="text-subtitle1 text-uppercase text-weight-bolder">
               Packing Details
@@ -295,103 +165,449 @@
           </q-card-actions>
         </q-card>
       </div>
+      <div class="col-4 q-pt-md" style="min-height: 100%">
+        <q-card class="slip-card">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Collection Details
+          </div>
+          <q-separator class="q-my-xs" />
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Contact Person:</div>
+            <div class="col-6">
+              {{ collection.contact_person?.name || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Contact Nos:</div>
+            <div class="col-6">
+              <template v-if="collectionPhones.length">
+                <template
+                  v-for="(ph, i) in collectionPhones"
+                  :key="'col-ph-' + i"
+                >
+                  <a :href="phoneHref(ph)">{{ ph }}</a
+                  ><span v-if="i < collectionPhones.length - 1"> / </span>
+                </template>
+              </template>
+              <template v-else>-</template>
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Address:</div>
+            <div class="col-6">
+              {{ formatAddress(collection.address) || "-" }}
+            </div>
+          </div>
+
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Collection Date:</div>
+            <div class="col-6">
+              {{ formattedCollectionDate }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Collection Time:</div>
+            <div class="col-6">
+              {{ collection.collection_time || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Collection Driver:</div>
+            <div class="col-6">
+              {{ getDriverName(collection.driver_id) || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">No. of Bags:</div>
+            <div class="col-6">
+              {{ collection.no_bags || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Remarks:</div>
+            <div class="col-6">
+              {{ collection.collection_remarks || "-" }}
+            </div>
+          </div>
+        </q-card>
+      </div>
+      <div class="col-4 q-pt-md" style="min-height: 100%">
+        <q-card class="slip-card">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Delivery Details
+          </div>
+          <q-separator class="q-my-xs" />
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Contact Person:</div>
+            <div class="col-6">
+              {{ delivery.contact_person?.name || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Contact Nos:</div>
+            <div class="col-6">
+              <template v-if="deliveryPhones.length">
+                <template
+                  v-for="(ph, i) in deliveryPhones"
+                  :key="'del-ph-' + i"
+                >
+                  <a :href="phoneHref(ph)">{{ ph }}</a
+                  ><span v-if="i < deliveryPhones.length - 1"> / </span>
+                </template>
+              </template>
+              <template v-else>-</template>
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Address:</div>
+            <div class="col-6">
+              {{ formatAddress(delivery.address) || "-" }}
+            </div>
+          </div>
+
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Delivery Date:</div>
+            <div class="col-6">
+              {{ formattedDeliveryDate }}
+            </div>
+          </div>
+
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Delivery Time:</div>
+            <div class="col-6">
+              {{ delivery.delivery_time || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Delivery Driver:</div>
+            <div class="col-6">
+              {{ getDriverName(delivery.driver_id) || "-" }}
+            </div>
+          </div>
+          <div class="row text-slip-row row-col-row">
+            <div class="col-6">Remarks:</div>
+            <div class="col-6">
+              {{ delivery.delivery_remarks || "-" }}
+            </div>
+          </div>
+        </q-card>
+      </div>
     </div>
 
-    <q-card class="transactions-list preview-card q-ma-md">
-      <!-- Add Instruction Button -->
-      <div class="row items-center">
-        <div class="text-subtitle1 text-uppercase text-weight-bolder">
-          Transaction Items
+    <q-card class="slip-card q-ma-md">
+      <div class="row justify-around line-height-1 text-subtitle1">
+        <div class="col-auto">
+          Logistics Status:
+          <span>
+            <q-badge
+              :color="badgeColorForLogistics(logistics?.logistics_status)"
+              class="q-px-md q-ml-xs text-subtitle1 text-uppercase"
+              align="middle"
+            >
+              {{ logistics?.logistics_status || "N/A" }}
+            </q-badge>
+          </span>
+        </div>
+
+        <div class="col-auto">
+          Goods Status:<span>
+            <q-badge
+              :color="badgeColorForGoods(goodsStatus)"
+              class="q-px-md q-ml-xs text-subtitle1 text-uppercase"
+              align="middle"
+            >
+              {{ goodsStatus || "N/A" }}
+            </q-badge>
+          </span>
+        </div>
+
+        <div class="col-auto">
+          Payment Status:
+          <span>
+            <q-badge
+              :color="badgeColorForPayment(paymentStatus)"
+              class="q-px-md q-ml-xs text-subtitle1 text-uppercase"
+              align="middle"
+            >
+              {{ paymentStatus || "N/A" }}
+            </q-badge>
+          </span>
         </div>
       </div>
-      <q-separator class="q-mt-xs" />
-
-      <q-card-section class="q-px-none">
-        <!-- Transaction Table -->
-        <div class="transaction-summary line-height-1">
-          <div class="row row-col-header order-header text-center">
-            <div class="col col-2 text-weight-bold bordered">Item</div>
-            <div class="col col-2 text-weight-bold bordered">Category</div>
-            <div class="col col-1 text-weight-bold bordered">Pack Type</div>
-            <div class="col col-2 text-weight-bold bordered">Process</div>
-            <div class="col col-1 text-weight-bold bordered">Price</div>
-            <div class="col col-1 text-weight-bold bordered">Pcs</div>
-            <div class="col col-1 text-weight-bold bordered">Qty</div>
-            <div class="col col-1 text-weight-bold bordered">Subtotal</div>
-            <div class="col col-1 text-weight-bold bordered">Ready?</div>
-          </div>
-
-          <div v-if="transactions.length > 0">
-            <div
-              v-for="(item, index) in transactions"
-              :key="index"
-              class="row row-col-row order-row"
-            >
-              <div class="col col-2 bordered">
-                {{ transactions[index].item_name }}
-              </div>
-              <div class="col col-2 bordered text-center text-uppercase">
-                {{ transactions[index].category }}
-              </div>
-              <div class="col col-1 bordered text-center text-uppercase">
-                {{ transactions[index].pack_type }}
-              </div>
-              <div class="col col-2 bordered text-center">
-                {{ transactions[index].process }}
-              </div>
-              <div class="col col-1 bordered text-center">
-                ${{ transactions[index].price.toFixed(2) }}
-              </div>
-              <div class="col col-1 bordered text-center">
-                {{ computedPcs(transactions[index]) }}
-              </div>
-              <div class="col col-1 bordered text-center">
-                {{ transactions[index].quantity }}
-              </div>
-              <div class="col col-1 bordered text-center">
-                ${{ transactions[index].subtotal.toFixed(2) }}
-              </div>
-              <div class="col col-1 bordered text-center">
-                <q-checkbox
-                  v-model="transactions[index].ready_status"
-                  size="md"
-                  dense
-                />
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="text-center text-grey q-my-md">
-            No items added to the list.
-          </div>
-
-          <div class="row row-col-footer order-footer">
-            <div class="col col-6 text-weight-bold text-uppercase"></div>
-            <div class="col col-2 text-weight-bold text-uppercase bordered">
-              Total
-            </div>
-            <div class="col col-1 text-weight-bold bordered text-center">
-              {{ totalPcs }}
-            </div>
-            <div class="col col-1 text-weight-bold bordered text-center">
-              {{ totalQty }}
-            </div>
-            <div class="col col-1 text-weight-bold bordered text-center">
-              ${{ totalSubtotal }}
-            </div>
-            <div class="col col-1 text-weight-bold bordered text-center"></div>
+    </q-card>
+    <div class="transactions-list preview-card q-ma-md">
+      <!-- ========== PC TABLE (includes 'others') ========== -->
+      <div v-if="itemsPC.length">
+        <div class="row items-center">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Per piece
           </div>
         </div>
-      </q-card-section>
-      <q-card-actions align="right" class="q-pa-none">
+        <q-separator class="q-mt-xs" />
+
+        <div class="q-px-none">
+          <div class="transaction-summary line-height-1">
+            <div class="row row-col-header order-header text-center">
+              <div class="col-2 text-weight-bold bordered">Item</div>
+              <div class="col-2 text-weight-bold bordered">Category</div>
+              <div class="col-1 text-weight-bold bordered">Pack Type</div>
+              <div class="col-2 text-weight-bold bordered">Process</div>
+              <div class="col-1 text-weight-bold bordered">Price</div>
+              <div class="col-1 text-weight-bold bordered">Pcs</div>
+              <div class="col-1 text-weight-bold bordered">Qty</div>
+              <div class="col-1 text-weight-bold bordered">Subtotal</div>
+              <div class="col-1 text-weight-bold bordered">Ready?</div>
+            </div>
+
+            <div
+              v-for="(item, index) in itemsPC"
+              :key="'pc-' + index"
+              class="row row-col-row order-row text-center"
+            >
+              <div class="col-2 bordered text-left">{{ item.item_name }}</div>
+              <div class="col-2 bordered text-capitalize">
+                {{ item.category }}
+              </div>
+              <div class="col-1 bordered text-capitalize">
+                {{ item.pack_type }}
+              </div>
+              <div class="col-2 bordered">{{ processLabel(item.process) }}</div>
+              <div class="col-1 bordered">
+                ${{ Number(item.price).toFixed(2) }}
+              </div>
+              <div class="col-1 bordered">
+                ${{ Number(item.price || 0).toFixed(2) }}{{ priceSuffix(item) }}
+              </div>
+
+              <div class="col-1 bordered">
+                {{ formatQty(item) }}
+              </div>
+              <div class="col-1 bordered pos-rel">
+                ${{ Number(item.subtotal).toFixed(2) }}
+                <q-icon
+                  name="help_outline"
+                  size="14px"
+                  class="calc-help"
+                  tabindex="0"
+                  role="button"
+                  aria-label="See computation"
+                >
+                  <q-tooltip
+                    anchor="bottom right"
+                    self="top right"
+                    max-width="260px"
+                  >
+                    {{ subtotalBreakdown(item) }}
+                  </q-tooltip>
+                </q-icon>
+              </div>
+              <div class="col-1 bordered">
+                <q-checkbox v-model="item.ready_status" size="md" dense />
+              </div>
+            </div>
+
+            <div class="row row-col-footer order-footer text-center">
+              <div
+                class="col text-weight-bold text-uppercase bordered text-right"
+              ></div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsPC).pcs }}
+              </div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsPC).qtyLabel }}
+              </div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsPC).subtotalLabel }}
+              </div>
+              <div class="col-1 text-weight-bold bordered"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== KG TABLE ========== -->
+      <div v-if="itemsKG.length">
+        <div class="row items-center q-mt-md">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Per kg
+          </div>
+        </div>
+        <q-separator class="q-mt-xs" />
+
+        <div class="q-px-none">
+          <div class="transaction-summary line-height-1">
+            <div class="row row-col-header order-header text-center">
+              <div class="col-2 text-weight-bold bordered">Item</div>
+              <div class="col-2 text-weight-bold bordered">Category</div>
+              <div class="col-1 text-weight-bold bordered">Pack Type</div>
+              <div class="col-2 text-weight-bold bordered">Process</div>
+              <div class="col-1 text-weight-bold bordered">Price</div>
+              <div class="col-1 text-weight-bold bordered">Pcs</div>
+              <div class="col-1 text-weight-bold bordered">Weight</div>
+              <div class="col-1 text-weight-bold bordered">Subtotal</div>
+              <div class="col-1 text-weight-bold bordered">Ready?</div>
+            </div>
+
+            <div
+              v-for="(item, index) in itemsKG"
+              :key="'kg-' + index"
+              class="row row-col-row order-row text-center"
+            >
+              <div class="col-2 bordered text-left">{{ item.item_name }}</div>
+              <div class="col-2 bordered text-capitalize">
+                {{ item.category }}
+              </div>
+              <div class="col-1 bordered text-capitalize">
+                {{ item.pack_type }}
+              </div>
+              <div class="col-2 bordered">{{ processLabel(item.process) }}</div>
+              <div class="col-1 bordered">
+                ${{ Number(item.price).toFixed(2) }}
+              </div>
+              <div class="col-1 bordered">
+                ${{ Number(item.price || 0).toFixed(2) }}{{ priceSuffix(item) }}
+              </div>
+
+              <div class="col-1 bordered">
+                {{ formatQty(item) }}
+              </div>
+              <div class="col-1 bordered pos-rel">
+                ${{ Number(item.subtotal).toFixed(2) }}
+                <q-icon
+                  name="help_outline"
+                  size="14px"
+                  class="calc-help"
+                  tabindex="0"
+                  role="button"
+                  aria-label="See computation"
+                >
+                  <q-tooltip
+                    anchor="bottom right"
+                    self="top right"
+                    max-width="260px"
+                  >
+                    {{ subtotalBreakdown(item) }}
+                  </q-tooltip>
+                </q-icon>
+              </div>
+              <div class="col-1 bordered">
+                <q-checkbox v-model="item.ready_status" size="md" dense />
+              </div>
+            </div>
+
+            <div class="row row-col-footer order-footer text-center">
+              <div class="col text-weight-bold text-uppercase bordered"></div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsKG).pcs }}
+              </div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsKG).qtyLabel }}
+              </div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsKG).subtotalLabel }}
+              </div>
+              <div class="col-1 text-weight-bold bordered"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== SQFT TABLE ========== -->
+      <div v-if="itemsSQFT.length">
+        <div class="row items-center q-mt-md">
+          <div class="text-subtitle1 text-uppercase text-weight-bolder">
+            Per sqft
+          </div>
+        </div>
+        <q-separator class="q-mt-xs" />
+
+        <div class="q-px-none">
+          <div class="transaction-summary line-height-1">
+            <div class="row row-col-header order-header text-center">
+              <div class="col-2 text-weight-bold bordered">Item</div>
+              <div class="col-2 text-weight-bold bordered">Category</div>
+              <div class="col-1 text-weight-bold bordered">Pack Type</div>
+              <div class="col-2 text-weight-bold bordered">Process</div>
+              <div class="col-1 text-weight-bold bordered">Price</div>
+              <div class="col-1 text-weight-bold bordered">Pcs</div>
+              <div class="col-1 text-weight-bold bordered">Size</div>
+              <div class="col-1 text-weight-bold bordered">Subtotal</div>
+              <div class="col-1 text-weight-bold bordered">Ready?</div>
+            </div>
+
+            <div
+              v-for="(item, index) in itemsSQFT"
+              :key="'sqft-' + index"
+              class="row row-col-row order-row text-center"
+            >
+              <div class="col-2 bordered text-left">{{ item.item_name }}</div>
+              <div class="col-2 bordered text-capitalize">
+                {{ item.category }}
+              </div>
+              <div class="col-1 bordered text-capitalize">
+                {{ item.pack_type }}
+              </div>
+              <div class="col-2 bordered">{{ processLabel(item.process) }}</div>
+              <div class="col-1 bordered">
+                ${{ Number(item.price).toFixed(2) }}
+              </div>
+              <div class="col-1 bordered">
+                ${{ Number(item.price || 0).toFixed(2) }}{{ priceSuffix(item) }}
+              </div>
+
+              <div class="col-1 bordered">
+                {{ formatQty(item) }}
+              </div>
+              <div class="col-1 bordered pos-rel">
+                ${{ Number(item.subtotal).toFixed(2) }}
+                <q-icon
+                  name="help_outline"
+                  size="14px"
+                  class="calc-help"
+                  tabindex="0"
+                  role="button"
+                  aria-label="See computation"
+                >
+                  <q-tooltip
+                    anchor="bottom right"
+                    self="top right"
+                    max-width="260px"
+                  >
+                    {{ subtotalBreakdown(item) }}
+                  </q-tooltip>
+                </q-icon>
+              </div>
+              <div class="col-1 bordered">
+                <q-checkbox v-model="item.ready_status" size="md" dense />
+              </div>
+            </div>
+
+            <div class="row row-col-footer order-footer text-center">
+              <div class="col text-weight-bold text-uppercase bordered"></div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsSQFT).pcs }}
+              </div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsSQFT).qtyLabel }}
+              </div>
+              <div class="col-1 text-weight-bold bordered">
+                {{ groupTotals(itemsSQFT).subtotalLabel }}
+              </div>
+              <div class="col-1 text-weight-bold bordered"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-end q-mt-md">
         <q-btn
           label="Save Update"
           color="primary"
           unelevated
           @click="updateReadyStatus"
         />
-      </q-card-actions>
-    </q-card>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -401,6 +617,8 @@ import { useTransactionStore } from "@/stores/transactionStore";
 import { useRoute } from "vue-router";
 import { Notify } from "quasar";
 import { useQuasar } from "quasar";
+import ccLogo from "@/assets/images/cc_logo.png";
+import dcLogo from "@/assets/images/dc_logo.png";
 
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
@@ -418,6 +636,15 @@ const reports = ref([]);
 
 const driverOptions = ref([]); // Initialize as a reactive array
 const timeOptions = ref([]); // Initialize as a reactive array
+
+function processLabel(p) {
+  const s = String(p || "").toLowerCase();
+  if (s === "laundry") return "Laundry";
+  if (s === "dryclean") return "Dry Clean";
+  if (s === "pressing") return "Pressing Only";
+  if (s === "others") return "Others";
+  return p || "-";
+}
 
 // Load driverOptions when component is mounted
 onMounted(async () => {
@@ -515,16 +742,17 @@ watch(
   { deep: true }
 );
 
-const paymentStatus = computed({
-  get() {
-    return order.value.order_payment?.payment_status || "";
-  },
-  set(val) {
-    if (!order.value.order_payment) {
-      order.value.order_payment = {}; // init fallback object
-    }
-    order.value.order_payment.payment_status = val;
-  },
+const brandLogoSrc = computed(() => {
+  const companies = new Set(
+    (Array.isArray(transactions.value) ? transactions.value : [])
+      .map((i) => (i?.company ? String(i.company).toLowerCase().trim() : ""))
+      .filter(Boolean)
+  );
+  if (companies.size !== 1) return null; // mixed or none → no logo
+  const only = [...companies][0];
+  if (only === "cc") return ccLogo;
+  if (only === "dc") return dcLogo;
+  return null;
 });
 
 const goodsStatus = computed({
@@ -539,17 +767,40 @@ const goodsStatus = computed({
   },
 });
 
-const paymentType = computed({
+const paymentStatus = computed({
   get() {
-    return order.value.order_payment?.payment_type || "";
+    return order.value?.order_payment?.payment_status || "";
   },
   set(val) {
-    if (!order.value.order_payment) {
-      order.value.order_payment = {}; // init fallback object
-    }
-    order.value.order_payment.payment_type = val;
+    if (!order.value.order_payment) order.value.order_payment = {};
+    order.value.order_payment.payment_status = val;
   },
 });
+
+function badgeColorForLogistics(s) {
+  const v = String(s || "").toUpperCase();
+  if (v.includes("PENDING")) return "warning";
+  if (v.includes("ON") || v.includes("IN PROGRESS")) return "info";
+  if (v.includes("COMPLETED") || v.includes("DELIVERED")) return "positive";
+  if (v.includes("CANCEL") || v.includes("FAILED")) return "negative";
+  return "grey-6";
+}
+
+function badgeColorForGoods(s) {
+  const v = String(s || "").toUpperCase();
+  if (v === "READY") return "positive";
+  if (v.includes("PARTIAL")) return "warning";
+  if (v === "NOT READY") return "grey-6";
+  return "grey-6";
+}
+
+function badgeColorForPayment(s) {
+  const v = String(s || "").toUpperCase();
+  if (v === "PAID") return "positive";
+  if (v.includes("PARTIAL") || v === "PENDING") return "warning";
+  if (v === "UNPAID" || v.includes("FAILED")) return "negative";
+  return "grey-6";
+}
 
 const noPackets = computed({
   get() {
@@ -598,27 +849,111 @@ const noReturns = computed({
     order.value.order_production.no_returns = val;
   },
 });
+// --- unit helpers ---
+function getItemUnit(item) {
+  const u = String(item?.unit ?? "").toLowerCase();
+  if (u === "kg" || u === "sqft" || u === "pc") return u;
+  // anything else (including empty) goes to PC table
+  return "pc";
+}
 
-// Computed properties for totals
-const totalPcs = computed(() =>
-  transactions.value.reduce((acc, item) => acc + computedPcs(item), 0)
+function formatQty(item) {
+  const u = getItemUnit(item);
+  const q = Number(item?.quantity) || 0;
+  if (u === "kg") return `${q.toFixed(2)} kg`;
+  if (u === "sqft") return `${q.toFixed(2)} sqft`;
+  return q; // pc
+}
+
+// --- groupings (PC is the fallback bucket for "others") ---
+const itemsPC = computed(() =>
+  transactions.value.filter((it) => getItemUnit(it) === "pc")
+);
+const itemsKG = computed(() =>
+  transactions.value.filter((it) => getItemUnit(it) === "kg")
+);
+const itemsSQFT = computed(() =>
+  transactions.value.filter((it) => getItemUnit(it) === "sqft")
 );
 
-const totalQty = computed(() => {
-  return transactions.value.reduce((acc, item) => {
-    const qty = parseFloat(item.quantity) || 0; // Ensure a numeric value
-    return acc + qty;
-  }, 0);
-});
+// --- per-group totals ---
+function groupTotals(list) {
+  const pcs = list.reduce(
+    (a, it) => a + (it.pieces || 1) * (Number(it.quantity) || 0),
+    0
+  );
+  const qty = list.reduce((a, it) => a + (Number(it.quantity) || 0), 0);
+  const subtotal = list.reduce((a, it) => a + (Number(it.subtotal) || 0), 0);
+  const u = list.length ? getItemUnit(list[0]) : "pc";
 
-const totalSubtotal = computed(() => {
-  return transactions.value
-    .reduce((acc, item) => {
-      const subtotal = parseFloat(item.subtotal) || 0; // Ensure a numeric value
-      return acc + subtotal;
-    }, 0)
-    .toFixed(2); // Format as a fixed two-decimal string
-});
+  const qtyLabel =
+    u === "kg"
+      ? `${qty.toFixed(2)} kg`
+      : u === "sqft"
+      ? `${qty.toFixed(2)} sqft`
+      : qty; // pc
+
+  return {
+    pcs,
+    qtyRaw: qty,
+    qtyLabel, // pretty for the table footer
+    subtotalLabel: `$${subtotal.toFixed(2)}`,
+  };
+}
+
+function priceSuffix(item) {
+  const u = getItemUnit
+    ? getItemUnit(item)
+    : String(item?.unit ?? "").toLowerCase();
+  if (u === "kg") return "/kg";
+  if (u === "sqft") return "/sqft";
+  // default piece-based pricing
+  const pcs = Number(item?.pieces) || 1;
+  return pcs > 1 ? "/set" : "/pc";
+}
+function subtotalBreakdown(item) {
+  // 1) Prefer server-provided notes exactly as-is
+  const notes = String(item?.notes ?? "").trim();
+  if (notes) return notes;
+
+  // 2) Fallback: generate a readable computation line
+  const unit = getItemUnit(item); // "pc" | "kg" | "sqft"
+  const rawPrice = item?.price;
+  const priceNum = Number(rawPrice);
+  const isTBA =
+    rawPrice == null ||
+    (typeof rawPrice === "string" && rawPrice.toUpperCase() === "TBA") ||
+    !Number.isFinite(priceNum);
+
+  const qty = Number(item?.quantity) || 0;
+  const pcs = Math.max(Number(item?.pieces) || 1, 1);
+
+  if (isTBA) return "Price is TBA → subtotal treated as $0.00";
+
+  // price label with correct suffix (/pc, /set, /kg, /sqft)
+  const priceLabel = `$${priceNum.toFixed(2)}${priceSuffix(item)}`;
+
+  // quantity label with unit formatting
+  let qtyLabel = "";
+  if (unit === "kg") qtyLabel = `${qty.toFixed(2)} kg`;
+  else if (unit === "sqft") qtyLabel = `${qty.toFixed(2)} sqft`;
+  else qtyLabel = `${qty} pc${qty === 1 ? "" : "s"}`;
+
+  // show final value (use provided subtotal if available)
+  const subtotal = Number.isFinite(Number(item?.subtotal))
+    ? Number(item.subtotal)
+    : priceNum * qty;
+  let line = `${priceLabel} × ${qtyLabel} = $${subtotal.toFixed(2)}`;
+
+  // extra notes based on pieces
+  if (unit === "pc" && pcs > 1) {
+    line += `\n(${pcs} pcs per set)`;
+  } else if ((unit === "kg" || unit === "sqft") && pcs > 1) {
+    line += `\nNote: Pieces are recorded and do not change the price.`;
+  }
+
+  return line;
+}
 
 // Computed properties for formatted display
 const formattedCollectionDate = computed(() =>
@@ -643,38 +978,55 @@ const formatDate = (dateString) => {
   });
 };
 
-const formattedCollectionContactNos = computed({
-  get() {
-    const contact1 =
-      collection.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = collection.value.customer_contact_persons?.contact_no2;
+function phoneHref(raw) {
+  const cleaned = String(raw || "").replace(/[^+\d]/g, ""); // keep digits and leading +
+  return cleaned ? `tel:${cleaned}` : "#";
+}
+function mailtoHref(email) {
+  const e = String(email || "").trim();
+  return e ? `mailto:${encodeURIComponent(e)}` : "#";
+}
 
-    // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
-    return contact2 ? `${contact1} / ${contact2}` : contact1;
-  },
-  set(value) {
-    const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    collection.value.customer_contact_persons.contact_no1 = contact1 || "";
-
-    // Only set contact_no2 if it was provided
-    collection.value.customer_contact_persons.contact_no2 = contact2 || null;
-  },
+// Arrays of phones for easy rendering
+const customerPhones = computed(() =>
+  [customer.value?.contact_no1, customer.value?.contact_no2].filter(Boolean)
+);
+const collectionPhones = computed(() => {
+  const cp = collection.value?.contact_person || {};
+  return [cp.contact_no1, cp.contact_no2].filter(Boolean);
+});
+const deliveryPhones = computed(() => {
+  const cp = delivery.value?.contact_person || {};
+  return [cp.contact_no1, cp.contact_no2].filter(Boolean);
 });
 
-const formattedDeliveryContactNos = computed({
-  get() {
-    const contact1 =
-      delivery.value.customer_contact_persons?.contact_no1 || "-";
-    const contact2 = delivery.value.customer_contact_persons?.contact_no2;
-    // If contact2 exists, show "contact1 / contact2", otherwise just show contact1
-    return contact2 ? `${contact1} / ${contact2}` : contact1;
-  },
-  set(value) {
-    const [contact1, contact2] = value.split(" / ").map((num) => num.trim());
-    delivery.value.customer_contact_persons.contact_no1 = contact1 || "";
-    delivery.value.customer_contact_persons.contact_no2 = contact2 || "";
-  },
+function formatAddress(addr) {
+  if (!addr) return "-";
+  const main = [addr.block_no, addr.road_name, addr.unit_no, addr.building_name]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" ");
+  const postal = (addr.postal_code ?? "").toString().trim();
+  const line = [main, postal].filter(Boolean).join(", ");
+  const extra = [addr.additional_info, addr.remarks]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" — ");
+  return extra ? `${line} (${extra})` : line || "-";
+}
+
+const DRIVER_NOT_SET = "[NOT SET]";
+const driverMapById = computed(() => {
+  const m = new Map();
+  (transactionStore.driverOptions || []).forEach((d) => {
+    if (d?.id != null)
+      m.set(String(d.id), (d.name || "").trim() || DRIVER_NOT_SET);
+  });
+  return m;
 });
+function getDriverName(id) {
+  return driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
+}
 
 const openCustomerTab = (customerId) => {
   const url = `/customers/${customerId}`;
@@ -686,10 +1038,6 @@ onMounted(async () => {
   await transactionStore.loadItems();
 });
 
-const computedPcs = (item) => {
-  return (item.pieces || 1) * item.quantity;
-};
-
 const updateReadyStatus = async () => {
   try {
     const updates = transactions.value.map((item) => ({
@@ -699,12 +1047,16 @@ const updateReadyStatus = async () => {
 
     // Save item checkbox states
     await Promise.all(
-      updates.map((u) => transactionStore.updateTransactionReady(u.id, u.ready_status))
+      updates.map((u) =>
+        transactionStore.updateTransactionReady(u.id, u.ready_status)
+      )
     );
 
     // 🔎 Compute goods_status
     const total = transactions.value.length;
-    const checked = transactions.value.filter((t) => t.ready_status === true).length;
+    const checked = transactions.value.filter(
+      (t) => t.ready_status === true
+    ).length;
 
     let nextStatus = "NOT READY";
     if (total > 0) {
@@ -714,7 +1066,10 @@ const updateReadyStatus = async () => {
     }
 
     // 💾 Persist to order_production
-    await transactionStore.updateOrderProductionGoodsStatus(order.value.id, nextStatus);
+    await transactionStore.updateOrderProductionGoodsStatus(
+      order.value.id,
+      nextStatus
+    );
 
     // 🖥️ Update local reactive state so UI shows the new value immediately
     if (!order.value.order_production) order.value.order_production = {};
@@ -768,8 +1123,6 @@ const updatePackDetails = async () => {
     });
   }
 };
-
-
 </script>
 <style scoped>
 .order-banner {
@@ -778,5 +1131,20 @@ const updatePackDetails = async () => {
 .preview-card,
 .slip-card {
   min-height: 100%;
+}
+
+.pos-rel {
+  position: relative;
+}
+.calc-help {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  opacity: 0.7;
+  cursor: help;
+}
+.calc-help:hover,
+.calc-help:focus {
+  opacity: 1;
 }
 </style>

@@ -7,45 +7,61 @@
 
     <div class="row-col-table">
       <div class="row row-col-header q-px-md">
-        <div class="col bordered q-py-sm text-weight-bold">Date</div>
+        <div class="col bordered q-py-sm text-weight-bold">Details</div>
         <div class="col bordered q-py-sm text-weight-bold">Contact Person</div>
         <div class="col bordered q-py-sm text-weight-bold">Address</div>
         <div class="col bordered q-py-sm text-weight-bold">No. of Bags</div>
         <div class="col q-py-sm text-weight-bold">Remarks</div>
-        <div class="col bordered q-py-sm text-weight-bold">Status</div>
+        <!-- Status column removed -->
         <div class="col q-py-sm text-weight-bold">Created At/By</div>
       </div>
 
-      <div v-if="allTransactions.length === 0" class="text-center text-grey q-pa-lg text-h6">
-        No transactions found.
+      <div v-if="!effectiveId" class="text-center text-grey q-pa-lg text-h6">
+        Select a collection to view its history.
       </div>
 
-      <div v-else v-for="transaction in allTransactions" :key="transaction.id" class="row row-col-row q-mx-md">
+      <div v-else-if="loading" class="text-center text-grey q-pa-lg text-h6">
+        Loading…
+      </div>
+
+      <div v-else-if="allTransactions.length === 0" class="text-center text-grey q-pa-lg text-h6">
+        No history found for this collection.
+      </div>
+
+      <div
+        v-else
+        v-for="transaction in allTransactions"
+        :key="transaction.id"
+        class="row row-col-row q-mx-md"
+      >
+        <!-- All from logistics_collections_history -->
         <div class="col bordered">
-          <div>{{ formatDate(transaction.logistics_collections.collection_date) || "[NOT SET]" }}</div>
-          <div><span class="text-weight-bold">Time: </span>{{ transaction.logistics_collections.collection_time || transaction.delivery_time || "-" }}</div>
-          <div><span class="text-weight-bold">Driver: </span>{{ getDriverName(transaction.logistics_collections.driver_id) || "[NOT SET]" }}</div>
+          <div><span class="text-weight-bold">Date: </span>{{ formatDate(transaction.collection_date) || "[NOT SET]" }}</div>
+          <div><span class="text-weight-bold">Time: </span>{{ transaction.collection_time ?? "-" }}</div>
+          <div><span class="text-weight-bold">Driver: </span>{{ getDriverName(transaction.driver_id) || "[NOT SET]" }}</div>
         </div>
 
         <div class="col bordered">
-          <div>{{ transaction.logistics_collections?.customer_contact_persons?.name || "[NOT SET]" }}</div>
-          <div>{{ transaction.logistics_collections?.customer_contact_persons?.contact_no1 || "-" }}</div>
-          <div v-if="transaction.logistics_collections?.customer_contact_persons?.contact_no2">
-            {{ transaction.logistics_collections?.customer_contact_persons?.contact_no2 || "-" }}
+          <div>{{ transaction.customer_contact_persons?.name || "[NOT SET]" }}</div>
+          <div>{{ transaction.customer_contact_persons?.contact_no1 ?? "-" }}</div>
+          <div v-if="transaction.customer_contact_persons?.contact_no2">
+            {{ transaction.customer_contact_persons?.contact_no2 ?? "-" }}
           </div>
         </div>
 
         <div class="col bordered">
-          {{ formatAddress(transaction.logistics_collections?.customer_address) || "[NOT SET]" }}
+          {{ formatAddress(transaction.customer_address) || "[NOT SET]" }}
         </div>
 
-        <div class="col bordered">{{ transaction.logistics_collections?.no_bags ?? "-" }}</div>
-        <div class="col bordered">{{ transaction.logistics_collections?.collection_remarks || "-" }}</div>
-
-        <!-- SAFE: logistics may be missing -->
-        <div class="col bordered text-uppercase text-weight-bold">
-          {{ transaction.logistics_collections?.logistics?.logistics_status || "-" }}
+        <div class="col bordered">
+          {{ transaction.no_bags ?? "-" }}
         </div>
+
+        <div class="col bordered">
+          {{ transaction.collection_remarks || "-" }}
+        </div>
+
+        <!-- Status cell removed -->
 
         <div class="col bordered">
           <div>{{ formatTimestamp(transaction.created_at) }}</div>
@@ -57,15 +73,43 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+/* path: src/components/CollectionHistory.vue */
+import { ref, onMounted, computed, watch } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 
 const transactionStore = useTransactionStore();
+const props = defineProps({
+  logisticsCollectionId: { type: [String, Number], required: false },
+});
+
 const allTransactions = ref([]);
-const showHistory = ref(false);
+const loading = ref(false);
 
+const DRIVER_NOT_SET = "[NOT SET]";
+const driverMapById = computed(() => {
+  const m = new Map();
+  (transactionStore.driverOptions || []).forEach((d) => {
+    if (d?.id != null) m.set(String(d.id), (d.name || "").trim() || DRIVER_NOT_SET);
+  });
+  return m;
+});
+const getDriverName = (id) => driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
 
-// Function to format dates in "Thu, 30/01/2025" format
+function formatAddress(addr) {
+  if (!addr) return "-";
+  const main = [addr.block_no, addr.road_name, addr.unit_no, addr.building_name]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" ");
+  const postal = (addr.postal_code ?? "").toString().trim();
+  const line = [main, postal].filter(Boolean).join(", ");
+  const extra = [addr.additional_info, addr.remarks]
+    .map((v) => (v ?? "").toString().trim())
+    .filter(Boolean)
+    .join(" — ");
+  return extra ? `${line} (${extra})` : line || "-";
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -78,7 +122,6 @@ const formatDate = (dateString) => {
   });
 };
 
-// Function to format date and time as "Thu, 30/01/2025 02:15:45 PM"
 const formatTimestamp = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -95,69 +138,28 @@ const formatTimestamp = (dateString) => {
   });
 };
 
-onMounted(async () => {
-  try {
-    const rows = await transactionStore.fetchCollectionHistoryByLogisticsId(
-      transactionStore.logisticsId
-    );
+const effectiveId = computed(() => {
+  const n = Number(props.logisticsCollectionId);
+  return Number.isFinite(n) && n > 0 ? n : null; // prevents eq.undefined
+});
 
-    // Normalize to avoid undefined property access in templates/store mappers
-    allTransactions.value = Array.isArray(rows)
-      ? rows.map((t) => {
-          const driverName =
-            t.driver_name ??
-            t.profiles?.name ?? // common join alias
-            t.driver?.name ??   // alternative
-            null;
-
-          // address may be a string in some queries or an object from a join
-          const addressObj = t.customer_address ?? t.address ?? null;
-          const addressStr = formatAddress(addressObj);
-
-          // logistics may be absent depending on query
-          const logisticsStatus =
-            t.logistics?.logistics_status ??
-            t.logistics_status ?? // some APIs flatten this
-            null;
-
-          const profileName = t.profile_name ?? t.profiles?.name ?? null;
-
-          return {
-            ...t,
-            driver_name: driverName,
-            address_str: addressStr,
-            logistics_status: logisticsStatus,
-            profile_name: profileName,
-          };
-        })
-      : [];
-  } catch (error) {
-    console.error("Error initializing transactions:", error);
+async function loadHistory() {
+  if (!effectiveId.value) {
     allTransactions.value = [];
+    return;
   }
-});
+  loading.value = true;
+  try {
+    const rows = await transactionStore.fetchCollectionHistoryByCollectionId(effectiveId.value);
+    allTransactions.value = Array.isArray(rows) ? rows : [];
+  } catch (e) {
+    console.error("Error initializing collection history:", e);
+    allTransactions.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
 
-
-const DRIVER_NOT_SET = '[NOT SET]';
-
-const driverMapById = computed(() => {
-  const m = new Map();
-  (transactionStore.driverOptions || []).forEach((d) => {
-    if (d?.id != null) m.set(String(d.id), (d.name || '').trim() || DRIVER_NOT_SET);
-  });
-  return m;
-});
-const getDriverName = (id) => driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
-
-
-function formatAddress(addr) {
-  if (!addr) return '-';
-  const main = [addr.block_no, addr.road_name, addr.unit_no, addr.building_name]
-    .map((v) => (v ?? '').toString().trim()).filter(Boolean).join(' ');
-  const postal = (addr.postal_code ?? '').toString().trim();
-  const line = [main, postal].filter(Boolean).join(', ');
-  const extra = [addr.additional_info, addr.remarks]
-    .map((v) => (v ?? '').toString().trim()).filter(Boolean).join(' — ');
-  return extra ? `${line} (${extra})` : line || '-';}
-  
-  </script>
+onMounted(loadHistory);
+watch(effectiveId, loadHistory);
+</script>

@@ -14,14 +14,14 @@
               transactionStore?.orderNo || "-"
             }}</span>
           </div>
-<div class="text-summary-row">
-  Order Date:
-  <span class="text-summary">{{ orderDateToday }}</span>
-</div>
           <div class="text-summary-row">
-  Handler:
-  <span class="text-summary">{{ handlerDisplay }}</span>
-</div>
+            Order Date:
+            <span class="text-summary">{{ orderDateToday }}</span>
+          </div>
+          <div class="text-summary-row">
+            Handler:
+            <span class="text-summary">{{ handlerDisplay }}</span>
+          </div>
           <div class="text-summary-row">
             Customer Name:
             <span class="text-summary">{{
@@ -169,9 +169,7 @@
                 ({{ Math.trunc(item.pieces) }} pcs)
               </span>
             </div>
-            <div class="col bordered">
-              ${{ item.subtotal.toFixed(2) }}
-            </div>
+            <div class="col bordered">${{ item.subtotal.toFixed(2) }}</div>
           </div>
         </div>
 
@@ -179,11 +177,199 @@
         <div v-else class="text-center text-grey q-my-md">
           No items added to the list.
         </div>
-        <div class="row row-col-footer text-weight-bold text-subtitle1 justify-end">
-            TOTAL AMOUNT : <span class="text-red-8 q-ml-sm q-mr-md">{{ totalSubtotal }}</span>
+        <div
+          class="row row-col-footer text-weight-bold text-subtitle1 justify-end"
+        >
+          TOTAL AMOUNT :
+          <span class="text-red-8 q-ml-sm q-mr-md">{{ totalSubtotal }}</span>
         </div>
       </div>
 
+      <div class="row justify-end q-mx-md q-col-gutter-x-xl text-right">
+        <div class="col-auto">
+          <div class="">Total Amount:</div>
+        </div>
+        <div class="col-2 text-weight-bold">
+          <div class="">{{ totalSubtotal }}</div>
+        </div>
+      </div>
+
+      <div class="row justify-end q-mx-md q-col-gutter-x-xl text-right">
+        <div class="col-auto">
+          <div v-for="line in dcTextLines" :key="line.key">
+            <div class="">{{ line.label }}:</div>
+          </div>
+        </div>
+        <div class="col-2 text-weight-bold">
+          <div v-for="line in dcTextLines" :key="line.key">
+            <div
+              class=""
+              :class="line.delta >= 0 ? 'text-red-8' : 'text-green-8'"
+            >
+              {{ line.deltaDisplay }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row justify-end">
+        <div class="col-3 q-my-sm q-mx-md">
+          <q-separator />
+        </div>
+      </div>
+      <div class="row justify-end q-mx-md q-mb-md q-col-gutter-x-xl text-right">
+        <div class="col-auto">
+          <div class="text-subtitle1">Total:</div>
+        </div>
+        <div class="col-2 text-weight-bold">
+          <div class="text-subtitle1 text-weight-bold">
+            {{ formatMoney(estimatedTotal) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-end">
+        <q-btn
+          label="Add/Update DC"
+          color="primary"
+          dense
+          outline
+          align="right"
+          @click="dcManageOpen = true"
+        />
+      </div>
+      <!-- ✅ Manage DC Dialog (contains table + add form) -->
+      <q-dialog v-model="dcManageOpen">
+        <q-card style="min-width: 720px; max-width: 92vw">
+          <q-card-section class="row items-center justify-between">
+            <div class="text-h6 text-weight-bold">
+              Discounts & Charges (Overall)
+            </div>
+            <q-btn icon="close" flat dense v-close-popup />
+          </q-card-section>
+
+          <q-separator />
+
+          <!-- Add / Update form -->
+          <q-card-section class="q-gutter-md">
+            <div class="text-subtitle2 text-grey-8">
+              Add an overall Discount/Charge (customer rules are not removable).
+            </div>
+
+            <q-input
+              v-model="dcDraft.description"
+              label="Description"
+              dense
+              outlined
+            />
+            <div class="row q-col-gutter-md">
+              <div class="col-4">
+                <q-select
+                  v-model="dcDraft.dc_type"
+                  :options="['discount', 'charge']"
+                  label="Type"
+                  dense
+                  outlined
+                />
+              </div>
+              <div class="col-4">
+                <q-select
+                  v-model="dcDraft.value_type"
+                  :options="['percent', 'amount']"
+                  label="Value Type"
+                  dense
+                  outlined
+                />
+              </div>
+              <div class="col-4">
+                <q-input
+                  v-model="dcDraft.value"
+                  :label="
+                    dcDraft.value_type === 'percent'
+                      ? 'Percent (e.g. 10, 12.5)'
+                      : 'Amount (e.g. 8.00)'
+                  "
+                  dense
+                  outlined
+                />
+              </div>
+            </div>
+
+            <div class="row justify-end">
+              <q-btn
+                label="Apply"
+                color="primary"
+                :disable="!canApplyDraft"
+                @click="applyOverallAdjustment"
+              />
+            </div>
+          </q-card-section>
+
+          <q-separator />
+
+          <!-- Div-table (presentation + removable order rows only) -->
+          <q-card-section>
+            <div class="row-col-table">
+              <div class="row row-col-header line-height-1 text-center">
+                <div class="col-5 header-bordered">Description</div>
+                <div class="col header-bordered">Type</div>
+                <div class="col header-bordered">Amount</div>
+                <div class="col header-bordered">Amount After Applied</div>
+              </div>
+
+              <div v-if="dcPreviewRows.length">
+                <div
+                  v-for="r in dcPreviewRows"
+                  :key="r.rowKey"
+                  class="row row-col-row line-height-1 items-center text-center"
+                >
+                  <div class="col-5 bordered text-left">
+                    {{ r.description }}
+                    <q-btn
+                      v-if="r.removable"
+                      class="text-caption float-right remove-button text-weight-bold"
+                      dense
+                      flat
+                      color="negative"
+                      size="sm"
+                      @click="removeOverallAdjustment(r.adjustmentId)"
+                    >
+                      (Remove)
+                    </q-btn>
+                  </div>
+
+                  <div class="col bordered">{{ r.dcTypeLabel }}</div>
+                  <div class="col bordered">{{ r.amountDisplay }}</div>
+                  <div class="col bordered">{{ r.afterDisplay }}</div>
+                </div>
+              </div>
+
+              <div v-else class="text-center text-grey q-my-md">
+                No discounts/charges applied.
+              </div>
+            </div>
+
+            <div class="row justify-end q-mt-sm text-subtitle2">
+              <div class="q-mr-lg">
+                Subtotal: <b>{{ totalSubtotal }}</b>
+              </div>
+              <div class="q-mr-lg">
+                Est. Adj:
+                <b
+                  :class="
+                    estimatedOverallAdj >= 0 ? 'text-red-8' : 'text-green-8'
+                  "
+                >
+                  {{ formatMoney(estimatedOverallAdj) }}
+                </b>
+              </div>
+              <div>
+                Est. Total:
+                <b>{{ formatMoney(estimatedTotal) }}</b>
+              </div>
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-dialog>
       <!-- Instructions and Error Reporting Summaries -->
       <div class="row">
         <!-- Instructions Summary -->
@@ -371,17 +557,26 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { useTransactionStore } from "@/stores/transactionStore";
 
 const transactionStore = useTransactionStore();
+const dbDates = ref({ collection_date: null, delivery_date: null });
 
-// Computed properties to access data from the store
-const rows = computed(() => transactionStore.transactionItems); // Transaction items for the table
-const instructions = computed(() => transactionStore.instructions); // Instructions
-const reports = computed(() => transactionStore.reports); // Instructions
 
-// Access selected delivery and collection contacts from the store
+onMounted(loadDbDates);
+watch(() => transactionStore.logisticsId, loadDbDates);
+
+/* =========================
+ * Base data (safe defaults)
+ * ========================= */
+const rows = computed(() => transactionStore.transactionItems ?? []);
+const instructions = computed(() => transactionStore.instructions ?? []);
+const reports = computed(() => transactionStore.reports ?? []);
+const displayInstructions = computed(
+  () => transactionStore.displayInstructions ?? []
+);
+
 const deliveryContact = computed(
   () => transactionStore.selectedDeliveryContact || "-"
 );
@@ -396,42 +591,289 @@ const deliveryAddress = computed(() =>
   formatAddress(transactionStore.selectedDeliveryAddress)
 );
 
-// Helper functions for instruction chip colors and labels
-function getSectionColor(section) {
-  const colors = {
-    cleaning: "teal",
-    packing: "orange",
-    pickingsending: "red",
-    admin: "cyan",
-  };
-  return colors[section] || "grey";
+async function loadDbDates() {
+  // use store.logisticsId or pass it in
+  dbDates.value = await transactionStore.fetchDbCollectionAndDeliveryDates();
+}
+function parseDateOnly(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(`${s}T00:00:00`);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function formatSectionLabel(section) {
-  const labels = {
-    cleaning: "Cleaning",
-    packing: "Packing",
-    pickingsending: "Picking/Sending",
-    admin: "Admin",
-  };
-  return labels[section] || section;
+function daysBetweenDateOnly(a, b) {
+  if (!a || !b) return null;
+  const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const db = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  const MS_DAY = 24 * 60 * 60 * 1000;
+  return Math.floor((db.getTime() - da.getTime()) / MS_DAY);
 }
 
-// Dialog state and message for feedback
-const isDialogOpen = ref(false);
-const dialogMessage = ref("");
+function getExpressPct(collectionDate, deliveryDate) {
+  const c = parseDateOnly(collectionDate);
+  const d = parseDateOnly(deliveryDate);
+  const days = daysBetweenDateOnly(c, d);
 
-const totalQty = computed(() =>
-  rows.value.reduce((acc, item) => acc + (item.quantity || 0), 0)
-);
+  if (days == null || days < 0) return 0;
+  if (days <= 1) return 50;
+  if (days <= 3) return 30;
+  if (days <= 4) return 20;
+  return 0;
+}
 
-const totalSubtotal = computed(() => {
-  const total = rows.value.reduce((acc, item) => acc + (item.subtotal || 0), 0);
+const expressDcRow = computed(() => {
+  const pct = getExpressPct(
+    transactionStore.collectionDate,
+    transactionStore.deliveryDate
+  );
+
+  if (!pct) return null;
+
+  return {
+    rowKey: `express_${pct}`,
+    scope: "System",
+    description: `Express Charge`,
+    dc_type: "charge",
+    value_type: "percent",
+    value: pct,
+    removable: false,
+    adjustmentId: null,
+  };
+});
+
+
+/* =========================
+ * Fetch customer adjustments
+ * ========================= */
+onMounted(() => transactionStore.fetchCustomerDiscountCharges?.());
+
+/* =========================
+ * DC presentation + manage dialog
+ * IMPORTANT: use dc_type + value_type everywhere (NO fallbacks)
+ * ========================= */
+const dcManageOpen = ref(false);
+
+const dcDraft = ref({
+  dc_type: "discount", // discount | charge
+  value_type: "percent", // percent | amount
+  value: "",
+  description: "",
+});
+
+function parseNumeric(input) {
+  if (input == null) return null;
+  if (typeof input === "number") return Number.isFinite(input) ? input : null;
+  const s = String(input).trim();
+  if (!s) return null;
+  const cleaned = s.replace(/[%$,]/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+const canApplyDraft = computed(() => {
+  const dc_type = String(dcDraft.value.dc_type ?? "").toLowerCase();
+  const value_type = String(dcDraft.value.value_type ?? "").toLowerCase();
+  const val = parseNumeric(dcDraft.value.value);
+
+  if (dc_type !== "discount" && dc_type !== "charge") return false;
+  if (value_type !== "percent" && value_type !== "amount") return false;
+  if (val == null || val <= 0) return false;
+  return true;
+});
+
+function ensureOrderOverallArray() {
+  if (!Array.isArray(transactionStore.orderOverallDiscountCharges)) {
+    transactionStore.orderOverallDiscountCharges = [];
+  }
+}
+
+function applyOverallAdjustment() {
+  if (!canApplyDraft.value) return;
+
+  ensureOrderOverallArray();
+
+  const id = `${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2)}`;
+
+  const dc_type = String(dcDraft.value.dc_type ?? "").toLowerCase();
+  const value_type = String(dcDraft.value.value_type ?? "").toLowerCase();
+  const valueNum = parseNumeric(dcDraft.value.value);
+
+  transactionStore.orderOverallDiscountCharges.push({
+    id,
+    dc_type, // ✅ matches DB column
+    value_type, // ✅ matches DB column
+    percentage: value_type === "percent" ? valueNum : null,
+    amount: value_type === "amount" ? valueNum : null,
+    description: (dcDraft.value.description || "").trim() || null,
+  });
+
+  dcDraft.value.value = "";
+  dcDraft.value.description = "";
+}
+
+function removeOverallAdjustment(id) {
+  ensureOrderOverallArray();
+  transactionStore.orderOverallDiscountCharges =
+    transactionStore.orderOverallDiscountCharges.filter((x) => x?.id !== id);
+}
+
+function round2(n) {
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+
+function formatMoney(v) {
+  const n = Number(v) || 0;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(total);
+  }).format(n);
+}
+
+function formatPct(v) {
+  const n = Number(v) || 0;
+  return `${n.toFixed(2)}%`;
+}
+
+function formatSignedMoney(v) {
+  const n = round2(v);
+  const abs = formatMoney(Math.abs(n));
+  return n >= 0 ? `+${abs}` : `-${abs}`;
+}
+
+const subtotalNumber = computed(() =>
+  rows.value.reduce((acc, item) => acc + (Number(item?.subtotal) || 0), 0)
+);
+
+const totalSubtotal = computed(() => formatMoney(subtotalNumber.value));
+
+const rawDcRows = computed(() => {
+  const out = [];
+
+  // 1) Customer-based (not removable)
+  for (const r of transactionStore.customerDiscountCharges ?? []) {
+    const dc_type = String(r?.dc_type ?? "").toLowerCase();
+    const value_type = String(r?.value_type ?? "").toLowerCase();
+    if ((dc_type !== "discount" && dc_type !== "charge") || (value_type !== "percent" && value_type !== "amount")) continue;
+
+    const value = value_type === "percent" ? parseNumeric(r?.percentage) : parseNumeric(r?.amount);
+    if (value == null || value === 0) continue;
+
+    out.push({
+      rowKey: `cust_${r.id}`,
+      scope: "Customer",
+      description: r?.description ?? r?.label ?? r?.code ?? "-",
+      dc_type,
+      value_type,
+      value: Number(value),
+      removable: false,
+      adjustmentId: null,
+    });
+  }
+
+  // 2) Express charge (derived from dates)
+  if (expressDcRow.value) out.push(expressDcRow.value);
+
+  // 3) Order-added (removable)
+  for (const o of transactionStore.orderOverallDiscountCharges ?? []) {
+    const dc_type = String(o?.dc_type ?? "").toLowerCase();
+    const value_type = String(o?.value_type ?? "").toLowerCase();
+    if ((dc_type !== "discount" && dc_type !== "charge") || (value_type !== "percent" && value_type !== "amount")) continue;
+
+    const value = value_type === "percent" ? parseNumeric(o?.percentage) : parseNumeric(o?.amount);
+    if (value == null || value === 0) continue;
+
+    out.push({
+      rowKey: `ord_${o.id}`,
+      scope: "Order",
+      description: o?.description ?? "-",
+      dc_type,
+      value_type,
+      value: Number(value),
+      removable: true,
+      adjustmentId: o.id,
+    });
+  }
+
+  return out;
 });
+
+const dcPreviewRows = computed(() => {
+  const percentRows = [];
+  const amountRows = [];
+
+  for (const r of rawDcRows.value) {
+    if (r.value_type === "percent") percentRows.push(r);
+    else amountRows.push(r);
+  }
+
+  const ordered = [...percentRows, ...amountRows];
+
+  let running = subtotalNumber.value;
+
+  return ordered.map((r) => {
+    const sign = r.dc_type === "discount" ? -1 : 1;
+
+    let delta = 0;
+    if (r.value_type === "percent") {
+      delta = round2(running * (r.value / 100) * sign);
+      running = round2(running + delta);
+    } else {
+      delta = round2(r.value * sign);
+      running = round2(running + delta);
+    }
+
+    const dcTypeLabel =
+      r.dc_type === "discount" ? "Discount (-)" : "Charge (+)";
+    const amountDisplay =
+      r.value_type === "percent" ? formatPct(r.value) : formatMoney(r.value);
+
+    return {
+      ...r,
+      dcTypeLabel,
+      amountDisplay,
+      appliedDelta: delta,
+      after: running,
+      afterDisplay: formatMoney(running),
+    };
+  });
+});
+
+const estimatedTotal = computed(() => {
+  const list = dcPreviewRows.value;
+  if (!list.length) return subtotalNumber.value;
+  return Number(list[list.length - 1]?.after) || subtotalNumber.value;
+});
+
+const estimatedOverallAdj = computed(() =>
+  round2(estimatedTotal.value - subtotalNumber.value)
+);
+
+/* ✅ Text lines below transaction table */
+const dcTextLines = computed(() => {
+  return dcPreviewRows.value.map((r) => {
+    const pctSuffix =
+      r.value_type === "percent" ? ` (${formatPct(r.value)})` : "";
+    const label = `${r.description ?? "-"}` + pctSuffix;
+
+    return {
+      key: r.rowKey,
+      label,
+      delta: Number(r.appliedDelta) || 0,
+      deltaDisplay: formatSignedMoney(Number(r.appliedDelta) || 0),
+    };
+  });
+});
+
+/* =========================
+ * Other existing page logic
+ * ========================= */
+const isDialogOpen = ref(false);
+const dialogMessage = ref("");
+const transactionSuccess = ref(false);
 
 const formattedCollectionDate = computed(() => {
   return transactionStore.collectionDate
@@ -455,7 +897,7 @@ const formattedDeliveryDate = computed(() => {
     : "--/--/----";
 });
 
-const formatAddress = (a) => {
+function formatAddress(a) {
   if (!a || typeof a !== "object") return "-";
   const parts = [a.block_no, a.road_name, a.unit_no, a.building_name]
     .map((v) => (v ?? "") + "")
@@ -464,10 +906,9 @@ const formatAddress = (a) => {
 
   const main = parts.join(" ");
   const postal = (a.postal_code ?? "").toString().trim();
-
   const combined = [main, postal].filter(Boolean).join(", ");
   return combined || "-";
-};
+}
 
 const collectionDriverName = computed(() =>
   typeof transactionStore.selectedCollectionDriver === "string"
@@ -480,31 +921,25 @@ const deliveryDriverName = computed(() =>
     ? transactionStore.selectedDeliveryDriver || "-"
     : transactionStore.selectedDeliveryDriver?.name || "-"
 );
+
 function getDisplayQty(item) {
   if (item.unit === "kg" || item.unit === "lbs")
     return item.weight ?? item.quantity ?? 0;
   if (item.unit === "sqft") return item.area ?? item.quantity ?? 0;
   return item.quantity ?? 0;
 }
+
 function formatQuantity(val) {
   const n = Number(val ?? 0);
   if (!Number.isFinite(n)) return "0";
-  // why: keep whole numbers tidy, decimals to 2 dp for readability
   if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
   return n.toFixed(2);
 }
 
 function displayItemName(item) {
-  // Only show pieces when the unit is strictly 'pc'
-  if (String(item.unit || "").toLowerCase() !== "pc") {
-    return item.name || "";
-  }
-
+  if (String(item.unit || "").toLowerCase() !== "pc") return item.name || "";
   const perUnit = Number(item.pieces_per_unit ?? item.pieces ?? 0);
-  if (!Number.isFinite(perUnit) || perUnit <= 0) {
-    return item.name || "";
-  }
-
+  if (!Number.isFinite(perUnit) || perUnit <= 0) return item.name || "";
   const label = perUnit === 1 ? "pc" : "pcs";
   return `${item.name} (${perUnit}${label})`;
 }
@@ -517,12 +952,8 @@ function unitLabel(unit) {
 }
 
 function formatPriceWithUnit(price, unit) {
-  if (price === "TBA") {
-    return "TBA";
-  }
-  if (typeof price === "number") {
-    return `$${price.toFixed(2)} / ${unit}`;
-  }
+  if (price === "TBA") return "TBA";
+  if (typeof price === "number") return `$${price.toFixed(2)} / ${unit}`;
   return `$0.00 / ${unit}`;
 }
 
@@ -541,23 +972,43 @@ function formatProcessText(process) {
   }
 }
 
+function getSectionColor(section) {
+  const colors = {
+    cleaning: "teal",
+    packing: "orange",
+    pickingsending: "red",
+    admin: "cyan",
+  };
+  return colors[section] || "grey";
+}
+
+function formatSectionLabel(section) {
+  const labels = {
+    cleaning: "Cleaning",
+    packing: "Packing",
+    pickingsending: "Picking/Sending",
+    admin: "Admin",
+  };
+  return labels[section] || section;
+}
+
 const handlerDisplay = computed(() => {
-  const norm = (v) => (v ?? '').toString().trim().toLowerCase();
-  const labels = { cc: 'Cotton Care', dc: 'DryCleaners' };
+  const norm = (v) => (v ?? "").toString().trim().toLowerCase();
+  const labels = { cc: "Cotton Care", dc: "DryCleaners" };
 
-  const set = new Set(rows.value.map(r => norm(r.company)).filter(Boolean));
-  if (set.size === 0) return '-';
+  const set = new Set(rows.value.map((r) => norm(r.company)).filter(Boolean));
+  if (set.size === 0) return "-";
 
-  // Keep CC before DC when both exist
-  const order = ['cc', 'dc'];
+  const order = ["cc", "dc"];
   const sorted = Array.from(set).sort((a, b) => {
-    const ia = order.indexOf(a), ib = order.indexOf(b);
-    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    const ia = order.indexOf(a);
+    const ib = order.indexOf(b);
+    if (ia !== -1 || ib !== -1)
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     return a.localeCompare(b);
   });
 
-  // Map known codes, fallback to uppercased value for unknowns
-  return sorted.map(k => labels[k] ?? k.toUpperCase()).join('/');
+  return sorted.map((k) => labels[k] ?? k.toUpperCase()).join("/");
 });
 
 const orderDateToday = computed(() =>
@@ -566,8 +1017,30 @@ const orderDateToday = computed(() =>
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "Asia/Singapore", // keep consistent with other screens
+    timeZone: "Asia/Singapore",
   }).format(new Date())
 );
 
+async function handleGenerateInvoice() {}
+watch(
+  () => transactionStore.selectedCustomer?.id,
+  () => transactionStore.fetchCustomerDiscountCharges?.()
+);
+watch(
+  () => estimatedTotal.value,
+  (v) => {
+    transactionStore.totalAmount = Number(v || 0);
+  },
+  { immediate: true }
+);
 </script>
+
+
+<style scoped>
+.bordered {
+  padding: 5px;
+}
+.remove-button {
+  padding: 0;
+}
+</style>

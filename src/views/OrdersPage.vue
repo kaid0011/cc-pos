@@ -265,3 +265,8 @@ const totalPages = computed(() =>
   Math.max(1, Math.ceil(filteredOrders.value.length / pageSize.value))
 );
 </script>
+<style scoped>
+:deep(.row-col-row:has(.q-badge)) {
+  display: none !important;
+}
+</style>

@@ -21,25 +21,35 @@
       </template>
     </q-input>
 
-    <!-- Add Customer Button -->
-    <q-btn
-      outline
-      color="primary"
-      label="Click Here to Add a Customer"
-      @click="showAddCustomerDialog = true"
-      class="full-width outline-btn q-mt-md q-mb-sm"
-    />
+    <!-- Contract / Non-Contract (Radio) -->
+    <div class="row items-center justify-between q-gutter-sm q-mb-sm">
+        <q-option-group
+          v-model="activeTab"
+          type="radio"
+          inline
+          :options="filterOptions"
+          dense
+        />
+        <q-btn
+          color="primary"
+          dense
+          outline
+          class="q-px-sm"
+          @click="showAddCustomerDialog = true"
+        >
+      <q-icon name="add" size="xs" class="q-pr-xs"/>Add Customer</q-btn>
+    </div>
 
     <!-- Customer List -->
-    <div class="customer-list">
-      <div class="row customer-header">
-        <div class="col-4">Customer Name</div>
-        <div class="col-4">Contact Details</div>
-        <div class="col-4">Pendings</div>
+    <div class="row-col-table customer-list">
+      <div class="row row-col-header text-caption text-center items-center line-height-1">
+        <div class="col header-bordered">Customer Name</div>
+        <div class="col-4 header-bordered">Contact Details</div>
+        <div class="col-3 header-bordered">Pendings</div>
       </div>
 
       <div
-        v-if="filteredCustomers.length === 0"
+        v-if="displayedCustomers.length === 0"
         class="text-center text-grey q-my-md"
       >
         No existing customers.
@@ -47,12 +57,12 @@
 
       <div
         v-else
-        v-for="customer in filteredCustomers"
+        v-for="customer in displayedCustomers"
         :key="customer.id"
-        class="row customer-row"
+        class="row row-col-row line-height-1"
         @click="selectCustomer(customer)"
       >
-        <div class="col-4">
+        <div class="col bordered">
           <a
             class="line-height-1"
             @click.stop.prevent="openCustomerTab(customer.id)"
@@ -63,7 +73,7 @@
           </a>
         </div>
 
-        <div class="col-4">
+        <div class="col-4 bordered">
           <!-- Contact No 1 -->
           <div v-if="customer.contact_no1">
             <span class="phone-link" @click.stop>
@@ -75,9 +85,9 @@
                     v-ripple
                     @click="callViaPhone(customer.contact_no1)"
                   >
-                    <q-item-section avatar>
-                      <q-icon name="call" />
-                    </q-item-section>
+                    <q-item-section avatar
+                      ><q-icon name="call"
+                    /></q-item-section>
                     <q-item-section>Call via phone</q-item-section>
                   </q-item>
                   <q-item
@@ -85,9 +95,9 @@
                     v-ripple
                     @click="callViaWhatsApp(customer.contact_no1)"
                   >
-                    <q-item-section avatar>
-                      <q-icon name="chat" />
-                    </q-item-section>
+                    <q-item-section avatar
+                      ><q-icon name="chat"
+                    /></q-item-section>
                     <q-item-section>Call via WhatsApp</q-item-section>
                   </q-item>
                 </q-list>
@@ -107,9 +117,9 @@
                     v-ripple
                     @click="callViaPhone(customer.contact_no2)"
                   >
-                    <q-item-section avatar>
-                      <q-icon name="call" />
-                    </q-item-section>
+                    <q-item-section avatar
+                      ><q-icon name="call"
+                    /></q-item-section>
                     <q-item-section>Call via phone</q-item-section>
                   </q-item>
                   <q-item
@@ -117,9 +127,9 @@
                     v-ripple
                     @click="callViaWhatsApp(customer.contact_no2)"
                   >
-                    <q-item-section avatar>
-                      <q-icon name="chat" />
-                    </q-item-section>
+                    <q-item-section avatar
+                      ><q-icon name="chat"
+                    /></q-item-section>
                     <q-item-section>Call via WhatsApp</q-item-section>
                   </q-item>
                 </q-list>
@@ -138,15 +148,15 @@
                     v-ripple
                     @click="composeEmail(customer.email)"
                   >
-                    <q-item-section avatar>
-                      <q-icon name="email" />
-                    </q-item-section>
+                    <q-item-section avatar
+                      ><q-icon name="email"
+                    /></q-item-section>
                     <q-item-section>Compose email</q-item-section>
                   </q-item>
                   <q-item clickable v-ripple @click="copyEmail(customer.email)">
-                    <q-item-section avatar>
-                      <q-icon name="content_copy" />
-                    </q-item-section>
+                    <q-item-section avatar
+                      ><q-icon name="content_copy"
+                    /></q-item-section>
                     <q-item-section>Copy email</q-item-section>
                   </q-item>
                 </q-list>
@@ -155,7 +165,7 @@
           </div>
         </div>
 
-        <div class="col-4">
+        <div class="col-3 bordered">
           <div
             v-if="customer._pendings?.length"
             class="row q-col-gutter-xs items-center no-wrap"
@@ -181,6 +191,7 @@
       @customer-added="handleCustomerAdded"
     />
 
+    <!-- Pendings Dialog (unchanged) -->
     <q-dialog v-model="showPendingsDialog" persistent>
       <q-card style="min-width: 720px; max-width: 95vw">
         <q-card-section class="dialog-header row items-center q-pb-none">
@@ -239,7 +250,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { openURL, copyToClipboard } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 import AddCustomerDialog from "@/components/dialogs/AddCustomerDialog.vue";
@@ -247,25 +258,44 @@ import AddCustomerDialog from "@/components/dialogs/AddCustomerDialog.vue";
 const transactionStore = useTransactionStore();
 const searchTerm = ref("");
 const showAddCustomerDialog = ref(false);
-const filteredCustomers = ref([]);
 
-const filterCustomers = (term) => {
-  const q = (term || "").toLowerCase();
-  filteredCustomers.value = (transactionStore.customers || []).filter((c) =>
-    [
-      c.name || "",
-      c.contact_no1 || "",
-      c.contact_no2 || "",
-      c.email || "",
-    ].some((v) => v.toLowerCase().includes(q))
+/* ---------- Filter: Contract vs Non-Contract (radio) ---------- */
+const activeTab = ref("non"); // 'contract' | 'non'
+const isContract = (c) =>
+  String(c?.type || "")
+    .trim()
+    .toLowerCase() === "contract";
+
+const contractCount = computed(
+  () => (transactionStore.customers || []).filter((c) => isContract(c)).length
+);
+const nonContractCount = computed(
+  () => (transactionStore.customers || []).filter((c) => !isContract(c)).length
+);
+
+const filterOptions = computed(() => [
+  { label: `Non-Contract (${nonContractCount.value})`, value: "non" },
+  { label: `Contract (${contractCount.value})`, value: "contract" },
+]);
+
+/* ---------- Displayed list (search + radio filter) ---------- */
+const displayedCustomers = computed(() => {
+  const q = (searchTerm.value || "").toLowerCase();
+  const list = (transactionStore.customers || []).filter((c) =>
+    activeTab.value === "contract" ? isContract(c) : !isContract(c)
   );
-};
-watch(searchTerm, (v) => filterCustomers(v));
+  if (!q) return list;
+  return list.filter((c) =>
+    [c.name || "", c.contact_no1 || "", c.contact_no2 || "", c.email || ""]
+      .join("||")
+      .toLowerCase()
+      .includes(q)
+  );
+});
 
 onMounted(async () => {
   await transactionStore.loadCustomers();
   await enrichCustomersWithPendings();
-  filterCustomers(searchTerm.value);
 });
 
 const selectCustomer = async (customer) => {
@@ -295,7 +325,6 @@ const handleCustomerAdded = async () => {
   showAddCustomerDialog.value = false;
   await transactionStore.loadCustomers();
   await enrichCustomersWithPendings();
-  filterCustomers(searchTerm.value);
 };
 
 // tel/wa/email helpers
@@ -373,17 +402,17 @@ const tabLabels = computed(() => {
 const pendingColor = (code) => {
   switch (code) {
     case "C":
-      return "pink-2"; // Pending Collection
+      return "pink-2";
     case "O":
-      return "blue-2"; // Pending Order
+      return "blue-2";
     case "D":
-      return "purple-2"; // Pending Delivery
+      return "purple-2";
     case "P":
-      return "green-3"; // Pending Payment
+      return "green-3";
     case "D&P":
-      return "yellow-7"; // Pending Delivery & Payment
+      return "yellow-7";
     case "I":
-      return "red-3"; // Pending Issues
+      return "red-3";
     default:
       return "white";
   }
@@ -580,12 +609,13 @@ const enrichCustomersWithPendings = async () => {
   );
 
   transactionStore.customers = updated;
-  filterCustomers(searchTerm.value);
 };
+
 const openCustomerTab = (customerId) => {
   if (!customerId) return;
   window.open(`/customers/${customerId}`, "_blank");
 };
+
 const makeRow = (
   code,
   logistics_id,

@@ -149,15 +149,29 @@ import { useTransactionStore } from "@/stores/transactionStore";
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
 
-const emit = defineEmits(['close', 'update:modelValue']);
+const emit = defineEmits(["close", "update:modelValue"]);
 
-const timeOptions = ref([]);
 const contactOptions = ref([]);
 const addressOptions = ref([]);
 
+// ✅ Map whatever the store returns into { label, value } for q-select
+const timeOptionsUi = computed(() => {
+  const src = transactionStore.timeOptions || [];
+  return src.map((t) => {
+    if (typeof t === "string") {
+      return { label: t, value: t };
+    }
+    // support a few common shapes (label/value, time, name)
+    return {
+      label: t.label ?? t.value ?? t.time ?? t.name ?? "",
+      value: t.value ?? t.label ?? t.time ?? t.name ?? "",
+    };
+  }).filter(o => o.label && o.value);
+});
+
 const sortedDriverOptions = computed(() =>
-  [...transactionStore.driverOptions].sort((a, b) =>
-    a.name.localeCompare(b.name)
+  [...(transactionStore.driverOptions || [])].sort((a, b) =>
+    (a.name || "").localeCompare(b.name || "")
   )
 );
 
@@ -178,7 +192,7 @@ const buildAddressLabel = (a) => {
 const findById = (arr, id) =>
   (arr || []).find((o) => String(o.id) === String(id)) || null;
 
-// ---------- options (contacts/addresses/time/drivers) ----------
+// ---------- options (contacts/addresses/drivers/time) ----------
 async function updateOptions(customerId) {
   if (!customerId) {
     contactOptions.value = [];
@@ -205,32 +219,29 @@ async function updateOptions(customerId) {
 async function initFromLogisticsId(logisticsId) {
   if (!logisticsId) return;
 
-  // base lookups
+  // 1) Ensure base lookups are loaded FIRST (drivers + times)
   await Promise.all([
     transactionStore.loadDrivers(),
     transactionStore.loadTimeOptions(),
   ]);
-  timeOptions.value = transactionStore.timeOptions || [];
 
-  // 1) fetch the current delivery row
+  // 2) fetch the current delivery row
   const rows = await transactionStore.fetchDeliveryByLogisticsId(logisticsId);
   const del = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!del) return;
 
-  // 2) pick a customer id from several fallbacks
+  // 3) derive customer id
   const customerId =
     transactionStore.selectedCustomer?.id ??
     transactionStore.selectedTransaction?.customer?.id ??
     transactionStore.customerId ??
     null;
 
-  // 3) ensure options for the customer are loaded (so selects have choices)
+  // 4) ensure contact/address options are ready
   await updateOptions(customerId);
 
-  // 4) map address_id → address option object
+  // 5) map address/contact to option objects
   const addrObj = findById(addressOptions.value, del.address_id);
-
-  // 5) contact comes already joined as customer_contact_persons
   const contactObj = del.customer_contact_persons
     ? {
         ...del.customer_contact_persons,
@@ -242,14 +253,18 @@ async function initFromLogisticsId(logisticsId) {
       }
     : null;
 
-  // 6) hydrate store fields used by the inputs
+  // 6) hydrate store fields used by inputs
   transactionStore.selectedDeliveryId = del.id || null;
   transactionStore.selectedDeliveryContact = contactObj || null;
   transactionStore.selectedDeliveryAddress = addrObj || null;
 
-  // driver/time selects use emit-value+map-options → set to IDs/values
+  // driver/time selects use emit-value + map-options
   transactionStore.selectedDeliveryDriver = del.driver_id ?? null;
-  transactionStore.deliveryTime = del.delivery_time ?? null;
+
+  // If the saved time is not in options, clear it to avoid a blank chip
+  const savedTime = del.delivery_time ?? null;
+  const allowedValues = new Set(timeOptionsUi.value.map((o) => o.value));
+  transactionStore.deliveryTime = allowedValues.has(savedTime) ? savedTime : null;
 
   // dates/remarks
   transactionStore.deliveryDate =
@@ -259,11 +274,14 @@ async function initFromLogisticsId(logisticsId) {
   transactionStore.deliveryRemarks = del.delivery_remarks ?? null;
 }
 
-// ---------- watches / lifecycle ----------
+// ---------- lifecycle / watchers ----------
 onMounted(async () => {
+  // load times/drivers once; then hydrate form
+  await Promise.all([
+    transactionStore.loadDrivers(),
+    transactionStore.loadTimeOptions(),
+  ]);
   await initFromLogisticsId(transactionStore.logisticsId);
-  await transactionStore.loadDrivers();
-  await transactionStore.loadTimeOptions();
 });
 
 watch(
@@ -271,6 +289,18 @@ watch(
   async (id) => {
     await initFromLogisticsId(id);
   }
+);
+
+// If the store’s timeOptions change later, re-validate selected value
+watch(
+  () => transactionStore.timeOptions,
+  () => {
+    const values = new Set(timeOptionsUi.value.map((o) => o.value));
+    if (transactionStore.deliveryTime && !values.has(transactionStore.deliveryTime)) {
+      transactionStore.deliveryTime = null;
+    }
+  },
+  { deep: true }
 );
 
 // ---------- UI formatters ----------
@@ -313,14 +343,10 @@ const formattedDeliveryContactNos = computed({
 async function updateDelivery() {
   const id = transactionStore.selectedDeliveryId;
   if (!id) {
-    $q.notify({
-      type: "negative",
-      message: "No delivery selected for update.",
-    });
+    $q.notify({ type: "negative", message: "No delivery selected for update." });
     return;
   }
 
-  // Normalize values coming from selects (could be id or object)
   const contact = transactionStore.selectedDeliveryContact;
   const address = transactionStore.selectedDeliveryAddress;
   const driver = transactionStore.selectedDeliveryDriver;
@@ -337,7 +363,7 @@ async function updateDelivery() {
   try {
     await transactionStore.updateDelivery(id, updateData);
     $q.notify({ type: "positive", message: "Delivery updated successfully." });
-     emit("close");
+    emit("close");
   } catch (error) {
     console.error("Update delivery failed:", error);
     $q.notify({
@@ -347,16 +373,7 @@ async function updateDelivery() {
   }
 }
 
-function computeUrgency(collectionDate, deliveryDate) {
-  const wd = workingDays(collectionDate, deliveryDate);
-  if (wd == null) return "default";
-  if (wd < 4) return "express";
-  if (wd <= 5) return "urgent";
-  return "default";
-}
-
 const formattedDeliveredDate = computed(() =>
   formatDate(transactionStore.deliveredDate)
 );
-
 </script>

@@ -1,40 +1,64 @@
-<!-- File: src/components/CreateCollectionTab.vue -->
 <template>
   <div class="selected-customer" v-if="selectedCustomer">
-    <q-card flat class="customer-card q-pa-sm text-p">
-      <q-card-section>
-        <div
-          class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
-        >
-          Selected Customer
-        </div>
-        <q-separator class="q-my-xs q-mb-sm" />
-        <div class="row">
-          <div class="col-auto text-right">
-            <div>Name:</div>
-            <div>Contact No:</div>
-            <div v-if="selectedCustomer.email">Email:</div>
+    <div class="row q-col-gutter-x-md">
+      <div class="col">
+        <q-card flat class="customer-card q-pa-md text-p equal-card">
+          <div
+            class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
+          >
+            Selected Customer
           </div>
-          <div class="col q-pl-sm">
-            <div class="text-summary">{{ selectedCustomer.name }}</div>
-            <div class="text-summary">
-              {{ selectedCustomer.contact_no1
-              }}<span v-if="selectedCustomer.contact_no2">
-                / {{ selectedCustomer.contact_no2 || "-" }}
-              </span>
+          <q-separator class="q-my-xs q-mb-sm" />
+          <div class="row">
+            <div class="col-auto text-right">
+              <div>Name:</div>
+              <div>Contact No:</div>
+              <div v-if="selectedCustomer.email">Email:</div>
             </div>
-            <div v-if="selectedCustomer.email" class="text-summary">
-              {{ selectedCustomer.email }}
+            <div class="col q-pl-sm">
+              <div class="text-summary">{{ selectedCustomer.name }}</div>
+              <div class="text-summary">
+                {{ selectedCustomer.contact_no1
+                }}<span v-if="selectedCustomer.contact_no2">
+                  / {{ selectedCustomer.contact_no2 || "-" }}
+                </span>
+              </div>
+              <div v-if="selectedCustomer.email" class="text-summary">
+                {{ selectedCustomer.email }}
+              </div>
             </div>
           </div>
-        </div>
-      </q-card-section>
-    </q-card>
+        </q-card>
+      </div>
+      <div class="col">
+        <q-card flat class="customer-card q-pa-md text-p equal-card">
+          <div class="dialog-label">
+            Job Type<span class="dialog-asterisk">*</span>
+          </div>
+          <q-select
+            v-model="transactionStore.jobType"
+            :options="jobOptions"
+            option-label="label"
+            option-value="value"
+            emit-value
+            map-options
+            label="Select Job Type"
+            outlined
+            dense
+            clearable
+            class="q-mb-xs bg-white"
+          />
+        </q-card>
+      </div>
+    </div>
 
     <div class="row contact-selection q-mt-md q-col-gutter-x-md">
-      <!-- Collection -->
       <div class="col">
-        <q-card flat class="customer-card q-pa-md">
+        <q-card
+          flat
+          class="customer-card q-pa-md equal-card"
+          :class="{ 'q-opacity-50': isCollectionDisabled }"
+        >
           <div
             class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
           >
@@ -42,22 +66,26 @@
           </div>
           <q-separator class="q-mb-md" />
 
-          <q-btn
-            outline
-            dense
-            class="outline-btn q-mb-sm q-px-sm"
-            color="primary"
-            label="Add Contact Person"
-            @click="showAddContactPersonDialog = true"
-          />
-          <q-btn
-            outline
-            dense
-            color="primary"
-            label="Add Address"
-            @click="showAddAddressDialog = true"
-            class="outline-btn q-ml-sm q-mb-sm q-px-sm"
-          />
+          <div class="flex">
+            <q-btn
+              outline
+              dense
+              class="outline-btn q-mb-sm q-px-sm"
+              color="primary"
+              label="Add Contact Person"
+              @click="showAddContactPersonDialog = true"
+              :disable="isCollectionDisabled"
+            />
+            <q-btn
+              outline
+              dense
+              color="primary"
+              label="Add Address"
+              @click="showAddAddressDialog = true"
+              class="outline-btn q-ml-sm q-mb-sm q-px-sm"
+              :disable="isCollectionDisabled"
+            />
+          </div>
 
           <div>
             <div class="dialog-label">
@@ -73,6 +101,7 @@
               dense
               clearable
               class="q-mb-xs bg-white"
+              :disable="isCollectionDisabled"
             />
           </div>
 
@@ -90,6 +119,7 @@
               dense
               clearable
               class="q-mb-xs bg-white"
+              :disable="isCollectionDisabled"
             />
           </div>
 
@@ -104,6 +134,7 @@
                 dense
                 readonly
                 class="q-mb-xs bg-white"
+                :disable="isCollectionDisabled"
               >
                 <template #append>
                   <q-icon name="event" class="cursor-pointer">
@@ -126,19 +157,20 @@
               <div class="dialog-label">
                 Collection Time<span class="dialog-asterisk">*</span>
               </div>
-             <q-select
-  v-model="transactionStore.collectionTime"
-  :options="timeOptionsUi"
-  option-label="label"
-  option-value="value"
-  emit-value
-  map-options
-  label="Select Collection Time"
-  outlined
-  dense
-  clearable
-  class="q-mb-xs bg-white"
-/>
+              <q-select
+                v-model="transactionStore.collectionTime"
+                :options="timeOptionsUi"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                label="Select Collection Time"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+                :disable="isCollectionDisabled"
+              />
             </div>
           </div>
 
@@ -155,38 +187,43 @@
               dense
               clearable
               class="q-mb-xs bg-white"
+              :disable="isCollectionDisabled"
             />
+             <div v-if="showAdditionalDriver">
+              <div class="dialog-label">Additional Driver</div>
+              <q-select
+                v-model="transactionStore.additionalCollectionDriver"
+                :options="driverOptionsUi"
+                option-label="name"
+                label="Select Additional Driver"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+                :disable="isCollectionDisabled"
+              />
+            </div>
           </div>
 
           <div class="row q-col-gutter-xs">
             <div class="col">
               <div class="dialog-label">
-                Job Type<span class="dialog-asterisk">*</span>
-              </div>
-              <q-select
-                v-model="transactionStore.jobType"
-                :options="jobOptions"
-                option-label="label"
-                option-value="value"
-                emit-value
-                map-options
-                label="Select Job Type"
-                outlined
-                dense
-                clearable
-                class="q-mb-xs bg-white"
-              />
-            </div>
-            <div class="col">
-              <div class="dialog-label">
                 No. of Bags<span class="dialog-asterisk">*</span>
               </div>
               <q-input
-                v-model="transactionStore.collectionNoBags"
-                label="No. of Bags"
+                v-model="bagsInput"
                 outlined
                 dense
-                class="q-mb-xs bg-white"
+                inputmode="numeric"
+                type="tel"
+                :rules="[
+                  (v) => !!v || 'Required',
+                  (v) => Number(v) >= 1 || 'Must be at least 1',
+                ]"
+                @keypress="digitsOnly"
+                @paste.prevent="onPasteDigits"
+                @blur="normalizeBags"
+                :disable="isCollectionDisabled"
               />
             </div>
           </div>
@@ -199,6 +236,7 @@
               outlined
               dense
               class="q-mb-xs bg-white"
+              :disable="isCollectionDisabled"
             />
           </div>
 
@@ -209,13 +247,18 @@
             label="Reset Collection"
             @click="confirmReset('collection')"
             class="text-red-9 text-weight-bold q-mt-sm q-px-sm"
+            :disable="isCollectionDisabled"
           />
         </q-card>
       </div>
 
       <!-- Delivery -->
       <div class="col">
-        <q-card flat class="customer-card q-pa-md">
+        <q-card
+          flat
+          class="customer-card q-pa-md equal-card"
+          :class="{ 'q-opacity-50': isDeliveryDisabled }"
+        >
           <div
             class="text-body1 text-center text-uppercase text-weight-bold q-mb-xs"
           >
@@ -223,22 +266,26 @@
           </div>
           <q-separator class="q-mb-md" />
 
-          <q-btn
-            outline
-            dense
-            class="outline-btn q-mb-sm q-px-sm"
-            color="primary"
-            label="Add Contact Person"
-            @click="showAddContactPersonDialog = true"
-          />
-          <q-btn
-            outline
-            dense
-            color="primary"
-            label="Add Address"
-            @click="showAddAddressDialog = true"
-            class="outline-btn q-ml-sm q-mb-sm q-px-sm"
-          />
+          <div class="flex">
+            <q-btn
+              outline
+              dense
+              class="outline-btn q-mb-sm q-px-sm"
+              color="primary"
+              label="Add Contact Person"
+              @click="showAddContactPersonDialog = true"
+              :disable="isDeliveryDisabled"
+            />
+            <q-btn
+              outline
+              dense
+              color="primary"
+              label="Add Address"
+              @click="showAddAddressDialog = true"
+              class="outline-btn q-ml-sm q-mb-sm q-px-sm"
+              :disable="isDeliveryDisabled"
+            />
+          </div>
 
           <div>
             <div class="dialog-label">Contact Person</div>
@@ -252,6 +299,7 @@
               dense
               clearable
               class="q-mb-xs bg-white"
+              :disable="isDeliveryDisabled"
             />
           </div>
 
@@ -267,6 +315,7 @@
               dense
               clearable
               class="q-mb-xs bg-white"
+              :disable="isDeliveryDisabled"
             />
           </div>
 
@@ -281,6 +330,7 @@
                 dense
                 readonly
                 class="q-mb-xs bg-white"
+                :disable="isDeliveryDisabled"
               >
                 <template #append>
                   <q-icon name="event" class="cursor-pointer">
@@ -301,19 +351,20 @@
             </div>
             <div class="col-6">
               <div class="dialog-label">Delivery Time</div>
-             <q-select
-  v-model="transactionStore.deliveryTime"
-  :options="timeOptionsUi"
-  option-label="label"
-  option-value="value"
-  emit-value
-  map-options
-  label="Select Delivery Time"
-  outlined
-  dense
-  clearable
-  class="q-mb-xs bg-white"
-/>
+              <q-select
+                v-model="transactionStore.deliveryTime"
+                :options="timeOptionsUi"
+                option-label="label"
+                option-value="value"
+                emit-value
+                map-options
+                label="Select Delivery Time"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+                :disable="isDeliveryDisabled"
+              />
             </div>
           </div>
 
@@ -328,7 +379,22 @@
               dense
               clearable
               class="q-mb-xs bg-white"
+              :disable="isDeliveryDisabled"
             />
+             <div v-if="showAdditionalDriver">
+              <div class="dialog-label">Additional Driver</div>
+              <q-select
+                v-model="transactionStore.additionalDeliveryDriver"
+                :options="driverOptionsUi"
+                option-label="name"
+                label="Select Additional Driver"
+                outlined
+                dense
+                clearable
+                class="q-mb-xs bg-white"
+                :disable="isDeliveryDisabled"
+              />
+            </div>
           </div>
 
           <div>
@@ -339,6 +405,7 @@
               outlined
               dense
               class="q-mb-xs bg-white"
+              :disable="isDeliveryDisabled"
             />
           </div>
 
@@ -349,6 +416,7 @@
             label="Reset Delivery"
             @click="confirmReset('delivery')"
             class="text-red-9 text-weight-bold q-mt-sm q-px-sm"
+            :disable="isDeliveryDisabled"
           />
         </q-card>
       </div>
@@ -411,6 +479,8 @@ const jobOptions = [
   { label: "Laundry", value: "laundry" },
   { label: "R&I", value: "ri" },
   { label: "R&I Quotation", value: "ri_quotation" },
+  { label: "Installation ONLY", value: "installation" },
+  { label: "Removal ONLY", value: "removal" },
   { label: "Onsite Carpet Cleaning", value: "onsite_carpet_cleaning" },
   { label: "Onsite Quotation", value: "onsite_quotation" },
   { label: "Onsite Sofa Cleaning", value: "onsite_sofa_cleaning" },
@@ -421,7 +491,78 @@ onMounted(async () => {
   await transactionStore.loadDrivers();
   await transactionStore.loadTimeOptions();
   hardResetForm();
-  updateUrgency();
+});
+
+const isCollectionDisabled = computed(
+  () => transactionStore.jobType === "installation"
+);
+const isDeliveryDisabled = computed(
+  () => transactionStore.jobType === "removal"
+);
+
+function clearCollectionForInstall() {
+  transactionStore.selectedCollectionContact = null;
+  transactionStore.selectedCollectionAddress = null;
+  transactionStore.collectionDate = null;
+  transactionStore.collectionTime = null;
+  transactionStore.selectedCollectionDriver = null;
+  transactionStore.collectionRemarks = "";
+  transactionStore.collectionNoBags = null;
+}
+
+function clearDeliveryForRemoval() {
+  transactionStore.selectedDeliveryContact = null;
+  transactionStore.selectedDeliveryAddress = null;
+  transactionStore.deliveryDate = null;
+  transactionStore.deliveryTime = null;
+  transactionStore.selectedDeliveryDriver = null;
+  transactionStore.deliveryRemarks = "";
+}
+
+/* React to jobType changes */
+watch(
+  () => transactionStore.jobType,
+  (jt) => {
+    if (jt === "installation") {
+      clearCollectionForInstall(); 
+       transactionStore.additionalCollectionDriver = null;
+    } else if (jt === "removal") {
+      clearDeliveryForRemoval(); 
+       transactionStore.additionalDeliveryDriver = null;
+    }
+     if (!['ri', 'installation', 'removal'].includes(jt)) {
+      transactionStore.additionalCollectionDriver = null;
+      transactionStore.additionalDeliveryDriver = null;
+     }
+  },
+  { immediate: true }
+);
+
+/* === Bags input helpers (digits-only, >=1, default 1) === */
+const digitsOnly = (e) => {
+  const k = e.key;
+  const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
+  if (allowed.includes(k)) return;
+  if (!/^\d$/.test(k)) e.preventDefault();
+};
+
+const onPasteDigits = (e) => {
+  const txt = (e.clipboardData?.getData("text") || "").replace(/\D+/g, "");
+  document.execCommand("insertText", false, txt);
+};
+
+const normalizeBags = () => {
+  const n = parseInt(String(transactionStore.collectionNoBags || ""), 10);
+  transactionStore.collectionNoBags = Number.isFinite(n) && n >= 1 ? n : 1;
+};
+
+const bagsInput = computed({
+  get: () => String(transactionStore.collectionNoBags ?? 1),
+  set: (v) => {
+    const cleaned = String(v || "").replace(/\D+/g, "");
+    const n = parseInt(cleaned, 10);
+    transactionStore.collectionNoBags = Number.isFinite(n) ? Math.max(1, n) : 1;
+  },
 });
 
 const MS_DAY = 86_400_000;
@@ -435,32 +576,12 @@ function workingDays(collectionYmd, deliveryYmd) {
   let d = new Date(s.getTime() + MS_DAY);
   let count = 0;
   while (d.getTime() <= e.getTime()) {
-    const day = d.getDay();           
-    if (day !== 0 && day !== 6) count++; 
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) count++;
     d = new Date(d.getTime() + MS_DAY);
   }
   return count;
 }
-
-function computeUrgency(collectionDate, deliveryDate) {
-  const wd = workingDays(collectionDate, deliveryDate);
-  if (wd == null) return "default";
-  if (wd < 4) return "express";
-  if (wd <= 5) return "urgent";
-  return "default";
-}
-
-function updateUrgency() {
-  const wd = workingDays(transactionStore.collectionDate, transactionStore.deliveryDate);
-  const level = computeUrgency(transactionStore.collectionDate, transactionStore.deliveryDate);
-  transactionStore.jobUrgency = level;
-}
-
-watch(
-  () => [transactionStore.collectionDate, transactionStore.deliveryDate],
-  updateUrgency,
-  { immediate: true }
-);
 
 watch(
   () => transactionStore.collectionDate,
@@ -482,20 +603,6 @@ watch(
   }
 );
 
-watch(
-  () => transactionStore.selectedCustomer?.id,
-  (id) => {
-    if (!id) return;
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
-    transactionStore.collectionDate = todayStr;
-    transactionStore.deliveryDate = addWorkingDays(today, 7);
-    transactionStore.ready_by = addWorkingDays(today, 7);
-    updateUrgency();
-  },
-  { immediate: true }
-);
-
 const selectedCustomer = computed(() => transactionStore.selectedCustomer);
 
 watch(
@@ -506,7 +613,6 @@ watch(
     const todayStr = today.toISOString().split("T")[0];
     transactionStore.collectionDate = todayStr;
     transactionStore.deliveryDate = addWorkingDays(today, 7);
-    transactionStore.ready_by = addWorkingDays(today, 7);
   },
   { immediate: true }
 );
@@ -589,7 +695,6 @@ const clearDate = (dateType) => {
       transactionStore.deliveryDate = addWorkingDays(new Date(), 7);
       break;
   }
-  updateUrgency();
 };
 
 const resetCollection = () => {
@@ -599,8 +704,9 @@ const resetCollection = () => {
   transactionStore.collectionTime = null;
   transactionStore.selectedCollectionDriver = null;
   transactionStore.collectionRemarks = "";
-  transactionStore.ready_by = addWorkingDays(new Date(), 7);
-  updateUrgency();
+  transactionStore.jobType = "laundry";  
+  transactionStore.collectionNoBags = 1;
+  transactionStore.additionalCollectionDriver = null;
 };
 
 const resetDelivery = () => {
@@ -610,7 +716,7 @@ const resetDelivery = () => {
   transactionStore.deliveryTime = null;
   transactionStore.selectedDeliveryDriver = null;
   transactionStore.deliveryRemarks = "";
-  updateUrgency();
+   transactionStore.additionalDeliveryDriver = null;
 };
 
 const confirmReset = (section) => {
@@ -636,36 +742,42 @@ function hardResetForm() {
   transactionStore.useCcCollection = false;
   transactionStore.useCcDelivery = false;
   transactionStore.order_no = null;
-  transactionStore.jobType = null;         
-  transactionStore.collectionNoBags = null; 
+   transactionStore.additionalCollectionDriver = null;
+  transactionStore.additionalDeliveryDriver = null; 
 
   resetCollection();
   resetDelivery();
-
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-  transactionStore.collectionDate = todayStr;
-  transactionStore.deliveryDate = addWorkingDays(today, 7);
-  transactionStore.ready_by = addWorkingDays(today, 7);
-
-  updateUrgency();
 }
+
+const showAdditionalDriver = computed(() =>
+  ['ri', 'installation', 'removal', 'onsite_carpet_cleaning', 'onsite_sofa_cleaning'].includes(transactionStore.jobType)
+);
+
 const timeOptionsUi = computed(() => {
-  // support both array and { time: [...] }
   const raw = Array.isArray(transactionStore.timeOptions)
     ? transactionStore.timeOptions
     : Array.isArray(transactionStore.timeOptions?.time)
-      ? transactionStore.timeOptions.time
-      : [];
-
+    ? transactionStore.timeOptions.time
+    : [];
   return raw.map((t) => {
     if (typeof t === "string") {
       return { label: t, value: t };
     }
-    // object case: accept common keys and fallbacks
     const label = t.label ?? t.value ?? t.time ?? "";
     const value = t.value ?? t.time ?? t.label ?? "";
     return { label, value };
   });
 });
 </script>
+
+<style scoped>
+.q-opacity-50 {
+  opacity: 0.5;
+  pointer-events: none;
+} 
+.equal-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+</style>

@@ -3,18 +3,23 @@
     <div class="row q-col-gutter-x-md q-pa-md page-1-container">
       <!-- Left Container -->
       <div class="col-6">
-        <q-card flat class="order-banner bg-blue-grey text-white q-pa-md">
+        <q-card flat class="order-banner bg-blue-grey text-white">
           <div class="flex justify-between items-center">
-            <div class="text-left">
-              <div class="text-caption">
-                <div
-                  class="text-h6 text-uppercase text-weight-bolder order-box"
+            <div class="text-left q-pa-sm">
+              <img
+                    v-if="brandLogoSrc"
+                    :src="brandLogoSrc"
+                    alt="Brand logo"
+                    style="height:50px;width:auto;vertical-align:middle"
+                  />
+                  <!-- <div
+                  class="q-mt-xs text-h6 text-uppercase text-weight-bolder order-box text-center"
                 >
                   Order Details
-                </div>
-              </div>
+                </div> -->
             </div>
-            <div class="text-right">
+            <div class="text-right q-pa-md text-subtitle1 line-height-1">
+                
               <div class="text-slip-row">
                 Order No:
                 <span class="text-summary">{{ order?.order_no || "N/A" }}</span>
@@ -25,10 +30,7 @@
                   formatDate(order?.created_at)
                 }}</span>
               </div>
-              <div class="text-slip-row">
-                Handler:
-                <span class="text-summary">{{ handlerLabel }}</span>
-              </div>
+                 
             </div>
           </div>
           <!-- <div>
@@ -147,7 +149,7 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Remarks:</div>
                 <div class="col-6">
-                  {{ collection.remarks || "-" }}
+                  {{ collection.collection_remarks || "-" }}
                 </div>
               </div>
 
@@ -217,22 +219,22 @@
               <div class="row text-slip-row row-col-row">
                 <div class="col-6">Remarks:</div>
                 <div class="col-6">
-                  {{ delivery.remarks || "-" }}
+                  {{ delivery.delivery_remarks || "-" }}
                 </div>
               </div>
 
               <div class="q-mt-md">
-                <div class="text-weight-bold text-uppercase q-mb-xs">
+                <div class="text-weight-bold text-uppercase">
                   Delivery Exceptions
                 </div>
 
-                <q-list bordered class="rounded-borders bg-blue-grey-1">
+                <q-list>
                   <q-item
                     v-for="exc in exceptionGroups"
                     :key="exc.key"
                     clickable
                     dense
-                    class="q-pa-sm"
+                    class="rounded-borders bg-blue-2 q-pa-sm q-mt-sm"
                     @click="openExceptionDetails(exc)"
                   >
                     <q-item-section>
@@ -282,7 +284,6 @@
               </div>
 
               <q-card-actions align="right">
-                <!-- New: Delivery Exception button -->
                 <q-btn
                   unelevated
                   dense
@@ -290,10 +291,8 @@
                   color="orange"
                   icon="local_shipping"
                   class="full-width q-mb-sm q-mt-md"
-                  @click="openDeliveryExceptionDialog"
+                  @click="showDeliveryExceptionDialog = true"
                 />
-
-                <!-- Existing: Update Button -->
                 <q-btn
                   unelevated
                   dense
@@ -485,42 +484,20 @@
               <div class="col-4 text-right q-mr-sm">
                 <div>Logistics Status:</div>
               </div>
-              <div class="col text-uppercase">
-                <q-input
-                  v-model="logistics.logistics_status"
-                  outlined
-                  placeholder="Enter Logistics Status"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col text-uppercase text-weight-bold">
+                {{ logistics?.logistics_status || "-" }}
               </div>
             </div>
             <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>Job Type:</div>
-              </div>
-              <div class="col">
-                <q-input
-                  v-model="logistics.job_type"
-                  outlined
-                  placeholder="Enter Job Type / Urgency"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col-4 text-right q-mr-sm"><div>Job Type:</div></div>
+              <div class="col text-weight-bold">
+              {{ jobTypeLabel(logistics?.job_type) }}
               </div>
             </div>
             <div class="row q-mb-xs items-center">
-              <div class="col-4 text-right q-mr-sm">
-                <div>Urgency:</div>
-              </div>
-              <div class="col">
-                <q-input
-                  v-model="logistics.urgency"
-                  outlined
-                  placeholder="Enter Job Sub-Type"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col-4 text-right q-mr-sm"><div>Urgency:</div></div>
+              <div class="col text-weight-bold text-capitalize">
+                {{ logistics?.urgency || "-" }}
               </div>
             </div>
           </q-card-section>
@@ -529,10 +506,10 @@
               dense
               unelevated
               class="full-width q-mt-md"
-              label="Update Logistics Details"
+              label="Update Logistics"
               color="primary"
               icon="update"
-              @click="updateLogistics"
+              @click="showUpdateLogisticsDialog = true"
             />
           </q-card-actions>
         </q-card>
@@ -550,56 +527,32 @@
               <div class="col-4 text-right q-mr-sm">
                 <div>Goods Status:</div>
               </div>
-              <div class="col text-uppercase">
-                <q-input
-                  v-model="goodsStatus"
-                  outlined
-                  placeholder="Enter Goods Status"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col text-uppercase text-weight-bold">
+                {{ goodsStatus || "none" }}
               </div>
             </div>
             <div class="row q-mb-xs items-center">
               <div class="col-4 text-right q-mr-sm">
                 <div>No. of Packets:</div>
               </div>
-              <div class="col">
-                <q-input
-                  v-model="noPackets"
-                  outlined
-                  placeholder="Enter No. of Packets"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col text-weight-bold">
+                {{ noPackets || "0" }}
               </div>
             </div>
             <div class="row q-mb-xs items-center">
               <div class="col-4 text-right q-mr-sm">
                 <div>No. of Hangers:</div>
               </div>
-              <div class="col">
-                <q-input
-                  v-model="noHangers"
-                  outlined
-                  placeholder="Enter No. of Hangers"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col text-weight-bold">
+                {{ noHangers || "0" }}
               </div>
             </div>
             <div class="row q-mb-xs items-center">
               <div class="col-4 text-right q-mr-sm">
                 <div>No. of Rolls:</div>
               </div>
-              <div class="col">
-                <q-input
-                  v-model="noRolls"
-                  outlined
-                  placeholder="Enter No. of Rolls"
-                  dense
-                  class="text-uppercase"
-                />
+              <div class="col text-weight-bold">
+                {{ noRolls || "0" }}
               </div>
             </div>
           </q-card-section>
@@ -608,10 +561,10 @@
               unelevated
               dense
               class="full-width q-mt-md"
-              label="Update Production Details"
+              label="Update Production"
               color="primary"
               icon="update"
-              @click="updateProduction"
+              @click="showUpdateProductionDialog = true"
             />
           </q-card-actions>
         </q-card>
@@ -1572,118 +1525,6 @@
       </q-card-section>
     </q-card>
   </q-dialog>
-  <q-dialog v-model="isAddContactPersonDialogOpen" persistent>
-    <q-card style="min-width: 400px">
-      <q-card-section>
-        <div class="text-h6 text-center">Add Contact Person</div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="newContactPerson.name"
-          label="Name"
-          outlined
-          dense
-          class="q-mb-md"
-          required
-        />
-        <q-input
-          v-model="newContactPerson.contact_no1"
-          label="Contact Number 1"
-          outlined
-          dense
-          class="q-mb-md"
-        />
-        <q-input
-          v-model="newContactPerson.contact_no2"
-          label="Contact Number 2"
-          outlined
-          dense
-          class="q-mb-md"
-        />
-        <q-input
-          v-model="newContactPerson.email"
-          label="Email"
-          outlined
-          dense
-          type="email"
-          class="q-mb-md"
-        />
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          label="Cancel"
-          flat
-          color="negative"
-          @click="closeAddContactPersonDialog"
-        />
-        <q-btn label="Add" color="primary" @click="addContactPerson" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
-  <!-- Add Address Dialog -->
-  <q-dialog v-model="isAddAddressDialogOpen" persistent>
-    <q-card style="min-width: 400px">
-      <q-card-section>
-        <div class="text-h6 text-center">Add Address</div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="newAddress.block_no"
-          label="Block No."
-          outlined
-          dense
-          class="q-mb-md"
-          required
-        />
-        <q-input
-          v-model="newAddress.road_name"
-          label="Road Name"
-          outlined
-          dense
-          class="q-mb-md"
-          required
-        />
-        <q-input
-          v-model="newAddress.unit_no"
-          label="Unit No."
-          outlined
-          dense
-          class="q-mb-md"
-        />
-        <q-input
-          v-model="newAddress.building_name"
-          label="Building Name"
-          outlined
-          dense
-          class="q-mb-md"
-        />
-        <q-input
-          v-model="newAddress.postal_code"
-          label="Postal Code"
-          outlined
-          dense
-          class="q-mb-md"
-          required
-        />
-        <q-input
-          v-model="newAddress.additional_info"
-          label="Additional Info"
-          outlined
-          dense
-          class="q-mb-md"
-        />
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          label="Cancel"
-          flat
-          color="negative"
-          @click="closeAddAddressDialog"
-        />
-        <q-btn label="Add" color="primary" @click="addAddress" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
   <q-dialog v-model="isAddInstructionDialogOpen" persistent>
     <q-card style="min-width: 500px">
       <q-card-section>
@@ -1768,11 +1609,11 @@
     </q-card>
   </q-dialog>
   <!-- Add Report Dialog -->
-<AddErrorReportDialog
-  v-model="isAddReportDialogOpen"
-  :order-id="order?.id"
-  @added="onReportAdded"
-/>
+  <AddErrorReportDialog
+    v-model="isAddReportDialogOpen"
+    :order-id="order?.id"
+    @added="onReportAdded"
+  />
 
   <q-dialog
     v-model="showUpdateCollectionDialog"
@@ -1854,7 +1695,10 @@
       </q-card-section>
       <q-card-section class="q-pa-none">
         <div class="full-container">
-          <CollectionHistory />
+          <CollectionHistory
+            v-if="selectedCollectionId"
+            :logisticsCollectionId="selectedCollectionId"
+          />
         </div>
       </q-card-section>
     </q-card>
@@ -2051,11 +1895,35 @@
     </q-card>
   </q-dialog>
   <!-- Delivery Exception Dialog -->
-  <q-dialog v-model="showDeliveryExceptionDialog" persistent>
-    <q-card style="min-width: 900px; max-width: 95vw">
+  <CreateExceptionDialog
+    v-model="showDeliveryExceptionDialog"
+    :delivery-id="delivery?.id"
+    @saved="onExceptionSaved"
+  />
+<ExceptionDetailsDialog
+  v-model="isExceptionDetailsOpen"
+  :logistics-id="logistics?.logistics_id || logistics?.id"
+  :group="selectedException"
+  :transactions="transactions"
+  :prefilled-delivered-date="deliveredDate"
+  @updated="(async () => {
+    await loadDeliveryExceptions();
+    await updateDeliveryLogisticsStatus();
+    deliveredDate = null;
+    selectedException = null;
+  })()"
+/>
+
+  <q-dialog
+    v-model="showUpdateProductionDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
+    <q-card style="min-width: 40em; max-width: 95vw">
       <q-card-section class="dialog-header">
         <div class="text-body1 text-uppercase text-weight-bold">
-          Make Delivery Exception
+          Update Production
         </div>
         <q-btn
           icon="close"
@@ -2063,150 +1931,28 @@
           dense
           round
           class="absolute-top-right q-ma-sm"
-          @click="showDeliveryExceptionDialog = false"
+          @click="showUpdateProductionDialog = false"
         />
       </q-card-section>
-
-      <q-card-section class="dialog-body">
-        <q-banner class="bg-blue-1 text-blue-10 q-mb-md" rounded>
-          <q-icon name="info" class="q-mr-sm" />
-          Use this when **some items** need a different delivery
-          date/time/driver than the main delivery.
-        </q-banner>
-
-        <!-- Defaults section -->
-        <div class="text-subtitle2 text-weight-bold q-mb-sm">
-          Exception Delivery Details
-        </div>
-        <div class="row q-col-gutter-md q-mb-md">
-          <div class="col-4">
-            <div class="dialog-label q-mb-xs">Delivery Date</div>
-            <q-input
-              v-model="deliveryExceptionForm.delivery_date"
-              type="date"
-              outlined
-              dense
-              class="dialog-inputs"
-            />
-          </div>
-          <div class="col-4">
-            <div class="dialog-label q-mb-xs">Delivery Time</div>
-            <q-select
-              v-model="deliveryExceptionForm.delivery_time"
-              :options="timeOptions"
-              outlined
-              dense
-              class="dialog-inputs"
-              emit-value
-              map-options="false"
-            />
-          </div>
-          <div class="col-4">
-            <div class="dialog-label q-mb-xs">Driver</div>
-            <q-select
-              v-model="deliveryExceptionForm.driver_id"
-              :options="driverOptions"
-              option-label="name"
-              option-value="id"
-              outlined
-              dense
-              emit-value
-              map-options
-              class="dialog-inputs"
-            />
-          </div>
-        </div>
-
-        <div class="q-mb-md">
-          <div class="dialog-label q-mb-xs">Remarks</div>
-          <q-input
-            v-model="deliveryExceptionForm.remarks"
-            type="textarea"
-            outlined
-            dense
-            autogrow
-            placeholder="Optional remarks about this exception (e.g. EARLY DELIVERY FOR CURTAINS)..."
-          />
-        </div>
-
-        <!-- Items selection -->
-        <div class="text-subtitle2 text-weight-bold q-mb-xs">
-          Select Items for This Exception
-        </div>
-        <div class="text-caption text-grey-8 q-mb-sm">
-          Tick the items below and set how much quantity will be delivered on
-          this exception schedule.
-        </div>
-
-        <div class="transaction-summary">
-          <div class="row row-col-header order-header text-center">
-            <div class="col-1 text-weight-bold bordered">Select</div>
-            <div class="col-4 text-weight-bold bordered">Item</div>
-            <div class="col-2 text-weight-bold bordered">Company</div>
-            <div class="col-2 text-weight-bold bordered">Available Qty</div>
-            <div class="col-3 text-weight-bold bordered">Qty for Exception</div>
-          </div>
-
-          <div v-if="deliveryExceptionItems.length">
-            <div
-              v-for="(exItem, idx) in deliveryExceptionItems"
-              :key="exItem.item_id"
-              class="row row-col-row order-row"
-            >
-              <div class="col-1 bordered flex flex-center">
-                <q-checkbox v-model="exItem.selected" dense />
-              </div>
-              <div class="col-4 bordered">
-                <div class="text-body2">{{ exItem.item_name }}</div>
-                <div class="text-caption text-grey">
-                  {{ exItem.processLabel }} • {{ exItem.companyLabel }}
-                </div>
-              </div>
-              <div class="col-2 bordered text-center">
-                {{ exItem.availableQty }} {{ unitLabel(exItem.unit) }}
-              </div>
-              <div class="col-3 bordered">
-                <q-input
-                  v-model.number="exItem.exceptionQty"
-                  type="number"
-                  dense
-                  outlined
-                  :min="0"
-                  :max="exItem.availableQty"
-                  @blur="normalizeExceptionQty(exItem)"
-                  suffix="qty"
-                />
-              </div>
-            </div>
-          </div>
-          <div v-else class="text-center text-grey q-my-md">
-            No transaction items found for this order.
-          </div>
-        </div>
+      <q-card-section class="q-pa-none">
+        <UpdateProductionDialog
+          :order="order"
+          v-model:show="showUpdateProductionDialog"
+          @saved="onProductionSaved"
+        />
       </q-card-section>
-
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          label="Cancel"
-          color="negative"
-          @click="showDeliveryExceptionDialog = false"
-        />
-        <q-btn
-          unelevated
-          label="Save Delivery Exception"
-          color="primary"
-          icon="save"
-          @click="saveDeliveryException"
-        />
-      </q-card-actions>
     </q-card>
   </q-dialog>
-  <q-dialog v-model="isExceptionDetailsOpen" persistent>
-    <q-card style="min-width: 720px; max-width: 90vw">
+  <q-dialog
+    v-model="showUpdateLogisticsDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
+    <q-card style="min-width: 40em; max-width: 95vw">
       <q-card-section class="dialog-header">
         <div class="text-body1 text-uppercase text-weight-bold">
-          Exception Details
+          Update Logistics
         </div>
         <q-btn
           icon="close"
@@ -2214,178 +1960,47 @@
           dense
           round
           class="absolute-top-right q-ma-sm"
-          @click="closeExceptionDetails"
+          @click="showUpdateLogisticsDialog = false"
         />
       </q-card-section>
-
-      <q-card-section>
-        <div class="q-mb-xs">
-          <div
-            v-if="selectedException?.remarks"
-            class="text-subtitle1 text-weight-bold text-blue-9 bg-blue-1 q-mb-md text-center q-pa-sm="
-          >
-            {{ selectedException.remarks }}
-          </div>
-          <q-list bordered class="rounded-borders">
-            <q-item
-              v-for="exc in exceptionGroups"
-              :key="exc.key"
-              clickable
-              dense
-              class="q-pa-sm"
-              @click="openExceptionDetails(exc)"
-            >
-              <q-item-section>
-                <div class="">
-                  <q-icon
-                    name="event"
-                    size="16px"
-                    class="q-mr-sm text-blue-9"
-                  />
-                  <span class="text-weight-bold q-mr-xs">Delivery Date:</span>
-                  <span>{{ formatDateLine(exc.date) }}</span>
-                </div>
-                <div class="">
-                  <q-icon
-                    name="schedule"
-                    size="16px"
-                    class="q-mr-sm text-blue-9"
-                  />
-                  <span class="text-weight-bold q-mr-xs">Delivery Time:</span>
-                  <span>{{ exc.time || "[No time]" }}</span>
-                </div>
-                <div class="">
-                  <q-icon
-                    name="person"
-                    size="16px"
-                    class="q-mr-sm text-blue-9"
-                  />
-                  <span class="text-weight-bold q-mr-xs">Delivery Driver:</span>
-                  <span>{{ exc.driverName || "[No driver]" }}</span>
-                </div>
-              </q-item-section>
-              <q-item-section side>
-                <q-chip dense square color="blue-9" text-color="white">
-                  {{ exc.items?.length || 0 }} item{{
-                    (exc.items?.length || 0) === 1 ? "" : "s"
-                  }}
-                </q-chip>
-              </q-item-section>
-            </q-item></q-list
-          >
-        </div>
-
-        <!-- Exceptions table: same columns as Transaction Items (without Ready) -->
-        <div class="transaction-summary q-mt-md">
-          <div class="row row-col-header order-header text-center">
-            <div class="col-4 text-weight-bold bordered">Item</div>
-            <div class="col-2 text-weight-bold bordered">Process</div>
-            <div class="col text-weight-bold bordered">Price</div>
-            <div class="col text-weight-bold bordered">
-              {{
-                qtyHeaderForUnit(selectedException?.items?.[0]?.unit || "pc")
-              }}
-            </div>
-            <div class="col text-weight-bold bordered">Pieces</div>
-            <div class="col text-weight-bold bordered">Subtotal</div>
-          </div>
-
-          <div
-            v-for="it in selectedException?.items || []"
-            :key="`${it.id}-${it.name}`"
-            class="row row-col-row order-row"
-          >
-            <!-- Item -->
-            <div class="col-4 bordered">
-              <div class="text-body2">{{ it.name }}</div>
-            </div>
-
-            <!-- Process -->
-            <div class="col-2 bordered text-center">
-              {{ processLabelForTxId(it.id) }}
-            </div>
-
-            <!-- Price -->
-            <div class="col bordered text-center">
-              {{ priceDisplayForTxId(it.id) }}
-            </div>
-
-            <!-- Qty / Weight / Size (exception qty) -->
-            <div class="col bordered text-center">
-              {{ formatNumber(it.qty) }} {{ unitLabel(it.unit) }}
-            </div>
-
-            <!-- Pieces -->
-            <div class="col bordered text-center">
-              {{ piecesForTxId(it.id) }} <span class="unit-dim">pcs</span>
-            </div>
-
-            <!-- Subtotal (with tooltip) -->
-            <div class="col bordered flex items-center justify-center pos-rel">
-              <span>${{ formatMoney(excSubtotalForItem(it)) }}</span>
-
-              <q-icon
-                name="help_outline"
-                size="14px"
-                class="calc-help"
-                tabindex="0"
-                role="button"
-                aria-label="See computation"
-              >
-                <q-tooltip
-                  anchor="bottom right"
-                  self="top right"
-                  max-width="260px"
-                >
-                  {{ excSubtotalBreakdown(it) }}
-                </q-tooltip>
-              </q-icon>
-            </div>
-          </div>
-
-          <div
-            v-if="!selectedException?.items?.length"
-            class="text-center text-grey q-my-md"
-          >
-            No items in this exception.
-          </div>
-        </div>
+      <q-card-section class="q-pa-none">
+        <UpdateLogisticsDialog
+          :logistics="logistics"
+          v-model:show="showUpdateLogisticsDialog"
+          @saved="onLogisticsSaved"
+        />
       </q-card-section>
-
-      <q-card-actions align="between">
+    </q-card>
+  </q-dialog>
+  <q-dialog
+    v-model="showDeliveryHistoryDialog"
+    persistent
+    transition-show="slide-down"
+    transition-hide="slide-up"
+  >
+    <q-card style="min-width: 90vw">
+      <q-card-section class="dialog-header">
+        <div class="text-body1 text-uppercase text-weight-bold">
+          Delivery History
+        </div>
         <q-btn
-  outline
-  color="red"
-  icon="undo"
-  class="q-ml-sm"
-  label="Mark as Undelivered"
-  @click="markExceptionGroupUndelivered"
-/>
-        <div class="flex">
-          <q-input
-          v-model="deliveredDate"
-          type="date"
+          icon="close"
+          flat
           dense
-          outlined
-          clearable
-          class="dialog-inputs q-mr-sm"
-          style="max-width: 220px"
-          @clear="deliveredDate = null"
-        >
-          <template v-slot:prepend>
-            <q-icon name="event_available" />
-          </template>
-        </q-input>
-
-        <q-btn
-          unelevated
-          color="positive"
-          icon="done_all"
-          label="Mark as Delivered"
-          @click="markExceptionGroupDelivered"
+          round
+          class="absolute-top-right q-ma-sm"
+          @click="showDeliveryHistoryDialog = false"
         />
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <div class="full-container">
+          <!-- ✅ pass the delivery row id, mirror CollectionHistory -->
+          <DeliveryHistory
+            v-if="selectedDeliveryId"
+            :logisticsDeliveryId="selectedDeliveryId"
+          />
         </div>
-      </q-card-actions>
+      </q-card-section>
     </q-card>
   </q-dialog>
 </template>
@@ -2396,12 +2011,18 @@ import { fetchAllErrorItems } from "@/../supabase/api/error_list.js";
 import { useTransactionStore } from "@/stores/transactionStore";
 import { useRoute } from "vue-router";
 import { Notify } from "quasar";
+import { useQuasar } from "quasar";
 import UpdateCollectionDialog from "@/components/dialogs/UpdateCollectionDialog.vue";
 import UpdateDeliveryDialog from "@/components/dialogs/UpdateDeliveryDialog.vue";
+import UpdateProductionDialog from "@/components/dialogs/UpdateProductionDialog.vue";
+import UpdateLogisticsDialog from "@/components/dialogs/UpdateLogisticsDialog.vue";
 import CollectionHistory from "@/components/CollectionHistory.vue";
 import DeliveryHistory from "@/components/DeliveryHistory.vue";
 import AddErrorReportDialog from "@/components/dialogs/AddErrorReportDialog.vue";
-import { useQuasar } from "quasar";
+import CreateExceptionDialog from "@/components/dialogs/CreateExceptionDialog.vue";
+import ExceptionDetailsDialog from "@/components/dialogs/ExceptionDetailsDialog.vue";
+import ccLogo from "@/assets/images/cc_logo.png";
+import dcLogo from "@/assets/images/dc_logo.png";
 
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
@@ -2423,11 +2044,25 @@ const driverOptions = ref([]); // Initialize as a reactive array
 const timeOptions = ref([]); // Initialize as a reactive array
 
 const showCollectionHistoryDialog = ref(false);
-const showDeliveryHistoryDialog = ref(false);
+const selectedCollectionId = ref(null);
 
+const showDeliveryHistoryDialog = ref(false);
+const selectedDeliveryId = ref(null);
+
+const showUpdateProductionDialog = ref(false);
+const showUpdateLogisticsDialog = ref(false);
 
 const isExceptionDetailsOpen = ref(false);
 const selectedException = ref(null);
+
+function jobTypeLabel(p) {
+  const s = String(p || "").toLowerCase();
+  if (s === "laundry") return "Laundry";
+  if (s === "dryclean") return "Dry Clean";
+  if (s === "pressing") return "Pressing Only";
+  if (s === "others") return "Others";
+  return p || "-";
+}
 
 onMounted(async () => {
   try {
@@ -2553,34 +2188,6 @@ function onReportAdded(newReport) {
   }
 }
 
-const groupedByUnit = computed(() => {
-  const groups = { pc: [], kg: [], sqft: [], other: [] };
-  for (const it of transactions.value) {
-    const u = getUnitForItem(it);
-    if (u === "pc" || u === "kg" || u === "sqft") groups[u].push(it);
-    else groups.other.push(it);
-  }
-  // optional: sort within groups (e.g., by item_name)
-  Object.keys(groups).forEach((k) =>
-    groups[k].sort((a, b) =>
-      (a.item_name || "").localeCompare(b.item_name || "")
-    )
-  );
-  return groups;
-});
-
-const paymentStatus = computed({
-  get() {
-    return order.value.order_payment?.payment_status || "";
-  },
-  set(val) {
-    if (!order.value.order_payment) {
-      order.value.order_payment = {}; // init fallback object
-    }
-    order.value.order_payment.payment_status = val;
-  },
-});
-
 const goodsStatus = computed({
   get() {
     return order.value.order_production?.goods_status || "";
@@ -2590,18 +2197,6 @@ const goodsStatus = computed({
       order.value.order_production = {};
     }
     order.value.order_production.goods_status = val;
-  },
-});
-
-const paymentType = computed({
-  get() {
-    return order.value.order_payment?.payment_type || "";
-  },
-  set(val) {
-    if (!order.value.order_payment) {
-      order.value.order_payment = {}; // init fallback object
-    }
-    order.value.order_payment.payment_type = val;
   },
 });
 
@@ -2694,200 +2289,12 @@ watch(selectedCategory, (newCategory) => {
   }
 });
 
-const filteredSubCategories = computed(() => {
-  return reportSubCategories.value;
-});
-
-async function addErrorReport() {
-  try {
-    // Validate required fields
-    if (
-      !selectedCategory.value ||
-      !selectedSubCategory.value ||
-      !reportDesc.value
-    ) {
-      Notify.create({
-        message: "Category, sub-category, and description are required.",
-        color: "red",
-      });
-      return;
-    }
-
-    // Check if order ID is available
-    if (!order.value?.id) {
-      Notify.create({
-        message: "Order ID is missing. Cannot add the report.",
-        color: "red",
-      });
-      return;
-    }
-
-    // Construct the new report object
-    const newReport = {
-      order_id: order.value.id,
-      category: selectedCategory.value,
-      sub_category: selectedSubCategory.value,
-      description: reportDesc.value,
-      image: uploadedPhotoUrl.value || null,
-    };
-
-    // Call the store action and await the result
-    const addedReport = await transactionStore.addReport(
-      newReport,
-      order.value.id
-    );
-
-    // Add the new report to the local state
-    reports.value.push(addedReport);
-
-    // Reset input fields
-    selectedCategory.value = "";
-    selectedSubCategory.value = "";
-    reportDesc.value = "";
-    uploadedPhotoUrl.value = null;
-
-    closeAddReportDialog();
-    // Notify success
-    Notify.create({
-      message: "Report added successfully!",
-      color: "green",
-    });
-    console.log("Added report:", addedReport);
-  } catch (error) {
-    console.error("Error adding report:", error); // Log the error for debugging
-    Notify.create({
-      message: "Failed to add report. Please try again.",
-      color: "red",
-    });
-  }
-}
-
 // Watchers for category and sub-category selection (optional, based on dynamic dropdowns)
 watch(selectedCategory, (newCategory) => {
   if (newCategory) {
     // Dynamically update subcategories if needed
     console.log(`Selected category changed to: ${newCategory}`);
   }
-});
-
-const uploadedPhotoUrl = ref(null); // Captured photo's URL
-const isCameraDialogOpen = ref(false); // Camera dialog visibility
-const videoStream = ref(null); // Video stream object
-const videoElement = ref(null); // Video element reference
-
-// Open the camera dialog and start the video stream
-async function openCameraDialog() {
-  try {
-    isCameraDialogOpen.value = true; // Show the dialog
-    await nextTick(); // Wait for the dialog to render
-
-    // Access the camera
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    videoStream.value = stream;
-
-    // Attach the stream to the video element
-    if (videoElement.value) {
-      videoElement.value.srcObject = stream;
-    } else {
-      console.error("Video element not available.");
-    }
-  } catch (error) {
-    console.error("Error accessing camera:", error);
-    closeCameraDialog(); // Ensure dialog is closed if there's an error
-  }
-}
-
-// Capture the photo from the video feed
-function capturePhoto() {
-  try {
-    if (!videoElement.value) {
-      console.error("Video element not available.");
-      return;
-    }
-
-    // Create a canvas to capture the current frame
-    const canvas = document.createElement("canvas");
-    canvas.width = videoElement.value.videoWidth;
-    canvas.height = videoElement.value.videoHeight;
-
-    const context = canvas.getContext("2d");
-    context.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height);
-
-    // Convert the canvas content to a Base64 URL
-    uploadedPhotoUrl.value = canvas.toDataURL("image/png");
-
-    // Close the camera dialog
-    closeCameraDialog();
-  } catch (error) {
-    console.error("Error capturing photo:", error);
-  }
-}
-
-// Close the camera dialog and stop the video stream
-function closeCameraDialog() {
-  if (videoStream.value) {
-    const tracks = videoStream.value.getTracks();
-    tracks.forEach((track) => track.stop()); // Stop all tracks
-    videoStream.value = null; // Reset the video stream
-  }
-  isCameraDialogOpen.value = false; // Hide the dialog
-}
-
-// Clear the uploaded photo
-function clearUploadedPhoto() {
-  uploadedPhotoUrl.value = null; // Reset the photo URL
-}
-
-// --- Per-section totals ---
-const pcTotals = computed(() => {
-  const qty = pcItems.value.reduce(
-    (acc, it) => acc + (parseFloat(it.quantity) || 0),
-    0
-  );
-  const subtotal = pcItems.value.reduce(
-    (acc, it) => acc + (parseFloat(it.subtotal) || 0),
-    0
-  );
-  return { qty, subtotal };
-});
-
-const weightTotals = computed(() => {
-  let kg = 0,
-    lbs = 0,
-    pieces = 0,
-    subtotal = 0;
-  for (const it of weightItems.value) {
-    const u = getUnitForItem(it);
-    const q = parseFloat(it.quantity) || 0;
-    if (u === "kg") kg += q;
-    else if (u === "lbs") lbs += q;
-    pieces += computedPcs(it);
-    subtotal += parseFloat(it.subtotal) || 0;
-  }
-  return { kg, lbs, pieces, subtotal };
-});
-
-const sizeTotals = computed(() => {
-  let sqft = 0,
-    sqm = 0,
-    pieces = 0,
-    subtotal = 0;
-  for (const it of sizeItems.value) {
-    const u = getUnitForItem(it);
-    const q = parseFloat(it.quantity) || 0;
-    if (u === "sqft") sqft += q;
-    else if (u === "sqm") sqm += q;
-    pieces += computedPcs(it);
-    subtotal += parseFloat(it.subtotal) || 0;
-  }
-  return { sqft, sqm, pieces, subtotal };
-});
-
-const totalSubtotal = computed(() => {
-  return transactions.value.reduce((acc, item) => {
-    const subtotal = parseFloat(item.subtotal) || 0;
-    return acc + subtotal;
-  }, 0);
 });
 
 // Computed properties for formatted display
@@ -2912,17 +2319,6 @@ const formatDate = (dateString) => {
     year: "numeric", // "2025"
   });
 };
-
-function getContactNumber(contactPersonId) {
-  if (!contactOptions.value || contactOptions.value.length === 0) return "-"; // Ensure options are loaded
-  const contact = contactOptions.value.find(
-    (option) => option.id === contactPersonId
-  );
-  if (contact) {
-    return `${contact.contact_no1 || "-"} / ${contact.contact_no2 || "-"}`;
-  }
-  return "-";
-}
 
 const formattedCollectionContactNos = computed({
   get() {
@@ -3025,83 +2421,31 @@ const openCustomerTab = (customerId) => {
   window.open(url, "_blank"); // Open in a new tab
 };
 
-const updateLogistics = async () => {
-  try {
-    const logisticsId = logistics.value.logistics_id;
-    if (!logisticsId) {
-      Notify.create({ message: "Logistics ID not found.", color: "red" });
-      return;
-    }
+function onProductionSaved({ patch }) {
+  // Minimal immutable-ish merge
+  order.value = {
+    ...(order.value || {}),
+    ...patch,
+    order_production: {
+      ...(order.value?.order_production || {}),
+      ...(patch?.order_production || {}),
+    },
+  };
+  Notify.create({
+    message: "Production details updated.",
+    color: "green",
+    icon: "check_circle",
+  });
+}
 
-    const success = await transactionStore.updateLogistics(logisticsId, {
-      logistics_status: logistics.value.logistics_status,
-      job_type: logistics.value.job_type,
-      urgency: logistics.value.urgency,
-    });
-
-    console.log("✅ updateLogistics response:", success);
-
-    if (success) {
-      Notify.create({
-        message: "Logistics details updated successfully!",
-        color: "green",
-      });
-    } else {
-      Notify.create({ message: "Failed to update logistics.", color: "red" });
-    }
-  } catch (err) {
-    console.error("❌ Error in updateLogistics:", err);
-    Notify.create({ message: "Unexpected error occurred.", color: "red" });
-  }
-};
-
-const updateProduction = async () => {
-  try {
-    if (!order.value?.id) {
-      Notify.create({
-        message: "Order ID is missing. Cannot update production.",
-        color: "red",
-      });
-      return;
-    }
-
-    const payload = {
-      ready_by: order.value.order_production?.ready_by || null,
-      goods_status: order.value.order_production?.goods_status || "",
-      no_packets: order.value.order_production?.no_packets || "",
-      no_hangers: order.value.order_production?.no_hangers || "",
-      no_rolls: order.value.order_production?.no_rolls || "",
-    };
-
-    const success = await transactionStore.updateProduction(
-      order.value.id,
-      payload
-    );
-
-    if (success) {
-      Notify.create({
-        message: "Production details updated successfully!",
-        color: "green",
-      });
-    } else {
-      Notify.create({
-        message: "Failed to update production details.",
-        color: "red",
-      });
-    }
-  } catch (err) {
-    console.error("❌ Error in updateProduction:", err);
-    Notify.create({
-      message: "Unexpected error while updating production.",
-      color: "red",
-    });
-  }
-};
-
-// State for the delete dialog
-const isDeleteDialogOpen = ref(false);
-const deleteTargetType = ref(""); // "instruction" or "report"
-const itemToDeleteId = ref(null); // ID of the item to delete
+function onLogisticsSaved({ patch }) {
+  logistics.value = { ...(logistics.value || {}), ...patch };
+  Notify.create({
+    message: "Logistics details updated.",
+    color: "green",
+    icon: "check_circle",
+  });
+}
 
 const isDeleteInstructionDialogOpen = ref(false);
 const instructionToDelete = ref({ id: null, type: null });
@@ -3186,17 +2530,6 @@ function closeDeleteReportDialog() {
   isDeleteReportDialogOpen.value = false;
   reportToDeleteId.value = null;
 }
-const showInstructions = ref(false);
-
-function toggleInstructions() {
-  showInstructions.value = !showInstructions.value;
-}
-const showReports = ref(false);
-
-function toggleReports() {
-  showReports.value = !showReports.value;
-}
-
 // Reactive state for delete dialog
 const isDeleteTransactionDialogOpen = ref(false);
 const transactionToDeleteIndex = ref(null);
@@ -3672,156 +3005,6 @@ async function updateTransaction(orderId) {
       icon: "error",
     });
   }
-}
-
-
-// Start of ass contact person
-const isAddContactPersonDialogOpen = ref(false);
-const newContactPerson = ref({
-  name: "",
-  contact_no1: "",
-  contact_no2: "",
-  email: "",
-});
-
-const openAddContactPersonDialog = () => {
-  isAddContactPersonDialogOpen.value = true;
-};
-
-const closeAddContactPersonDialog = () => {
-  isAddContactPersonDialogOpen.value = false;
-};
-
-// Add contact person function
-const addContactPerson = async () => {
-  try {
-    if (
-      !newContactPerson.value.name ||
-      !transactionStore.selectedCustomer?.id
-    ) {
-      Notify.create({
-        message: "Name is required, and a customer must be selected.",
-        color: "red",
-      });
-      return;
-    }
-
-    // Call the transaction store to add the contact person
-    const contact = {
-      ...newContactPerson.value,
-      customer_id: transactionStore.selectedCustomer.id,
-    };
-    await transactionStore.addContactPerson(contact);
-
-    // Reload contact options to reflect the new contact person
-    await transactionStore.loadContactOptions(
-      transactionStore.selectedCustomer.id
-    );
-
-    Notify.create({
-      message: "Contact person added successfully!",
-      color: "green",
-    });
-
-    closeAddContactPersonDialog();
-  } catch (error) {
-    console.error("Error adding contact person:", error);
-    Notify.create({
-      message: "Failed to add contact person. Please try again.",
-      color: "red",
-    });
-  }
-};
-
-// End of add contact person
-
-// Start of add address
-
-// Reactive variable to control the dialog visibility
-const isAddAddressDialogOpen = ref(false);
-
-// Reactive object to store the new address form data
-const newAddress = ref({
-  block_no: "",
-  road_name: "",
-  unit_no: "",
-  building_name: "",
-  postal_code: "",
-  additional_info: "",
-});
-
-// Function to open the "Add Address" dialog
-const openAddAddressDialog = () => {
-  isAddAddressDialogOpen.value = true;
-};
-
-// Function to close the "Add Address" dialog
-const closeAddAddressDialog = () => {
-  isAddAddressDialogOpen.value = false;
-};
-
-const capitalize = (str) => {
-  return str ? str.toUpperCase() : ""; // Convert string to uppercase or return empty if null/undefined
-};
-
-const addAddress = async () => {
-  try {
-    // Validate required fields
-    if (
-      !newAddress.value.block_no ||
-      !newAddress.value.road_name ||
-      !newAddress.value.postal_code ||
-      !transactionStore.selectedCustomer?.id
-    ) {
-      Notify.create({
-        message: "Block No., Road Name, and Postal Code are required.",
-        color: "red",
-      });
-      return;
-    }
-
-    // Add customer_id to the address object and capitalize fields
-    const address = {
-      block_no: capitalize(newAddress.value.block_no),
-      road_name: capitalize(newAddress.value.road_name),
-      unit_no: capitalize(newAddress.value.unit_no),
-      building_name: capitalize(newAddress.value.building_name),
-      postal_code: capitalize(newAddress.value.postal_code),
-      additional_info: capitalize(newAddress.value.additional_info),
-      customer_id: transactionStore.selectedCustomer.id,
-    };
-
-    // Call the store function to save the address
-    await transactionStore.addAddress(address);
-
-    // Reload the address options to reflect the new address
-    await transactionStore.loadAddressOptions(
-      transactionStore.selectedCustomer.id
-    );
-
-    // Notify success
-    Notify.create({
-      message: "Address added successfully!",
-      color: "green",
-    });
-
-    // Reset the form and close the dialog
-    newAddress.value = {
-      block_no: "",
-      road_name: "",
-      unit_no: "",
-      building_name: "",
-      postal_code: "",
-      additional_info: "",
-    };
-    closeAddAddressDialog();
-  } catch (error) {
-    console.error("Error adding address:", error);
-    Notify.create({
-      message: "Failed to add address. Please try again.",
-      color: "red",
-    });
-  }
 };
 
 const computedPcs = (item) => {
@@ -3886,9 +3069,6 @@ const openAddReportDialog = () => {
   isAddReportDialogOpen.value = true;
 };
 
-const closeAddReportDialog = () => {
-  isAddReportDialogOpen.value = false;
-};
 
 const showUpdateCollectionDialog = ref(false);
 const showUpdateDeliveryDialog = ref(false);
@@ -3913,8 +3093,6 @@ const updateCollection = async (logisticsId) => {
     transactionStore.collectionTime = collectionData[0].collection_time || null;
     transactionStore.collectionRemarks = collectionData[0].remarks || null;
     transactionStore.collectionNoBags = collectionData[0].no_bags || null;
-    transactionStore.jobType = collectionData[0].job_type || null;
-    transactionStore.readyBy = collectionData[0].ready_by || null;
     transactionStore.logisticsId = collectionData[0].logistics_id || null;
 
     showUpdateCollectionDialog.value = true;
@@ -3941,9 +3119,6 @@ const updateDelivery = async (logisticsId) => {
     transactionStore.deliveryDate = deliveryData[0].delivery_date || null;
     transactionStore.deliveryTime = deliveryData[0].delivery_time || null;
     transactionStore.deliveryRemarks = deliveryData[0].remarks || null;
-    transactionStore.deliveryNoBags = deliveryData[0].no_bags || null;
-    transactionStore.jobType = deliveryData[0].job_type || null;
-    transactionStore.readyBy = deliveryData[0].ready_by || null;
     transactionStore.logisticsId = deliveryData[0].logistics_id || null;
 
     showUpdateDeliveryDialog.value = true;
@@ -4199,46 +3374,13 @@ const onDeliveryDialogClosed = async () => {
   $q.notify({ type: "positive", message: "Delivery updated." });
 };
 
-const openCollectionHistoryDialog = () => {
-  // try current page state first, then last-used store value
-  const id =
-    logistics.value?.logistics_id ??
-    collection.value?.logistics_id ??
-    transactionStore?.logisticsId ??
-    null;
-
-  if (!id) {
-    console.warn("[openCollectionHistoryDialog] Missing logistics_id");
-    Notify.create({
-      type: "negative",
-      message: "Logistics ID is missing. Cannot open history.",
-    });
-    return;
-  }
-
-  transactionStore.logisticsId = id;
-  console.log("opening collection history dialog:", id);
+function openCollectionHistoryDialog() {
+  selectedCollectionId.value = collection.value.id;
   showCollectionHistoryDialog.value = true;
-};
+}
 
 const openDeliveryHistoryDialog = () => {
-  const id =
-    logistics.value?.logistics_id ??
-    delivery.value?.logistics_id ??
-    transactionStore?.logisticsId ??
-    null;
-
-  if (!id) {
-    console.warn("[openDeliveryHistoryDialog] Missing logistics_id");
-    Notify.create({
-      type: "negative",
-      message: "Logistics ID is missing. Cannot open history.",
-    });
-    return;
-  }
-
-  transactionStore.logisticsId = id;
-  console.log("opening delivery history dialog:", id);
+  selectedDeliveryId.value = delivery.value.id;
   showDeliveryHistoryDialog.value = true;
 };
 
@@ -4363,140 +3505,12 @@ function onQtyInputChange(rowIndex, val) {
 }
 
 const showDeliveryExceptionDialog = ref(false);
-
-const deliveryExceptionForm = ref({
-  delivery_date: null,
-  delivery_time: null,
-  driver_id: null,
-  remarks: "",
-});
-
+async function onExceptionSaved() {
+  await loadDeliveryExceptions();
+  await updateDeliveryLogisticsStatus();
+}
 // This will be built from `transactions`
 const deliveryExceptionItems = ref([]);
-
-function openDeliveryExceptionDialog() {
-  // Default values from current delivery
-  const d = delivery.value || {};
-
-  // Date: expect `YYYY-MM-DD`; if datetime string, slice first 10 chars
-  const rawDate = d.delivery_date
-    ? new Date(d.delivery_date).toISOString().slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
-
-  deliveryExceptionForm.value = {
-    delivery_date: rawDate,
-    delivery_time: d.delivery_time || null,
-    driver_id: d.driver_id || null,
-    remarks:
-      d.remarks && d.remarks.trim().length
-        ? d.remarks
-        : `DELIVERY EXCEPTION for Order #${order.value?.order_no || ""}`,
-  };
-
-  // Build item list from current transactions
-  deliveryExceptionItems.value = (transactions.value || []).map((item) => {
-    const unit = getUnitForItem(item);
-    const qty = Number(item.quantity ?? 0) || 0;
-
-    return {
-      item_id: item.id, // order_transaction_item_id
-      item_name: item.item_name,
-      company: (item.company || "").toString().toLowerCase(),
-      companyLabel: (item.company || "").toString().toUpperCase() || "-",
-      process: item.process,
-      processLabel:
-        item.process === "laundry"
-          ? "Laundry"
-          : item.process === "dryclean"
-          ? "Dry Clean"
-          : item.process === "pressing"
-          ? "Pressing Only"
-          : item.process === "others"
-          ? "Others"
-          : item.process || "-",
-      unit,
-      availableQty: qty,
-      exceptionQty: qty, // default: send all unless user reduces
-      selected: false,
-    };
-  });
-
-  showDeliveryExceptionDialog.value = true;
-}
-function normalizeExceptionQty(exItem) {
-  if (exItem.exceptionQty == null || isNaN(exItem.exceptionQty)) {
-    exItem.exceptionQty = 0;
-  }
-  if (exItem.exceptionQty < 0) exItem.exceptionQty = 0;
-  if (exItem.exceptionQty > exItem.availableQty) {
-    exItem.exceptionQty = exItem.availableQty;
-  }
-}
-async function saveDeliveryException() {
-  try {
-    const logisticsId =
-      logistics.value?.logistics_id || logistics.value?.id || null;
-
-    if (!logisticsId) {
-      Notify.create({
-        type: "negative",
-        message: "Logistics ID is missing, cannot create delivery exception.",
-      });
-      return;
-    }
-
-    const selectedItems = deliveryExceptionItems.value.filter(
-      (i) => i.selected && i.exceptionQty > 0
-    );
-
-    if (!selectedItems.length) {
-      Notify.create({
-        type: "warning",
-        message: "Please select at least one item with quantity > 0.",
-      });
-      return;
-    }
-
-    if (!deliveryExceptionForm.value.delivery_date) {
-      Notify.create({
-        type: "warning",
-        message: "Delivery date is required.",
-      });
-      return;
-    }
-
-    // Create 1 exception row per selected item
-    const promises = selectedItems.map((item) => {
-      const payload = {
-        logistics_id: logisticsId,
-        order_transaction_item_id: item.item_id,
-        delivery_date: deliveryExceptionForm.value.delivery_date,
-        delivery_time: deliveryExceptionForm.value.delivery_time,
-        driver_id: deliveryExceptionForm.value.driver_id,
-        quantity: item.exceptionQty,
-        remarks: deliveryExceptionForm.value.remarks || null,
-      };
-
-      return transactionStore.createDeliveryException(payload);
-    });
-
-    await Promise.all(promises);
-    Notify.create({
-      type: "positive",
-      message: "Delivery exception(s) saved successfully.",
-    });
-
-    showDeliveryExceptionDialog.value = false;
-    await loadDeliveryExceptions();
-    await updateDeliveryLogisticsStatus();
-  } catch (err) {
-    console.error("[saveDeliveryException] error", err);
-    Notify.create({
-      type: "negative",
-      message: "Failed to save delivery exceptions. Please try again.",
-    });
-  }
-}
 
 const deliveryExceptions = ref([]); // rows from logistics_delivery_exceptions
 
@@ -4517,7 +3531,10 @@ async function loadDeliveryExceptions() {
       )) || [];
 
     deliveryExceptions.value = Array.isArray(rows) ? rows : [];
-    console.log("[loadDeliveryExceptions] exceptions:", deliveryExceptions.value);
+    console.log(
+      "[loadDeliveryExceptions] exceptions:",
+      deliveryExceptions.value
+    );
 
     // ✅ If the dialog is open, re-compute the delivered date for the selected group
     if (isExceptionDetailsOpen.value && selectedException.value) {
@@ -4726,18 +3743,6 @@ const deliveryPlanGroups = computed(() => {
   });
 
   return groups;
-});
-
-const handlerLabel = computed(() => {
-  const used = new Set(
-    (transactions.value || [])
-      .map((t) => (t.company || "").toLowerCase())
-      .filter(Boolean)
-  );
-  const labels = [];
-  if (used.has("cc")) labels.push("Cotton Care");
-  if (used.has("dc")) labels.push("DryCleaners");
-  return labels.length ? labels.join(" / ") : "-";
 });
 
 function perUnitPieces(item) {
@@ -5053,12 +4058,12 @@ async function updateDeliveryLogisticsStatus() {
       (r) => r.delivered_date || r.deliveredDate
     ).length;
 
-    let next = null; 
+    let next = null;
 
     if (mainDone && delivered === total) {
       next = "delivery completed";
     } else if (mainDone || delivered > 0) {
-      next = "delivered partial";
+      next = "delivery partial";
     } else {
       next = "delivery scheduled";
     }
@@ -5077,7 +4082,6 @@ async function updateDeliveryLogisticsStatus() {
     console.error("[updateDeliveryLogisticsStatus] write failed", e);
   }
 }
-
 
 async function markExceptionGroupDelivered() {
   try {
@@ -5172,7 +4176,10 @@ function deliveredDateForGroup(group) {
 async function markExceptionGroupUndelivered() {
   try {
     if (!selectedException.value) {
-      Notify.create({ type: "negative", message: "No exception group selected." });
+      Notify.create({
+        type: "negative",
+        message: "No exception group selected.",
+      });
       return;
     }
 
@@ -5194,7 +4201,7 @@ async function markExceptionGroupUndelivered() {
       return;
     }
 
-      await transactionStore.clearDeliveryExceptionsDelivered(ids);
+    await transactionStore.clearDeliveryExceptionsDelivered(ids);
 
     // Refresh and recompute status
     await loadDeliveryExceptions();
@@ -5260,7 +4267,16 @@ function allowOnlyNumberDot(evt, allowNegative = false, currentValue = "") {
   if (evt.ctrlKey || evt.metaKey) return;
 
   // Allow navigation & editing keys (defensive for some browsers emitting keypress)
-  const allowedNonChar = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "Tab", "Enter"];
+  const allowedNonChar = [
+    "Backspace",
+    "Delete",
+    "ArrowLeft",
+    "ArrowRight",
+    "Home",
+    "End",
+    "Tab",
+    "Enter",
+  ];
   if (allowedNonChar.includes(k)) return;
 
   // Digits always ok
@@ -5270,7 +4286,12 @@ function allowOnlyNumberDot(evt, allowNegative = false, currentValue = "") {
   if (k === "." && !String(currentValue).includes(".")) return;
 
   // Minus: only if negatives allowed and only at start
-  if (k === "-" && allowNegative && (currentValue == null || String(currentValue).length === 0)) return;
+  if (
+    k === "-" &&
+    allowNegative &&
+    (currentValue == null || String(currentValue).length === 0)
+  )
+    return;
 
   // Otherwise block
   evt.preventDefault();
@@ -5300,6 +4321,61 @@ function onPasteNumberDot(evt, allowNegative = false) {
     inputEl.dispatchEvent(new Event("input", { bubbles: true }));
   }
 }
+
+// Split rows of the SELECTED exception by unit
+const pcExcRows = computed(() => {
+  const rows = selectedException.value?.items || [];
+  return rows.filter((it) => {
+    const tx = txById(it.id);
+    return tx && getUnitForItem(tx) === "pc";
+  });
+});
+
+const kgExcRows = computed(() => {
+  const rows = selectedException.value?.items || [];
+  return rows.filter((it) => {
+    const tx = txById(it.id);
+    return tx && getUnitForItem(tx) === "kg";
+  });
+});
+
+const sqftExcRows = computed(() => {
+  const rows = selectedException.value?.items || [];
+  return rows.filter((it) => {
+    const tx = txById(it.id);
+    return tx && getUnitForItem(tx) === "sqft";
+  });
+});
+
+// For PC rows: show "set" if multi-piece, otherwise "pcs"
+function rowQtySuffix(excItem) {
+  const tx = txById(excItem.id);
+  if (!tx) return "";
+  const unit = getUnitForItem(tx);
+  if (unit === "pc") {
+    return perUnitPieces(tx) > 1 ? "set" : "pcs";
+  }
+  return unit; // fallback (not used for kg/sqft here)
+}
+
+// Sum total of the selected exception
+const totalExceptionAmount = computed(() => {
+  const rows = selectedException.value?.items || [];
+  return rows.reduce((sum, r) => sum + (excSubtotalForItem(r) || 0), 0);
+});
+
+const brandLogoSrc = computed(() => {
+  const companies = new Set(
+    (Array.isArray(transactions.value) ? transactions.value : [])
+      .map(i => (i?.company ? String(i.company).toLowerCase().trim() : ""))
+      .filter(Boolean)
+  );
+  if (companies.size !== 1) return null; // mixed or none → no logo
+  const only = [...companies][0];
+  if (only === "cc") return ccLogo;
+  if (only === "dc") return dcLogo;
+  return null;
+});
 
 </script>
 

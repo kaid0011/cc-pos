@@ -526,7 +526,6 @@ textarea {
 .order-box {
   border: 2px solid;
   border-color: #7fa2a3;
-  padding: 0.5em;
   border-radius: 2em;
 }
 
@@ -723,7 +722,7 @@ textarea {
   background-color: #dcbaa5;
 }
 
-.pack-borders {
+.all-simple-borders {
   border-style: solid;
   border-width: 1px;
 }
@@ -778,9 +777,26 @@ textarea {
 }
 
 .tag-card-cell {
-  border-style: solid;
-  border-width: 1px 0 1px 0;
   padding: 5px;
+}
+
+.vertical-line-cell {
+  border-style: solid;
+  border-width: 0 1px 0 0;
+  border-color: rgb(175, 175, 175);
+}
+
+.vertical-line-cell:last-child {
+  border-right: none; /* Remove border for the last column */
+}
+
+.horizontal-line-cell {
+  border-style: solid;
+  border-width: 0 0 1px 0;
+}
+
+.horizontal-line-cell:last-child {
+  border-bottom: none; /* Remove border for the last column */
 }
 
 .bottom-border {
@@ -1014,6 +1030,11 @@ textarea {
 
 .customer-element-panels {
   background-color: #fff1e6;
+}
+
+.brand-logo {
+  height: 50px;
+  object-fit: contain;
 }
 
 /* Chrome, Edge, Safari */

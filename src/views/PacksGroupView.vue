@@ -74,12 +74,6 @@
               </div>
               <div class="col bordered">
                 <div>
-                  Ready By:
-                  <span class="text-weight-bold">{{
-                    logistics.order?.order_production?.ready_by
-                  }}</span>
-                </div>
-                <div>
                   Delivery Date:
                   <span class="text-weight-bold">{{
                     logistics.delivery?.delivery_date || "N/A"
@@ -146,37 +140,37 @@
 
             <div class="row text-center q-col-gutter-x-sm q-mb-sm">
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.clothing || 0 }}
                 </div>
               </div>
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.bedding || 0 }}
                 </div>
               </div>
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.curtain || 0 }}
                 </div>
               </div>
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.sofa || 0 }}
                 </div>
               </div>
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.stuffed_toy || 0 }}
                 </div>
               </div>
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.carpet || 0 }}
                 </div>
               </div>
               <div class="col">
-                <div class="pack-borders">
+                <div class="all-simple-borders">
                   {{ logistics.tagCategoryCounts.others || 0 }}
                 </div>
               </div>
@@ -316,39 +310,6 @@ const totalSubtotal = computed(() => {
     .toFixed(2); // Format as a fixed two-decimal string
 });
 
-// Date formatting
-const formattedOrderDate = computed(() =>
-  order.value?.created_at
-    ? new Date(order.value.created_at).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "N/A"
-);
-
-const readyByFormatted = computed(() => {
-  const date = order.value?.order_production?.ready_by
-    ? new Date(order.value.order_production.ready_by)
-    : null;
-  return date
-    ? date.toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-    : "N/A";
-});
-
-const tagCategoryCounts = computed(() => {
-  return transactions.value.reduce((counts, item) => {
-    const category = item.tag_category?.toLowerCase() || "others";
-    const pieces = parseInt(item.pieces * item.quantity) || 0; // Use pieces instead of quantity
-    counts[category] = (counts[category] || 0) + pieces;
-    return counts;
-  }, {});
-});
 
 function formatDate(date) {
   if (!date) return "N/A";
@@ -359,13 +320,6 @@ function formatDate(date) {
   const month = (parsedDate.getMonth() + 1).toString().padStart(2, "0"); // 2-digit month
   return `${weekday}${month}${monthDay}`; // Combine into format
 }
-
-const formattedTagDetails = computed(() => {
-  const collectionDate = formatDate(collection.value.collection_date);
-  const deliveryDate = formatDate(delivery.value.delivery_date);
-  const orderNoLast5 = order.value?.order_no?.slice(-5) || "N/A";
-  return `${collectionDate} - ${orderNoLast5} - ${deliveryDate}`;
-});
 
 const downloadPackPDF = () => {
   Promise.all([preloadImage(payQr), preloadImage(ccLogo)])

@@ -96,12 +96,6 @@
                 </span>
               </div>
               <div class="">
-                <span class="text-subtitle2 text-uppercase"> Ready By: </span>
-                <span class="text-summary">{{
-                  readyByFormatted(logistics)
-                }}</span>
-              </div>
-              <div class="">
                 <span class="text-subtitle2 text-uppercase">
                   No. of Bags:
                 </span>
@@ -445,19 +439,6 @@ onMounted(async () => {
     console.error("Error loading group orders:", error);
   }
 });
-
-const readyByFormatted = (logistics) => {
-  const rawDate = logistics?.order?.order_production?.ready_by;
-  if (!rawDate) return "N/A";
-
-  const date = new Date(rawDate);
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
 
 const formatDate = (date) => {
   if (!date) return "N/A";

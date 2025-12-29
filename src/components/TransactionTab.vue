@@ -138,11 +138,11 @@
         <div
           class="row row-col-header text-p text-center text-uppercase text-weight-bold"
         >
-          <div class="col-5 bordered text-weight-bold">Item</div>
-          <div class="col-1 bordered text-weight-bold">Job</div>
-          <div class="col bordered text-weight-bold">Price</div>
-          <div class="col bordered text-weight-bold">Qty</div>
-          <div class="col bordered text-weight-bold">S.total</div>
+          <div class="col-5 header-bordered text-weight-bold">Item</div>
+          <div class="col-1 header-bordered text-weight-bold">Job</div>
+          <div class="col header-bordered text-weight-bold">Price</div>
+          <div class="col header-bordered text-weight-bold">Qty</div>
+          <div class="col header-bordered text-weight-bold">S.total</div>
         </div>
 
         <!-- Render each transaction item if there are items in the list -->

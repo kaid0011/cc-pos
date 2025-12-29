@@ -496,28 +496,36 @@ const openCollectionDialog = (customer) => {
   showCreateCollectionDialog.value = true;
 };
 
+function resetCreateCollectionFormState() {
+  transactionStore.selectedCollectionContact = null;
+  transactionStore.selectedDeliveryContact = null;
+  transactionStore.selectedCollectionAddress = null;
+  transactionStore.selectedDeliveryAddress = null;
+  transactionStore.selectedCollectionDriver = null;
+  transactionStore.selectedDeliveryDriver = null;
+  transactionStore.additionalCollectionDriver = null;
+  transactionStore.additionalDeliveryDriver = null;
+  transactionStore.collectionRemarks = "";
+  transactionStore.deliveryRemarks = "";
+}
+
 async function createCollection() {
   try {
     const logisticsId = await transactionStore.createLogistics();
     await transactionStore.createCollection(logisticsId);
     await transactionStore.createDelivery(logisticsId);
+
     $q.dialog({
       title: "Collection Created",
       message: "Collection created successfully!",
       ok: "OK",
       color: "positive",
     });
-    transactionStore.selectedCollectionContact = null;
-    transactionStore.selectedDeliveryContact = null;
-    transactionStore.selectedCollectionAddress = null;
-    transactionStore.selectedDeliveryAddress = null;
-    transactionStore.selectedCollectionDriver = null;
-    transactionStore.selectedDeliveryDriver = null;
-    transactionStore.collectionRemarks = "";
-    transactionStore.deliveryRemarks = "";
+
+    resetCreateCollectionFormState();
     showCreateCollectionDialog.value = false;
   } catch (error) {
-    console.error("Error submitting collection:", error.message);
+    console.error("Error submitting collection:", error?.message ?? error);
     $q.dialog({
       title: "Error",
       message: "Failed to create collection. Please try again.",
@@ -526,6 +534,7 @@ async function createCollection() {
     });
   }
 }
+
 
 const DEFAULT_WHATSAPP_CC = "+65";
 const sanitizeForTel = (raw) => String(raw || "").replace(/[^\d+]/g, "");

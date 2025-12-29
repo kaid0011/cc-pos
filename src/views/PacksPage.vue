@@ -128,7 +128,7 @@
         <div class="row">
           <div class="col">
             <div>
-              <q-checkbox dense v-model="filters.clothings" label="clothings" />
+              <q-checkbox dense v-model="filters.clothings" label="Clothings" />
             </div>
             <div>
               <q-checkbox
@@ -204,35 +204,34 @@
           </div>
         </div>
       </div>
-      <div class="col-2">
-        <q-btn
-          label="Find Category"
-          color="primary"
-          unelevated
-          dense
-          class="full-width"
-          @click=""
-        />
-        <q-btn
-          label="Show Not Ready"
-          color="primary"
-          unelevated
-          dense
-          class="q-mt-xs full-width"
-          @click=""
-        />
-        <q-btn
-          label="Print Not Ready"
-          color="primary"
-          unelevated
-          dense
-          class="q-mt-xs full-width"
-          @click=""
-        />
-      </div>
     </div>
-    <div class="row q-mt-md justify-end q-col-gutter-md">
-      <div class="col-3">
+    <div class="row q-my-sm q-col-gutter-sm">
+<div class="col-2">
+  <div class="dialog-label">
+    <div class="text-weight-bold text-subtitle2">Goods Status</div>
+  </div>
+  <q-select
+    v-model="goodsStatusFilter"
+    :options="goodsStatusOptions"
+    outlined
+    dense
+    emit-value
+    map-options
+    class="bg-white"
+     :display-value="!goodsStatusFilter ? 'None applied' : undefined"
+  >
+    <template v-slot:append>
+      <q-icon
+        v-if="goodsStatusFilter"
+        name="close"
+        class="cursor-pointer q-ml-sm"
+        @click.stop="goodsStatusFilter = null"
+      />
+    </template>
+  </q-select>
+</div>
+
+      <div class="col-2">
         <div class="dialog-label">
           <div class="text-weight-bold text-subtitle2">Delivery Driver</div>
         </div>
@@ -246,6 +245,7 @@
           emit-value
           map-options
           class="bg-white"
+          :display-value="!deliveryDriverFilter ? 'None applied' : undefined"
       >
           <template v-slot:append>
             <q-icon
@@ -256,7 +256,7 @@
             />
           </template></q-select>
       </div>
-      <div class="col-3">
+      <div class="col-2">
         <div class="dialog-label">
           <div class="text-weight-bold text-subtitle2">Delivery Date</div>
         </div>
@@ -281,9 +281,9 @@
           </template>
         </q-input>
       </div>
-      <div class="col-3">
+      <div class="col">
         <div class="dialog-label">
-          <div class="text-weight-bold text-subtitle2">Search Here...</div>
+          <div class="text-weight-bold text-subtitle2">Search</div>
         </div>
         <q-input
           class="search-transactions search-input"
@@ -291,337 +291,48 @@
           outlined
           dense
           debounce="300"
+          placeholder="Search here..."
         >
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
         </q-input>
       </div>
+      
+      <div class="col-3">
+        <q-btn
+          label="Show Ready For Packing"
+          color="primary"
+          unelevated
+          dense
+          class="q-mt-xs full-width"
+          @click=""
+          disabled
+        />
+        <q-btn
+          label="Print Ready For Packing"
+          color="primary"
+          unelevated
+          dense
+          class="q-mt-xs full-width"
+          @click=""
+          disabled
+        />
+      </div>
     </div>
 
     <!-- Table Display -->
-    <div class="row-col-table q-mt-md">
-      <!-- Table Header -->
-      <div class="row row-col-header q-px-md text-center">
-        <div class="col text-weight-bolder q-py-sm">Order Details</div>
-        <div class="col-4 text-weight-bolder q-py-sm">Logistics Details</div>
-        <div class="col text-weight-bolder q-py-sm">Production Details</div>
-        <div class="col text-weight-bolder q-py-sm">Customer Details</div>
-      </div>
-
-      <!-- Table Rows -->
-      <div
-        v-if="paginatedOrders.length === 0"
-        class="text-center text-grey q-pa-lg text-h6"
-      >
-        No orders found.
-      </div>
-
-      <div
-        v-for="(logistics, index) in paginatedOrders"
-        :key="index"
-        class="row row-col-row q-px-md"
-      >
-        <div class="col bordered">
-          <div>
-            <a
-              @click="openOrderDialog(logistics)"
-              class="text-weight-bold text-subtitle1"
-            >
-              {{ logistics.order?.order_no || 'N/A' }}
-            </a>
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Date:
-            </span>
-            {{ getOrderDate(logistics) }}
-          </div>
-          <div>
-            <span class="text-caption text-uppercase text-weight-bold">
-              Urgency:
-            </span>
-            <span
-              :class="[
-                'text-uppercase',
-                'text-weight-bolder',
-                logistics.urgency?.toLowerCase?.() === 'urgent'
-                  ? 'text-purple'
-                  : logistics.urgency?.toLowerCase?.() === 'express'
-                  ? 'text-red'
-                  : 'text-caption',
-              ]"
-            >
-              {{ logistics.urgency || 'default' }}
-            </span>
-          </div>
-        </div>
-        <div class="col-4 bordered" style="padding: 0">
-          <div>
-            <div
-              :class="[
-                'text-weight-bold',
-                'text-subtitle1',
-                'text-center',
-                'q-mb-sm',
-                'q-mx-sm',
-                'line-height-1',
-                'text-uppercase',
-                logisticsBadgeClass(logistics.logistics_status),
-              ]"
-              style="border-style: solid; border-width: 1px"
-            >
-              {{ logistics.logistics_status }}
-            </div>
-          </div>
-          <q-separator />
-          <div class="row" style="min-height: auto">
-            <div
-              class="col"
-               :style="{
-                        order: isDeliveryFirst(logistics.logistics_status)
-                          ? 2
-                          : 1,
-                        borderRight: isDeliveryFirst(logistics.logistics_status)
-                          ? ''
-                          : '1px solid #c09f8b',
-                      }"
-            >
-              <div
-                class="text-uppercase text-weight-bolder text-pink-4 text-center"
-              >
-                Collection
-              </div>
-              <q-separator />
-              <div class="q-pa-sm">
-                <div>
-                  <span class="text-caption text-uppercase text-weight-bold">
-                    Date: </span
-                  >{{ getCollectionDate(logistics.collections) }}
-                </div>
-                <div>
-                  <span class="text-caption text-uppercase text-weight-bold">
-                    Time:
-                  </span>
-                  {{ logistics.collections?.[0]?.collection_time || 'N/A' }}
-                </div>
-                <div>
-                  <span class="text-caption text-uppercase text-weight-bold">
-                    Driver: </span
-                   >{{ collectionDriverName(logistics) || 'N/A' }}
-                </div>
-              </div>
-            </div>
-            <div class="col":style="{
-                        order: isDeliveryFirst(logistics.logistics_status)
-                          ? 1
-                          : 2,
-                        borderRight: isDeliveryFirst(logistics.logistics_status)
-                          ? '1px solid #c09f8b'
-                          : '',
-                      }">
-              <div
-                class="text-uppercase text-weight-bolder text-blue text-center"
-              >
-                Delivery
-              </div>
-              <q-separator />
-              <div class="q-pa-sm">
-                <div>
-                  <span class="text-caption text-uppercase text-weight-bold">
-                    Date: </span
-                  >{{ getDeliveryDate(logistics.deliveries) }}
-                </div>
-                <div>
-                  <span class="text-caption text-uppercase text-weight-bold">
-                    Time: </span
-                  >{{ logistics.deliveries?.[0]?.delivery_time || 'N/A' }}
-                </div>
-                <div>
-                  <span class="text-caption text-uppercase text-weight-bold">
-                    Driver: </span
-                  >{{ deliveryDriverName(logistics) || 'N/A' }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col bordered" style="padding-top: 0">
-          <div
-            class="text-weight-bold text-uppercase text-subtitle1 text-center q-mb-xs line-height-1"
-            style="border-style: solid; border-width: 1px"
-          >
-            {{ logistics.order?.order_production?.goods_status || '-' }}
-          </div>
-                    <div>
-            <q-btn
-              label="View Pack Details"
-              color="primary"
-              unelevated
-              dense
-              class="q-mb-sm full-width"
-              @click="viewPackDetails(logistics.order?.order_no)"
-            />
-          </div>
-                  <div>
-                    <span class="text-caption text-uppercase text-weight-bold"
-                      >Ready By:</span
-                    >
-                    {{
-                      formatDate(
-                        order?.order_production?.ready_by ||
-                          logistics.order?.order_production?.ready_by
-                      ) || "-"
-                    }}
-                  </div>
-                  <q-separator class="q-ma-sm" />
-          <div v-if="logistics.collections?.[0]?.no_bags">
-            <span class="text-caption text-caption text-weight-bold text-uppercase q-mr-xs">Bags: </span
-            >{{ logistics.collections?.[0]?.no_bags || '-' }}b
-          </div>
-          <div v-if="logistics.order?.order_production?.no_hangers">
-            <span class="text-caption text-caption text-weight-bold text-uppercase q-mr-xs">Hang:</span>
-            {{ logistics.order?.order_production?.no_hangers || '-' }}h
-          </div>
-          <div v-if="logistics.order?.order_production?.no_packets">
-            <span class="text-caption text-caption text-weight-bold text-uppercase q-mr-xs">Pack:</span>
-            {{ logistics.order?.order_production?.no_packets || '-' }}p
-          </div>
-          <div v-if="logistics.order?.order_production?.no_rolls">
-            <span class="text-caption text-caption text-weight-bold text-uppercase q-mr-xs">Rolls:</span>
-            {{ logistics.order?.order_production?.no_rolls || '-' }}r
-          </div>
-        </div>
-        <div class="col bordered">
-          <div class="text-weight-bold">
-            <a
-              @click.prevent="openCustomerTab(logistics.customer?.id)"
-              class="text-weight-bold text-subtitle1 line-height-1"
-            >
-              {{ logistics.customer?.name || '[NOT SELECTED]' }}
-            </a>
-          </div>
-         <div>
-            <template v-if="logistics.customer?.contact_no1 || logistics.customer?.contact_no2">
-              <span
-                v-if="logistics.customer?.contact_no1"
-                class="phone-link"
-                @click.stop
-              >
-                {{ logistics.customer?.contact_no1 }}
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width:220px">
-                    <q-item clickable v-ripple @click="callViaPhone(logistics.customer?.contact_no1)">
-                      <q-item-section avatar><q-icon name="call"/></q-item-section>
-                      <q-item-section>Call via phone</q-item-section>
-                   </q-item>
-                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.customer?.contact_no1)">
-                      <q-item-section avatar><q-icon name="chat"/></q-item-section>
-                      <q-item-section>Call via WhatsApp</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-popup-proxy>
-              </span>
-              <span v-if="logistics.customer?.contact_no2"> / </span>
-              <span
-                v-if="logistics.customer?.contact_no2"
-                class="phone-link"
-                @click.stop
-              >
-                {{ logistics.customer?.contact_no2 }}
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width:220px">
-                    <q-item clickable v-ripple @click="callViaPhone(logistics.customer?.contact_no2)">
-                      <q-item-section avatar><q-icon name="call"/></q-item-section>
-                      <q-item-section>Call via phone</q-item-section>
-                    </q-item>
-                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.customer?.contact_no2)">
-                      <q-item-section avatar><q-icon name="chat"/></q-item-section>
-                      <q-item-section>Call via WhatsApp</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-popup-proxy>
-              </span>
-            </template>
-          </div>
-          <q-separator class="q-mt-sm" />
-          <div class="mark-yellow text-center text-uppercase">
-            Contact Person
-          </div>
-          <q-separator />
-          <div>
-            {{
-              logistics.collections?.[0]?.contact_person?.name || '[NOT SET]'
-            }}
-          </div>
-         <div>
-            <template v-if="logistics.collections?.[0]?.contact_person?.contact_no1 || logistics.collections?.[0]?.contact_person?.contact_no2">
-              <span
-                v-if="logistics.collections?.[0]?.contact_person?.contact_no1"
-                class="phone-link"
-                @click.stop
-              >
-                {{ logistics.collections?.[0]?.contact_person?.contact_no1 }}
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width:220px">
-                    <q-item clickable v-ripple @click="callViaPhone(logistics.collections?.[0]?.contact_person?.contact_no1)">
-                      <q-item-section avatar><q-icon name="call"/></q-item-section>
-                      <q-item-section>Call via phone</q-item-section>
-                    </q-item>
-                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.collections?.[0]?.contact_person?.contact_no1)">
-                      <q-item-section avatar><q-icon name="chat"/></q-item-section>
-                      <q-item-section>Call via WhatsApp</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-popup-proxy>
-              </span>
-              <span v-if="logistics.collections?.[0]?.contact_person?.contact_no2"> / </span>
-              <span
-                v-if="logistics.collections?.[0]?.contact_person?.contact_no2"
-                class="phone-link"
-                @click.stop
-              >
-                {{ logistics.collections?.[0]?.contact_person?.contact_no2 }}
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width:220px">
-                    <q-item clickable v-ripple @click="callViaPhone(logistics.collections?.[0]?.contact_person?.contact_no2)">
-                      <q-item-section avatar><q-icon name="call"/></q-item-section>
-                      <q-item-section>Call via phone</q-item-section>
-                    </q-item>
-                    <q-item clickable v-ripple @click="callViaWhatsApp(logistics.collections?.[0]?.contact_person?.contact_no2)">
-                      <q-item-section avatar><q-icon name="chat"/></q-item-section>
-                      <q-item-section>Call via WhatsApp</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-popup-proxy>
-              </span>
-            </template>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Pagination Controls -->
-    <div class="row justify-center q-mt-md">
-      <q-pagination
-        v-model="currentPage"
-        :max="totalPages"
-        :max-pages="10"
-        boundary-numbers
-        direction-links
-      />
-    </div>
+<PacksListComponent :orders="filteredOrders" :pageSize="10" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { useTransactionStore } from '@/stores/transactionStore';
-import { openURL } from 'quasar';
+import PacksListComponent from '@/components/PacksListComponent.vue';
 
 const transactionStore = useTransactionStore();
 const orders = ref([]); // Stores fetched orders
-const currentPage = ref(1); // Current page for pagination
-const pageSize = ref(10); // Number of records per page
 
 const searchQuery = ref(''); // Search input
 // Date Filters
@@ -652,27 +363,19 @@ const filters = ref({
   rAndI: false,
 });
 
-// --- SAME COLOR-CODING AS IN LogisticsManagement.vue ---
-const COLLECTION_STATUSES = new Set([
-  'collection arranged',
-  'collection completed',
-  'collection rescheduled',
-  'collection cancelled',
-]);
+// Goods Status filter (default to 'ready for packing')
+const goodsStatusFilter = ref('ready for packing');
 
-const DELIVERY_STATUSES = new Set([
-  'delivery arranged',
-  'delivery completed',
-  'delivery postponed',
-  'delivery partial',
-]);
+const goodsStatusOptions = [
+  { label: 'None', value: 'none' },
+  { label: 'For Collection', value: 'for collection' },
+  { label: 'Under Process', value: 'under process' },
+  { label: 'Ready for Packing', value: 'ready for packing' },
+  { label: 'Ready for Delivery', value: 'ready for delivery' },
+  { label: 'Ongoing Packing Issue/s', value: 'ongoing packing issue/s' },
+  { label: 'Items Delivered', value: 'items delivered' },
+];
 
-function logisticsBadgeClass(status) {
-  const s = String(status || '').trim().toLowerCase();
-  if (COLLECTION_STATUSES.has(s)) return 'mark-bg-pink';
-  if (DELIVERY_STATUSES.has(s)) return 'mark-bg-blue';
-  return '';
-}
 // -------------------------------------------------------
 
 const sortedDriverOptions = computed(() => {
@@ -707,10 +410,11 @@ watch([selectedDriver, selectedDate], () => {
   const selectedRawDate = selectedDate.value;
 
   matchedOrdersList.value = filteredOrders.value.filter((logistics, index) => {
-   const hasMatchingDriver = (logistics.deliveries || []).some(
-      (d) =>
-        (getDriverName(d?.driver_id) || d?.driver_name || '') === driverName
-    );
+   const hasMatchingDriver = (logistics.deliveries || []).some((d) => {
+     const rowDriver =
+       getDriverName(d?.driver_id) || d?.driver?.name || d?.driver_name || '';
+     return rowDriver === driverName;
+   });
 
     const hasMatchingDeliveryDate = (logistics.deliveries || []).some(
       (d) => d?.delivery_date === selectedRawDate
@@ -723,63 +427,95 @@ watch([selectedDriver, selectedDate], () => {
 // Fetch orders on mount
 onMounted(async () => {
   try {
-    const result = await transactionStore.fetchAllOrdersSimple();
+    const result = await transactionStore.fetchOrdersForPacks();
     orders.value = result;
     await transactionStore.loadDrivers();
+     const orderIds = (orders.value || [])
+      .map((lg) => lg?.order?.id)
+      .filter(Boolean);
+    await transactionStore.fetchPackCategoriesByOrderIds(orderIds);
   } catch (error) {
     console.error('Error on load:', error);
   }
 });
 
 const formattedDeliveryStartDate = computed(() =>
-  formatDate(deliveryStartDate.value)
-);
+   deliveryStartDate.value ? formatDate(deliveryStartDate.value) : 'None applied'
+ );
 
 // Clear Date Input
 const clearDate = (type) => {
   if (type === 'deliveryStartDate') deliveryStartDate.value = null;
 };
 
-// Filter Orders Based on Search & Date Range
 const filteredOrders = computed(() => {
-  const query = searchQuery.value.toLowerCase();
+  const query = (searchQuery.value || '').toLowerCase().trim();
   const selectedDeliveryDate = deliveryStartDate.value;
+  const gsSel = (goodsStatusFilter.value || '').trim().toLowerCase();
 
   return orders.value
     .filter((logistics) => {
-      const orderNo = logistics.order?.order_no?.toLowerCase() || '';
-      const customerName = logistics.customer?.name?.toLowerCase() || '';
+      // --- allowed search fields only ---
+      const orderNo = (logistics.order?.order_no || '').toLowerCase();
+
+      const cust = logistics.customer || {};
+      const customerFields = [
+        cust.name,
+        cust.contact_no1,
+        cust.contact_no2,
+        cust.email,
+      ];
+
+      const cp = logistics.deliveries?.[0]?.contact_person || {};
+      const contactPersonFields = [
+        cp.name,
+        cp.contact_no1,
+        cp.contact_no2,
+        cp.email,
+      ];
+
+      const haystack = [orderNo, ...customerFields, ...contactPersonFields]
+        .map((v) => (v == null ? '' : String(v).toLowerCase()));
+
+      const searchMatch = !query || haystack.some((s) => s.includes(query));
+      // ----------------------------------
+
+      // goods status filter
+      const rowGoods = String(logistics.order?.order_production?.goods_status || '')
+        .trim()
+        .toLowerCase();
+      const goodsMatch = !gsSel
+        ? true
+        : gsSel === 'none'
+        ? rowGoods === '' // treat empty/null as "none"
+        : rowGoods === gsSel;
+
+      // driver/date filters
       const deliveryDate = logistics.deliveries?.[0]?.delivery_date || null;
-     const deliveryDriver = deliveryDriverName(logistics);
+      const deliveryMatch = !selectedDeliveryDate || deliveryDate === selectedDeliveryDate;
 
-      const deliveryMatch =
-        !selectedDeliveryDate || deliveryDate === selectedDeliveryDate;
-      const searchMatch =
-        orderNo.includes(query) || customerName.includes(query);
+      const deliveryDriver = deliveryDriverName(logistics);
       const driverMatch =
-        !deliveryDriverFilter.value ||
-        deliveryDriver === deliveryDriverFilter.value;
+        !deliveryDriverFilter.value || deliveryDriver === deliveryDriverFilter.value;
 
-      return deliveryMatch && searchMatch && driverMatch;
+      // pack category filter (reactive checkboxes)
+      let categoryMatch = true;
+      const selCats = selectedPackCategories.value;
+      if (selCats.size > 0) {
+        const orderId = logistics.order?.id;
+        const catCounts =
+          (orderId && transactionStore.packCategoriesByOrderId?.[orderId]) || {};
+        categoryMatch = Array.from(selCats).some((cat) => (catCounts[cat] || 0) > 0);
+      }
+
+      return goodsMatch && deliveryMatch && searchMatch && driverMatch && categoryMatch;
     })
     .sort((a, b) => {
       const dateA = new Date(a.deliveries?.[0]?.delivery_date || 0);
       const dateB = new Date(b.deliveries?.[0]?.delivery_date || 0);
-      return dateB - dateA; // latest delivery date first
+      return dateB - dateA; // latest first
     });
 });
-
-// Pagination: Get the paginated slice of orders
-const paginatedOrders = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return filteredOrders.value.slice(start, end);
-});
-
-// Total number of pages
-const totalPages = computed(() =>
-  Math.ceil(filteredOrders.value.length / pageSize.value)
-);
 
 // Function to format dates
 const formatDate = (dateString) => {
@@ -791,28 +527,6 @@ const formatDate = (dateString) => {
     month: '2-digit',
     year: 'numeric',
   });
-};
-
-const getOrderDate = (logistics) => {
-  return formatDate(logistics.order?.created_at);
-};
-
-// Get collection date from collections array
-const getCollectionDate = (collections) => {
-  if (!collections || collections.length === 0) return 'N/A';
-  return formatDate(collections[0]?.collection_date);
-};
-
-// Get delivery date from deliveries array
-const getDeliveryDate = (deliveries) => {
-  if (!deliveries || deliveries.length === 0) return 'N/A';
-  return formatDate(deliveries[0]?.delivery_date);
-};
-
-// Open Customer Tab
-const openCustomerTab = (customerId) => {
-  if (!customerId) return;
-  window.open(`/customers/${customerId}`, '_blank');
 };
 
 // Open Order Dialog and fetch transaction items
@@ -833,13 +547,6 @@ const openOrderDialog = async (logistics) => {
   }
 };
 
-const viewPackDetails = (order_no) => {
-  const url = `/packs/${order_no}`;
-  window.open(url, '_blank');
-};
-
-
-/* ===== ADD: Driver helpers (ID → Name) ===== */
 const driverMapById = computed(() => {
   const m = new Map();
   (transactionStore.driverOptions || []).forEach((d) => {
@@ -853,18 +560,10 @@ const getDriverName = (id) => {
   return (key && driverMapById.value.get(key)) || '';
 };
 
-// Accepts a logistics row or a single collection object
-const collectionDriverName = (src) => {
-  const c = Array.isArray(src?.collections) ? src.collections?.[0] : src;
-  if (!c) return '';
-  return getDriverName(c?.driver_id) || c?.driver_name || '';
-};
-
-// Accepts a logistics row or a single delivery object
 const deliveryDriverName = (src) => {
   const d = Array.isArray(src?.deliveries) ? src.deliveries?.[0] : src;
   if (!d) return '';
-  return getDriverName(d?.driver_id) || d?.driver_name || '';
+return getDriverName(d?.driver_id) || d?.driver?.name || d?.driver_name || '';
 };
 
 const DRIVER_CODES = {
@@ -911,24 +610,30 @@ const generatePack = () => {
   window.open(url, '_blank');
 };
 
- const sanitizeForTel = (raw) => String(raw || '').replace(/[^\d+]/g, ''); // keep digits and +
- const sanitizeForWhatsApp = (raw) => String(raw || '').replace(/\D/g, '');  // digits only
- const callViaPhone = (raw) => {
-   const tel = sanitizeForTel(raw);
-   if (tel) openURL(`tel:${tel}`);
- };
- const callViaWhatsApp = (raw) => {
-   const wa = sanitizeForWhatsApp(raw);
-  if (wa) openURL(`https://wa.me/${wa}`);
- };
-
-// Which side goes first under "Logistics Details"?
-const isDeliveryFirst = (status) => {
-  const s = String(status || "")
-    .trim()
-    .toLowerCase();
-  if (DELIVERY_STATUSES.has(s) || s.startsWith("delivery")) return true;
-  // default & collection-* → collection first
-  return false;
+// map checkbox keys -> pack_category values (lowercase)
+const PACK_CATEGORY_MAP = {
+  clothings: 'clothings',
+  officeWear: 'office wear',
+  casualWear: 'casual wear',
+  culturalWear: 'cultural wear',
+  winterWear: 'winter wear',
+  bedding: 'bedding',
+  curtains: 'curtains',
+  sofaCushionCovers: 'sofa/cushion covers',
+  stuffToys: 'stuff toys',
+  carpet: 'carpet',
+  accessories: 'accessories',
+  others: 'others',
+  custom: 'custom',
+  rAndI: 'r&i',
 };
+
+const selectedPackCategories = computed(() => {
+  const sel = new Set();
+  for (const [key, checked] of Object.entries(filters.value)) {
+    if (checked && PACK_CATEGORY_MAP[key]) sel.add(PACK_CATEGORY_MAP[key]);
+  }
+  return sel;
+});
+
 </script>

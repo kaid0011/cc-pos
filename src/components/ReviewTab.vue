@@ -617,9 +617,9 @@ function getExpressPct(collectionDate, deliveryDate) {
   const days = daysBetweenDateOnly(c, d);
 
   if (days == null || days < 0) return 0;
-  if (days <= 1) return 50;
-  if (days <= 3) return 30;
-  if (days <= 4) return 20;
+  if (days <= 1) return 100;
+  if (days <= 3) return 50;
+  if (days <= 4) return 30;
   return 0;
 }
 

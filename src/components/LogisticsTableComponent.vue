@@ -1,6 +1,5 @@
 <template>
   <div class="row-col-table">
-    <!-- Header -->
     <div class="row row-col-header text-center items-center">
       <div class="col header-bordered flex flex-center">Order Details</div>
       <div class="col-5 header-bordered flex flex-center">
@@ -10,25 +9,24 @@
       <div class="col header-bordered flex flex-center">Payment Status</div>
     </div>
 
-    <!-- Empty -->
     <div v-if="rows.length === 0" class="text-center text-grey q-pa-lg text-h6">
       No orders found.
     </div>
 
-    <!-- Rows -->
     <template v-else>
       <div
         v-for="(logistics, index) in rows"
-        :key="logistics.logistics_id || logistics.id || index"
+        :key="
+          logistics.isStandaloneException
+            ? `stand-ex-${logistics.tempExData.id}`
+            : logistics.logistics_id || logistics.id || index
+        "
       >
-<div
-  v-for="(rowItem, idx) in rowsForDisplay(logistics)"
-  :key="`${logistics.logistics_id || logistics.id || index}-${rowKey(rowItem, idx)}`"
-  class="row row-col-row line-height-1"
->
-
-
-          <!-- ORDER DETAILS -->
+        <div
+          v-for="(rowItem, idx) in rowsForDisplay(logistics)"
+          :key="rowKey(rowItem, idx)"
+          class="row row-col-row line-height-1"
+        >
           <div class="col bordered">
             <div class="q-mb-xs">
               <div v-if="(rowItem.order || logistics.order)?.order_no">
@@ -42,7 +40,7 @@
                   {{ (rowItem.order || logistics.order)?.order_no }}
                 </q-btn>
               </div>
-              <div v-else>
+              <div v-else-if="!logistics.isStandaloneException">
                 <q-btn
                   dense
                   label="Create Order"
@@ -52,11 +50,13 @@
                   @click="createOrder(logistics)"
                 />
               </div>
+              <div v-else class="text-caption text-grey-7 italic">
+                Ref: Logistics #{{ logistics.logistics_id }}
+              </div>
             </div>
 
             <div>
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
+              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
                 >Date:</span
               >
               <NotSetText
@@ -65,12 +65,23 @@
             </div>
 
             <div>
+              <span class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                >Urgency:</span
+              >
               <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Urgency:
-              </span>
-              <span :class="urgencyClass(logistics.urgency)">
-                {{ logistics.urgency || "default" }}
+                :class="
+                  urgencyClass(
+                    logistics.isStandaloneException
+                      ? logistics.tempExData.urgency
+                      : logistics.urgency
+                  )
+                "
+              >
+                {{
+                  (logistics.isStandaloneException
+                    ? logistics.tempExData.urgency
+                    : logistics.urgency) || "default"
+                }}
               </span>
             </div>
 
@@ -83,7 +94,7 @@
             <div class="text-weight-bold q-mb-sm">
               <a
                 @click.prevent="openCustomerTab(logistics.customer?.id)"
-                class="text-weight-bold text-subtitle1 line-height-1"
+                class="text-weight-bold text-subtitle1 line-height-1 cursor-pointer"
               >
                 <NotSetText :value="logistics.customer?.name" />
               </a>
@@ -116,14 +127,12 @@
                 </q-list>
               </q-popup-proxy>
             </div>
-
             <div
               v-if="logistics.customer?.contact_no2"
               class="phone-link"
               @click.stop
             >
               <NotSetText :value="logistics.customer?.contact_no2" />
-
               <q-popup-proxy transition-show="scale" transition-hide="scale">
                 <q-list style="min-width: 220px">
                   <q-item
@@ -149,63 +158,23 @@
                 </q-list>
               </q-popup-proxy>
             </div>
-
-            <div v-if="logistics.customer?.email">
-              <span class="email-link" @click.stop>
-                <NotSetText :value="logistics.customer?.email" />
-                <q-popup-proxy transition-show="scale" transition-hide="scale">
-                  <q-list style="min-width: 220px">
-                    <q-item
-                      clickable
-                      v-ripple
-                      @click="composeEmail(logistics.customer?.email)"
-                    >
-                      <q-item-section avatar
-                        ><q-icon name="email"
-                      /></q-item-section>
-                      <q-item-section>Compose email</q-item-section>
-                    </q-item>
-                    <q-item
-                      clickable
-                      v-ripple
-                      @click="copyEmail(logistics.customer?.email)"
-                    >
-                      <q-item-section avatar
-                        ><q-icon name="content_copy"
-                      /></q-item-section>
-                      <q-item-section>Copy email</q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-popup-proxy>
-              </span>
-            </div>
           </div>
 
-          <!-- LOGISTICS DETAILS -->
           <div class="col-5 bordered" style="padding: 0">
             <div class="row justify-between q-mx-sm q-my-xs">
               <div
-                class="col flex flex-center"
-                :class="[
-                  'text-weight-bold',
-                  'text-subtitle1',
-                  'text-center',
-                  'line-height-1',
-                  'text-uppercase',
-                  logisticsBadgeClass(logistics.logistics_status),
-                ]"
+                class="col flex flex-center text-weight-bold text-subtitle1 text-center line-height-1 text-uppercase"
+                :class="logisticsBadgeClass(logistics.logistics_status)"
                 style="border-style: solid; border-width: 1px; min-height: 100%"
               >
                 <NotSetText :value="logistics.logistics_status" />
               </div>
-              <div class="col-auto">
+              <div class="col-auto" v-if="!logistics.isStandaloneException">
                 <q-icon
                   name="edit"
                   size="sm"
                   unelevated
                   class="cursor-pointer bg-primary text-white q-pa-xs"
-                  role="button"
-                  aria-label="UpdateLogStatus"
                   @click="openUpdateStatusDialog(logistics)"
                 />
               </div>
@@ -214,256 +183,152 @@
             <q-separator />
 
             <div class="row" style="min-height: auto">
-            <template v-if="shouldShowCollectionForRow(ordersOrPlaceholder(logistics), rowItem, idx)">
-              <!-- Collection -->
-              <div
-                class="col"
-                :style="{
-                  order: isDeliveryFirst(logistics.logistics_status) ? 2 : 1,
-                  borderRight: isDeliveryFirst(logistics.logistics_status)
-                    ? ''
-                    : '1px solid #c09f8b',
-                }"
+              <template
+                v-if="
+                  !logistics.isStandaloneException &&
+                  shouldShowCollectionForRow(
+                    rowsForDisplay(logistics),
+                    rowItem,
+                    idx
+                  )
+                "
               >
-                <div
-                  class="text-uppercase text-weight-bolder text-pink-4 text-center"
-                >
-                  Collection
-                </div>
-                <q-separator />
-                <div class="q-pa-sm">
-                  <div>
-                    <span
-                      class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Date:
-                    </span>
-                    <span
-                      :class="{
-                        'mark-yellow text-weight-bolder':
-                          toISODate(
-                            logistics.collections?.[0]?.collection_date
-                          ) === toISODate(selectedFilterDate),
-                      }"
-                    >
+                <div class="col" style="border-right: 1px solid #c09f8b">
+                  <div
+                    class="text-uppercase text-weight-bolder text-pink-4 text-center"
+                  >
+                    Collection
+                  </div>
+                  <q-separator />
+                  <div class="q-pa-sm">
+                    <div>
+                      <span
+                        class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                        >Date:</span
+                      >
                       <NotSetText
                         :value="getCollectionDate(logistics.collections)"
                       />
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Time:</span
-                    >
-                    <NotSetText
-                      :value="logistics.collections?.[0]?.collection_time"
-                    />
-                  </div>
-                  <div>
-                    <span
-                      class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Driver:
-                    </span>
-                    <span
-                      :class="{
-                        'mark-yellow text-weight-bolder': isActiveDriver(
-                          logistics.collections?.[0]?.driver_id
-                        ),
-                      }"
-                    >
+                    </div>
+                    <div>
+                      <span
+                        class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                        >Time:</span
+                      >
+                      <NotSetText
+                        :value="logistics.collections?.[0]?.collection_time"
+                      />
+                    </div>
+                    <div>
+                      <span
+                        class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                        >Driver:</span
+                      >
                       <NotSetText
                         :value="
                           getDriverName(logistics.collections?.[0]?.driver_id)
                         "
                       />
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Address:
-                    </span>
-                    <NotSetText
-                      :value="
-                        formatAddress(logistics.collections?.[0]?.address)
-                      "
-                    />
-                  </div>
-                </div>
-
-                <q-separator />
-                <div class="q-pa-sm">
-                  <div
-                    class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                  >
-                    Contact Person:
-                  </div>
-                  <div>
-                    <NotSetText
-                      :value="
-                        logistics.collections?.[0]?.contact_person?.name ||
-                        logistics.collections?.[0]?.customer_contact_persons
-                          ?.name
-                      "
-                    />
-                  </div>
-                  <div>
-                    <template
-                      v-if="
-                        pickCollectionContact(logistics).phone1 ||
-                        pickCollectionContact(logistics).phone2
-                      "
-                    >
+                    </div>
+                    <div>
                       <span
-                        v-if="pickCollectionContact(logistics).phone1"
-                        class="phone-link"
-                        @click.stop
+                        class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                        >Address:</span
                       >
-                        <NotSetText
-                          :value="pickCollectionContact(logistics).phone1"
-                        />
-                        <q-popup-proxy
-                          transition-show="scale"
-                          transition-hide="scale"
-                        >
-                          <q-list style="min-width: 220px">
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaPhone(
-                                  pickCollectionContact(logistics).phone1
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="call"
-                              /></q-item-section>
-                              <q-item-section>Call via phone</q-item-section>
-                            </q-item>
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaWhatsApp(
-                                  pickCollectionContact(logistics).phone1
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="chat"
-                              /></q-item-section>
-                              <q-item-section>Call via WhatsApp</q-item-section>
-                            </q-item>
-                          </q-list>
-                        </q-popup-proxy>
-                      </span>
-
-                      <span v-if="pickCollectionContact(logistics).phone2">
-                        /
-                      </span>
-                      <span
-                        v-if="pickCollectionContact(logistics).phone2"
-                        class="phone-link"
-                        @click.stop
-                      >
-                        <NotSetText
-                          :value="pickCollectionContact(logistics).phone2"
-                        />
-                        <q-popup-proxy
-                          transition-show="scale"
-                          transition-hide="scale"
-                        >
-                          <q-list style="min-width: 220px">
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaPhone(
-                                  pickCollectionContact(logistics).phone2
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="call"
-                              /></q-item-section>
-                              <q-item-section>Call via phone</q-item-section>
-                            </q-item>
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaWhatsApp(
-                                  pickCollectionContact(logistics).phone2
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="chat"
-                              /></q-item-section>
-                              <q-item-section>Call via WhatsApp</q-item-section>
-                            </q-item>
-                          </q-list>
-                        </q-popup-proxy>
-                      </span>
-                    </template>
-                    <template v-else><NotSetText :value="null" /></template>
-                  </div>
-                  <div v-if="pickCollectionContact(logistics).email">
-                    <span class="email-link" @click.stop>
                       <NotSetText
-                        :value="pickCollectionContact(logistics).email"
+                        :value="
+                          formatAddress(logistics.collections?.[0]?.address)
+                        "
                       />
-                      <q-popup-proxy
-                        transition-show="scale"
-                        transition-hide="scale"
+                    </div>
+                    <div>
+                      <span
+                        class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                        >Remarks:</span
                       >
-                        <q-list style="min-width: 220px">
-                          <q-item
-                            clickable
-                            v-ripple
-                            @click="
-                              callViaPhone(
-                                pickDeliveryContact(logistics).phone2
-                              )
-                            "
-                          >
-                            <q-item-section avatar
-                              ><q-icon name="call"
-                            /></q-item-section>
-                            <q-item-section>Call via phone</q-item-section>
-                          </q-item>
-                          <q-item
-                            clickable
-                            v-ripple
-                            @click="
-                              callViaWhatsApp(
-                                pickDeliveryContact(logistics).phone2
-                              )
-                            "
-                          >
-                            <q-item-section avatar
-                              ><q-icon name="chat"
-                            /></q-item-section>
-                            <q-item-section>Call via WhatsApp</q-item-section>
-                          </q-item>
-                        </q-list>
-                      </q-popup-proxy>
-                    </span>
+                      <NotSetText
+                        :value="logistics.collections?.[0]?.collection_remarks"
+                      />
+                    </div>
+                  </div>
+                  <q-separator />
+                  <div class="q-pa-sm">
+                    <div
+                      class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                    >
+                      Contact Person:
+                    </div>
+                    <NotSetText
+                      :value="logistics.collections?.[0]?.contact_person?.name"
+                    />
+                    <div>
+                      <span class="phone-link" @click.stop>
+                        <NotSetText :value="logistics.collections?.[0]?.contact_person?.contact_no1" />
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-list style="min-width: 220px">
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaPhone(logistics.collections?.[0]?.contact_person?.contact_no1)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="call"
+                    /></q-item-section>
+                    <q-item-section>Call via phone</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaWhatsApp(logistics.collections?.[0]?.contact_person?.contact_no1)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="chat"
+                    /></q-item-section>
+                    <q-item-section>Call via WhatsApp</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-popup-proxy>
+                      </span>
+                      <span
+                        class="phone-link"
+                        @click.stop
+                        v-if="
+                          logistics.collections?.[0]?.contact_person
+                            ?.contact_no2
+                        "
+                      >
+                       <NotSetText :value="logistics.collections?.[0]?.contact_person?.contact_no2" />
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-list style="min-width: 220px">
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaPhone(logistics.collections?.[0]?.contact_person?.contact_no2)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="call"
+                    /></q-item-section>
+                    <q-item-section>Call via phone</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaWhatsApp(logistics.collections?.[0]?.contact_person?.contact_no2)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="chat"
+                    /></q-item-section>
+                    <q-item-section>Call via WhatsApp</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-popup-proxy>
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-</template>
-              <!-- Delivery (exception-aware) -->
-              <div
-                class="col"
-                :style="{
-                  order: isDeliveryFirst(logistics.logistics_status) ? 1 : 2,
-                  borderRight: isDeliveryFirst(logistics.logistics_status)
-                    ? '1px solid #c09f8b'
-                    : '',
-                }"
-              >
+              </template>
+
+              <div class="col">
                 <div
                   class="text-uppercase text-weight-bolder text-blue text-center"
                 >
@@ -476,15 +341,14 @@
                     >Exception</q-badge
                   >
                 </div>
-
                 <q-separator />
 
                 <div class="q-pa-sm">
                   <div>
                     <span
                       class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Date:
-                    </span>
+                      >Date:</span
+                    >
                     <span
                       :class="{
                         'mark-yellow text-weight-bolder':
@@ -507,8 +371,8 @@
                   <div>
                     <span
                       class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Time:
-                    </span>
+                      >Time:</span
+                    >
                     <NotSetText
                       :value="
                         rowItem.kind === 'exception'
@@ -520,207 +384,146 @@
                   <div>
                     <span
                       class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Driver:
-                    </span>
-                    <span
-                      :class="{
-                        'mark-yellow text-weight-bolder': isActiveDriver(
-                          deliveryDriverIdForRow(rowItem, logistics)
-                        ),
-                      }"
+                      >Driver:</span
                     >
-                      <NotSetText
-                        :value="
-                          getDriverName(
-                            deliveryDriverIdForRow(rowItem, logistics)
-                          )
-                        "
-                      />
-                    </span>
+                    <NotSetText
+                      :value="
+                        getDriverName(
+                          deliveryDriverIdForRow(rowItem, logistics)
+                        )
+                      "
+                    />
                   </div>
                   <div>
                     <span
                       class="text-caption text-uppercase text-weight-bold q-mr-xs"
-                      >Address:
-                    </span>
+                      >Address:</span
+                    >
                     <NotSetText
-                     :value="formatAddress(logistics.deliveries?.[0]?.address)"
+                      :value="formatAddress(logistics.deliveries?.[0]?.address)"
                     />
                   </div>
-                </div>
+                  <div>
+                    <span
+                      class="text-caption text-uppercase text-weight-bold q-mr-xs"
+                      >Remarks:</span
+                    >
+                    <NotSetText
+                      :value="
+                        rowItem.kind === 'exception'
+                          ? rowItem.ex?.remarks
+                          : logistics.deliveries?.[0]?.remarks
+                      "
+                    />
+                  </div>
 
-                <q-separator />
-                <div class="q-pa-sm">
+                  <q-separator class="q-my-sm" />
                   <div
                     class="text-caption text-uppercase text-weight-bold q-mr-xs"
                   >
                     Contact Person:
                   </div>
+                  <NotSetText
+                    :value="logistics.deliveries?.[0]?.contact_person?.name"
+                  />
                   <div>
-                    <NotSetText
-                      :value="
-                        logistics.deliveries?.[0]?.contact_person?.name ||
-                        logistics.deliveries?.[0]?.customer_contact_persons
-                          ?.name
-                      "
-                    />
-                  </div>
-                  <div>
-                    <template
+                    <span class="phone-link" @click.stop>
+                     <NotSetText :value="logistics.deliveries?.[0]?.contact_person?.contact_no1" />
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-list style="min-width: 220px">
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaPhone(logistics.deliveries?.[0]?.contact_person?.contact_no1)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="call"
+                    /></q-item-section>
+                    <q-item-section>Call via phone</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaWhatsApp(logistics.deliveries?.[0]?.contact_person?.contact_no1)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="chat"
+                    /></q-item-section>
+                    <q-item-section>Call via WhatsApp</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-popup-proxy>
+                    </span>
+                    <span
+                      class="phone-link"
+                      @click.stop
                       v-if="
-                        pickDeliveryContact(logistics).phone1 ||
-                        pickDeliveryContact(logistics).phone2
+                        logistics.deliveries?.[0]?.contact_person?.contact_no2
                       "
                     >
-                      <span
-                        v-if="pickDeliveryContact(logistics).phone1"
-                        class="phone-link"
-                        @click.stop
-                      >
-                        <NotSetText
-                          :value="pickDeliveryContact(logistics).phone1"
-                        />
-                        <q-popup-proxy
-                          transition-show="scale"
-                          transition-hide="scale"
-                        >
-                          <q-list style="min-width: 220px">
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaPhone(
-                                  pickDeliveryContact(logistics).phone1
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="call"
-                              /></q-item-section>
-                              <q-item-section>Call via phone</q-item-section>
-                            </q-item>
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaWhatsApp(
-                                  pickDeliveryContact(logistics).phone1
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="chat"
-                              /></q-item-section>
-                              <q-item-section>Call via WhatsApp</q-item-section>
-                            </q-item>
-                          </q-list>
-                        </q-popup-proxy>
-                      </span>
-                      <span v-if="pickDeliveryContact(logistics).phone2">
-                        /
-                      </span>
-                      <span
-                        v-if="pickDeliveryContact(logistics).phone2"
-                        class="phone-link"
-                        @click.stop
-                      >
-                        <NotSetText
-                          :value="pickDeliveryContact(logistics).phone2"
-                        />
-                        <q-popup-proxy
-                          transition-show="scale"
-                          transition-hide="scale"
-                        >
-                          <q-list style="min-width: 220px">
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaPhone(
-                                  pickDeliveryContact(logistics).phone2
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="call"
-                              /></q-item-section>
-                              <q-item-section>Call via phone</q-item-section>
-                            </q-item>
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                callViaWhatsApp(
-                                  pickDeliveryContact(logistics).phone2
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="chat"
-                              /></q-item-section>
-                              <q-item-section>Call via WhatsApp</q-item-section>
-                            </q-item>
-                          </q-list>
-                        </q-popup-proxy>
-                      </span>
-                    </template>
-                    <template v-else><NotSetText :value="null" /></template>
+                     <NotSetText :value="logistics.deliveries?.[0]?.contact_person?.contact_no2" />
+              <q-popup-proxy transition-show="scale" transition-hide="scale">
+                <q-list style="min-width: 220px">
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaPhone(logistics.deliveries?.[0]?.contact_person?.contact_no2)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="call"
+                    /></q-item-section>
+                    <q-item-section>Call via phone</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    v-ripple
+                    @click="callViaWhatsApp(logistics.deliveries?.[0]?.contact_person?.contact_no2)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="chat"
+                    /></q-item-section>
+                    <q-item-section>Call via WhatsApp</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-popup-proxy>
+                    </span>
+                  </div>
+
+                  <div
+                    v-if="
+                      rowItem.kind === 'exception' &&
+                      rowItem.ex?.logistics_delivery_exception_items?.length
+                    "
+                    class="q-mt-sm"
+                  >
+                    <q-separator class="q-my-xs" />
                     <div
-                      v-if="pickDeliveryContact(logistics).email"
-                      class="q-mt-xs"
+                      class="text-caption text-weight-bold text-red-9 uppercase"
                     >
-                      <span class="email-link" @click.stop>
-                        <NotSetText
-                          :value="pickDeliveryContact(logistics).email"
-                        />
-                        <q-popup-proxy
-                          transition-show="scale"
-                          transition-hide="scale"
-                        >
-                          <q-list style="min-width: 220px">
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                composeEmail(
-                                  pickDeliveryContact(logistics).email
-                                )
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="email"
-                              /></q-item-section>
-                              <q-item-section>Compose email</q-item-section>
-                            </q-item>
-                            <q-item
-                              clickable
-                              v-ripple
-                              @click="
-                                copyEmail(pickDeliveryContact(logistics).email)
-                              "
-                            >
-                              <q-item-section avatar
-                                ><q-icon name="content_copy"
-                              /></q-item-section>
-                              <q-item-section>Copy email</q-item-section>
-                            </q-item>
-                          </q-list>
-                        </q-popup-proxy>
+                      Items Included:
+                    </div>
+                    <div
+                      v-for="exItem in rowItem.ex
+                        .logistics_delivery_exception_items"
+                      :key="exItem.id"
+                      class="text-caption bg-red-1 q-px-xs q-mb-xs rounded-borders"
+                    >
+                      •
+                      {{ exItem.order_transaction_items?.item_name || "Item" }}:
+                      <span class="text-weight-bold">
+                        {{ formatExceptionItem(exItem) }}
                       </span>
                     </div>
                   </div>
-
-                  <!-- <div v-if="rowItem.kind === 'exception' && rowItem.ex?.remarks" class="q-mt-sm">
-                <span class="text-caption text-uppercase text-weight-bold q-mr-xs">Remarks:</span>
-                {{ rowItem.ex.remarks }}
-              </div> -->
                 </div>
               </div>
             </div>
 
             <q-separator />
-
-            <div class="row justify-between q-mx-sm q-my-xs">
+            <div
+              class="row justify-between q-mx-sm q-my-xs"
+              v-if="!logistics.isStandaloneException"
+            >
               <q-btn
                 dense
                 unelevated
@@ -733,7 +536,6 @@
             </div>
           </div>
 
-          <!-- PRODUCTION -->
           <div class="col bordered" style="padding-top: 0">
             <div class="row justify-between q-mx-sm q-my-xs">
               <div
@@ -748,116 +550,48 @@
                 <q-icon
                   name="edit"
                   size="sm"
-                  unelevated
                   class="cursor-pointer bg-primary text-white q-pa-xs"
-                  role="button"
-                  aria-label="UpdateGoodsStatus"
-@click="openUpdateGoodsDialog(rowItem.order || logistics.order)"
+                  @click="
+                    openUpdateGoodsDialog(rowItem.order || logistics.order)
+                  "
                 />
               </div>
             </div>
-
             <q-separator class="q-my-sm" />
-
-            <div v-if="logistics.collections?.[0]?.no_bags">
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Bags:</span
-              >
-              <NotSetText
-                :value="
-                  (logistics.collections?.[0]?.no_bags ?? null) === null
-                    ? ''
-                    : `${logistics.collections?.[0]?.no_bags}b`
+            <div v-if="rowItem.order || logistics.order">
+              <div v-if="logistics.collections?.[0]?.no_bags">
+                Bags: {{ logistics.collections[0].no_bags }}b
+              </div>
+              <div
+                v-if="
+                  (rowItem.order || logistics.order).order_production
+                    ?.no_hangers
                 "
-              />
-            </div>
-            <div
-              v-if="
-                (rowItem.order || logistics.order)?.order_production?.no_hangers
-              "
-            >
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Hang:</span
               >
-              <NotSetText
-                :value="
-                  ((rowItem.order || logistics.order)?.order_production
-                    ?.no_hangers ?? null) === null
-                    ? ''
-                    : `${
-                        (rowItem.order || logistics.order)?.order_production
-                          ?.no_hangers
-                      }h`
-                "
-              />
-            </div>
-            <div
-              v-if="
-                (rowItem.order || logistics.order)?.order_production?.no_packets
-              "
-            >
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Pack:</span
-              >
-              <NotSetText
-                :value="
-                  ((rowItem.order || logistics.order)?.order_production
-                    ?.no_packets ?? null) === null
-                    ? ''
-                    : `${
-                        (rowItem.order || logistics.order)?.order_production
-                          ?.no_packets
-                      }p`
-                "
-              />
-            </div>
-            <div
-              v-if="
-                (rowItem.order || logistics.order)?.order_production?.no_rolls
-              "
-            >
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Rolls:</span
-              >
-              <NotSetText
-                :value="
-                  ((rowItem.order || logistics.order)?.order_production
-                    ?.no_rolls ?? null) === null
-                    ? ''
-                    : `${
-                        (rowItem.order || logistics.order)?.order_production
-                          ?.no_rolls
-                      }r`
-                "
-              />
+                Hang:
+                {{
+                  (rowItem.order || logistics.order).order_production
+                    .no_hangers
+                }}h
+              </div>
             </div>
           </div>
 
-          <!-- PAYMENT -->
           <div class="col bordered" style="padding-top: 0">
             <div class="row justify-between q-mx-sm q-my-xs">
               <div
-                class="col flex flex-center"
-                :class="[
-                  'text-weight-bold',
-                  'text-subtitle1',
-                  'text-center',
-                  'line-height-1',
-                  'text-uppercase',
+                class="col flex flex-center text-weight-bold text-subtitle1 text-center line-height-1 text-uppercase"
+                :class="
                   (
-                    (rowItem.order || logistics.order)?.payment_status || ''
-                  ).toLowerCase() === 'paid'
+                    rowItem.order || logistics.order
+                  )?.payment_status?.toLowerCase() === 'paid'
                     ? 'mark-bg-green'
                     : (
-                        (rowItem.order || logistics.order)?.payment_status || ''
-                      ).toLowerCase() === 'unpaid'
+                        rowItem.order || logistics.order
+                      )?.payment_status?.toLowerCase() === 'unpaid'
                     ? 'mark-bg-red'
-                    : '',
-                ]"
+                    : ''
+                "
                 style="border-style: solid; border-width: 1px; min-height: 100%"
               >
                 <NotSetText
@@ -868,10 +602,7 @@
                 <q-icon
                   name="add"
                   size="sm"
-                  unelevated
                   class="cursor-pointer bg-primary text-white q-pa-xs"
-                  role="button"
-                  aria-label="UpdatePaymentStatus"
                   @click="
                     openAddPaymentDialog(
                       rowItem.order || logistics.order,
@@ -881,49 +612,20 @@
                 />
               </div>
             </div>
-
-            <div>
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Credits:</span
-              >
-              <span class="text-weight-bold">{{
-                getCustomerCredits(logistics.customer)
-              }}</span>
-            </div>
-
-            <q-separator class="q-my-sm" />
-
-            <div>
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Paid:</span
-              >
-              <span class="text-weight-bold">
-                ${{ (rowItem.order || logistics.order)?.paid_amount ?? "0.00" }}
-              </span>
-            </div>
-            <div>
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Balance:</span
-              >
-              <span class="text-red text-weight-bold">
-                ${{
-                  (rowItem.order || logistics.order)?.balance_amount ?? "0.00"
+            <div class="q-pa-sm text-caption">
+              <div>
+                Balance:
+                <span class="text-red text-weight-bold"
+                  >${{
+                    (rowItem.order || logistics.order)?.balance_amount ?? "0.00"
+                  }}</span
+                >
+              </div>
+              <div>
+                Paid: ${{
+                  (rowItem.order || logistics.order)?.paid_amount ?? "0.00"
                 }}
-              </span>
-            </div>
-            <div>
-              <span
-                class="text-caption text-uppercase text-weight-bold q-mr-xs q-mr-xs"
-                >Amount:</span
-              >
-              <span class="text-weight-bold">
-                ${{
-                  (rowItem.order || logistics.order)?.total_amount ?? "0.00"
-                }}
-              </span>
+              </div>
             </div>
           </div>
         </div>
@@ -931,23 +633,18 @@
     </template>
   </div>
 
-  <!-- ===================== DIALOGS (owned here) ====================== -->
+  <UpdateLogisticsStatusDialog
+    v-model:show="showUpdateStatusDialog"
+    :logistics="selectedLogisticsRow"
+    @saved="showUpdateStatusDialog = false"
+  />
 
-  <!-- Update Logistics Status -->
-<UpdateLogisticsStatusDialog
-  v-model:show="showUpdateStatusDialog"
-  :logistics="selectedLogisticsRow"
-  @saved="onLogisticsStatusSaved"
-/>
+  <UpdateGoodsStatusDialog
+    v-model:show="showUpdateGoodsDialog"
+    :order="selectedGoodsOrder"
+    @saved="showUpdateGoodsDialog = false"
+  />
 
-  <!-- Update Goods Status -->
-<UpdateGoodsStatusDialog
-  v-model:show="showUpdateGoodsDialog"
-  :order="selectedGoodsOrder"
-  @saved="onGoodsSaved"
-/>
-
-  <!-- Update Logistics (Collection + Delivery) -->
   <q-dialog
     v-model="showUpdateLogisticsDialog"
     persistent
@@ -991,16 +688,13 @@
     </q-card>
   </q-dialog>
 
-  <!-- Add Payment -->
-<AddPaymentDialog
-  v-model:show="showAddPaymentDialog"
-  :order="selectedPaymentOrder"
-  :customer="selectedPaymentCustomer"
-  @saved="onPaymentSaved"
-/>
+  <AddPaymentDialog
+    v-model:show="showAddPaymentDialog"
+    :order="selectedPaymentOrder"
+    :customer="selectedPaymentCustomer"
+    @saved="showAddPaymentDialog = false"
+  />
 
-
-  <!-- Create Order Dialog -->
   <q-dialog
     v-model="showCreateOrderDialog"
     persistent
@@ -1029,8 +723,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, defineComponent, h } from "vue";
-import { useQuasar, openURL, copyToClipboard } from "quasar";
+import { ref, computed, defineComponent, h } from "vue";
+import { useQuasar, openURL } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 import UpdateCollectionDialog from "@/components/dialogs/UpdateCollectionDialog.vue";
 import UpdateDeliveryDialog from "@/components/dialogs/UpdateDeliveryDialog.vue";
@@ -1038,179 +732,41 @@ import CreateOrderFromCollection from "@/views/CreateOrderFromCollection.vue";
 import AddPaymentDialog from "@/components/dialogs/AddPaymentDialog.vue";
 import UpdateGoodsStatusDialog from "@/components/dialogs/UpdateGoodsStatusDialog.vue";
 import UpdateLogisticsStatusDialog from "@/components/dialogs/UpdateLogisticsStatusDialog.vue";
-import { fetchItemsByGroup } from "@/../supabase/api/item_list.js";
 
 const props = defineProps({
   rows: Array,
   selectedFilterDate: [String, Date, null],
-  deliveryExceptions: { type: Array, default: () => [] },
   activeDriverTab: { type: [String, Number], default: "" },
 });
-
-// keep local cache
-const allDeliveryExceptions = ref([...props.deliveryExceptions]);
-
-watch(
-  () => props.deliveryExceptions,
-  (v) => {
-    allDeliveryExceptions.value = Array.isArray(v) ? [...v] : [];
-  },
-  { deep: true, immediate: true }
-);
-watch(
-  () => props.rows,
-  (rows) => {
-    const first = (rows || [])[0];
-    const d = first?.deliveries || [];
-  },
-  { immediate: true }
-);
 
 const $q = useQuasar();
 const transactionStore = useTransactionStore();
 
-function shouldShowCollectionForRow(allRows, rowItem, idx) {
-  const hasNonException = (allRows || []).some(r => r?.kind !== 'exception');
-
-  // If this row is an exception:
-  if (rowItem?.kind === 'exception') {
-    // Show only if NO non-exception rows exist, and it's the first row
-    return !hasNonException && idx === 0;
-  }
-
-  // This row is non-exception: show only on the first non-exception row
-  const firstNonExceptionIndex = (allRows || []).findIndex(r => r?.kind !== 'exception');
-  return idx === firstNonExceptionIndex;
-}
-// use the same literal for the "not set" tab
-const TAB_NOT_SET = DRIVER_NOT_SET;
-
-/** Does the current tab match this driver id? */
-function tabMatchesDriver(driverId) {
-  const tab = props.activeDriverTab;
-  if (tab === undefined || tab === null || tab === "") return true; // no tab filter
-  if (tab === TAB_NOT_SET) {
-    return driverId == null || driverId === "";
-  }
-  return String(tab) === String(driverId);
-}
-
-/** Does the selected page date match this date? */
-function dateMatches(dateISO) {
-  const filterISO = toISODate(props.selectedFilterDate);
-  if (!filterISO) return true; // no date filter
-  return toISODate(dateISO) === filterISO;
-}
-
-/**
- * Only render EXCEPTION rows when they match the EXCEPTION’S delivery driver/date.
- * Non-exception rows (normal orders) render as usual.
- */
-function shouldRenderRow(rowItem, logistics) {
-  if (!rowItem || rowItem.kind !== "exception") return true;
-
-  // Use the exception’s delivery driver & date (fallback to main delivery only if missing)
-  const exDriverId =
-    rowItem?.ex?.driver_id != null && rowItem.ex.driver_id !== ""
-      ? rowItem.ex.driver_id
-      : logistics?.deliveries?.[0]?.driver_id ?? null;
-
-  const exDateISO = toISODate(
-    rowItem?.ex?.delivery_date ?? logistics?.deliveries?.[0]?.delivery_date
-  );
-
-  return tabMatchesDriver(exDriverId) && dateMatches(exDateISO);
-}
-
-// exceptions must respect their own delivery driver & date
-function rowMatchesActiveTab(rowItem, logistics) {
-  // Non-exception rows are not gated here
-  if (!rowItem || rowItem.kind !== "exception") return true;
-
-  // Active tab
-  const tab = props.activeDriverTab;
-  const isNotSetTab = tab === DRIVER_NOT_SET;
-
-  // Exception’s effective driver: exception.driver_id -> fallback to main delivery
-  const exDriverId =
-    rowItem?.ex?.driver_id != null && rowItem.ex.driver_id !== ""
-      ? rowItem.ex.driver_id
-      : logistics?.deliveries?.[0]?.driver_id ?? null;
-
-  // Match driver tab
-  if (tab && tab !== "") {
-    if (isNotSetTab) {
-      if (!(exDriverId == null || exDriverId === "")) return false;
-    } else if (String(exDriverId) !== String(tab)) {
-      return false;
-    }
-  }
-
-  // Optional date filter (if provided)
-  const filterISO = toISODate(props.selectedFilterDate);
-  if (filterISO) {
-    const exDateISO = toISODate(
-      rowItem?.ex?.delivery_date ?? logistics?.deliveries?.[0]?.delivery_date
-    );
-    if (exDateISO !== filterISO) return false;
-  }
-
-  return true;
-}
-
-/** Use this *instead of* rendering `ordersOrPlaceholder(logistics)` directly. */
+/* ------------------- Row Logic ------------------- */
 function rowsForDisplay(logistics) {
-  return ordersOrPlaceholder(logistics).filter((ri) =>
-    rowMatchesActiveTab(ri, logistics)
-  );
+  if (logistics.isStandaloneException) {
+    return [
+      {
+        kind: "exception",
+        order: logistics.order || null,
+        ex: logistics.tempExData,
+      },
+    ];
+  }
+  const base = (
+    Array.isArray(logistics?.orders) && logistics.orders.length
+      ? logistics.orders
+      : [null]
+  ).map((o) => ({ kind: "order", order: o }));
+  return base;
 }
 
-onMounted(async () => {
-  try {
-    const data = await transactionStore.fetchDeliveryExceptions();
-    allDeliveryExceptions.value = Array.isArray(data) ? data : [];
-  } catch (e) {
-    console.error(" fetch failed:", e);
-  }
-});
+const rowKey = (rowItem, idx) =>
+  rowItem.kind === "exception"
+    ? `ex-${rowItem.ex.id}`
+    : `${rowItem.order?.id || "no-order"}-${idx}`;
 
-const showAddPaymentDialog = ref(false);
-const selectedPaymentOrder = ref(null);
-const selectedPaymentCustomer = ref(null);
-
-function openAddPaymentDialog(rowOrder, rowCustomer) {
-  if (!rowOrder?.id) {
-    $q.notify({
-      type: "warning",
-      message: "No order attached to this row. Create an order first.",
-    });
-    return;
-  }
-  selectedPaymentOrder.value = rowOrder;
-  selectedPaymentCustomer.value = rowCustomer || null;
-  showAddPaymentDialog.value = true;
-}
-
-const NotSetText = defineComponent({
-  name: "NotSetText",
-  props: {
-    value: { type: [String, Number, Boolean, Object, null], default: null },
-  },
-  setup(props) {
-    return () => {
-      const raw = props.value;
-      const str = (raw ?? "").toString().trim();
-      if (str) return h("span", str);
-      return h(
-        "span",
-        { class: "text-grey-6 text-uppercase text-caption" },
-        "[not set]"
-      );
-    };
-  },
-});
-
-/* ------------------- Helpers ------------------- */
+/* ------------------- Driver Helpers ------------------- */
 const DRIVER_NOT_SET = "[NOT SET]";
 
 const driverMapById = computed(() => {
@@ -1221,6 +777,26 @@ const driverMapById = computed(() => {
   });
   return m;
 });
+
+const getDriverName = (id) =>
+  driverMapById.value.get(String(id)) || DRIVER_NOT_SET;
+
+function isActiveDriver(driverId) {
+  const tab = props.activeDriverTab;
+  if (!tab) return true;
+  return tab === DRIVER_NOT_SET
+    ? driverId == null || driverId === ""
+    : String(driverId ?? "") === String(tab);
+}
+
+function deliveryDriverIdForRow(rowItem, logistics) {
+  const mainId = logistics?.deliveries?.[0]?.driver_id ?? null;
+  return rowItem?.kind === "exception"
+    ? rowItem.ex?.driver_id ?? mainId
+    : mainId;
+}
+
+/* ------------------- Date/Text Helpers ------------------- */
 const toISODate = (d) => {
   if (!d) return null;
   if (typeof d === "string") {
@@ -1228,82 +804,124 @@ const toISODate = (d) => {
     if (m) return m[0];
   }
   const dt = new Date(d);
-  if (isNaN(dt)) return null;
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  const day = String(dt.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return isNaN(dt) ? null : dt.toISOString().split("T")[0];
 };
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return isNaN(date.getTime())
+    ? ""
+    : date.toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
 };
 
 const getOrderDate = (t) => formatDate(t?.created_at);
+
 const getCollectionDate = (t) => {
-  let d = null;
-  if (Array.isArray(t)) d = t?.[0]?.collection_date;
-  else
-    d =
-      t?.collections?.[0]?.collection_date ||
-      t?.collection_date ||
-      t?.logistics_collections?.[0]?.collection_date;
+  const d = Array.isArray(t)
+    ? t?.[0]?.collection_date
+    : t?.collection_date || t?.collections?.[0]?.collection_date;
   return d ? formatDate(d) : "";
 };
 
 const getDeliveryDate = (t) => {
-  let d = null;
-  if (Array.isArray(t)) d = t?.[0]?.delivery_date;
-  else
-    d =
-      t?.deliveries?.[0]?.delivery_date ||
-      t?.delivery_date ||
-      t?.logistics_deliveries?.[0]?.delivery_date;
+  const d = Array.isArray(t)
+    ? t?.[0]?.delivery_date
+    : t?.delivery_date || t?.deliveries?.[0]?.delivery_date;
   return d ? formatDate(d) : "";
 };
 
-const getDriverName = (id) => driverMapById.value.get(String(id)) || "";
+const NotSetText = defineComponent({
+  name: "NotSetText",
+  props: ["value"],
+  setup(props) {
+    return () => {
+      const str = (props.value ?? "").toString().trim();
+      return str
+        ? h("span", str)
+        : h(
+            "span",
+            { class: "text-grey-6 text-uppercase text-caption" },
+            "[not set]"
+          );
+    };
+  },
+});
 
-function isActiveDriver(driverId) {
-  const tab = props.activeDriverTab;
-  if (tab === DRIVER_NOT_SET) {
-    return driverId == null || driverId === "";
-  }
-  return String(driverId ?? "") === String(tab ?? "");
-}
-
-function deliveryDriverIdForRow(rowItem, logistics) {
-  const mainId = logistics?.deliveries?.[0]?.driver_id ?? null;
-  if (rowItem?.kind === "exception") {
-    const exId = rowItem?.ex?.driver_id;
-    return exId != null && exId !== "" ? exId : mainId;
-  }
-  return mainId;
-}
-
+/* ------------------- Layout Helpers ------------------- */
 function formatAddress(addr) {
   if (!addr) return "";
-  const main = [addr.block_no, addr.road_name, addr.unit_no, addr.building_name]
-    .map((v) => (v ?? "").toString().trim())
-    .filter(Boolean)
-    .join(" ");
-  const postal = (addr.postal_code ?? "").toString().trim();
-  const line = [main, postal].filter(Boolean).join(", ");
-  const extra = [addr.additional_info, addr.remarks]
-    .map((v) => (v ?? "").toString().trim())
-    .filter(Boolean)
-    .join(" — ");
-  const out = extra ? `${line} (${extra})` : line;
-  return out || "";
+  return (
+    [
+      addr.block_no,
+      addr.road_name,
+      addr.unit_no,
+      addr.building_name,
+      addr.postal_code,
+    ]
+      .map((v) => (v ?? "").toString().trim())
+      .filter(Boolean)
+      .join(" ") || ""
+  );
 }
+
+function logisticsBadgeClass(status) {
+  const s = String(status || "")
+    .trim()
+    .toLowerCase();
+  const COLLECTION = [
+    "collection arranged",
+    "items with driver",
+    "collection completed",
+    "collection rescheduled",
+    "collection cancelled",
+    "ongoing collection issue/s",
+  ];
+  const DELIVERY = [
+    "processing items",
+    "delivery arranged",
+    "delivery partial",
+    "delivery completed",
+    "delivery postponed",
+    "ongoing delivery issue/s",
+    "delivery exception",
+  ];
+
+  if (COLLECTION.includes(s)) return "mark-bg-pink";
+  if (DELIVERY.includes(s)) return "mark-bg-blue";
+  return "";
+}
+
+function isDeliveryFirst(status) {
+  const s = String(status || "")
+    .trim()
+    .toLowerCase();
+  return s.includes("delivery") || s.includes("processing");
+}
+
+function urgencyClass(u) {
+  const v = String(u || "").toLowerCase();
+  if (v === "urgent")
+    return ["text-uppercase", "text-weight-bolder", "text-purple"];
+  if (v === "express")
+    return ["text-uppercase", "text-weight-bolder", "text-red"];
+  return ["text-caption", "text-uppercase"];
+}
+
+function shouldShowCollectionForRow(allRows, rowItem, idx) {
+  return idx === 0;
+}
+
+/* ------------------- UI Actions ------------------- */
+const showAddPaymentDialog = ref(false);
+const selectedPaymentOrder = ref(null);
+const selectedPaymentCustomer = ref(null);
+const showCreateOrderDialog = ref(false);
 
 const COLLECTION_STATUSES = new Set([
   "collection arranged",
@@ -1321,245 +939,152 @@ const DELIVERY_STATUSES = new Set([
   "delivery postponed",
   "ongoing delivery issue/s",
 ]);
-
-function logisticsBadgeClass(status) {
-  const s = String(status || "")
-    .trim()
-    .toLowerCase();
-  if (COLLECTION_STATUSES.has(s)) return "mark-bg-pink";
-  if (DELIVERY_STATUSES.has(s)) return "mark-bg-blue";
-  return "";
-}
-const isDeliveryFirst = (status) => {
-  const s = String(status || "")
-    .trim()
-    .toLowerCase();
-  if (DELIVERY_STATUSES.has(s) || s.startsWith("delivery")) return true;
-  return false;
-};
-
-const pickCollectionContact = (logistics) => {
-  const src =
-    logistics?.collections?.[0]?.contact_person ||
-    logistics?.collections?.[0]?.customer_contact_persons ||
-    {};
-  return {
-    phone1: src.contact_no1 || "",
-    phone2: src.contact_no2 || "",
-    email: src.email || "",
-  };
-};
-const pickDeliveryContact = (logistics) => {
-  const src =
-    logistics?.deliveries?.[0]?.contact_person ||
-    logistics?.deliveries?.[0]?.customer_contact_persons ||
-    {};
-  return {
-    phone1: src.contact_no1 || "",
-    phone2: src.contact_no2 || "",
-    email: src.email || "",
-  };
-};
-
-/* ------------------- GROUPED exception rows (date + time + driver) ------------------- */
-
-/** Build a normalized key "YYYY-MM-DD__time__driverId" */
-function exceptionGroupKey(ex) {
-  const day = toISODate(ex?.delivery_date) || "";
-  const time = String(ex?.delivery_time || "");
-  const driver = String(ex?.driver_id ?? "");
-  return `${day}__${time}__${driver}`;
-}
-
-/**
- * Map: logistics_id -> grouped exception objects
- * Each group shape:
- * {
- *   _key, logistics_id, delivery_date, delivery_time, driver_id,
- *   rows: [raw exceptions...], count: number
- * }
- */
-const groupedExceptionsByLogisticsId = computed(() => {
-  const byLog = new Map();
-
-  for (const ex of allDeliveryExceptions.value || []) {
-    const logId = ex?.logistics_id;
-    if (logId == null) continue;
-    const logKey = String(logId);
-
-    const gKey = exceptionGroupKey(ex);
-    if (!byLog.has(logKey)) byLog.set(logKey, new Map());
-
-    const bucket = byLog.get(logKey);
-    if (!bucket.has(gKey)) {
-      bucket.set(gKey, {
-        _key: gKey,
-        logistics_id: logId,
-        delivery_date: toISODate(ex?.delivery_date) || null,
-        delivery_time: String(ex?.delivery_time || ""),
-        driver_id: ex?.driver_id ?? null,
-        rows: [],
-        count: 0,
-      });
-    }
-    const group = bucket.get(gKey);
-    group.rows.push(ex);
-    group.count++;
-  }
-
-  // Convert inner maps to sorted arrays (desc by date, then time desc)
-  const out = new Map();
-  for (const [logKey, groupsMap] of byLog.entries()) {
-    const arr = Array.from(groupsMap.values());
-    arr.sort((a, b) => {
-      const da = new Date(a.delivery_date || 0).getTime();
-      const db = new Date(b.delivery_date || 0).getTime();
-      if (db !== da) return db - da;
-      return String(b.delivery_time || "").localeCompare(
-        String(a.delivery_time || "")
-      );
-    });
-    out.set(logKey, arr);
-  }
-  return out;
-});
-
-/** Old helper replaced: now returns GROUPS instead of raw exceptions */
-function getDeliveryExceptionsFor(logistics) {
-  const key = String(logistics?.logistics_id ?? logistics?.id ?? "");
-  const out = key ? groupedExceptionsByLogisticsId.value.get(key) || [] : [];
-  return out;
-}
-
-/* ------------------- Row source builder ------------------- */
-const ordersOrPlaceholder = (logistics) => {
-  const base = (
-    Array.isArray(logistics?.orders) && logistics.orders.length
-      ? logistics.orders
-      : [null]
-  ).map((o) => ({ kind: "order", order: o }));
-
-  // now exceptions are grouped; expose the group as "ex" to keep template unchanged
-  const exc = getDeliveryExceptionsFor(logistics).map((group) => ({
-    kind: "exception",
-    order: logistics?.order || null,
-    ex: {
-      // These props are read by the template:
-      id: group._key, // virtual id for keying only
-      delivery_date: group.delivery_date,
-      delivery_time: group.delivery_time,
-      driver_id: group.driver_id,
-      // extra metadata if you need it later:
-      _count: group.count,
-      _rows: group.rows,
-      _key: group._key,
-    },
-  }));
-
-  return [...base, ...exc];
-};
-
-// unique key helper for rows
-const rowKey = (rowItem, idx) =>
-  rowItem.kind === "exception"
-    ? `exgrp-${rowItem.ex?._key ?? rowItem.ex?.id ?? idx}`
-    : rowItem.order?.id ?? `placeholder-${idx}`;
-
-const urgencyClass = (u) => {
-  const v = String(u || "").toLowerCase();
-  return [
-    "text-uppercase",
-    "text-weight-bolder",
-    v === "urgent"
-      ? "text-purple"
-      : v === "express"
-      ? "text-red"
-      : "text-caption",
-  ];
-};
-
-/* ------------------- Navigation / comms ------------------- */
 const openOrderTab = (order) => {
-  try {
-    transactionStore.setOrderNo(order?.order_no);
-    window.open(`/orders/${order?.order_no}`, "_blank");
-  } catch (e) {
-    console.error(e);
-  }
+  window.open(`/orders/${order?.order_no}`, "_blank");
 };
-const openCustomerTab = (customerId) =>
+const openCustomerTab = (customerId) => {
   window.open(`/customers/${customerId}`, "_blank");
+};
+const openAddPaymentDialog = (rowOrder, rowCustomer) => {
+  if (!rowOrder?.id)
+    return $q.notify({
+      type: "warning",
+      message: "No order found. Create order first.",
+    });
+  selectedPaymentOrder.value = rowOrder;
+  selectedPaymentCustomer.value = rowCustomer;
+  showAddPaymentDialog.value = true;
+};
 
-const sanitizeForTel = (raw) => String(raw || "").replace(/[^\d+]/g, "");
-const sanitizeForWhatsApp = (raw) => String(raw || "").replace(/\D/g, "");
-const sanitizeEmail = (raw) => String(raw || "").trim();
-
-const callViaPhone = (raw) => {
-  const tel = sanitizeForTel(raw);
-  if (tel) openURL(`tel:${tel}`);
-};
-const callViaWhatsApp = (raw) => {
-  const wa = sanitizeForWhatsApp(raw);
-  if (wa) openURL(`https://wa.me/${wa}`);
-};
-const composeEmail = (raw) => {
-  const email = sanitizeEmail(raw);
-  if (email) openURL(`mailto:${email}`);
-};
-const copyEmail = async (raw) => {
-  const email = sanitizeEmail(raw);
-  if (!email) return;
-  try {
-    await copyToClipboard(email);
-    $q.notify({ type: "positive", message: "Email copied" });
-  } catch {
-    $q.notify({ type: "negative", message: "Copy failed" });
+const createOrder = (logistics) => {
+  if (!logistics.customer) {
+    $q.notify({ type: "warning", message: "No customer linked to this log." });
+    return;
   }
+  transactionStore.selectedCustomer = logistics.customer;
+  transactionStore.logisticsId = logistics.id;
+  showCreateOrderDialog.value = true;
 };
+
+const callViaPhone = (raw) =>
+  openURL(`tel:${String(raw).replace(/[^\d+]/g, "")}`);
+const callViaWhatsApp = (raw) =>
+  openURL(`https://wa.me/${String(raw).replace(/\D/g, "")}`);
 
 /* ------------------- Update Logistics Status ------------------- */
 const showUpdateStatusDialog = ref(false);
 const selectedLogisticsRow = ref(null);
+const statusForm = ref({ status: null });
+const savingStatus = ref(false);
+const dialogStatusOptions = ref([]);
+
+const baseLogisticsStatusOptions = computed(() => {
+  return Array.from(
+    new Set([...COLLECTION_STATUSES, ...DELIVERY_STATUSES])
+  ).sort();
+});
+const toTitleCase = (input) => {
+  const s = String(input || "")
+    .trim()
+    .toLowerCase();
+  if (!s) return s;
+  return s.replace(
+    /([A-Za-zÀ-ÖØ-öø-ÿ])([A-Za-zÀ-ÖØ-öø-ÿ]*)/g,
+    (_, f, rest) => f.toUpperCase() + rest
+  );
+};
 
 function openUpdateStatusDialog(row) {
   selectedLogisticsRow.value = row || null;
+  statusForm.value.status = row?.logistics_status || null;
+
+  const base = baseLogisticsStatusOptions.value.map((s) => ({
+    label: toTitleCase(s),
+    value: s,
+  }));
+  if (
+    row?.logistics_status &&
+    !base.some((o) => o.value === row.logistics_status)
+  ) {
+    const v = String(row.logistics_status).trim().toLowerCase();
+    base.unshift({ label: toTitleCase(v), value: v });
+  }
+  dialogStatusOptions.value = base;
   showUpdateStatusDialog.value = true;
 }
 
-function onLogisticsStatusSaved({ newStatus }) {
-  if (selectedLogisticsRow.value) {
+async function saveLogisticsStatus() {
+  if (!selectedLogisticsRow.value) return;
+  const id =
+    selectedLogisticsRow.value.logistics_id || selectedLogisticsRow.value.id;
+  const newStatus = (statusForm.value.status || "").toString();
+  if (!newStatus) return;
+  try {
+    savingStatus.value = true;
+    await transactionStore.updateLogistics(id, { logistics_status: newStatus });
     selectedLogisticsRow.value.logistics_status = newStatus;
+    $q.notify({ type: "positive", message: "Logistics status updated." });
+    showUpdateStatusDialog.value = false;
+  } catch (e) {
+    console.error("Failed to update logistics status:", e);
+    $q.notify({
+      type: "negative",
+      message: "Failed to update logistics status.",
+    });
+  } finally {
+    savingStatus.value = false;
   }
-  $q.notify({ type: "positive", message: "Logistics status updated." });
 }
 
 /* ------------------- Update Goods Status (Order) ------------------- */
+const goodsStatusOptions = ref([
+  { label: "None", value: "none" },
+  { label: "For Collection", value: "for collected" },
+  { label: "Under Process", value: "under process" },
+  { label: "Ready for Delivery", value: "ready for delivery" },
+  { label: "Ongoing Issue/s", value: "ongoing issue/s" },
+  { label: "Items Delivered", value: "Items Delivered" },
+]);
+
 const showUpdateGoodsDialog = ref(false);
 const selectedGoodsOrder = ref(null);
+const goodsForm = ref({ status: null });
+const savingGoods = ref(false);
 
 function openUpdateGoodsDialog(row) {
   selectedGoodsOrder.value = row || null;
+  goodsForm.value.status =
+    row?.goods_status || row?.order_production?.goods_status || null;
   showUpdateGoodsDialog.value = true;
 }
 
-function onGoodsSaved({ patch, orderNo }) {
+async function saveGoodsStatus() {
   if (!selectedGoodsOrder.value) return;
-  selectedGoodsOrder.value.goods_status = patch.goods_status;
-  if (selectedGoodsOrder.value.order_production) {
-    selectedGoodsOrder.value.order_production.goods_status =
-      patch.order_production.goods_status;
-  } else {
-    selectedGoodsOrder.value.order_production = patch.order_production;
+  try {
+    savingGoods.value = true;
+    const productionId = selectedGoodsOrder.value?.order_production?.id;
+    if (!productionId)
+      throw new Error("Missing order_production.id on selected order");
+
+    const newStatus = (goodsForm.value.status || "").toString();
+    if (!newStatus) return;
+
+    await transactionStore.updateProduction(productionId, {
+      goods_status: newStatus,
+    });
+
+    if (selectedGoodsOrder.value.order_production) {
+      selectedGoodsOrder.value.order_production.goods_status = newStatus;
+    }
+    selectedGoodsOrder.value.goods_status = newStatus;
+    $q.notify({ type: "positive", message: "Goods status updated." });
+    showUpdateGoodsDialog.value = false;
+  } catch (err) {
+    console.error("Failed to update goods status:", err);
+    $q.notify({ type: "negative", message: "Failed to update goods status." });
+  } finally {
+    savingGoods.value = false;
   }
-
-  $q.notify({
-    type: "positive",
-    message:
-      `Goods status updated` +
-      (orderNo ? ` for Order ${orderNo}.` : "."),
-  });
-
-  showUpdateGoodsDialog.value = false;
 }
 
 /* ------------------- Update Logistics (open dialog with forms) ------------------- */
@@ -1572,225 +1097,18 @@ function openUpdateLogistics(logistics) {
   showUpdateLogisticsDialog.value = true;
 }
 
-const getCustomerCredits = (customer) => {
-  const credits = Array.isArray(customer?.customer_credits)
-    ? customer?.customer_credits?.[0]
-    : customer?.customer_credits;
-  const online = parseFloat(credits?.online_package ?? "0") || 0;
-  const other = parseFloat(credits?.other_credits ?? "0") || 0;
-  return `$${(online + other).toFixed(2)}`;
-};
+function formatExceptionItem(item) {
+  const unit = (item.order_transaction_items?.unit || "").toLowerCase();
+  const q = item.quantity ?? 0;
+  const p = item.pieces ?? 0;
 
-const showCreateOrderDialog = ref(false);
-
-// -------- Driver resolvers --------
-const findLocalDriver = (id) => {
-  if (!id) return null;
-  const idStr = String(id);
-  return (
-    (transactionStore.driverOptions || []).find(
-      (d) => String(d.id) === idStr
-    ) || null
-  );
-};
-
-const fetchProfilesByIds = async (ids = []) => {
-  if (!ids.length) return [];
-  if (typeof transactionStore.fetchProfilesByIds === "function") {
-    return await transactionStore.fetchProfilesByIds(ids);
-  }
-  if (typeof transactionStore.fetchProfileById === "function") {
-    const out = [];
-    for (const id of ids) {
-      const p = await transactionStore.fetchProfileById(id);
-      if (p) out.push(p);
-    }
-    return out;
-  }
-  return [];
-};
-
-const resolveDriverProfiles = async (collectionDriverId, deliveryDriverId) => {
-  const needIds = [collectionDriverId, deliveryDriverId]
-    .filter((v) => v != null)
-    .map((v) => String(v));
-
-  const local = new Map();
-  for (const id of needIds) {
-    const d = findLocalDriver(id);
-    if (d) local.set(id, d);
+  if (unit === "kg") return `${q} kg`;
+  if (unit === "sqft") return `${q} sqft`;
+  // If unit is generic (pc/pcs) and pieces > 1, show as 'set'
+  if ((unit === "pc" || unit === "pcs" || unit === "") && p > 1) {
+    return `${q} set`;
   }
 
-  const missing = needIds.filter((id) => !local.has(id));
-  let fetched = [];
-  if (missing.length) {
-    fetched = await fetchProfilesByIds(missing);
-  }
-  const fetchedMap = new Map((fetched || []).map((p) => [String(p.id), p]));
-
-  return {
-    collection:
-      collectionDriverId != null
-        ? local.get(String(collectionDriverId)) ||
-          fetchedMap.get(String(collectionDriverId)) ||
-          null
-        : null,
-    delivery:
-      deliveryDriverId != null
-        ? local.get(String(deliveryDriverId)) ||
-          fetchedMap.get(String(deliveryDriverId)) ||
-          null
-        : null,
-  };
-};
-
-const createOrder = async (logistics) => {
-  if (!logistics) return;
-
-  transactionStore.resetTransactionItems();
-
-  transactionStore.selectedCustomer = logistics.customer || null;
-  transactionStore.logisticsId = logistics.logistics_id || logistics.id || null;
-
-  const pricingGroupId =
-    logistics?.customer?.pricing_group_id ??
-    logistics?.customer?.pricing_group?.id ??
-    transactionStore.selectedCustomer?.pricing_group_id ??
-    transactionStore.selectedCustomer?.pricing_group?.id ??
-    null;
-
-  if (!pricingGroupId) {
-    $q.notify({
-      type: "warning",
-      message: "Customer has no pricing group. Using empty item list.",
-    });
-  }
-
-  try {
-    const items = pricingGroupId ? await fetchItemsByGroup(pricingGroupId) : [];
-    transactionStore.pricingGroupId = pricingGroupId;
-    if (typeof transactionStore.setItemCatalog === "function") {
-      transactionStore.setItemCatalog(items);
-    } else if ("pricingItems" in transactionStore) {
-      transactionStore.pricingItems = items;
-    } else {
-      transactionStore.itemCatalog = items;
-    }
-  } catch (err) {
-    console.error("Failed to load items by pricing group:", err);
-    $q.notify({
-      type: "negative",
-      message: "Failed to load items for this customer.",
-    });
-  }
-
-  const collection =
-    Array.isArray(logistics.collections) && logistics.collections.length
-      ? logistics.collections[0]
-      : logistics.collection_date ||
-        logistics.collection_time ||
-        logistics.address
-      ? logistics
-      : null;
-
-  const delivery =
-    Array.isArray(logistics.deliveries) && logistics.deliveries.length
-      ? logistics.deliveries[0]
-      : logistics.delivery_date || logistics.delivery_time || logistics.address
-      ? logistics
-      : null;
-
-  const collectionDriverId = collection?.driver_id ?? null;
-  const deliveryDriverId = delivery?.driver_id ?? null;
-  const {
-    collection: collectionDriverProfile,
-    delivery: deliveryDriverProfile,
-  } = await resolveDriverProfiles(collectionDriverId, deliveryDriverId);
-
-  if (collection) {
-    const cp =
-      collection.contact_person || collection.customer_contact_persons || null;
-    transactionStore.selectedCollectionContact = cp;
-    transactionStore.selectedCollectionAddress = collection.address || null;
-
-    transactionStore.selectedCollectionDriver = collectionDriverProfile
-      ? collectionDriverProfile
-      : collection.driver_name
-      ? { id: collectionDriverId, name: collection.driver_name }
-      : null;
-
-    transactionStore.collectionDate = collection.collection_date || null;
-    transactionStore.collectionTime = collection.collection_time || null;
-    transactionStore.collectionRemarks = collection.remarks || null;
-    transactionStore.collectionNoBags = collection.no_bags || null;
-  }
-
-  if (delivery) {
-    const dp =
-      delivery.contact_person || delivery.customer_contact_persons || null;
-    transactionStore.selectedDeliveryContact = dp;
-    transactionStore.selectedDeliveryAddress = delivery.address || null;
-
-    transactionStore.selectedDeliveryDriver = deliveryDriverProfile
-      ? deliveryDriverProfile
-      : delivery.driver_name
-      ? { id: deliveryDriverId, name: delivery.driver_name }
-      : null;
-
-    transactionStore.deliveryDate = delivery.delivery_date || null;
-    transactionStore.deliveryTime = delivery.delivery_time || null;
-    transactionStore.deliveryRemarks = delivery.remarks || null;
-  }
-  try {
-    await transactionStore.generateOrderNo();
-  } catch (e) {
-    console.error("Failed to generate Order No:", e);
-    $q.notify({ type: "negative", message: "Failed to generate Order No." });
-  }
-  showCreateOrderDialog.value = true;
-};
-
-/* -------- Legacy maps (kept, but unused externally now) -------- */
-const exceptionsByDeliveryId = computed(() => {
-  const map = new Map();
-  for (const ex of allDeliveryExceptions.value || []) {
-    const key = ex?.logistics_delivery_id ?? ex?.delivery_id ?? null;
-    if (key == null) continue;
-    const id = String(key);
-    if (!map.has(id)) map.set(id, []);
-    map.get(id).push(ex);
-  }
-  for (const arr of map.values()) {
-    arr.sort((a, b) => {
-      const da = new Date(a?.delivery_date || 0).getTime();
-      const db = new Date(b?.delivery_date || 0).getTime();
-      if (db !== da) return db - da;
-      return String(b?.delivery_time || "").localeCompare(
-        String(a?.delivery_time || "")
-      );
-    });
-  }
-  return map;
-});
-watch(exceptionsByDeliveryId, () => {});
-
-/* -------- Payment patch -------- */
-function applyPaymentPatch(patch) {
-  const o = selectedPaymentOrder.value;
-  if (!o) return;
-  o.order_payment = { ...(o.order_payment || {}), ...(patch.order_payment || {}) };
-  o.paid_amount = patch.paid_amount ?? o.paid_amount;
-  o.balance_amount = patch.balance_amount ?? o.balance_amount;
-  o.payment_status = patch.payment_status ?? o.payment_status;
-}
-
-function onPaymentSaved({ patch, paidNow, orderNo }) {
-  applyPaymentPatch(patch);
-  showAddPaymentDialog.value = false;
-  const prettyAmt = (Number(paidNow) || 0).toFixed(2);
-  $q.notify({
-    type: "positive",
-    message: `Paid $${prettyAmt} successfully for ${orderNo ? `Order ${orderNo}` : "this order"}.`,
-  });
+  return `${q} qty (${p} pcs)`;
 }
 </script>

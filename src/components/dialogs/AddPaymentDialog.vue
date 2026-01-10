@@ -1,4 +1,3 @@
-<!-- src/components/AddPaymentDialog.vue -->
 <template>
   <q-dialog v-model="internalShow">
     <q-card style="min-width: 1000px">
@@ -15,7 +14,6 @@
       </q-card-section>
 
       <q-card-section class="dialog-body text-subtitle1">
-        <!-- Summary -->
         <div class="row text-center">
           <div class="col all-border text-uppercase">
             <div>Paid</div>
@@ -39,7 +37,6 @@
 
         <q-separator class="q-my-sm" />
 
-        <!-- Credits -->
         <q-banner class="bg-yellow-1 q-my-sm" rounded>
           <q-icon name="account_balance_wallet" class="q-mr-sm" />
           Customer Credit Available:
@@ -48,7 +45,20 @@
           </span>
         </q-banner>
 
-        <!-- Form -->
+        <q-banner class="bg-grey-2 q-my-sm" rounded>
+          <div class="row items-center full-width">
+            <div class="col">
+              <div class="text-body2 text-weight-bold">Reversal / Add back to bill (-)</div>
+              <div class="text-caption text-grey-7">
+                Turn on to add a negative payment (reduces Paid / increases Balance).
+              </div>
+            </div>
+            <div class="col-auto">
+              <q-toggle v-model="isReversal" />
+            </div>
+          </div>
+        </q-banner>
+
         <div class="row q-col-gutter-x-md">
           <div class="col-6">
             <div class="dialog-label">
@@ -78,6 +88,7 @@
               :rules="[
                 (v) => !!v || 'Payment Amount is required',
                 () => paymentAmountNum > 0 || 'Must be greater than 0',
+                () => !isReversal || paymentAmountNum <= displayPaid || `Cannot reverse more than paid ($${displayPaid.toFixed(2)})`
               ]"
               :error="isCreditTooHigh"
               :error-message="creditErrorMsg"
@@ -113,13 +124,12 @@
         <q-btn
           unelevated
           color="primary"
-          label="Add Payment"
+          :label="isReversal ? 'Add Reversal (-)' : 'Add Payment'"
           class="full-width q-my-sm"
           :loading="saving"
           @click="addPayment"
         />
 
-        <!-- ✅ Payment History (ONLY requested columns) -->
         <q-separator class="q-my-md" />
 
         <q-table
@@ -135,25 +145,27 @@
           no-data-label="No payment history found for this order."
         >
           <template #top>
-            <!-- <div class="row items-center full-width q-col-gutter-sm">
-              <div class="col"> -->
+             <div class="row items-center full-width q-col-gutter-sm">
+              <div class="col">
                 <div class="text-subtitle1 text-uppercase text-weight-bold">Payment History</div>
-              <!-- </div>
+              </div>
               <div class="col-auto">
                 <q-btn
-               dense
-                outline
+                  dense
+                  outline
                   icon="refresh"
                   label="Refresh"
                   :loading="historyLoading"
                   @click="loadPaymentHistory"
                 />
               </div>
-            </div> -->
+            </div>
           </template>
 
           <template #body-cell-amount="p">
-            <q-td :props="p">${{ Number(p.row.amount || 0).toFixed(2) }}</q-td>
+            <q-td :props="p" :class="Number(p.row.amount) < 0 ? 'text-red' : ''">
+              ${{ Number(p.row.amount || 0).toFixed(2) }}
+            </q-td>
           </template>
 
           <template #body-cell-created_at="p">
@@ -230,6 +242,7 @@ const referenceNo = ref("");
 const creditRemarks = ref("");
 const totalCredits = ref(0);
 const saving = ref(false);
+const isReversal = ref(false); // New Reversal State
 
 const paymentAmountNum = computed(() => {
   const n = parseFloat(String(paymentAmountStr.value));
@@ -237,9 +250,12 @@ const paymentAmountNum = computed(() => {
 });
 
 const isCreditPayment = computed(() => selectedPaymentType.value === "Online Package Credits");
-const isCreditTooHigh = computed(
-  () => isCreditPayment.value && paymentAmountNum.value > displayCredits.value
-);
+
+// Update Validation: If reversal, ignore credit check. If standard, check limit.
+const isCreditTooHigh = computed(() => {
+  if (isReversal.value) return false; // Reversal doesn't use customer credits (usually)
+  return isCreditPayment.value && paymentAmountNum.value > displayCredits.value;
+});
 
 const creditErrorMsg = computed(() =>
   isCreditTooHigh.value ? `Amount exceeds credits ($${displayCredits.value.toFixed(2)})` : ""
@@ -302,10 +318,11 @@ function initForm() {
   paymentAmountStr.value = (displayUnpaid.value || 0).toFixed(2);
   referenceNo.value = "";
   creditRemarks.value = "";
+  isReversal.value = false;
 }
 
 /* =========================
-   ✅ Payment History
+   ✅ Payment History (Enhanced)
    ========================= */
 const historyRows = ref([]);
 const historyLoading = ref(false);
@@ -333,7 +350,6 @@ function formatDateTime(val) {
 }
 
 function getCreatedById(row) {
-  // Adjust these if your history table uses different field names
   return row?.created_by ?? row?.created_by_id ?? row?.user_id ?? row?.created_user_id ?? null;
 }
 
@@ -379,7 +395,10 @@ async function loadPaymentHistory() {
     historyLoading.value = true;
 
     const rows = await transactionStore.fetchPaymentHistoryByOrderId(orderId);
-    const safeRows = Array.isArray(rows) ? rows : [];
+    // Sort Newest -> Oldest
+    const safeRows = Array.isArray(rows) 
+      ? rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) 
+      : [];
 
     await hydrateCreatedByNames(safeRows);
 
@@ -393,10 +412,6 @@ async function loadPaymentHistory() {
   }
 }
 
-/**
- * Map your history row -> ONLY the requested display columns
- * - created_by uses profiles.name via store.getProfileName(userId)
- */
 const historyDisplayRows = computed(() =>
   (historyRows.value || []).map((r) => {
     const createdById = getCreatedById(r);
@@ -424,13 +439,29 @@ async function addPayment() {
     $q.notify({ type: "negative", message: "Select a type and enter a valid amount." });
     return;
   }
-  if (isCreditTooHigh.value) {
+
+  // REVERSAL CHECKS
+  if (isReversal.value) {
+    if (selectedPaymentType.value === "Online Package Credits") {
+        $q.notify({ type: "negative", message: "Reversal is not supported for credits payments." });
+        return;
+    }
+    if (paymentAmountNum.value > displayPaid.value) {
+        $q.notify({ type: "negative", message: `Cannot reverse more than paid amount ($${displayPaid.value.toFixed(2)}).` });
+        return;
+    }
+  }
+
+  // CREDIT CHECKS (Only if NOT Reversal)
+  if (!isReversal.value && isCreditTooHigh.value) {
     $q.notify({
       type: "negative",
       message: `Amount exceeds available credits ($${displayCredits.value.toFixed(2)}).`,
     });
     return;
   }
+  
+  // REF NO CHECKS
   if (
     (selectedPaymentType.value === "Bank Transfer" || selectedPaymentType.value === "Cheque") &&
     !referenceNo.value
@@ -440,29 +471,41 @@ async function addPayment() {
   }
 
   const orderId = props.order.id;
-  const incoming = paymentAmountNum.value;
+  const rawInput = paymentAmountNum.value;
+  
+  // Calculate final amount (+ for payment, - for reversal)
+  const finalAmount = isReversal.value ? -Math.abs(rawInput) : Math.abs(rawInput);
+
+  // Logic for updating order status locally
   const totalAmount = displayTotal.value;
   const alreadyPaid = displayPaid.value;
+  
+  // For standard payment, we calculate overpayment. For reversal, we don't.
   const unpaidAmount = Math.max(totalAmount - alreadyPaid, 0);
-
-  const appliedAmount = Math.min(incoming, unpaidAmount);
-  const overpaidAmount = Math.max(incoming - appliedAmount, 0);
+  
+  // If payment: Applied is min(input, unpaid). Overpay is remainder.
+  // If reversal: We just apply negative amount. No "Overpayment".
+  const appliedAmount = isReversal.value ? finalAmount : Math.min(finalAmount, unpaidAmount);
+  const overpaidAmount = (!isReversal.value) ? Math.max(finalAmount - appliedAmount, 0) : 0;
 
   const paymentData = {
     order_id: orderId,
     type: selectedPaymentType.value,
-    amount: appliedAmount,
+    amount: appliedAmount, // Send negative if reversal
     reference_no: referenceNo.value || undefined,
-    remarks: creditRemarks.value || undefined,
+    remarks: creditRemarks.value || (isReversal.value ? "Reversal / Correction" : undefined),
   };
 
   try {
     saving.value = true;
 
-    if (appliedAmount > 0) {
+    // 1. Add the transaction
+    // Note: If reversal, appliedAmount is negative.
+    if (appliedAmount !== 0) {
       await transactionStore.addPayment(paymentData);
     }
 
+    // 2. Handle Overpayment (Standard Payment Only)
     if (overpaidAmount > 0 && props.customer?.id) {
       await transactionStore.topUpCredits({
         customerId: props.customer.id,
@@ -476,7 +519,11 @@ async function addPayment() {
       });
     }
 
-    const newPaid = alreadyPaid + appliedAmount;
+    // 3. Update Local Object for UI
+    const newPaid = alreadyPaid + appliedAmount + overpaidAmount; 
+    // ^ Logic: If reversal, appliedAmount is negative, newPaid decreases.
+    // ^ Logic: If payment with overpay, we essentially paid the full amountInput (applied + overpaid)
+
     const newStatus = newPaid >= totalAmount ? "Paid" : "Unpaid";
 
     const patch = {
@@ -491,7 +538,18 @@ async function addPayment() {
       payment_status: newStatus,
     };
 
-    emit("saved", { patch, paidNow: incoming, orderNo: props.order?.order_no || orderId });
+    emit("saved", { 
+        patch, 
+        paidNow: finalAmount, 
+        orderNo: props.order?.order_no || orderId 
+    });
+
+    $q.notify({
+        type: "positive", 
+        message: isReversal.value 
+            ? `Reversal of $${Math.abs(finalAmount).toFixed(2)} added.` 
+            : `Payment of $${finalAmount.toFixed(2)} added.`
+    });
 
     await loadPaymentHistory();
     internalShow.value = false;

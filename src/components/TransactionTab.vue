@@ -17,7 +17,7 @@
         </div>
 
         <!-- Search bar -->
-        <div v-if="selectedItemCategory !== 'others'" class="search-container">
+        <div v-if="selectedItemCategory !== 'custom item'" class="search-container">
           <q-input
             class="search-input items-center"
             v-model="searchItem"
@@ -43,7 +43,7 @@
 
       <!-- Item List Section -->
       <div class="item-container">
-        <div v-if="selectedItemCategory !== 'others'" class="item-list">
+        <div v-if="selectedItemCategory !== 'custom item'" class="item-list">
           <div v-for="(group, subCategory) in groupedItems" :key="subCategory">
             <div
               class="text-h6 text-uppercase text-weight-bold text-center q-py-sm"
@@ -1843,7 +1843,7 @@ const categories = computed(() => {
     itemsForCustomer.value.map((it) => normalizeCategory(it.category))
   );
   const arr = Array.from(set);
-  if (!arr.some((c) => c.toLowerCase() === "others")) arr.push("others");
+  if (!arr.some((c) => c.toLowerCase() === "custom item")) arr.push("custom item");
   return arr;
 });
 

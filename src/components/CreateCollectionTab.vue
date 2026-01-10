@@ -48,6 +48,16 @@
             clearable
             class="q-mb-xs bg-white"
           />
+          <div class="dialog-label">
+            Urgency<span class="text-caption text-grey"> (Auto-generated)</span>
+          </div>
+          <q-input
+            v-model="jobTypeGenerated"
+            outlined
+            dense
+            readonly
+            class="q-mb-xs bg-white"
+          />
         </q-card>
       </div>
     </div>
@@ -492,7 +502,38 @@ onMounted(async () => {
   await transactionStore.loadTimeOptions();
   hardResetForm();
 });
+function countWorkingDays(startDate, endDate) {
+  let start = new Date(startDate);
+  let end = new Date(endDate);
+  
+  if (start > end) return 0;
 
+  let count = 0;
+  let curDate = new Date(start);
+
+  // We start counting from the day after collection
+  while (curDate < end) {
+    curDate.setDate(curDate.getDate() + 1);
+    const day = curDate.getDay();
+    if (day !== 0 && day !== 6) { // Not Sunday (0) or Saturday (6)
+      count++;
+    }
+  }
+  return count;
+}
+
+const jobTypeGenerated = computed(() => {
+  const colDate = transactionStore.collectionDate;
+  const delDate = transactionStore.deliveryDate;
+
+  if (!colDate || !delDate) return "Default";
+
+  const workingDaysGap = countWorkingDays(colDate, delDate);
+
+  if (workingDaysGap <= 4) return "Express";
+  if (workingDaysGap < 7) return "Urgent";
+  return "Default";
+});
 const isCollectionDisabled = computed(
   () => transactionStore.jobType === "installation"
 );
@@ -500,34 +541,15 @@ const isDeliveryDisabled = computed(
   () => transactionStore.jobType === "removal"
 );
 
-function clearCollectionForInstall() {
-  transactionStore.selectedCollectionContact = null;
-  transactionStore.selectedCollectionAddress = null;
-  transactionStore.collectionDate = null;
-  transactionStore.collectionTime = null;
-  transactionStore.selectedCollectionDriver = null;
-  transactionStore.collectionRemarks = "";
-  transactionStore.collectionNoBags = null;
-}
-
-function clearDeliveryForRemoval() {
-  transactionStore.selectedDeliveryContact = null;
-  transactionStore.selectedDeliveryAddress = null;
-  transactionStore.deliveryDate = null;
-  transactionStore.deliveryTime = null;
-  transactionStore.selectedDeliveryDriver = null;
-  transactionStore.deliveryRemarks = "";
-}
-
 /* React to jobType changes */
 watch(
   () => transactionStore.jobType,
   (jt) => {
     if (jt === "installation") {
-      clearCollectionForInstall(); 
+      resetCollection(); 
        transactionStore.additionalCollectionDriver = null;
     } else if (jt === "removal") {
-      clearDeliveryForRemoval(); 
+      resetDelivery(); 
        transactionStore.additionalDeliveryDriver = null;
     }
      if (!['ri', 'installation', 'removal'].includes(jt)) {
@@ -564,24 +586,6 @@ const bagsInput = computed({
     transactionStore.collectionNoBags = Number.isFinite(n) ? Math.max(1, n) : 1;
   },
 });
-
-const MS_DAY = 86_400_000;
-
-function workingDays(collectionYmd, deliveryYmd) {
-  if (!collectionYmd || !deliveryYmd) return null;
-  const s = new Date(collectionYmd);
-  const e = new Date(deliveryYmd);
-  if (isNaN(s) || isNaN(e)) return null;
-
-  let d = new Date(s.getTime() + MS_DAY);
-  let count = 0;
-  while (d.getTime() <= e.getTime()) {
-    const day = d.getDay();
-    if (day !== 0 && day !== 6) count++;
-    d = new Date(d.getTime() + MS_DAY);
-  }
-  return count;
-}
 
 watch(
   () => transactionStore.collectionDate,

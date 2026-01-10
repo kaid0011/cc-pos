@@ -339,7 +339,8 @@ const deliveryExceptions = ref([]);
 const exGroupKey = (dateISO, timeLabel, driverId) => {
   const d = dateISO ? toISODate(dateISO) : "";
   const t = (timeLabel ?? "").toString().trim();
-  const drv = driverId == null || driverId === "" ? DRIVER_NOT_SET : String(driverId);
+  const drv =
+    driverId == null || driverId === "" ? DRIVER_NOT_SET : String(driverId);
   return `${d}__${t}__${drv}`;
 };
 
@@ -365,12 +366,12 @@ const exceptionDriverIdsForDate = (log, targetISO) => {
 
   list.forEach((ex) => {
     if (toISODate(ex?.delivery_date) !== targetISO) return;
-    const id = ex?.driver_id != null && ex.driver_id !== "" ? ex.driver_id : fallback;
+    const id =
+      ex?.driver_id != null && ex.driver_id !== "" ? ex.driver_id : fallback;
     out.add(id == null || id === "" ? DRIVER_NOT_SET : String(id));
   });
   return out;
 };
-
 
 const sortedDriverOptions = computed(() => {
   return [...transactionStore.driverOptions].sort((a, b) =>
@@ -427,17 +428,37 @@ onMounted(async () => {
   if (driverTabs.value.length > 0) {
     activeDriverTab.value = driverTabs.value[0];
   }
+
+  // Fetch Orders
   try {
     const raw = await transactionStore.fetchAllOrdersSimple();
     allOrders.value = normalizeOrders(raw);
   } catch (e) {
     console.error("Failed to fetch orders:", e);
-    $q.notify({ type: "negative", message: "Failed to load orders" });
   }
 
+  // Fetch and Log Exceptions
   try {
-    const ex = await transactionStore.fetchDeliveryExceptions();
-    deliveryExceptions.value = Array.isArray(ex) ? ex : [];
+    const ex = await transactionStore.fetchAllDeliveryExceptions();
+   deliveryExceptions.value = Array.isArray(ex) ? ex.map(e => ({
+    ...e,
+    logistics_id: String(e.logistics_id) 
+  })) : [];
+    
+    // --- NEW CONSOLE TABLE ADDED HERE ---
+    if (deliveryExceptions.value.length > 0) {
+      console.log("%c 🚚 FETCHED DELIVERY EXCEPTIONS ", "background: #2196F3; color: white; font-weight: bold;");
+      console.table(deliveryExceptions.value.map(item => ({
+        ID: item.id,
+        LogisticsID: item.logistics_id,
+        Date: item.delivery_date,
+        Time: item.delivery_time,
+        Driver: getDriverName(item.driver_id),
+        Reason: item.reason || 'N/A'
+      })));
+    } else {
+      console.log("No delivery exceptions found.");
+    }
   } catch (e) {
     console.error("Failed to fetch delivery exceptions:", e);
   }
@@ -582,80 +603,116 @@ const getEffectiveDateISO = (t) => {
     del: toISODate(pickDeliveryDateRaw(t)),
   };
 };
-
 const getEffectiveDriverIds = (t) => {
   const ids = [];
-  const cId = t?.collections?.[0]?.driver_id;
-  const dId = t?.deliveries?.[0]?.driver_id;
+
+  const c = t?.collections?.[0] || null;
+  const d = t?.deliveries?.[0] || null;
+
+  const cId = c?.driver_id;
+  const cAdd = c?.additional_driver_id;
+
+  const dId = d?.driver_id;
+  const dAdd = d?.additional_driver_id;
+
   if (cId != null && cId !== "") ids.push(String(cId));
+  if (cAdd != null && cAdd !== "") ids.push(String(cAdd));
+
   if (dId != null && dId !== "") ids.push(String(dId));
+  if (dAdd != null && dAdd !== "") ids.push(String(dAdd));
+
   return ids;
 };
 
 const hasUnsetDriver = (t) => {
-  const cId = t?.collections?.[0]?.driver_id;
-  const dId = t?.deliveries?.[0]?.driver_id;
+  const c = t?.collections?.[0] || null;
+  const d = t?.deliveries?.[0] || null;
+
+  const cId = c?.driver_id;
+  const cAdd = c?.additional_driver_id;
+
+  const dId = d?.driver_id;
+  const dAdd = d?.additional_driver_id;
+
   const noC = cId == null || cId === "";
+  const noCAdd = cAdd == null || cAdd === "";
+
   const noD = dId == null || dId === "";
-  return noC || noD;
+  const noDAdd = dAdd == null || dAdd === "";
+
+  // if ANY relevant slot is not set, treat as not set
+  return noC || noCAdd || noD || noDAdd;
 };
 
 const filteredOrders = computed(() => {
   const query = searchQuery.value?.toLowerCase?.() || "";
   const targetISO = selectedFilterDate.value ? toISODate(selectedFilterDate.value) : null;
   const driverId = activeDriverTab.value;
+  const isNotSet = isNotSetTab(driverId);
 
-  const list = (allOrders.value || [])
-    .filter((log) => {
-      // --- search ---
-      const customerName = log.customer?.name?.toLowerCase?.() || "";
-      const orderNo = log.order?.order_no?.toLowerCase?.() || "";
-      const status = log.logistics_status?.toLowerCase?.() || "";
-      const matchesSearch =
-        !query || customerName.includes(query) || orderNo.includes(query) || status.includes(query);
-      if (!matchesSearch) return false;
+  // --- 1. PROCESS MAIN ORDERS (Collections/Deliveries) ---
+  const orderList = (allOrders.value || []).filter((log) => {
+    // Search Filter
+    const customerName = log.customer?.name?.toLowerCase?.() || "";
+    const orderNo = log.order?.order_no?.toLowerCase?.() || "";
+    const matchesSearch = !query || customerName.includes(query) || orderNo.includes(query);
+    if (!matchesSearch) return false;
 
-      const txISO = getEffectiveDateISO(log);
-      const exMatched = targetISO ? exceptionDateMatchedFor(log, targetISO) : false;
+    // Date Filter (Check if either Col or Del matches the target date)
+    const txISO = getEffectiveDateISO(log);
+    const matchesDate = !targetISO || txISO.col === targetISO || txISO.del === targetISO;
+    if (!matchesDate) return false;
 
-      // --- date match ---
-      const matchesDate =
-        !targetISO ||
-        txISO.col === targetISO ||
-        txISO.del === targetISO ||
-        exMatched;
-      if (!matchesDate) return false;
+    // Driver Filter (Match current tab)
+    if (!driverId) return true;
+    const c = log.collections?.[0];
+    const d = log.deliveries?.[0];
+    const ids = [c?.driver_id, c?.additional_driver_id, d?.driver_id, d?.additional_driver_id];
+    
+    if (isNotSet) {
+      return ids.some(id => id == null || id === "");
+    }
+    return ids.some(id => String(id ?? "") === String(driverId));
+  });
 
-      // --- driver match ---
-      if (!driverId) return true;
+  // --- 2. PROCESS EXCEPTIONS (Inject as independent rows) ---
+  const exceptionRows = (deliveryExceptions.value || []).filter((ex) => {
+    // Date Match
+    const exDateISO = toISODate(ex.delivery_date);
+    if (targetISO && exDateISO !== targetISO) return false;
 
-      const isNotSet = isNotSetTab(driverId);
-
-      if (exMatched) {
-        // On exception day: ONLY exception drivers (fallback to main delivery), never collections
-        const ids = exceptionDriverIdsForDate(log, targetISO);
-        return isNotSet ? ids.has(DRIVER_NOT_SET) : ids.has(String(driverId));
+    // Driver Match
+    const exDriverId = ex.driver_id;
+    if (driverId && driverId !== "") {
+      if (isNotSet) {
+        if (!(exDriverId == null || exDriverId === "")) return false;
+      } else if (String(exDriverId) !== String(driverId)) {
+        return false;
       }
+    }
 
-      // Non-exception day: normal behavior (collection+delivery drivers allowed)
-      const cId = log?.collections?.[0]?.driver_id;
-      const dId = log?.deliveries?.[0]?.driver_id;
+    // Search Match (Check linked customer name)
+    const linkedOrder = allOrders.value.find(o => String(o.logistics_id) === String(ex.logistics_id));
+    const customerName = linkedOrder?.customer?.name?.toLowerCase() || "";
+    return !query || customerName.includes(query);
+  }).map(ex => {
+    // Transform Exception into a "Logistics Row" shape
+    const linkedOrder = allOrders.value.find(o => String(o.logistics_id) === String(ex.logistics_id));
+    return {
+      ...linkedOrder, // inherit customer/order details
+      logistics_id: ex.logistics_id,
+      logistics_status: 'DELIVERY EXCEPTION', // Status override
+      isStandaloneException: true, // Flag for the component
+      tempExData: ex // Pass the specific exception data
+    };
+  });
 
-      if (isNotSet) return cId == null || cId === "" || dId == null || dId === "";
-      return String(cId) === String(driverId) || String(dId) === String(driverId);
-    })
-    .sort((a, b) => {
-      const txA = getEffectiveDateISO(a);
-      const txB = getEffectiveDateISO(b);
-      const isoA = txA.col || txA.del || "";
-      const isoB = txB.col || txB.del || "";
-      if (!isoA && !isoB) return 0;
-      if (!isoA) return 1;
-      if (!isoB) return -1;
-      return isoA.localeCompare(isoB);
-    });
-
-  return list;
+  // --- 3. COMBINE AND SORT ---
+  return [...orderList, ...exceptionRows].sort((a, b) => {
+    const dateA = a.isStandaloneException ? a.tempExData.delivery_date : (a.collections?.[0]?.collection_date || a.deliveries?.[0]?.delivery_date);
+    const dateB = b.isStandaloneException ? b.tempExData.delivery_date : (b.collections?.[0]?.collection_date || b.deliveries?.[0]?.delivery_date);
+    return String(dateA).localeCompare(String(dateB));
+  });
 });
 
 const paginatedOrders = computed(() => {
@@ -679,7 +736,9 @@ const driverTabs = computed(() => {
 
 const getTransactionsByDriver = (driverIdOrNotSet) => {
   const query = searchQuery.value?.toLowerCase?.() || "";
-  const targetISO = selectedFilterDate.value ? toISODate(selectedFilterDate.value) : null;
+  const targetISO = selectedFilterDate.value
+    ? toISODate(selectedFilterDate.value)
+    : null;
 
   // base rows: search + (col/del or exception date)
   const base = (allOrders.value || []).filter((log) => {
@@ -687,7 +746,10 @@ const getTransactionsByDriver = (driverIdOrNotSet) => {
     const orderNo = log.order?.order_no?.toLowerCase?.() || "";
     const status = log.logistics_status?.toLowerCase?.() || "";
     const matchesSearch =
-      !query || customerName.includes(query) || orderNo.includes(query) || status.includes(query);
+      !query ||
+      customerName.includes(query) ||
+      orderNo.includes(query) ||
+      status.includes(query);
     if (!matchesSearch) return false;
 
     if (!targetISO) return true;
@@ -707,13 +769,31 @@ const getTransactionsByDriver = (driverIdOrNotSet) => {
     const c = log.collections?.[0] || null;
     const d = log.deliveries?.[0] || null;
 
-    const onExceptionDay = !!targetISO && exceptionDateMatchedFor(log, targetISO);
+    const onExceptionDay =
+      !!targetISO && exceptionDateMatchedFor(log, targetISO);
 
     // COLLECTION — skip entirely if we're looking at an exception day for this logistics
     if (c && !onExceptionDay) {
       const cISO = toISODate(c.collection_date);
       if (!targetISO || cISO === targetISO) {
-        items.push({ type: "collection", driver_id: c.driver_id ?? null, date: cISO });
+        items.push({
+          type: "collection",
+          driver_id: c.driver_id ?? null,
+          date: cISO,
+        });
+
+        // include additional collection driver (avoid double count if same as main)
+        if (
+          c?.additional_driver_id != null &&
+          c.additional_driver_id !== "" &&
+          String(c.additional_driver_id) !== String(c.driver_id)
+        ) {
+          items.push({
+            type: "collection",
+            driver_id: c.additional_driver_id,
+            date: cISO,
+          });
+        }
       }
     }
 
@@ -721,7 +801,24 @@ const getTransactionsByDriver = (driverIdOrNotSet) => {
     if (d) {
       const dISO = toISODate(d.delivery_date);
       if (!targetISO || dISO === targetISO) {
-        items.push({ type: "delivery", driver_id: d.driver_id ?? null, date: dISO });
+        items.push({
+          type: "delivery",
+          driver_id: d.driver_id ?? null,
+          date: dISO,
+        });
+
+        // include additional delivery driver (avoid double count if same as main)
+        if (
+          d?.additional_driver_id != null &&
+          d.additional_driver_id !== "" &&
+          String(d.additional_driver_id) !== String(d.driver_id)
+        ) {
+          items.push({
+            type: "delivery",
+            driver_id: d.additional_driver_id,
+            date: dISO,
+          });
+        }
       }
     }
 
@@ -733,7 +830,9 @@ const getTransactionsByDriver = (driverIdOrNotSet) => {
       if (targetISO && exISO !== targetISO) continue;
 
       const exDriverId =
-        ex?.driver_id != null && ex.driver_id !== "" ? ex.driver_id : d?.driver_id ?? null;
+        ex?.driver_id != null && ex.driver_id !== ""
+          ? ex.driver_id
+          : d?.driver_id ?? null;
 
       const gkey = exGroupKey(exISO, ex?.delivery_time, exDriverId);
       if (seenExc.has(gkey)) continue;
@@ -749,7 +848,6 @@ const getTransactionsByDriver = (driverIdOrNotSet) => {
   }
   return items.filter((t) => String(t.driver_id) === String(driverIdOrNotSet));
 };
-
 
 // Weekly summary counts computed from orders
 const daysOfWeek = [
@@ -823,24 +921,28 @@ const driverTransactionCounts = computed(() => {
       const colCount = (allOrders.value || []).filter((log) => {
         const c = log.collections?.[0];
         const cId = c?.driver_id;
-        const date = toISODate(c?.collection_date);
+        const cAdd = c?.additional_driver_id;
+
         return (
           date === iso &&
           (isNotSetTab(driverIdOrNotSet)
-            ? cId == null || cId === ""
-            : String(cId) === String(driverIdOrNotSet))
+            ? cId == null || cId === "" || cAdd == null || cAdd === ""
+            : String(cId) === String(driverIdOrNotSet) ||
+              String(cAdd) === String(driverIdOrNotSet))
         );
       }).length;
 
       const delCount = (allOrders.value || []).filter((log) => {
         const d = log.deliveries?.[0];
         const dId = d?.driver_id;
-        const date = toISODate(d?.delivery_date);
+        const dAdd = d?.additional_driver_id;
+
         return (
           date === iso &&
           (isNotSetTab(driverIdOrNotSet)
-            ? dId == null || dId === ""
-            : String(dId) === String(driverIdOrNotSet))
+            ? dId == null || dId === "" || dAdd == null || dAdd === ""
+            : String(dId) === String(driverIdOrNotSet) ||
+              String(dAdd) === String(driverIdOrNotSet))
         );
       }).length;
 
@@ -920,7 +1022,7 @@ const generateDriverSchedule = () => {
   const selectedDriver = transactionStore.selectedGenerateDriver;
   const generatedDate = selectedGenerateDate.value;
 
- if (!selectedDriver) {
+  if (!selectedDriver) {
     $q.notify({
       type: "warning",
       message: "Please select a driver before generating the schedule.",
@@ -1000,7 +1102,8 @@ const generateDriverSchedule = () => {
     // COLLECTION
     if (
       c &&
-      String(c.driver_id) === String(selectedDriver.id) &&
+      (String(c.driver_id) === String(selectedDriver.id) ||
+        String(c.additional_driver_id) === String(selectedDriver.id)) &&
       toISODate(c.collection_date) === toISODate(generatedDate)
     ) {
       const cp = c.contact_person || c.customer_contact_persons || {};
@@ -1019,7 +1122,8 @@ const generateDriverSchedule = () => {
     // DELIVERY
     if (
       d &&
-      String(d.driver_id) === String(selectedDriver.id) &&
+      (String(d.driver_id) === String(selectedDriver.id) ||
+        String(d.additional_driver_id) === String(selectedDriver.id)) &&
       toISODate(d.delivery_date) === toISODate(generatedDate)
     ) {
       const cp = d.contact_person || d.customer_contact_persons || {};
@@ -1072,9 +1176,15 @@ const generateDriverSchedule = () => {
   });
 
   // ---------- split, sort, count ----------
-  const cols = items.filter((i) => i.kind === "COL").sort((a, b) => a.sortTime - b.sortTime);
-  const dels = items.filter((i) => i.kind === "DEL").sort((a, b) => a.sortTime - b.sortTime);
-  const excs = items.filter((i) => i.kind === "EXC").sort((a, b) => a.sortTime - b.sortTime);
+  const cols = items
+    .filter((i) => i.kind === "COL")
+    .sort((a, b) => a.sortTime - b.sortTime);
+  const dels = items
+    .filter((i) => i.kind === "DEL")
+    .sort((a, b) => a.sortTime - b.sortTime);
+  const excs = items
+    .filter((i) => i.kind === "EXC")
+    .sort((a, b) => a.sortTime - b.sortTime);
 
   const collectionCount = cols.length;
   const deliveryCount = dels.length + excs.length;
@@ -1082,15 +1192,13 @@ const generateDriverSchedule = () => {
   // ---------- header (title + summary ribbon) ----------
   const margin = { left: 12, right: 12, top: 18, bottom: 14 };
   doc.setFontSize(16);
-  doc.text(
-    `Driver Schedule — ${selectedDriver.name}`,
-    margin.left,
-    margin.top
-  );
+  doc.text(`Driver Schedule — ${selectedDriver.name}`, margin.left, margin.top);
 
   doc.setFontSize(11);
   doc.text(
-    `${formatDate(generatedDate)}    |    ${collectionCount} Collections   •   ${deliveryCount} Deliveries (incl. EXC)`,
+    `${formatDate(
+      generatedDate
+    )}    |    ${collectionCount} Collections   •   ${deliveryCount} Deliveries (incl. EXC)`,
     margin.left,
     margin.top + 7
   );
@@ -1100,21 +1208,19 @@ const generateDriverSchedule = () => {
     const str = `Page ${data.pageNumber}`;
     doc.setFontSize(9);
     const pageWidth = doc.internal.pageSize.getWidth();
-    doc.text(str, pageWidth - margin.right, doc.internal.pageSize.getHeight() - 6, {
-      align: "right",
-    });
+    doc.text(
+      str,
+      pageWidth - margin.right,
+      doc.internal.pageSize.getHeight() - 6,
+      {
+        align: "right",
+      }
+    );
   };
 
   // ---------- common table options ----------
   const tableHead = [
-    [
-      "Time",
-      "Type",
-      "Customer & Contact",
-      "Address",
-      "Bags",
-      "Remarks",
-    ],
+    ["Time", "Type", "Customer & Contact", "Address", "Bags", "Remarks"],
   ];
 
   const mapRow = (t) => {
@@ -1129,7 +1235,11 @@ const generateDriverSchedule = () => {
 
     return [
       t.time || "[NOT SET]",
-      t.kind === "COL" ? "Collection" : t.kind === "DEL" ? "Delivery" : "Delivery (EXC)",
+      t.kind === "COL"
+        ? "Collection"
+        : t.kind === "DEL"
+        ? "Delivery"
+        : "Delivery (EXC)",
       `${customer}\n— ${contact}`,
       formatAddress(t.address) || "[NOT SET]",
       t.bags != null && t.bags !== "" ? String(t.bags) : "-",
@@ -1156,9 +1266,9 @@ const generateDriverSchedule = () => {
       halign: "center",
     },
     columnStyles: {
-      0: { cellWidth: 26 },  // Time
-      1: { cellWidth: 30 },  // Type
-      2: { cellWidth: 72 },  // Customer & Contact
+      0: { cellWidth: 26 }, // Time
+      1: { cellWidth: 30 }, // Type
+      2: { cellWidth: 72 }, // Customer & Contact
       3: { cellWidth: 100 }, // Address
       4: { cellWidth: 18, halign: "center" }, // Bags
       5: { cellWidth: "auto" }, // Remarks
@@ -1202,7 +1312,9 @@ const generateDriverSchedule = () => {
       if (Array.isArray(cell.raw)) return; // normal row
       if (typeof cell.raw === "object" && cell.raw?.colSpan === 6) {
         data.cell.styles.fillColor = cell.raw.styles?.fillColor || [44, 62, 80];
-        data.cell.styles.textColor = cell.raw.styles?.textColor || [255, 255, 255];
+        data.cell.styles.textColor = cell.raw.styles?.textColor || [
+          255, 255, 255,
+        ];
         data.cell.styles.fontStyle = "bold";
         data.cell.styles.halign = "left";
       }
@@ -1214,7 +1326,6 @@ const generateDriverSchedule = () => {
   const pdfUrl = URL.createObjectURL(pdfBlob);
   window.open(pdfUrl, "_blank");
 };
-
 
 // STYLES
 const thumbStyle = { right: "4px", borderRadius: "5px", height: "7px" };
@@ -1297,7 +1408,8 @@ const driverAmPmCounts = computed(() => {
     const dayKey = daysOfWeek[new Date(dateISO).getDay()];
 
     if (!counts[driverKey]) counts[driverKey] = {};
-    if (!counts[driverKey][dayKey]) counts[driverKey][dayKey] = { am: 0, pm: 0 };
+    if (!counts[driverKey][dayKey])
+      counts[driverKey][dayKey] = { am: 0, pm: 0 };
 
     counts[driverKey][dayKey][ampm] += 1;
   };
@@ -1315,6 +1427,18 @@ const driverAmPmCounts = computed(() => {
         dateISO: toISODate(c.collection_date),
         label: c.collection_time,
       });
+
+      if (
+        c?.additional_driver_id != null &&
+        c.additional_driver_id !== "" &&
+        String(c.additional_driver_id) !== String(c.driver_id)
+      ) {
+        bump({
+          driverId: c.additional_driver_id,
+          dateISO: toISODate(c.collection_date),
+          label: c.collection_time,
+        });
+      }
     }
 
     if (d) {
@@ -1323,6 +1447,18 @@ const driverAmPmCounts = computed(() => {
         dateISO: toISODate(d.delivery_date),
         label: d.delivery_time,
       });
+
+      if (
+        d?.additional_driver_id != null &&
+        d.additional_driver_id !== "" &&
+        String(d.additional_driver_id) !== String(d.driver_id)
+      ) {
+        bump({
+          driverId: d.additional_driver_id,
+          dateISO: toISODate(d.delivery_date),
+          label: d.delivery_time,
+        });
+      }
     }
 
     // === GROUPED EXCEPTIONS ===
@@ -1348,5 +1484,4 @@ const driverAmPmCounts = computed(() => {
 
   return counts;
 });
-
 </script>

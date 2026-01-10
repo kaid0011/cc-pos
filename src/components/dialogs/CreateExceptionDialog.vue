@@ -1,4 +1,3 @@
-<!-- FILE: src/components/dialogs/CreateExceptionDialog.vue -->
 <template>
   <q-dialog v-model="innerShow" persistent>
     <q-card style="min-width: 900px; max-width: 95vw">
@@ -109,7 +108,8 @@
               <div
                 v-for="ex in pcItems"
                 :key="ex.item_id"
-                class="row row-col-row order-row"
+                class="row row-col-row order-row items-center"
+                :class="{ 'disable-row': ex.availableQty <= 0 }"
               >
                 <div class="col bordered">
                   <div class="text-body2">{{ ex.item_name }}</div>
@@ -119,35 +119,39 @@
                 </div>
 
                 <div class="col-3 bordered text-center">
-                  <template v-if="ex.isSet">
-                    <div class="text-weight-bold">
-                      {{ ex.availableSets }}
-                      {{ ex.availableSets === 1 ? "set" : "sets" }}
+                  <template v-if="ex.multiplier > 1">
+                    <div class="text-weight-bold text-body2">
+                      {{ ex.availableQty }}
+                      {{ ex.availableQty === 1 ? "set" : "sets" }}
                     </div>
-                    <div class="text-caption">
-                      {{ ex.piecesPerSet }} pcs/set •
-                      {{ ex.availablePieces }} pcs total
+                    <div class="text-caption text-grey-8">
+                      {{ ex.availablePcs }} pcs per set
                     </div>
                   </template>
+
                   <template v-else>
                     <div class="text-weight-bold">
-                      {{ ex.availablePieces }} pcs
+                      {{ ex.availablePcs }} pcs
                     </div>
                   </template>
                 </div>
-
                 <div class="col-2 bordered">
                   <q-input
-                    v-model.number="ex.exceptionQty"
-                    type="number"
+                    v-model="ex.exceptionQty"
+                    type="text"
+                    inputmode="numeric"
                     dense
                     outlined
-                    :min="0"
-                    :max="ex.maxQty"
-                    :step="1"
+                    hide-bottom-space
+                    :disable="ex.availableQty <= 0"
                     :suffix="ex.isSet ? 'set' : 'pcs'"
+                    :error="ex.showError"
+                    error-message="Exceeds available quantity"
+                    no-error-icon
+                    @keypress="allowOnlyNumberDot($event, ex.exceptionQty)"
+                    @paste="onPasteNumberOnly"
                     @update:model-value="onQtyChange(ex)"
-                    @blur="normalizeQty(ex)"
+                    @blur="formatToTwoDecimals(ex)"
                   />
                 </div>
 
@@ -173,7 +177,7 @@
                 </div>
                 <div class="col-3 text-weight-bold bordered">
                   <div>Exception</div>
-                  <q-separator class="q-mt-sm" />
+                  <q-separator class="" />
                   <div class="row">
                     <div class="col bordered">PCS</div>
                     <div class="col bordered">WEIGHT</div>
@@ -187,7 +191,8 @@
               <div
                 v-for="ex in kgItems"
                 :key="ex.item_id"
-                class="row row-col-row order-row"
+                class="row row-col-row order-row items-center"
+                :class="{ 'disable-row': ex.availablePcs <= 0 }"
               >
                 <div class="col bordered">
                   <div class="text-body2">{{ ex.item_name }}</div>
@@ -196,42 +201,59 @@
                   </div>
                 </div>
 
-              <div class="col-3 bordered text-center">
-  <div class="text-weight-bold">{{ ex.availablePieces }} pcs</div>
-  <div class="text-caption">
-    Remaining weight: {{ displayNumber(ex.remainingQty ?? ex.originalQty) }} kg
-  </div>
-</div>
+                <div class="col-3 bordered text-center">
+                  <div class="text-weight-bold text-body2">
+                    {{ ex.availablePcs }} pcs available
+                  </div>
+                  <div class="text-caption">
+                    Available weight:
+                    {{ Number(ex.availableQty).toFixed(2) }} kg
+                  </div>
+                </div>
 
                 <div class="col-3 bordered" style="padding: 0">
                   <div class="row">
                     <div class="col bordered">
                       <q-input
                         v-model.number="ex.exceptionPieces"
-                        type="number"
+                        type="text"
+                        inputmode="numeric"
                         dense
                         outlined
-                        :min="0"
-                        :max="ex.availablePieces"
-                        :step="1"
+                        hide-bottom-space
                         suffix="pcs"
+                        :disable="ex.availablePcs <= 0"
+                        :error="ex.showError"
+                        error-message="Exceeds available pieces"
+                        no-error-icon
+                        @keypress="allowOnlyInteger($event)"
+                        @paste="onPasteNumberOnly"
                         @update:model-value="onPiecesChange(ex)"
-                        @blur="normalizePieces(ex)"
                       />
                     </div>
                     <div class="col bordered">
-                      <q-input
-                        v-model.number="ex.exceptionQty"
-                        type="text"
-                        dense
-                        outlined
-                        :min="0"
-                        :max="ex.maxQty"
-                        :step="0.01"
-                        suffix="kg"
-                        @update:model-value="onQtyChange(ex)"
-                        @blur="normalizeQty(ex)"
-                      />
+                      <div class="col bordered">
+                        <q-input
+                          v-model="ex.exceptionQty"
+                          type="text"
+                          inputmode="decimal"
+                          dense
+                          outlined
+                          suffix="kg"
+                          hide-bottom-space
+                          placeholder="0.00"
+                          :disable="ex.availablePcs <= 0"
+                          :error="ex.showError"
+                          error-message="Exceeds available weight"
+                          no-error-icon
+                          @keypress="
+                            allowOnlyNumberDot($event, ex.exceptionQty)
+                          "
+                          @paste="onPasteNumberOnly"
+                          @update:model-value="onQtyChange(ex)"
+                          @blur="formatToTwoDecimals(ex)"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -267,7 +289,8 @@
               <div
                 v-for="ex in sqftItems"
                 :key="ex.item_id"
-                class="row row-col-row order-row"
+                class="row row-col-row order-row items-center"
+                :class="{ 'disable-row': ex.availablePcs <= 0 }"
               >
                 <div class="col bordered">
                   <div class="text-body2">{{ ex.item_name }}</div>
@@ -277,26 +300,29 @@
                 </div>
 
                 <div class="col-3 bordered text-center">
-                  <div class="text-weight-bold">
-                    {{ ex.availablePieces }} pcs
+                  <div class="text-weight-bold text-body2">
+                    {{ ex.availablePcs }} pcs available
                   </div>
-                  <div class="text-caption">
-                    Size per item: {{ displayNumber(ex.originalQty) }} sqft
+                  <div class="text-caption text-grey-8">
+                    Size per item: {{ Number(ex.availableQty).toFixed(2) }} sqft
                   </div>
                 </div>
-
                 <div class="col-2 bordered">
                   <q-input
                     v-model.number="ex.exceptionPieces"
-                    type="number"
+                    type="text"
+                    inputmode="numeric"
                     dense
                     outlined
-                    :min="0"
-                    :max="ex.availablePieces"
-                    :step="1"
+                    hide-bottom-space
                     suffix="pcs"
+                    :disable="ex.availablePcs <= 0"
+                    :error="ex.showError"
+                    error-message="Exceeds available pieces"
+                    no-error-icon
+                    @keypress="allowOnlyInteger($event)"
+                    @paste="onPasteNumberOnly"
                     @update:model-value="onPiecesChange(ex)"
-                    @blur="normalizePieces(ex)"
                   />
                 </div>
 
@@ -325,7 +351,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, computed } from "vue";
+import { ref, watch, computed } from "vue";
 import { Notify } from "quasar";
 import { useTransactionStore } from "@/stores/transactionStore";
 
@@ -336,408 +362,298 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "saved"]);
 const transactionStore = useTransactionStore();
 
+/* --- 1. STATE --- */
 const innerShow = ref(false);
-watch(
-  () => props.modelValue,
-  async (v) => {
-    innerShow.value = v;
-    if (v) {
-      await nextTick();
-      await initLoad();
-    }
-  },
-  { immediate: true }
-);
-watch(innerShow, (v) => emit("update:modelValue", v));
-
-/* state */
 const loading = ref(false);
 const error = ref("");
+const items = ref([]);
 const driverOptions = ref([]);
-const timeOptions = ref([]);
+const timeOptions = computed(() => {
+  // support both array and { time: [...] }
+  const raw = Array.isArray(transactionStore.timeOptions)
+    ? transactionStore.timeOptions
+    : Array.isArray(transactionStore.timeOptions?.time)
+      ? transactionStore.timeOptions.time
+      : [];
+
+  return raw.map((t) => {
+    if (typeof t === "string") {
+      return { label: t, value: t };
+    }
+    // object case: accept common keys and fallbacks
+    const label = t.label ?? t.value ?? t.time ?? "";
+    const value = t.value ?? t.time ?? t.label ?? "";
+    return { label, value };
+  });
+});
+
 const form = ref({
   delivery_date: null,
   delivery_time: null,
   driver_id: null,
   remarks: "",
   logistics_id: null,
-  order_id: null,
 });
-const items = ref([]);
 
-/* derived tables */
+/* --- 2. COMPUTED TABLES --- */
 const pcItems = computed(() => items.value.filter((i) => i.unit === "pc"));
 const kgItems = computed(() => items.value.filter((i) => i.unit === "kg"));
 const sqftItems = computed(() => items.value.filter((i) => i.unit === "sqft"));
 
-/* init */
+function mapToUiItem(t) {
+  const unit = (t.unit || "pc").toLowerCase();
+  const qty = Number(t.quantity || 0);
+  const multiplier = Math.max(Number(t.pieces || 1), 1);
+
+  // Mapping logic for user-friendly labels
+  const processMap = {
+    laundry: "Laundry",
+    dryclean: "Dry Clean",
+    pressing: "Pressing Only",
+    others: "Others",
+  };
+
+  // Fallback to the original value if not found in map
+  const rawProcess = (t.process || "").toLowerCase();
+  const cleanProcessLabel = processMap[rawProcess] || t.process || "-";
+
+  const totalPcs = unit === "pc" ? qty * multiplier : multiplier;
+
+  return {
+    item_id: t.id,
+    item_name: t.item_name,
+    processLabel: cleanProcessLabel,
+    unit,
+    multiplier,
+    originalQty: qty,
+    originalPcs: totalPcs,
+    availableQty: qty,
+    availablePcs: totalPcs,
+    selected: false,
+    exceptionQty: unit === "kg" ? "0.00" : 0,
+    exceptionPieces: 0,
+    showError: false,
+  };
+}
+function getConsumedMap(exceptionHeaders) {
+  const map = new Map();
+  exceptionHeaders.forEach((header) => {
+    (header.logistics_delivery_exception_items || []).forEach((si) => {
+      const prior = map.get(si.order_transaction_item_id) || { qty: 0, pcs: 0 };
+      map.set(si.order_transaction_item_id, {
+        qty: prior.qty + Number(si.quantity || 0),
+        pcs: prior.pcs + Number(si.pieces || 0),
+      });
+    });
+  });
+  return map;
+}
+
 async function initLoad() {
   loading.value = true;
   error.value = "";
-  items.value = [];
   try {
-    await transactionStore.loadDrivers();
-    await transactionStore.loadTimeOptions();
+    await Promise.all([
+      transactionStore.loadDrivers(),
+      transactionStore.loadTimeOptions(),
+    ]);
     driverOptions.value = transactionStore.driverOptions || [];
     timeOptions.value = transactionStore.timeOptions || [];
 
-    const deliveryRow = await safeFetchDeliveryById(props.deliveryId);
-    if (!deliveryRow) throw new Error("Delivery not found.");
-
-    const logisticsId =
-      deliveryRow.logistics_id ?? deliveryRow.logisticsId ?? null;
-    const orderId =
-      deliveryRow?.logistics?.order_id ??
-      deliveryRow?.logistics?.orderId ??
-      null;
-
-    form.value.logistics_id = logisticsId;
-    form.value.order_id = orderId;
-    form.value.delivery_date = toIsoDateOnly(
-      deliveryRow.delivery_date || new Date()
+    const deliveryRow = await transactionStore.fetchDeliveryById(
+      props.deliveryId
     );
-    form.value.delivery_time = deliveryRow.delivery_time || null;
-    form.value.driver_id = deliveryRow.driver_id || null;
-    form.value.remarks = `DELIVERY EXCEPTION for Order #${
-      deliveryRow?.logistics?.orders?.order_no || ""
-    }`;
+    const logId = deliveryRow.logistics_id;
+    const orderId = deliveryRow.logistics?.order_id;
+const orderNo = deliveryRow.logistics?.orders?.order_no || "N/A";
 
-    if (!form.value.order_id)
-      throw new Error(
-        "Missing order_id. Ensure fetchDeliveryById selects logistics(order_id)."
-      );
+    form.value.logistics_id = logId;
+    form.value.delivery_date = deliveryRow.delivery_date;
+    form.value.delivery_time = deliveryRow.delivery_time;
+    form.value.driver_id = deliveryRow.driver_id;
+form.value.remarks = `DELIVERY EXCEPTION for Order #${orderNo}`;
 
-    // 1) base items
-    const txRaw = await safeFetchTransactionsByOrderId(form.value.order_id);
-    const txItems = flattenTxItems(txRaw);
-    const baseItems = txItems.map(toUiItem);
+    const [rawTransactions, rawExceptions] = await Promise.all([
+      transactionStore.fetchTransactionsByOrderId(orderId),
+      transactionStore.fetchDeliveryExceptions(logId),
+    ]);
 
-    // 2) existing exceptions -> aggregate per item
-    const excRows = await safeFetchExceptionsByLogisticsId(
-      form.value.logistics_id
-    );
-    const excMap = aggregateExceptions(excRows);
+    const consumedMap = getConsumedMap(rawExceptions);
+    const baseItems = [];
+    // Inside initLoad() loop:
+    rawTransactions.forEach((tx) => {
+      (tx.order_transaction_items || []).forEach((t) => {
+        const uiItem = mapToUiItem(t);
+        const consumed = consumedMap.get(t.id) || { qty: 0, pcs: 0 };
 
-    // 3) reduce availability by existing exceptions
-    items.value = baseItems.map((i) => applyExceptionReductions(i, excMap));
+        if (uiItem.unit === "sqft") {
+          // SQFT Rule: Size (Qty) stays the same, only Pieces are deducted
+          uiItem.availableQty = uiItem.originalQty;
+          uiItem.availablePcs = Math.max(0, uiItem.originalPcs - consumed.pcs);
+        } else {
+          // PC/KG Rule: Both Quantity and Pieces are deducted
+          uiItem.availableQty = Math.max(0, uiItem.originalQty - consumed.qty);
+          uiItem.availablePcs = Math.max(0, uiItem.originalPcs - consumed.pcs);
+        }
+
+        baseItems.push(uiItem);
+      });
+    });
+
+    items.value = baseItems;
   } catch (e) {
-    console.error("[CreateExceptionDialog.initLoad]", e);
-    error.value = e?.message || "Failed to load delivery details.";
+    error.value = "Failed to load details.";
   } finally {
     loading.value = false;
   }
 }
 
-/* --- exceptions helpers --- */
-function aggregateExceptions(rows) {
-  const map = new Map();
-  if (!Array.isArray(rows)) return map;
-  for (const r of rows) {
-    const key = r.order_transaction_item_id ?? r.order_transaction_item?.id;
-    if (!key) continue;
-    const q = Number(r.quantity) || 0;
-    const p = Number(r.pieces) || 0;
-    const prior = map.get(key) || { qty: 0, pcs: 0 };
-    prior.qty += q;
-    prior.pcs += p;
-    map.set(key, prior);
-  }
-  return map;
-}
-
-function applyExceptionReductions(ex, excMap) {
-  const prior = excMap.get(ex.item_id) || { qty: 0, pcs: 0 };
-  const clone = { ...ex };
-
-  if (clone.unit === "pc") {
-    if (clone.isSet) {
-      const remainingSets = Math.max(
-        0,
-        Math.floor(clone.originalQty - prior.qty)
-      );
-      clone.availableSets = remainingSets;
-      clone.availablePieces = remainingSets * clone.piecesPerSet;
-      clone.maxQty = remainingSets;
-      // default exception to remaining (or 0)
-      clone.exceptionQty = Math.min(clone.exceptionQty, remainingSets);
-    } else {
-      const remainingPcs = Math.max(
-        0,
-        Math.floor(clone.originalQty - prior.qty)
-      );
-      clone.availablePieces = remainingPcs;
-      clone.maxQty = remainingPcs;
-      clone.exceptionQty = Math.min(clone.exceptionQty, remainingPcs);
-    }
-  } else if (clone.unit === "kg") {
-    const remainingPcs = Math.max(
-      0,
-      Math.floor((clone.availablePieces ?? 0) - prior.pcs)
-    );
-    const remainingWeight = Math.max(0, (clone.originalQty ?? 0) - prior.qty);
-
-    clone.availablePieces = remainingPcs;
-    clone.remainingQty = remainingWeight; // <-- add this
-    clone.maxQty = remainingWeight; // cap weight to remaining
-
-    // clamp current inputs to remaining
-    clone.exceptionPieces = Math.min(clone.exceptionPieces ?? 0, remainingPcs);
-    clone.exceptionQty = Math.min(clone.exceptionQty ?? 0, remainingWeight);
-  } else if (clone.unit === "sqft") {
-    const remainingPcs = Math.max(
-      0,
-      Math.floor((clone.availablePieces ?? 0) - prior.pcs)
-    );
-    clone.availablePieces = remainingPcs;
-    // qty/size remains informational; input is only pieces
-    clone.exceptionPieces = Math.min(clone.exceptionPieces ?? 0, remainingPcs);
-  }
-
-  return clone;
-}
-
-/* flatten */
-function flattenTxItems(raw) {
-  if (!Array.isArray(raw)) return [];
-  if (raw.length && raw[0]?.item_name !== undefined) return raw;
-  const out = [];
-  for (const tx of raw)
-    (tx?.order_transaction_items || []).forEach((it) => out.push(it));
-  return out;
-}
-
-/* store helpers */
-async function safeFetchDeliveryById(id) {
-  if (typeof transactionStore.fetchDeliveryById === "function") {
-    const row = await transactionStore.fetchDeliveryById(id);
-    return Array.isArray(row) ? row[0] : row;
-  }
-  throw new Error("Store is missing fetchDeliveryById(deliveryId).");
-}
-async function safeFetchTransactionsByOrderId(orderId) {
-  if (!orderId) return [];
-  if (typeof transactionStore.fetchTransactionsByOrderId === "function") {
-    return await transactionStore.fetchTransactionsByOrderId(orderId);
-  }
-  return [];
-}
-async function safeFetchExceptionsByLogisticsId(logisticsId) {
-  if (!logisticsId) return [];
-  // Expected store method name; adjust if yours differs
-  if (
-    typeof transactionStore.fetchDeliveryExceptionsByLogisticsId === "function"
-  ) {
-    return await transactionStore.fetchDeliveryExceptionsByLogisticsId(
-      logisticsId
-    );
-  }
-  // graceful fallback: no exceptions known
-  return [];
-}
-
-/* item mapping (base) */
-function toUiItem(t) {
-  const unit = unitOf(t);
-  const qty = num(t.quantity); // pc: sets/pcs; kg: weight; sqft: size (readonly)
-  const perUnitPieces = Math.max(num(t.pieces) || 1, 1);
-  const totalPieces = unit === "pc" ? perUnitPieces * qty : num(t.pieces);
-
-  if (unit === "pc") {
-    const isSet = perUnitPieces > 1;
-    return {
-      item_id: t.id,
-      item_name: t.item_name,
-      process: t.process,
-      processLabel: niceProcess(t.process),
-      unit,
-      isSet,
-      piecesPerSet: perUnitPieces,
-      availableSets: qty,
-      availablePieces: totalPieces,
-      exceptionQty: 0, // will be clamped after reductions
-      originalQty: qty,
-      maxQty: isSet ? qty : totalPieces,
-      selected: false,
-    };
-  }
-
-  if (unit === "sqft") {
-    return {
-      item_id: t.id,
-      item_name: t.item_name,
-      process: t.process,
-      processLabel: niceProcess(t.process),
-      unit,
-      isSet: false,
-      piecesPerSet: 1,
-      availableSets: 0,
-      availablePieces: num(t.pieces),
-      exceptionQty: qty, // informational only
-      exceptionPieces: 0,
-      originalQty: qty, // size info
-      maxQty: qty,
-      selected: false,
-    };
-  }
-  // kg
-  if (unit === "kg") {
-    return {
-      item_id: t.id,
-      item_name: t.item_name,
-      process: t.process,
-      processLabel: niceProcess(t.process),
-      unit,
-      isSet: false,
-      piecesPerSet: 1,
-      availableSets: 0,
-      availablePieces: num(t.pieces),
-      exceptionQty: 0, // weight to enter
-      exceptionPieces: 0, // pcs to enter
-      originalQty: qty,
-      remainingQty: qty, // <-- add this
-      maxQty: qty,
-      selected: false,
-    };
-  }
-}
-
-/* utils */
-function unitOf(item) {
-  const u = String(item.unit || "")
-    .toLowerCase()
-    .trim();
-  if (u) return u;
-  const s = String(item.item_name || "").toLowerCase();
-  if (s.includes("sqft")) return "sqft";
-  if (s.includes("kg")) return "kg";
-  return "pc";
-}
-function niceProcess(p) {
-  const s = String(p || "").toLowerCase();
-  if (s === "laundry") return "Laundry";
-  if (s === "dryclean") return "Dry Clean";
-  if (s === "pressing") return "Pressing Only";
-  if (s === "others") return "Others";
-  return p || "-";
-}
-function toIsoDateOnly(v) {
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
-}
-function num(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-function displayNumber(v) {
-  const n = num(v);
-  return Number.isInteger(n) ? String(n) : n.toFixed(3);
-}
-
-/* sync & normalization (same as before, but now clamped to reduced availability) */
 function onQtyChange(ex) {
+  let numericVal = parseFloat(ex.exceptionQty) || 0;
+
+  if (numericVal > ex.availableQty) {
+    // Show error message
+    ex.showError = true;
+
+    // Snap to max
+    numericVal = ex.availableQty;
+    ex.exceptionQty = ex.unit === "kg" ? numericVal.toFixed(2) : numericVal;
+
+    // Hide error message after 3 seconds
+    setTimeout(() => {
+      ex.showError = false;
+    }, 3000);
+  } else {
+    ex.showError = false;
+  }
+
   if (ex.unit === "pc") {
-    const clamped = clampInt(ex.exceptionQty, 0, ex.maxQty);
-    ex.exceptionQty = clamped;
-    ex.exceptionPieces = ex.isSet ? clamped * ex.piecesPerSet : clamped;
-  } else if (ex.unit === "kg") {
-    ex.exceptionQty = clampFloat(ex.exceptionQty, 0, ex.maxQty);
-  } else if (ex.unit === "sqft") {
-    ex.exceptionQty = ex.originalQty; // fixed
+    ex.exceptionPieces = Math.floor(numericVal * ex.multiplier);
   }
 }
+
 function onPiecesChange(ex) {
-  if (ex.unit === "kg" || ex.unit === "sqft") {
-    ex.exceptionPieces = clampInt(ex.exceptionPieces, 0, ex.availablePieces);
+  let val = Number(ex.exceptionPieces) || 0;
+
+  if (val > ex.availablePcs) {
+    ex.showError = true;
+    ex.exceptionPieces = ex.availablePcs;
+    setTimeout(() => {
+      ex.showError = false;
+    }, 3000);
+  } else {
+    ex.showError = false;
+  }
+
+  if (ex.unit === "sqft") {
+    ex.exceptionQty = ex.availableQty;
   }
 }
-function normalizeQty(ex) {
-  onQtyChange(ex);
-}
-function normalizePieces(ex) {
-  onPiecesChange(ex);
-}
-function clampInt(val, min, max) {
-  const n = Number.isFinite(+val) ? Math.floor(+val) : 0;
-  return Math.min(Math.max(n, min), max);
-}
-function clampFloat(val, min, max) {
-  const n = Number.isFinite(+val) ? +val : 0;
-  return Math.min(Math.max(n, min), max);
-}
-function totalPieces(ex) {
-  if (ex.unit === "pc")
-    return ex.isSet ? ex.exceptionQty * ex.piecesPerSet : ex.exceptionQty;
-  return ex.exceptionPieces;
-}
 
-/* actions */
-function close() {
-  innerShow.value = false;
+// Ensure 2 decimals when the user finishes typing
+function formatToTwoDecimals(ex) {
+  if (ex.unit === "kg") {
+    const val = parseFloat(ex.exceptionQty) || 0;
+    ex.exceptionQty = val.toFixed(2);
+  }
 }
-
 async function save() {
+  const selected = items.value.filter(
+    (i) => i.selected && (i.exceptionQty > 0 || i.exceptionPieces > 0)
+  );
+  if (!selected.length) {
+    Notify.create({
+      type: "warning",
+      message: "Please select items and enter quantities.",
+    });
+    return;
+  }
+
+  const payload = {
+    logistics_id: form.value.logistics_id,
+    delivery_date: form.value.delivery_date,
+    delivery_time: form.value.delivery_time,
+    driver_id: form.value.driver_id,
+    remarks: form.value.remarks,
+    items: selected.map((i) => ({
+      order_transaction_item_id: i.item_id,
+      quantity: i.exceptionQty,
+      pieces: i.exceptionPieces,
+    })),
+  };
+
   try {
-    if (!form.value.logistics_id) {
-      Notify.create({ type: "negative", message: "Missing logistics id." });
-      return;
-    }
-    if (!form.value.delivery_date) {
-      Notify.create({ type: "warning", message: "Delivery date is required." });
-      return;
-    }
-
-    const selected = items.value
-      .filter((i) => i.selected)
-      .map((i) => ({ ...i }));
-    if (!selected.length) {
-      Notify.create({ type: "warning", message: "Select at least one item." });
-      return;
-    }
-
-    const payloads = [];
-    for (const it of selected) {
-      onQtyChange(it);
-      onPiecesChange(it);
-
-      const q = it.unit === "sqft" ? it.originalQty : it.exceptionQty; // sqft size fixed per your rule
-      const p = totalPieces(it);
-      if ((+q || 0) <= 0 && (+p || 0) <= 0) continue;
-
-      payloads.push({
-        logistics_id: form.value.logistics_id,
-        order_transaction_item_id: it.item_id,
-        delivery_date: form.value.delivery_date,
-        delivery_time: form.value.delivery_time,
-        driver_id: form.value.driver_id,
-        quantity: q,
-        pieces: p ?? 0,
-        remarks: form.value.remarks || null,
-      });
-    }
-
-    if (!payloads.length) {
-      Notify.create({
-        type: "warning",
-        message: "Nothing to create. Check amounts.",
-      });
-      return;
-    }
-
-    await Promise.all(
-      payloads.map((p) => transactionStore.createDeliveryException(p))
-    );
+    loading.value = true;
+    await transactionStore.createDeliveryException(payload);
     Notify.create({
       type: "positive",
-      message: "Delivery exception(s) created.",
+      message: "Exception created successfully.",
     });
     emit("saved");
     close();
   } catch (e) {
-    console.error("[CreateExceptionDialog.save]", e);
-    Notify.create({
-      type: "negative",
-      message: "Failed to create delivery exceptions.",
-    });
+    Notify.create({ type: "negative", message: "Failed to save." });
+  } finally {
+    loading.value = false;
   }
 }
+
+function close() {
+  innerShow.value = false;
+  emit("update:modelValue", false);
+}
+
+// For KG Weight / SQFT Size (Allows one decimal point)
+function allowOnlyNumberDot(evt, currentValue) {
+  const charCode = evt.which ? evt.which : evt.keyCode;
+  const char = String.fromCharCode(charCode);
+
+  // Allow digits
+  if (/[0-9]/.test(char)) return true;
+
+  // Allow decimal point only if it doesn't already exist
+  if (char === "." && !String(currentValue || "").includes(".")) return true;
+
+  evt.preventDefault();
+  return false;
+}
+
+// For Pieces / PC Qty (Strictly no decimals)
+function allowOnlyInteger(evt) {
+  const charCode = evt.which ? evt.which : evt.keyCode;
+  if (charCode < 48 || charCode > 57) {
+    evt.preventDefault();
+    return false;
+  }
+  return true;
+}
+
+function onPasteNumberOnly(evt) {
+  const clipboardData = evt.clipboardData || window.clipboardData;
+  const pastedData = clipboardData.getData("Text");
+  if (!/^[0-9]*\.?[0-9]*$/.test(pastedData)) {
+    evt.preventDefault();
+  }
+}
+
+watch(
+  () => props.modelValue,
+  async (v) => {
+    innerShow.value = v;
+    if (v) await initLoad();
+  }
+);
 </script>
+<style scoped>
+.bordered {
+  padding: 3px;
+}
+.text-body2,
+.text-caption {
+  line-height: 1.25;
+}
+.disable-row {
+  background-color: rgb(202, 201, 198) !important;
+  color: rgb(122, 122, 122) !important;
+}
+</style>

@@ -24,7 +24,6 @@ function inferUnitFromName(name) {
   return "pc";
 }
 
-
 function parseNumeric(input) {
   if (input == null) return null;
   if (typeof input === "number") return Number.isFinite(input) ? input : null;
@@ -37,7 +36,8 @@ function parseNumeric(input) {
 
 function distributeEqualAmountAbs(totalAbs, itemCount) {
   const totalCents = Math.round(Number(totalAbs) * 100);
-  if (!Number.isFinite(totalCents) || totalCents <= 0 || itemCount <= 0) return [];
+  if (!Number.isFinite(totalCents) || totalCents <= 0 || itemCount <= 0)
+    return [];
 
   const base = Math.floor(totalCents / itemCount);
   let rem = totalCents - base * itemCount;
@@ -113,98 +113,6 @@ async function fetchLatestTransactionAndItems(supabase, orderId) {
   return { transactionId: tx.id, insertedItems: items ?? [] };
 }
 
-async function fetchCustomerOverallRules(supabase, customerId) {
-  if (!customerId) return [];
-
-  const nowIso = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from("customer_discounts_charges")
-    .select("dc_type, value_type, percentage, amount, active, starts_at, ends_at")
-    .eq("customer_id", customerId)
-    .eq("active", true)
-    .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
-    .or(`ends_at.is.null,ends_at.gte.${nowIso}`);
-
-  if (error) throw error;
-
-  return (data ?? [])
-    .map((r) => {
-      const dc_type = String(r?.dc_type ?? "").toLowerCase();      // discount | charge
-      const value_type = String(r?.value_type ?? "").toLowerCase(); // percent | amount
-
-      if ((dc_type !== "discount" && dc_type !== "charge")) return null;
-      if ((value_type !== "percent" && value_type !== "amount")) return null;
-
-      return {
-        dc_type,
-        value_type,
-        percentage: value_type === "percent" ? parseNumeric(r?.percentage) : null,
-        amount: value_type === "amount" ? parseNumeric(r?.amount) : null,
-      };
-    })
-    .filter(Boolean);
-}
-
-function expandOverallAdjustmentsToDcRows(overallAdjustments, pairs) {
-  const itemIds = (pairs ?? [])
-    .map((p) => p?.orderTransactionItemId)
-    .filter(Boolean);
-
-  const itemCount = itemIds.length;
-  if (!itemCount) return [];
-
-  const rows = [];
-
-  for (const a of overallAdjustments ?? []) {
-    const dc_type = String(a?.dc_type ?? "").toLowerCase();         // discount | charge
-    const value_type = String(a?.value_type ?? "").toLowerCase();   // percent | amount
-
-    if ((dc_type !== "discount" && dc_type !== "charge")) continue;
-    if ((value_type !== "percent" && value_type !== "amount")) continue;
-
-    const sign = dc_type === "discount" ? -1 : 1;
-
-    // ✅ PERCENT: replicate per item (overall % is equivalent when summed)
-    if (value_type === "percent") {
-      const pct = parseNumeric(a?.percentage);
-      if (pct == null || pct === 0) continue;
-
-      for (const itemId of itemIds) {
-        rows.push({
-          order_transaction_item_id: itemId,
-          dc_type,
-          value_type,
-          percentage: sign * Math.abs(pct),
-          amount: null,
-        });
-      }
-      continue;
-    }
-
-    // ✅ AMOUNT: distribute across items (overall fixed $)
-    const amt = parseNumeric(a?.amount);
-    if (amt == null || amt === 0) continue;
-
-    const parts = distributeEqualAmountAbs(Math.abs(amt), itemCount);
-    for (let i = 0; i < itemIds.length; i++) {
-      const part = parts[i] ?? 0;
-      if (!part) continue;
-
-      rows.push({
-        order_transaction_item_id: itemIds[i],
-        dc_type,
-        value_type,
-        percentage: null,
-        amount: sign * part,
-      });
-    }
-  }
-
-  return rows;
-}
-
-
 export const useTransactionStore = defineStore("transactionStore", {
   state: () => ({
     transactionItems: [],
@@ -250,10 +158,10 @@ export const useTransactionStore = defineStore("transactionStore", {
     logisticsId: null,
     tagCountsByOrderId: {},
     packCategoriesByOrderId: {},
-        totalAmount: 0,
+    totalAmount: 0,
     deposit: 0,
-       orderOverallDiscountCharges: [],
-         customerDiscountCharges: [],
+    orderOverallDiscountCharges: [],
+    customerDiscountCharges: [],
   }),
   actions: {
     async loadItems() {
@@ -1759,17 +1667,17 @@ export const useTransactionStore = defineStore("transactionStore", {
     async deleteTransaction(transactionId) {
       try {
         const { error } = await supabase
-          .from("transactions")
+          .from("order_transaction_items")
           .delete()
           .eq("id", transactionId);
 
         if (error) throw error;
 
         console.log(
-          `Transaction with ID ${transactionId} deleted successfully.`
+          `Transaction item with ID ${transactionId} deleted successfully.`
         );
       } catch (error) {
-        console.error("Error deleting transaction from database:", error);
+        console.error("Error deleting transaction item from database:", error);
         throw error;
       }
     },
@@ -1898,6 +1806,7 @@ export const useTransactionStore = defineStore("transactionStore", {
         no_bags,
         logistics_id,
         driver_id,
+          additional_driver_id,
         customer_contact_persons (
           id,
           name,
@@ -2047,6 +1956,7 @@ export const useTransactionStore = defineStore("transactionStore", {
             delivery_time,
             logistics_id,
             driver_id,
+          additional_driver_id,
             customer_contact_persons (
               id,
               name,
@@ -2612,7 +2522,9 @@ job_type,
               collection_date: c.collection_date,
               collection_time: c.collection_time,
               no_bags: c.no_bags,
+              collection_remarks: c.collection_remarks,
               driver_id: c.driver_id,
+              additional_driver_id: c.additional_driver_id,
               driver: c.profiles
                 ? {
                     id: c.profiles.id,
@@ -2649,7 +2561,9 @@ job_type,
               delivery_date: d.delivery_date,
               delivered_date: d.delivered_date,
               delivery_time: d.delivery_time,
+              delivery_remarks: d.delivery_remarks,
               driver_id: d.driver_id,
+              additional_driver_id: d.additional_driver_id,
               driver: d.profiles
                 ? {
                     id: d.profiles.id,
@@ -2805,6 +2719,7 @@ job_type,
           no_bags,
           collection_remarks,
           driver_id,
+          additional_driver_id,
                   profiles:driver_id (
           id,
           name
@@ -2862,6 +2777,7 @@ job_type,
         no_bags,
         collection_remarks,
         driver_id,
+          additional_driver_id,
         profiles:driver_id ( id, name ),
         address_id,
         customer_address:address_id (
@@ -2902,6 +2818,7 @@ job_type,
       delivery_date,
       delivery_time,
       driver_id,
+          additional_driver_id,
       delivery_remarks,
       delivered_date,
       profiles:driver_id ( id, name ),
@@ -2934,6 +2851,7 @@ job_type,
           delivery_date,
           delivery_time,
           driver_id,
+          additional_driver_id,
           delivery_remarks,
           delivered_date,
                   profiles:driver_id (
@@ -2992,6 +2910,7 @@ job_type,
             delivery_time,
             delivery_remarks,
             driver_id,
+          additional_driver_id,
             profiles:driver_id (
               id,
               name
@@ -3039,52 +2958,59 @@ job_type,
     },
 
     async fetchDbCollectionAndDeliveryDates(logisticsId) {
-  const TAG = "[transactionStore.fetchDbCollectionAndDeliveryDates]";
-  try {
-    const id = logisticsId ?? this.logisticsId ?? null;
-    if (!id) {
-      console.warn(`${TAG} missing logisticsId`, { logisticsId, store: this.logisticsId });
-      return { collection_date: null, delivery_date: null };
-    }
+      const TAG = "[transactionStore.fetchDbCollectionAndDeliveryDates]";
+      try {
+        const id = logisticsId ?? this.logisticsId ?? null;
+        if (!id) {
+          console.warn(`${TAG} missing logisticsId`, {
+            logisticsId,
+            store: this.logisticsId,
+          });
+          return { collection_date: null, delivery_date: null };
+        }
 
-    // 1) Latest collection_date for this logistics
-    const { data: cRow, error: cErr } = await supabase
-      .from("logistics_collections")
-      .select("collection_date, created_at")
-      .eq("logistics_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+        // 1) Latest collection_date for this logistics
+        const { data: cRow, error: cErr } = await supabase
+          .from("logistics_collections")
+          .select("collection_date, created_at")
+          .eq("logistics_id", id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-    if (cErr) throw cErr;
+        if (cErr) throw cErr;
 
-    // 2) Latest delivery_date for this logistics
-    const { data: dRow, error: dErr } = await supabase
-      .from("logistics_deliveries")
-      .select("delivery_date, created_at")
-      .eq("logistics_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+        // 2) Latest delivery_date for this logistics
+        const { data: dRow, error: dErr } = await supabase
+          .from("logistics_deliveries")
+          .select("delivery_date, created_at")
+          .eq("logistics_id", id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-    if (dErr) throw dErr;
+        if (dErr) throw dErr;
 
-    const result = {
-      collection_date: cRow?.collection_date ?? null, // "YYYY-MM-DD"
-      delivery_date: dRow?.delivery_date ?? null,     // "YYYY-MM-DD"
-    };
+        const result = {
+          collection_date: cRow?.collection_date ?? null, // "YYYY-MM-DD"
+          delivery_date: dRow?.delivery_date ?? null, // "YYYY-MM-DD"
+        };
 
-    // OPTIONAL: also sync into store state if you want the store to own truth
-    // (uncomment if you want this behavior)
-    // this.collectionDate = result.collection_date;
-    // this.deliveryDate = result.delivery_date;
+        // OPTIONAL: also sync into store state if you want the store to own truth
+        // (uncomment if you want this behavior)
+        // this.collectionDate = result.collection_date;
+        // this.deliveryDate = result.delivery_date;
 
-    return result;
-  } catch (err) {
-    console.error(TAG, err);
-    return { collection_date: null, delivery_date: null, error: err?.message || String(err) };
-  }
-},
+        return result;
+      } catch (err) {
+        console.error(TAG, err);
+        return {
+          collection_date: null,
+          delivery_date: null,
+          error: err?.message || String(err),
+        };
+      }
+    },
     async createOrderFromCollection(logisticsId) {
       try {
         const { orderId } = await this.createOrder(logisticsId);
@@ -3301,6 +3227,7 @@ job_type,
               collection_remarks:
                 this.collectionRemarks ?? fallback.collection_remarks ?? null,
               driver_id: this.selectedCollectionDriver?.id ?? null,
+              additional_driver_id: this.additionalCollectionDriver?.id ?? null,
               no_bags: this.collectionNoBags ?? fallback.no_bags ?? null,
               logistics_id: logisticsId,
             },
@@ -3346,6 +3273,7 @@ job_type,
           collection_time: oldRow.collection_time ?? null,
           collection_remarks: oldRow.collection_remarks ?? null,
           driver_id: oldRow.driver_id ?? null,
+          additional_driver_id: oldRow.additional_driver_id ?? null,
           no_bags: oldRow.no_bags ?? null,
           created_at: nowIso, // acts as changed_at
           created_by: userId, // acts as changed_by
@@ -3364,6 +3292,7 @@ job_type,
           collection_time: toNull(this.collectionTime),
           collection_remarks: toNull(this.collectionRemarks),
           driver_id: idOf(this.selectedCollectionDriver),
+          additional_driver_id: idOf(this.additionalCollectionDriver),
           no_bags: this.collectionNoBags ?? null,
 
           // audit fields (you asked to keep using created_* for changes)
@@ -3383,7 +3312,7 @@ job_type,
           .select(
             `
         id, logistics_id, collection_date, collection_time, collection_remarks,
-        address_id, driver_id, no_bags,
+        address_id, driver_id, additional_driver_id, no_bags,
         customer_contact_persons ( id, name, contact_no1, contact_no2 )
       `
           )
@@ -3412,6 +3341,7 @@ job_type,
 
     async createDelivery(logisticsId, fallback = {}) {
       try {
+        // 1. Insert the delivery record
         const { error: deliveryError } = await supabase
           .from("logistics_deliveries")
           .insert([
@@ -3431,15 +3361,29 @@ job_type,
               delivery_remarks:
                 this.deliveryRemarks ?? fallback.delivery_remarks ?? null,
               driver_id: this.selectedDeliveryDriver?.id ?? null,
+              additional_driver_id: this.additionalDeliveryDriver?.id ?? null,
               logistics_id: logisticsId,
             },
           ]);
 
         if (deliveryError) throw deliveryError;
 
-        console.log("Delivery successfully created!");
+        // 2. Fetch urgency string based on the logisticsId
+        const urgencyValue = await this.calculateUrgency(logisticsId);
+
+        // 3. Update the parent logistics record
+        const { error: updateError } = await supabase
+          .from("logistics")
+          .update({ urgency: urgencyValue })
+          .eq("id", logisticsId);
+
+        if (updateError) throw updateError;
+
+        console.log(
+          `Success: Delivery created and Urgency set to '${urgencyValue}'`
+        );
       } catch (error) {
-        console.error("Error in create delivery:", error);
+        console.error("Workflow Error:", error.message);
       }
     },
 
@@ -3469,6 +3413,7 @@ job_type,
           delivery_time: oldRow.delivery_time ?? null,
           delivery_remarks: oldRow.delivery_remarks ?? null,
           driver_id: oldRow.driver_id ?? null,
+          additional_driver_id: oldRow.additional_driver_id ?? null,
           // created_at/created_by not set here; Supabase defaults can handle timestamps on the history table if desired
         };
         const { error: histErr } = await supabase
@@ -3491,9 +3436,8 @@ job_type,
           delivery_time: toNull(updateData.delivery_time ?? this.deliveryTime),
           delivery_remarks:
             updateData.delivery_remarks ?? this.deliveryRemarks ?? null,
-          driver_id:
-            idOf(updateData.driver_id ?? updateData.driver) ??
-            idOf(this.selectedDeliveryDriver),
+          driver_id: idOf(this.selectedDeliveryDriver),
+          additional_driver_id: idOf(this.additionalDeliveryDriver),
         };
 
         console.log(`${TAG} ▶️ updating logistics_deliveries`, {
@@ -3512,7 +3456,7 @@ job_type,
           .select(
             `
         id, logistics_id, delivery_date, delivered_date, delivery_time, delivery_remarks,
-        address_id, driver_id,
+        address_id, driver_id, additional_driver_id,
         customer_contact_persons ( id, name, contact_no1, contact_no2 )
       `
           )
@@ -3595,6 +3539,62 @@ job_type,
       } catch (err) {
         console.error(`${TAG} ❌`, err);
         throw err;
+      }
+    },
+    async calculateUrgency(logisticsId) {
+      try {
+        // 1. Fetch dates from both tables simultaneously
+        const [collectionRes, deliveryRes] = await Promise.all([
+          supabase
+            .from("logistics_collections")
+            .select("collection_date")
+            .eq("logistics_id", logisticsId)
+            .single(),
+          supabase
+            .from("logistics_deliveries")
+            .select("delivery_date")
+            .eq("logistics_id", logisticsId)
+            .single(),
+        ]);
+
+        const collectionDate = collectionRes.data?.collection_date;
+        const deliveryDate = deliveryRes.data?.delivery_date;
+
+        // 2. Validation: If dates are missing, return default
+        if (!collectionDate || !deliveryDate) {
+          console.warn("Missing dates for urgency calculation. Defaulting.");
+          return "default";
+        }
+
+        // 3. Working Days Calculation Logic
+        let start = new Date(collectionDate);
+        let end = new Date(deliveryDate);
+
+        // If delivery is somehow before collection, return default
+        if (start > end) return "default";
+
+        let workingDaysGap = 0;
+        let curDate = new Date(start);
+
+        // Loop through days from the day after collection until delivery
+        while (curDate < end) {
+          curDate.setDate(curDate.getDate() + 1);
+          const dayOfWeek = curDate.getDay();
+
+          // 0 = Sunday, 6 = Saturday. Only count if it's 1-5 (Mon-Fri)
+          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            workingDaysGap++;
+          }
+        }
+
+        // 4. Determine Urgency based on WORKING days
+        if (workingDaysGap <= 4) return "express";
+        if (workingDaysGap < 7) return "urgent";
+
+        return "default";
+      } catch (err) {
+        console.error("Error calculating urgency:", err);
+        return "default";
       }
     },
     // In actions:
@@ -3744,6 +3744,7 @@ job_type,
           let next = null;
           if (mainDone && delivered === total) next = "delivery completed";
           else if (mainDone || delivered > 0) next = "delivery partial";
+          else if (mainDone || delivered == 0) next = "delivery scheduled";
 
           if (next && next !== logRow?.logistics_status) {
             const { error: sErr } = await supabase
@@ -3764,7 +3765,7 @@ job_type,
       }
     },
 
-  async createOrder(logisticsId) {
+    async createOrder(logisticsId) {
       try {
         // 1) orders
         const { data: orderData, error: orderError } = await supabase
@@ -3774,7 +3775,8 @@ job_type,
           .single();
 
         if (orderError) throw orderError;
-        if (!orderData?.id) throw new Error("Order was not created successfully.");
+        if (!orderData?.id)
+          throw new Error("Order was not created successfully.");
 
         const orderId = orderData.id;
 
@@ -3789,49 +3791,58 @@ job_type,
 
         const { data: paymentData, error: paymentError } = await supabase
           .from("order_payments")
-          .insert([{
-            order_id: orderId,
-            payment_status: paymentStatus,
-            deposit: safeDeposit,
-            paid_amount: safeDeposit,
-            total_amount: totalAmount,
-          }])
+          .insert([
+            {
+              order_id: orderId,
+              payment_status: paymentStatus,
+              deposit: safeDeposit,
+              paid_amount: safeDeposit,
+              total_amount: totalAmount,
+            },
+          ])
           .select("id")
           .single();
 
         if (paymentError) throw paymentError;
-        if (!paymentData?.id) throw new Error("Payment record was not created successfully.");
+        if (!paymentData?.id)
+          throw new Error("Payment record was not created successfully.");
 
         // 4) production
         const { data: productionData, error: productionError } = await supabase
           .from("order_production")
-          .insert([{
-            order_id: orderId,
-            goods_status: "NOT READY",
-            no_packets: 0,
-            no_hangers: 0,
-            no_rolls: 0,
-            no_returns: 0,
-          }])
+          .insert([
+            {
+              order_id: orderId,
+              goods_status: "NOT READY",
+              no_packets: 0,
+              no_hangers: 0,
+              no_rolls: 0,
+              no_returns: 0,
+            },
+          ])
           .select("id")
           .single();
 
         if (productionError) throw productionError;
-        if (!productionData?.id) throw new Error("Production record was not created successfully.");
+        if (!productionData?.id)
+          throw new Error("Production record was not created successfully.");
 
         // 5) tags
         const { data: tagsData, error: tagsError } = await supabase
           .from("order_tags")
-          .insert([{
-            order_id: orderId,
-            tag_status: "to print",
-            tag_changes: "-",
-          }])
+          .insert([
+            {
+              order_id: orderId,
+              tag_status: "to print",
+              tag_changes: "-",
+            },
+          ])
           .select("id")
           .single();
 
         if (tagsError) throw tagsError;
-        if (!tagsData?.id) throw new Error("Tags record was not created successfully.");
+        if (!tagsData?.id)
+          throw new Error("Tags record was not created successfully.");
 
         return { orderId, orderNo: orderData.order_no };
       } catch (error) {
@@ -3923,7 +3934,10 @@ job_type,
       }
     },
 
-    async updateTransaction(orderId) {
+async updateTransaction(orderId) {
+      const TAG = "[updateTransaction]";
+      console.log(`${TAG} START for orderId:`, orderId);
+
       if (!orderId) throw new Error("updateTransaction: missing orderId");
 
       // 0) Ensure ACTIVE transaction exists
@@ -3935,11 +3949,15 @@ job_type,
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (activeErr) throw activeErr;
 
+      if (activeErr) {
+        console.error(`${TAG} Error finding active transaction:`, activeErr);
+        throw activeErr;
+      }
 
       let activeTxId = activeTxRow?.id;
       if (!activeTxId) {
+        console.log(`${TAG} No active transaction found. Creating new one.`);
         const { data: created, error: createErr } = await supabase
           .from("order_transactions")
           .insert({ order_id: orderId, status: "active" })
@@ -3996,37 +4014,30 @@ job_type,
         if (snapErr) throw snapErr;
       }
 
-      // 4) Normalize incoming from UI (must carry id for edited rows)
+      // 4) Normalize incoming from UI
       const incoming = (this.transactionItems || []).map((i) => {
         const item_name = i.item_name ?? i.name ?? "";
-        const unit = (i.unit || inferUnitFromName(item_name))?.toLowerCase();
+        // Helper to infer unit if missing (you can inline your infer logic here if needed)
+        // assuming inferUnitFromName is available in store or simple logic:
+        const unit = (i.unit || (item_name.toLowerCase().includes('sqft') ? 'sqft' : 'pc')).toLowerCase();
 
-        // pieces per your existing rules
         let pieces = null;
         if (unit === "pc") {
           const perUnit = Number(i.pieces_per_unit ?? i.pieces ?? 0);
-          pieces =
-            Number.isFinite(perUnit) && perUnit > 0
-              ? Math.trunc(perUnit)
-              : null;
-        } else if (unit === "kg" || unit === "lbs" || unit === "sqft") {
+          pieces = Number.isFinite(perUnit) && perUnit > 0 ? Math.trunc(perUnit) : null;
+        } else if (["kg", "lbs", "sqft", "sqm"].includes(unit)) {
           const userPieces = Number(i.pieces ?? 0);
-          pieces =
-            Number.isFinite(userPieces) && userPieces > 0
-              ? Math.trunc(userPieces)
-              : null;
+          pieces = Number.isFinite(userPieces) && userPieces > 0 ? Math.trunc(userPieces) : null;
         }
 
         return {
+          id: i.id, // ID IS CRITICAL HERE
           order_transaction_id: activeTxId,
           item_name,
-          price:
-            typeof i.price === "string" && i.price?.toUpperCase() === "TBA"
-              ? "TBA"
-              : toNum(i.price, 0),
+          price: typeof i.price === "string" && i.price?.toUpperCase() === "TBA" ? "TBA" : Number(i.price || 0),
           process: i.process ?? null,
-          quantity: toNum(i.quantity, 0),
-          subtotal: toNum(i.subtotal, 0),
+          quantity: Number(i.quantity || 0),
+          subtotal: Number(i.subtotal || 0),
           pieces,
           category: i.category ?? null,
           sub_category: i.sub_category ?? null,
@@ -4045,10 +4056,11 @@ job_type,
 
       // 5) Apply updates (in-place) & collect inserts
       const inserts = [];
-      let updated = 0;
+      let updatedCount = 0;
 
       for (const row of incoming) {
         if (row.id != null && currentById.has(String(row.id))) {
+          // UPDATE
           const { error: updErr } = await supabase
             .from("order_transaction_items")
             .update({
@@ -4068,25 +4080,28 @@ job_type,
               company: row.company,
             })
             .eq("id", row.id);
+          
           if (updErr) throw updErr;
-          updated += 1;
-        } else if (row.id == null) {
-          inserts.push(row);
+          updatedCount += 1;
+        } else {
+          // INSERT
+          const { id, ...toInsert } = row; 
+          inserts.push(toInsert);
         }
       }
 
-      // 6) Insert brand new items into ACTIVE tx
-      let inserted = 0;
+      // 6) Insert brand new items
+      let insertedCount = 0;
       if (inserts.length) {
         const { error: insErr, count } = await supabase
           .from("order_transaction_items")
           .insert(inserts, { count: "exact" });
         if (insErr) throw insErr;
-        inserted = count || inserts.length;
+        insertedCount = count || inserts.length;
       }
 
-      // 7) Handle removed items: keep row (to preserve FKs) but neutralize totals
-      let zeroed = 0;
+      // 7) Handle removed items (Zero out quantity)
+      let zeroedCount = 0;
       for (const [id, old] of currentById.entries()) {
         if (!incomingIds.has(id)) {
           const { error: delErr } = await supabase
@@ -4097,18 +4112,22 @@ job_type,
             })
             .eq("id", old.id);
           if (delErr) throw delErr;
-          zeroed += 1;
+          zeroedCount += 1;
         }
       }
 
       // 8) Recompute goods status
       await this.recomputeProductionGoodsStatusByOrderId(orderId);
 
+      // 9) [NEW] Recompute Total Amount with Discounts & Charges
+      // This ensures the order_payments total updates based on the new items/quantities
+      await this.syncTotalAmountwithDc(orderId);
+
       return {
         history_transaction_id: historyTxId,
-        updated,
-        inserted,
-        zeroed, // items neutralized (soft-removed)
+        updated: updatedCount,
+        inserted: insertedCount,
+        zeroed: zeroedCount,
       };
     },
     async updateTransactionReady(id, ready_status) {
@@ -4353,12 +4372,12 @@ job_type,
       ),
 
       logistics_collections (
-        collection_date, collection_time, address_id, driver_id,
+        collection_date, collection_time, address_id, driver_id, additional_driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       ),
 
       logistics_deliveries (
-        delivery_date, delivered_date, delivery_time, address_id, driver_id,
+        delivery_date, delivered_date, delivery_time, address_id, driver_id, additional_driver_id,
         customer_contact_persons ( name, contact_no1, contact_no2, email )
       )
     `
@@ -4986,42 +5005,216 @@ job_type,
 
       return historyRows || [];
     },
+async fetchCustomerPaymentHistory(customerId) {
+  const TAG = "[transactionStore:fetchCustomerPaymentHistory]";
+
+  try {
+    // 1. Fetch Order IDs via the Logistics table
+    // User instruction: get customer_id from logistics where orders.id = logistics.order_id
+    const { data: logisticsRows, error: logError } = await supabase
+      .from("logistics")
+      .select("order_id")
+      .eq("customer_id", customerId)
+      .not("order_id", "is", null); // Ensure we don't get nulls
+
+    if (logError) throw logError;
+
+    // If no logistics/orders found for this customer, return empty
+    if (!logisticsRows || logisticsRows.length === 0) {
+      return [];
+    }
+
+    // Extract just the IDs: [101, 102, 103...]
+    const orderIds = logisticsRows.map((row) => row.order_id);
+
+    // 2. Fetch History items linked to those Order IDs
+    // We use the list of IDs we just found to filter the history
+    const { data, error } = await supabase
+      .from("order_payments_history")
+      .select(`
+        *,
+        order_payments!inner (
+          id,
+          order_id,
+          orders (
+            id,
+            order_no
+          )
+        )
+      `)
+      .in("order_payments.order_id", orderIds) // ✅ Filter by the IDs found in Step 1
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error(`${TAG} error`, error);
+    throw error;
+  }
+},
     async createDeliveryException(payload) {
-      const { data, error } = await supabase
-        .from("logistics_delivery_exceptions")
-        .insert(payload)
-        .select("*")
-        .single();
+      // payload: { logistics_id, delivery_date, delivery_time, driver_id, remarks, items: [...] }
+      const { items, ...exceptionHeader } = payload;
 
-      if (error) throw error;
-      return data;
-    },
-    // transactionStore.js
-    async fetchDeliveryExceptions() {
-      const { data, error } = await supabase
-        .from("logistics_delivery_exceptions")
-        .select(
-          "id, logistics_id, delivery_date, delivery_time, remarks, created_at"
-        ) // no reason cols
-        .not("logistics_id", "is", null); // ✅ correct way to do IS NOT NULL
+      try {
+        // 1. Calculate Urgency using the new delivery_date from payload
+        let urgency = "default";
 
-      if (error) {
-        console.error("error:", error);
-        throw error;
+        // Fetch original collection date to compare with the new exception delivery date
+        const { data: collectionRes } = await supabase
+          .from("logistics_collections")
+          .select("collection_date")
+          .eq("logistics_id", exceptionHeader.logistics_id)
+          .single();
+
+        const collectionDate = collectionRes?.collection_date;
+        const newDeliveryDate = exceptionHeader.delivery_date;
+
+        if (collectionDate && newDeliveryDate) {
+          let start = new Date(collectionDate);
+          let end = new Date(newDeliveryDate);
+
+          if (start <= end) {
+            let workingDaysGap = 0;
+            let curDate = new Date(start);
+
+            while (curDate < end) {
+              curDate.setDate(curDate.getDate() + 1);
+              const dayOfWeek = curDate.getDay();
+              // Skip Sat (6) and Sun (0)
+              if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                workingDaysGap++;
+              }
+            }
+
+            // Apply your urgency rules
+            if (workingDaysGap <= 4) urgency = "express";
+            else if (workingDaysGap < 7) urgency = "urgent";
+          }
+        }
+
+        // 2. Insert Header (now including the urgency column)
+        const { data: header, error: headerError } = await supabase
+          .from("logistics_delivery_exceptions")
+          .insert({
+            ...exceptionHeader,
+            urgency: urgency, // New column value
+          })
+          .select("id")
+          .single();
+
+        if (headerError) throw headerError;
+
+        // 3. Insert Items
+        const itemsToInsert = items.map((item) => ({
+          ...item,
+          delivery_exception_id: header.id,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("logistics_delivery_exception_items")
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+
+        return header;
+      } catch (err) {
+        console.error("Failed to create delivery exception:", err);
+        throw err;
       }
-
-      const rows = data || [];
-      return rows;
     },
+    async fetchAllDeliveryExceptions() {
+      try {
+        const { data, error } = await supabase
+          .from("logistics_delivery_exceptions")
+          .select(
+            `
+            id,
+        created_at,
+        created_by,
+        logistics_id,
+        delivery_date,
+        delivery_time,
+        driver_id,
+        remarks,
+        delivered_date,
+        urgency,
+        logistics_delivery_exception_items (
+          id,
+          order_transaction_item_id,
+          quantity,
+          pieces,
+          order_transaction_items (
+            item_name,
+            unit,
+            pieces
+          )
+        )
+      `
+          )
+          .order("delivery_date", { ascending: true })
+          .order("delivery_time", { ascending: true });
 
-    async fetchItemDeliveryExceptions(orderTransactionItemId) {
-      const { data, error } = await supabase
-        .from("logistics_delivery_exceptions")
-        .select("*")
-        .eq("order_transaction_item_id", orderTransactionItemId);
+        if (error) throw error;
 
-      if (error) throw error;
-      return data || [];
+        // We return the data as is.
+        // The UI will now see: row.logistics_delivery_exception_items as an array.
+        return data || [];
+      } catch (err) {
+        console.error(
+          "[transactionStore.fetchDeliveryExceptions] Error:",
+          err.message
+        );
+        return [];
+      }
+    },
+    async fetchDeliveryExceptionsByLogisticsId(logisticsId) {
+      if (!logisticsId) return [];
+
+      try {
+        const { data, error } = await supabase
+          .from("logistics_delivery_exceptions")
+          .select(
+            `
+created_at,
+created_by,
+logistics_id,
+delivery_date,
+delivery_time,
+driver_id,
+remarks,
+delivered_date,
+urgency,
+        logistics_delivery_exception_items (
+          id,
+          order_transaction_item_id,
+          quantity,
+          pieces,
+          order_transaction_items (
+            item_name,
+            unit,
+            pieces
+          )
+        )
+      `
+          )
+          .eq("logistics_id", logisticsId)
+          .order("delivery_date", { ascending: true })
+          .order("delivery_time", { ascending: true });
+
+        if (error) throw error;
+
+        // We return the data as is.
+        // The UI will now see: row.logistics_delivery_exception_items as an array.
+        return data || [];
+      } catch (err) {
+        console.error(
+          "[transactionStore.fetchDeliveryExceptions] Error:",
+          err.message
+        );
+        return [];
+      }
     },
     async markExceptionAsDelivered(exceptionId, payload) {
       // payload: { delivered_date, delivered_driver_id }
@@ -5036,73 +5229,6 @@ job_type,
       if (error) throw error;
       return data;
     },
-    async fetchDeliveryPlan(logisticsId) {
-      // Fetch main delivery schedule
-      const { data: mainDelivery, error: err1 } = await supabase
-        .from("logistics_deliveries")
-        .select("*")
-        .eq("logistics_id", logisticsId)
-        .single();
-
-      if (err1) throw err1;
-
-      // Fetch all exceptions
-      const { data: exceptions, error: err2 } = await supabase
-        .from("logistics_delivery_exceptions")
-        .select("*, order_transaction_items(item_name, quantity)")
-        .eq("logistics_id", logisticsId);
-
-      if (err2) throw err2;
-
-      return {
-        mainDelivery,
-        exceptions,
-      };
-    },
-    // transactionStore.js – inside defineStore({ ..., actions: { ... } })
-    async fetchDeliveryExceptionsByLogisticsId(logisticsId) {
-      const TAG = "[transactionStore.fetchDeliveryExceptionsByLogisticsId]";
-      try {
-        if (!logisticsId) {
-          console.warn(`${TAG} logisticsId is missing or invalid`, logisticsId);
-          return [];
-        }
-
-        const { data, error } = await supabase
-          .from("logistics_delivery_exceptions")
-          .select(
-            `
-        id,
-        created_at,
-        created_by,
-        logistics_id,
-        order_transaction_item_id,
-        quantity,
-        pieces,
-        delivery_date,
-        delivered_date,
-        delivery_time,
-        driver_id,
-        remarks
-      `
-          )
-          .eq("logistics_id", logisticsId)
-          .order("delivery_date", { ascending: true })
-          .order("delivery_time", { ascending: true });
-
-        if (error) {
-          console.error(`${TAG} Supabase error`, error);
-          throw error;
-        }
-
-        console.log(`${TAG} fetched ${data?.length || 0} rows`, data);
-        return data || [];
-      } catch (err) {
-        console.error(`${TAG} unexpected error`, err);
-        return [];
-      }
-    },
-
     async syncOrderPaymentsTotals(orderId, newTotal) {
       if (!orderId) throw new Error("Missing orderId");
       const totalAmount = Number(newTotal || 0);
@@ -5529,6 +5655,7 @@ job_type,
               collection_time: c.collection_time,
               no_bags: c.no_bags,
               driver_id: c.driver_id,
+              additional_driver_id: c.additional_driver_id,
               driver: c.profiles
                 ? {
                     id: c.profiles.id,
@@ -5607,22 +5734,22 @@ job_type,
         const logisticsIds = enriched.map((l) => l.id).filter((v) => v != null);
         let exceptionsByLogId = new Map();
 
+        // Inside fetchOrdersForPacks...
         if (logisticsIds.length) {
           const { data: excRows, error: excErr } = await supabase
             .from("logistics_delivery_exceptions")
             .select(
               `
-          id,
-          logistics_id,
-          order_transaction_item_id,
-          delivery_date,
-          delivery_time,
-          driver_id,
-          quantity,
-          remarks,
-          delivered_date,
-          created_at
-        `
+      id,
+      logistics_id,
+      delivery_date,
+      delivery_time,
+      driver_id,
+      remarks,
+      delivered_date,
+      created_at,
+      logistics_delivery_exception_items(*)
+    `
             )
             .in("logistics_id", logisticsIds);
 
@@ -5676,6 +5803,7 @@ job_type,
               delivery_time: d.delivery_time,
               no_bags: d.no_bags,
               driver_id: d.driver_id,
+              additional_driver_id: d.additional_driver_id,
               driver: d.profiles
                 ? { id: d.profiles.id, name: d.profiles.name }
                 : null,
@@ -5812,21 +5940,31 @@ job_type,
         return [];
       }
     },
- async handleDiscountsCharges(orderId) {
-      if (!orderId) throw new Error("Missing orderId in handleDiscountsCharges().");
+    async handleDiscountsCharges(orderId) {
+      if (!orderId)
+        throw new Error("Missing orderId in handleDiscountsCharges().");
 
       // 1) createTransaction first so we can get inserted item ids
       await this.createTransaction(orderId);
 
       // 2) fetch inserted items and map to UI items to get order_transaction_item_id per item
-      const { insertedItems } = await fetchLatestTransactionAndItems(supabase, orderId);
-      const pairs = mapItemsToInsertedIds(this.transactionItems ?? [], insertedItems);
+      const { insertedItems } = await fetchLatestTransactionAndItems(
+        supabase,
+        orderId
+      );
+      const pairs = mapItemsToInsertedIds(
+        this.transactionItems ?? [],
+        insertedItems
+      );
 
       if (!pairs.length) return;
 
       // 3) overall rules: customer + order (both apply to whole order total)
       const customerId = this.selectedCustomer?.id ?? null;
-      const customerOverall = await fetchCustomerOverallRules(supabase, customerId);
+      const customerOverall = await fetchCustomerOverallRules(
+        supabase,
+        customerId
+      );
 
       const orderOverall = Array.isArray(this.orderOverallDiscountCharges)
         ? this.orderOverallDiscountCharges
@@ -5835,7 +5973,10 @@ job_type,
       const overallCombined = [...customerOverall, ...orderOverall];
 
       // 4) expand overall rules into per-item rows and insert once
-      const allDcRows = expandOverallAdjustmentsToDcRows(overallCombined, pairs);
+      const allDcRows = expandOverallAdjustmentsToDcRows(
+        overallCombined,
+        pairs
+      );
 
       if (allDcRows.length) {
         const { error: dcError } = await supabase
@@ -5845,27 +5986,238 @@ job_type,
         if (dcError) throw dcError;
       }
     },
-async fetchCustomerDiscountCharges() {
-  this.customerDiscountCharges = [];
+    async fetchAppliedOrderDiscounts(transactionItemIds) {
+      if (!transactionItemIds || transactionItemIds.length === 0) return [];
 
-  const customerId = this.selectedCustomer?.id ?? null;
-  if (!customerId) return [];
+      // Removed .eq('active', true) as the column does not exist
+      const { data, error } = await supabase
+        .from('order_discounts_charges')
+        .select('*')
+        .in('order_transaction_item_id', transactionItemIds);
 
-  const nowIso = new Date().toISOString();
+      if (error) {
+        console.error("Error fetching applied order discounts:", error);
+        throw error; Tyu
+      }
+      return data || [];
+    },
+    async fetchCustomerDiscounts(customerId) {
+      if (!customerId) return [];
 
-  const { data, error } = await supabase
-    .from("customer_discounts_charges")
-    .select("id, dc_type, value_type, percentage, amount, code, description, active, starts_at, ends_at")
-    .eq("customer_id", customerId)
-    .eq("active", true)
-    .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
-    .or(`ends_at.is.null,ends_at.gte.${nowIso}`);
+      const nowIso = new Date().toISOString();
 
-  if (error) throw error;
+      const { data, error } = await supabase
+        .from('customer_discounts_charges')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('active', true) // Keep this only if customer table has it
+        .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+        .or(`ends_at.is.null,ends_at.gte.${nowIso}`);
 
-  this.customerDiscountCharges = data ?? [];
-  return this.customerDiscountCharges;
-},
+      if (error) {
+        console.error("Error fetching customer discounts:", error);
+        throw error;
+      }
+      return data || [];
+    },
+ async addOrderDiscountCharge(orderId, ruleData, targetItemIds = [], applyPerItem = false) {
+      if (!orderId) throw new Error("Cannot add discount: Missing Order ID.");
 
-},
+      // 1. Get the ACTIVE transaction ID for this order
+      const { data: activeTx, error: txErr } = await supabase
+        .from('order_transactions')
+        .select('id')
+        .eq('order_id', orderId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (txErr) throw txErr;
+      if (!activeTx) throw new Error("No active transaction found to apply discounts.");
+
+      // 2. Build Query to fetch items from DB
+      let query = supabase
+        .from('order_transaction_items')
+        .select('id')
+        .eq('order_transaction_id', activeTx.id);
+
+      // 3. If specific IDs are targeted, filter them.
+      if (Array.isArray(targetItemIds) && targetItemIds.length > 0) {
+        query = query.in('id', targetItemIds);
+      }
+
+      const { data: dbItems, error: itemsErr } = await query;
+      if (itemsErr) throw itemsErr;
+      
+      if (!dbItems || dbItems.length === 0) {
+        throw new Error("No active transaction items found in the database to apply this rule.");
+      }
+
+      // 4. Calculate values based on the DB count
+      const rowsToInsert = dbItems.map(item => {
+        let finalAmount = null;
+        let finalPercent = null;
+
+        if (ruleData.value_type === 'percent') {
+          finalPercent = ruleData.value;
+        } 
+        else if (ruleData.value_type === 'amount') {
+          if (applyPerItem) {
+             // Apply full amount to EACH fetched item
+             finalAmount = ruleData.value;
+          } else {
+             // Split amount across the fetched items
+             finalAmount = ruleData.value / dbItems.length;
+          }
+        }
+
+        return {
+          order_transaction_item_id: item.id,
+          dc_type: ruleData.dc_type,
+          value_type: ruleData.value_type,
+          description: ruleData.description,
+          percentage: finalPercent,
+          amount: finalAmount
+        };
+      });
+
+      // 5. Insert
+      const { error } = await supabase
+        .from('order_discounts_charges')
+        .insert(rowsToInsert);
+
+      if (error) throw error;
+    },
+
+    /**
+     * Completely Server-Side (DB) Calculation.
+     * Contains integrated calculation logic.
+     */
+    async syncTotalAmountwithDc(orderId) {
+      if (!orderId) throw new Error("Missing orderId for sync");
+
+      // --- 1. Find ACTIVE transaction ---
+      const { data: activeTx, error: txErr } = await supabase
+        .from('order_transactions')
+        .select('id')
+        .eq('order_id', orderId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (txErr) throw txErr;
+      if (!activeTx) {
+        console.warn("No active transaction found for order", orderId);
+        return; 
+      }
+
+      // --- 2. Fetch ALL items for this active transaction ---
+      const { data: dbItems, error: itemsErr } = await supabase
+        .from('order_transaction_items')
+        .select('*')
+        .eq('order_transaction_id', activeTx.id);
+
+      if (itemsErr) throw itemsErr;
+      const currentItems = dbItems || [];
+
+      // --- INTERNAL HELPER: Calculate Line Total ---
+      const getLineTotal = (item) => {
+        const price = (typeof item.price === 'string' && item.price.toUpperCase() === 'TBA') 
+          ? 0 
+          : Number(item.price || 0);
+        
+        const qty = Number(item.quantity || 0);
+        const unit = (item.unit || '').toLowerCase();
+        
+        // Logic: sqft/sqm uses pieces as multiplier, others do not
+        if (unit === 'sqft' || unit === 'sqm') {
+           const pcs = Number(item.pieces || 1); 
+           return price * qty * pcs;
+        } 
+        
+        return price * qty;
+      };
+
+      // --- 3. Calculate Gross Subtotal ---
+      let grossSubtotal = 0;
+      currentItems.forEach(item => {
+        grossSubtotal += getLineTotal(item);
+      });
+
+      // --- 4. Fetch Active Rules linked to these items ---
+      const itemIds = currentItems.map(i => i.id);
+      let rules = [];
+
+      if (itemIds.length > 0) {
+        const { data: rulesData, error: rulesErr } = await supabase
+          .from('order_discounts_charges')
+          .select('*')
+          .in('order_transaction_item_id', itemIds);
+        
+        if (rulesErr) throw rulesErr;
+        rules = rulesData || [];
+      }
+
+      // --- 5. Calculate Impacts ---
+      let totalDiscounts = 0;
+      let totalCharges = 0;
+
+      rules.forEach(rule => {
+        let impact = 0;
+
+        if (rule.value_type === 'amount') {
+          impact = Number(rule.amount || 0);
+        } 
+        else if (rule.value_type === 'percent') {
+          const targetItem = currentItems.find(i => i.id === rule.order_transaction_item_id);
+          if (targetItem) {
+            impact = getLineTotal(targetItem) * (Number(rule.percentage) / 100);
+          }
+        }
+
+        if (rule.dc_type === 'discount') {
+          totalDiscounts += impact;
+        } else {
+          totalCharges += impact;
+        }
+      });
+
+      // --- 6. Calculate Net Total ---
+      const netTotal = Math.max(0, grossSubtotal + totalCharges - totalDiscounts);
+
+      // --- 7. Update Payment Table ---
+      const { data: payRow, error: fetchErr } = await supabase
+        .from("order_payments")
+        .select("id, paid_amount")
+        .eq("order_id", orderId)
+        .maybeSingle();
+
+      if (fetchErr) throw fetchErr;
+
+      const paid = Number(payRow?.paid_amount || 0);
+      
+      let status = 'unpaid';
+      if (paid >= (netTotal - 0.01) && netTotal > 0) status = 'paid';
+      else if (netTotal === 0 && paid === 0) status = 'paid';
+      else if (paid > 0) status = 'partial';
+      
+      if (payRow) {
+        await supabase
+          .from("order_payments")
+          .update({ total_amount: netTotal, payment_status: status })
+          .eq("id", payRow.id);
+      } else {
+        await supabase
+          .from("order_payments")
+          .insert({
+             order_id: orderId,
+             total_amount: netTotal,
+             paid_amount: 0,
+             payment_status: status
+          });
+      }
+    },
+  },
 });

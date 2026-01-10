@@ -523,6 +523,7 @@
             icon="local_shipping"
           />
           <q-tab name="invoices" label="Invoice History" icon=" receipt" />
+          <q-tab name="payments" label="Payment History" icon="payments" />
           <q-tab name="soa" label="SOA History" icon="receipt" />
           <q-tab name="complaints" label="Complaints History" icon="report_problem" />
           <q-tab
@@ -544,6 +545,55 @@
           <q-tab-panel name="invoices">
             <InvoiceTableByCustomer :customer-id="customerDetails.id" />
           </q-tab-panel>
+         <q-tab-panel name="payments" class="q-pa-none">
+  <q-table
+    :rows="paymentHistoryRows"
+    :columns="paymentHistoryColumns"
+    row-key="id"
+    flat
+    bordered
+    :loading="paymentHistoryLoading"
+    :pagination="{ rowsPerPage: 10, sortBy: 'created_at', descending: true }"
+    no-data-label="No payment history found."
+  >
+    <template #top-right>
+      <q-btn
+        flat dense icon="refresh" label="Refresh" color="primary"
+        @click="loadCustomerPaymentHistory"
+        :loading="paymentHistoryLoading"
+      />
+    </template>
+
+    <template #body-cell-created_at="props">
+      <q-td :props="props">
+        {{ new Date(props.row.created_at).toLocaleString('en-GB') }}
+      </q-td>
+    </template>
+
+    <template #body-cell-order_no="props">
+      <q-td :props="props">
+        <a
+          v-if="props.row.order_no && props.row.order_no !== '-'"
+          href="javascript:void(0)"
+          class="text-weight-bold text-primary"
+          style="text-decoration: none"
+          @click="openOrderTab(props.row.order_no)"
+        >
+          {{ props.row.order_no }}
+        </a>
+        <span v-else>-</span>
+      </q-td>
+    </template>
+
+    <template #body-cell-amount="props">
+      <q-td :props="props">
+        <div :class="props.row.amount < 0 ? 'text-red' : 'text-green-9'" class="text-weight-bold">
+          {{ formatCurrency(props.row.amount) }}
+        </div>
+      </q-td>
+    </template>
+  </q-table>
+</q-tab-panel>
           <q-tab-panel name="soa">
             <SoaTableByCustomer :customer-id="customerDetails.id" />
           </q-tab-panel>
@@ -883,6 +933,18 @@ const paidAmount = ref(0);
 const totalAmount = ref(0);
 const unpaidAmount = ref(0);
 
+const paymentHistoryRows = ref([]);
+const paymentHistoryLoading = ref(false);
+
+const paymentHistoryColumns = [
+  { name: 'created_at', label: 'Date', field: 'created_at', align: 'left', sortable: true },
+  { name: 'order_no', label: 'Order No', field: 'order_no', align: 'left', sortable: true },
+  { name: 'payment_type', label: 'Type', field: 'payment_type', align: 'left', sortable: true },
+  { name: 'reference_no', label: 'Ref No', field: 'reference_no', align: 'left' },
+  { name: 'remarks', label: 'Remarks', field: 'remarks', align: 'left' },
+  { name: 'amount', label: 'Amount', field: 'amount', align: 'right', sortable: true },
+];
+
 onMounted(async () => {
   await loadCustomerData();
   await transactionStore.setSelectedCustomer(customerDetails.value);
@@ -932,6 +994,44 @@ const loadCustomerData = async () => {
   );
   computePaymentsSummary();
   renderPaymentsChart();
+  await loadCustomerPaymentHistory();
+};
+
+const loadCustomerPaymentHistory = async () => {
+  const customerId = route.params.id;
+  if (!customerId) return;
+
+  try {
+    paymentHistoryLoading.value = true;
+
+    // 1. Fetch data using the new optimized store action
+    const results = await transactionStore.fetchCustomerPaymentHistory(customerId);
+
+    // 2. Map the nested structure to a flat format for the table
+    // Structure is: history -> order_payments -> orders -> order_no
+    paymentHistoryRows.value = results.map((p) => {
+      // Safely access the nested order number
+      // Note: Supabase might return 'orders' as an object (single relation) or array depending on schema setup.
+      // We handle the object access here assuming standard Many-to-One.
+      
+      const paymentParent = p.order_payments;
+      const orderGrandParent = Array.isArray(paymentParent?.orders) 
+        ? paymentParent.orders[0] 
+        : paymentParent?.orders;
+
+      return {
+        ...p,
+        order_no: orderGrandParent?.order_no || '-',
+        amount: Number(p.amount) || 0
+      };
+    });
+
+  } catch (err) {
+    console.error("Error loading payment history:", err);
+    $q.notify({ type: 'negative', message: 'Failed to load payment history' });
+  } finally {
+    paymentHistoryLoading.value = false;
+  }
 };
 function computePaymentsSummary() {
   let total = 0;
